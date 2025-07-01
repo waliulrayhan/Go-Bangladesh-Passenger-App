@@ -62,7 +62,7 @@ export default function WelcomeScreen() {
             Student Transport App
           </Text>
           <Text variant="body" color={COLORS.gray[600]} style={styles.description}>
-            Your convenient way to pay for student transport with RFID technology
+            Your convenient way to pay for student transport with RFID card technology
           </Text>
         </Animated.View>
 

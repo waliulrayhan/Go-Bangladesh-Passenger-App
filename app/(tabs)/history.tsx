@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, Linking, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Card } from '../../components/ui/Card';
@@ -135,29 +135,23 @@ export default function History() {
     // Show both recharge and fare deduction transactions
     if (item.transactionType !== 'recharge' && item.transactionType !== 'fare_deduction') return null;
 
-    const getChannelInfo = (description: string, transactionType: string, agentId?: number) => {
+    const getChannelInfo = (description: string, transactionType: string) => {
       if (transactionType === 'fare_deduction') {
         return { channel: 'Fare', name: 'Bus Fare', icon: 'remove-circle' as const };
-      } else if (description?.toLowerCase().includes('agent')) {
-        // If description contains "Recharge via Agent - [Name]", extract the name
-        const agentNameMatch = description.match(/agent\s*-\s*(.+)/i);
-        if (agentNameMatch) {
-          return { channel: 'Agent', name: agentNameMatch[1].trim(), icon: 'person' as const };
-        }
-        // Fallback to just "Agent" if name not found in description
-        return { channel: 'Agent', name: 'Nasir Uddin', icon: 'person' as const };
       } else if (description?.toLowerCase().includes('bkash')) {
         return { channel: 'MFS', name: 'bKash', icon: 'phone-portrait' as const };
       } else if (description?.toLowerCase().includes('nagad')) {
         return { channel: 'MFS', name: 'Nagad', icon: 'phone-portrait' as const };
       } else if (description?.toLowerCase().includes('card')) {
         return { channel: 'CARD', name: 'Card Payment', icon: 'card' as const };
+      } else if (description?.toLowerCase().includes('mobile')) {
+        return { channel: 'Mobile', name: 'Mobile Recharge', icon: 'phone-portrait' as const };
       } else {
         return { channel: 'Other', name: 'Manual Recharge', icon: 'add-circle' as const };
       }
     };
 
-    const channelInfo = getChannelInfo(item.description || '', item.transactionType, item.agentId);
+    const channelInfo = getChannelInfo(item.description || '', item.transactionType);
     const isDeduction = item.transactionType === 'fare_deduction';
     const amountColor = isDeduction ? COLORS.error : COLORS.success;
     const amountPrefix = isDeduction ? '-' : '+';

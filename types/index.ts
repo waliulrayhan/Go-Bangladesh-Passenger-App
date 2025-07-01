@@ -4,16 +4,11 @@ export interface User {
   email?: string;
   mobile: string;
   sex: 'male' | 'female';
-  userType: 'passenger' | 'driver' | 'helper' | 'agent';
-  organizationId?: number;
-  staffId?: string; // Staff ID for drivers, helpers, and other staff
+  userType: 'passenger';
+  cardNumber?: string;
   isActive: boolean;
   createdAt: string;
   profileImage?: string;
-  vehicleNumber?: string; // specific to driver
-  vehicleType?: string;   // specific to driver
-  licenseNumber?: string; // specific to driver
-  helperId?: number;     // specific to helper
 }
 
 export interface Card {
@@ -97,28 +92,4 @@ export interface TapTransaction {
   driverId?: number;
   helperId?: number;
   passengerName?: string;
-}
-
-export interface Agent {
-  id: number;
-  name: string;
-  mobile: string;
-  organizationId: number;
-  isActive: boolean;
-  createdAt: string;
-}
-
-export interface RechargeTransaction {
-  id: number;
-  cardNumber: string;
-  amount: number;
-  agentId: number;
-  agentName: string;
-  balanceBefore: number;
-  balanceAfter: number;
-  timestamp: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
 }

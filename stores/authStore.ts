@@ -11,7 +11,7 @@ interface AuthState {
   error: string | null;
   showWelcomePopup: boolean;
   
-  login: (mobile: string, otp: string, userType: string) => Promise<boolean>;
+  login: (mobile: string, otp: string) => Promise<boolean>;
   loginWithPassword: (identifier: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   loadUserFromStorage: () => Promise<void>;
@@ -52,24 +52,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  login: async (mobile: string, otp: string, userType: string) => {
+  login: async (mobile: string, otp: string) => {
     set({ isLoading: true, error: null });
     
     try {
       const response = await mockApi.login(mobile, otp);
       
-      const userWithType = { ...response.user, userType: userType as any };
+      const userWithType = { ...response.user, userType: 'passenger' as const };
       
       await storageService.storeAuthTokens(response.tokens);
       await storageService.setItem(STORAGE_KEYS.USER_DATA, userWithType);
-      await storageService.setItem(STORAGE_KEYS.USER_TYPE, userType);
+      await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
 
       set({
         user: userWithType,
         isAuthenticated: true,
         isLoading: false,
         error: null,
-        showWelcomePopup: true // Show for all user types
+        showWelcomePopup: true // Show welcome popup for successful login
       });
 
       return true;

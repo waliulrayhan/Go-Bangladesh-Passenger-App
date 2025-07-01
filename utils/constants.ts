@@ -3,10 +3,7 @@ export const API_BASE_URL = __DEV__
   : 'https://your-production-api.com/api';
 
 export const USER_TYPES = {
-  PASSENGER: 'passenger',
-  DRIVER: 'driver',
-  HELPER: 'helper',
-  AGENT: 'agent'
+  PASSENGER: 'passenger'
 } as const;
 
 export const COLORS = {
@@ -112,9 +109,5 @@ export const STORAGE_KEYS = {
   AUTH_TOKEN: 'auth_token',
   REFRESH_TOKEN: 'refresh_token',
   USER_DATA: 'user_data',
-  CARD_DATA: 'card_data',
-  SELECTED_ORGANIZATION: 'selected_organization',
-  SELECTED_BUS: 'selected_bus',
-  DRIVER_HELPER_SESSION: 'driver_helper_session',
-  AGENT_SESSION: 'agent_session'
+  CARD_DATA: 'card_data'
 };

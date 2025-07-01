@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Go Bangladesh",
-    "slug": "go-bangladesh",
+    "name": "Go Bangladesh - Student Transport",
+    "slug": "go-bangladesh-student",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

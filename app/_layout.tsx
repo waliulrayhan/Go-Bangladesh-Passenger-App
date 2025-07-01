@@ -33,12 +33,10 @@ export default function RootLayout() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inTabsGroup = segments[0] === '(tabs)';
-    const inDriverTabsGroup = segments[0] === '(driver-tabs)';
-    const inAgentTabsGroup = segments[0] === '(agent-tabs)';
 
-    if (!isAuthenticated && (inTabsGroup || inDriverTabsGroup || inAgentTabsGroup)) {
+    if (!isAuthenticated && inTabsGroup) {
       router.replace('/');
-    } else if (isAuthenticated && !inTabsGroup && !inDriverTabsGroup && !inAgentTabsGroup && !inAuthGroup) {
+    } else if (isAuthenticated && !inTabsGroup && !inAuthGroup) {
       // Default to passenger tabs for authenticated users
       router.replace('/(tabs)');
     }
