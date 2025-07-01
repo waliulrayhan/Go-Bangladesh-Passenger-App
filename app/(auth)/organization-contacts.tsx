@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Linking, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View, Platform } from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
+import { useState } from 'react';
+import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
