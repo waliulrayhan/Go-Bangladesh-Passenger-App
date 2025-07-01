@@ -7,6 +7,9 @@ export const mockOrganizations: Organization[] = [
     name: 'University of Dhaka',
     type: 'institute',
     isActive: true,
+    adminName: 'Dr. Md. Akhtaruzzaman',
+    adminPhone: '+8801712345678',
+    adminEmail: 'admin@du.ac.bd',
     createdAt: new Date().toISOString()
   },
   {
@@ -14,6 +17,9 @@ export const mockOrganizations: Organization[] = [
     name: 'Bangladesh University of Engineering and Technology (BUET)',
     type: 'institute',
     isActive: true,
+    adminName: 'Prof. Dr. Satya Prasad Majumder',
+    adminPhone: '+8801812345679',
+    adminEmail: 'admin@buet.ac.bd',
     createdAt: new Date().toISOString()
   },
   {
@@ -21,6 +27,9 @@ export const mockOrganizations: Organization[] = [
     name: 'North South University',
     type: 'institute',
     isActive: true,
+    adminName: 'Dr. Atiqul Islam',
+    adminPhone: '+8801912345680',
+    adminEmail: 'admin@northsouth.edu',
     createdAt: new Date().toISOString()
   },
   {
@@ -28,6 +37,9 @@ export const mockOrganizations: Organization[] = [
     name: 'BRAC University',
     type: 'institute',
     isActive: true,
+    adminName: 'Prof. Vincent Chang',
+    adminPhone: '+8801612345681',
+    adminEmail: 'admin@bracu.ac.bd',
     createdAt: new Date().toISOString()
   }
 ];

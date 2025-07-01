@@ -21,8 +21,12 @@ export default function PassengerLogin() {
   
   const { loginWithPassword, isLoading, error, clearError } = useAuthStore();
 
-  const handleNewRegistration = () => {
-    router.push('/(auth)/passenger-registration');
+  const handleContactOrganization = () => {
+    router.push('/(auth)/organization-contacts');
+  };
+
+  const handleForgotPassword = () => {
+    router.push('/(auth)/forgot-password');
   };
 
   const handleGoBack = () => {
@@ -126,7 +130,10 @@ export default function PassengerLogin() {
             entering={FadeInDown.duration(800).delay(400)} 
             style={styles.bottomSection}
           >
-            <TouchableOpacity style={styles.forgotPasswordButton}>
+            <TouchableOpacity 
+              style={styles.forgotPasswordButton}
+              onPress={handleForgotPassword}
+            >
               <Text style={styles.forgotPasswordText}>
                 Forgot Password?
               </Text>
@@ -140,13 +147,13 @@ export default function PassengerLogin() {
             
             <TouchableOpacity 
               style={styles.createAccountButton}
-              onPress={handleNewRegistration}
+              onPress={handleContactOrganization}
             >
               <Text style={styles.createAccountText}>
-                Don't have an account?
+                Need help with your account?
               </Text>
               <Text style={styles.createAccountLink}>
-                Create a new one
+                Contact your organization
               </Text>
             </TouchableOpacity>
           </Animated.View>

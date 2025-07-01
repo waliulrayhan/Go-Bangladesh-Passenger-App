@@ -72,6 +72,9 @@ export interface Organization {
   type: 'institute' | 'company';
   isActive: boolean;
   logo?: string;
+  adminName?: string;
+  adminPhone?: string;
+  adminEmail?: string;
   createdAt: string;
 }
 

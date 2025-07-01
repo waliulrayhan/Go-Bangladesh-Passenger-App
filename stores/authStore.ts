@@ -18,7 +18,9 @@ interface AuthState {
   clearError: () => void;
   sendOTP: (mobile: string) => Promise<boolean>;
   checkCardExists: (cardNumber: string) => Promise<boolean>;
-  verifyOTP: (mobile: string, otp: string) => Promise<boolean>;  registerUser: (userData: {
+  verifyOTP: (mobile: string, otp: string) => Promise<boolean>;
+  sendPasswordReset: (identifier: string) => Promise<boolean>;
+  registerUser: (userData: {
     name: string;
     sex: 'male' | 'female';
     mobile: string;
@@ -212,6 +214,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         isLoading: false,
         error: error.message || 'OTP verification failed'
+      });
+      return false;
+    }
+  },
+
+  sendPasswordReset: async (identifier: string) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      // Simulate API call for password reset
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      set({ isLoading: false });
+      return true;
+    } catch (error: any) {
+      set({
+        isLoading: false,
+        error: error.message || 'Failed to send password reset'
       });
       return false;
     }
