@@ -57,9 +57,9 @@ export default function ForgotPassword() {
     return (
       <SafeAreaView style={styles.container}>
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+          <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-
+        
         <View style={styles.content}>
           <Animated.View entering={FadeInUp.duration(800)} style={styles.successContainer}>
             <View style={styles.successIcon}>
@@ -81,7 +81,7 @@ export default function ForgotPassword() {
               title="Back to Login"
               onPress={handleGoBack}
               variant="primary"
-              size="large"
+              size="medium"
               fullWidth
             />
             
@@ -97,9 +97,9 @@ export default function ForgotPassword() {
   return (
     <SafeAreaView style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-        <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+        <Text style={styles.backButtonText}>← Back</Text>
       </TouchableOpacity>
-
+      
       <View style={styles.content}>
         <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
           <Text style={styles.title}>Forgot Password?</Text>
@@ -133,7 +133,7 @@ export default function ForgotPassword() {
                 onPress={handleSendResetLink}
                 loading={isLoading}
                 variant="primary"
-                size="large"
+                size="medium"
                 fullWidth
                 icon="mail"
               />
@@ -172,30 +172,26 @@ const styles = StyleSheet.create({
     top: 50,
     left: SPACING.md,
     zIndex: 1,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
   content: {
     flex: 1,
     paddingHorizontal: SPACING.md,
     justifyContent: 'center',
-    paddingTop: 80,
+    paddingTop: SPACING.lg,
   },
   header: {
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.gray[900],
     marginBottom: SPACING.sm,
@@ -209,10 +205,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
   },
   formCard: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   formContent: {
-    gap: SPACING.md,
+    gap: SPACING.sm,
   },
   errorContainer: {
     flexDirection: 'row',
@@ -271,19 +267,19 @@ const styles = StyleSheet.create({
   // Success state styles
   successContainer: {
     alignItems: 'center',
-    marginBottom: SPACING.xl * 2,
+    marginBottom: SPACING.xl,
   },
   successIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: COLORS.success + '20',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   successTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.gray[900],
     marginBottom: SPACING.sm,
@@ -303,7 +299,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   actions: {
-    gap: SPACING.md,
+    gap: SPACING.sm,
   },
   contactButton: {
     alignItems: 'center',

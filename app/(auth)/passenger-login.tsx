@@ -170,12 +170,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.md,
     justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   backButton: {
     position: 'absolute',
@@ -185,33 +185,33 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   logoContainer: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
     color: COLORS.gray[900],
     marginBottom: SPACING.xs,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     textAlign: 'center',
     color: COLORS.gray[600],
-    paddingHorizontal: SPACING.lg,
-    lineHeight: 22,
+    paddingHorizontal: SPACING.md,
+    lineHeight: 20,
   },
   loginCard: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   loginContent: {
-    padding: SPACING.lg,
-    gap: SPACING.md,
+    padding: SPACING.md,
+    gap: SPACING.sm,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.md,
+    padding: SPACING.sm,
     backgroundColor: COLORS.error + '10',
     borderRadius: 8,
     borderWidth: 1,
@@ -237,8 +237,8 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: SPACING.lg,
-    paddingHorizontal: SPACING.lg,
+    marginVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
   dividerLine: {
     flex: 1,
@@ -252,8 +252,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   createAccountButton: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     alignItems: 'center',
   },
   createAccountText: {
