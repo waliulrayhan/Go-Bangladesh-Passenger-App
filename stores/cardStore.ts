@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { mockApi } from '../services/mockData';
 import { Bus, Card, Transaction, Trip } from '../types';
 
 interface CardState {
@@ -38,7 +37,16 @@ export const useCardStore = create<CardState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      const card = await mockApi.getCardDetails('GB-7823456012');
+      // TODO: Replace with real API call when card endpoints are available
+      // For now, create a basic card object to avoid crashes
+      const card: Card = {
+        id: 1,
+        cardNumber: 'GB-0000000000',
+        userId: 1,
+        balance: 0,
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
       set({ card, isLoading: false });
     } catch (error: any) {
       set({
@@ -52,7 +60,9 @@ export const useCardStore = create<CardState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      const transactions = await mockApi.getTransactions();
+      // TODO: Replace with real API call when transaction endpoints are available
+      // For now, return empty array to avoid crashes
+      const transactions: Transaction[] = [];
       set({ transactions, isLoading: false });
     } catch (error: any) {
       set({
@@ -66,7 +76,9 @@ export const useCardStore = create<CardState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      const trips = await mockApi.getTrips();
+      // TODO: Replace with real API call when trip endpoints are available
+      // For now, return empty array to avoid crashes
+      const trips: Trip[] = [];
       set({ trips, isLoading: false });
     } catch (error: any) {
       set({
@@ -80,7 +92,9 @@ export const useCardStore = create<CardState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      const buses = await mockApi.getBuses();
+      // TODO: Replace with real API call when bus endpoints are available
+      // For now, return empty array to avoid crashes
+      const buses: Bus[] = [];
       set({ buses, isLoading: false });
     } catch (error: any) {
       set({
@@ -94,17 +108,11 @@ export const useCardStore = create<CardState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      const response = await mockApi.tapIn(cardNumber, busId);
-      
-      const currentCard = get().card;
-      if (currentCard && response.newBalance !== undefined) {
-        set({
-          card: { ...currentCard, balance: response.newBalance },
-          isLoading: false
-        });
-      }
-      
-      return response.success;
+      // TODO: Replace with real API call when tap-in endpoints are available
+      // For now, simulate success to avoid crashes
+      console.log('Tap-in simulated for card:', cardNumber, 'bus:', busId);
+      set({ isLoading: false, tripStatus: 'active' });
+      return true;
     } catch (error: any) {
       set({
         isLoading: false,
@@ -118,17 +126,11 @@ export const useCardStore = create<CardState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      const response = await mockApi.tapOut(cardNumber);
-      
-      const currentCard = get().card;
-      if (currentCard && response.newBalance !== undefined) {
-        set({
-          card: { ...currentCard, balance: response.newBalance },
-          isLoading: false
-        });
-      }
-      
-      return response.success;
+      // TODO: Replace with real API call when tap-out endpoints are available
+      // For now, simulate success to avoid crashes
+      console.log('Tap-out simulated for card:', cardNumber);
+      set({ isLoading: false, tripStatus: 'completed', currentTrip: null });
+      return true;
     } catch (error: any) {
       set({
         isLoading: false,
@@ -142,17 +144,10 @@ export const useCardStore = create<CardState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      const transaction = await mockApi.recharge(cardNumber, amount);
-      
-      const currentCard = get().card;
-      if (currentCard) {
-        set({
-          card: { ...currentCard, balance: transaction.balanceAfter },
-          transactions: [transaction, ...get().transactions],
-          isLoading: false
-        });
-      }
-      
+      // TODO: Replace with real API call when recharge endpoints are available
+      // For now, simulate success to avoid crashes
+      console.log('Recharge simulated for card:', cardNumber, 'amount:', amount);
+      set({ isLoading: false });
       return true;
     } catch (error: any) {
       set({

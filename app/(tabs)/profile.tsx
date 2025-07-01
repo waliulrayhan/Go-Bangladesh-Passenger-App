@@ -23,8 +23,17 @@ export default function Profile() {
           text: 'Logout', 
           style: 'destructive',
           onPress: async () => {
-            await logout();
-            router.replace('/');
+            try {
+              await logout();
+              // Use router.dismissAll() and then navigate to ensure clean navigation stack
+              router.dismissAll();
+              router.replace('/');
+            } catch (error) {
+              console.error('Logout error:', error);
+              // Force navigation even if logout fails
+              router.dismissAll();
+              router.replace('/');
+            }
           }
         }
       ]

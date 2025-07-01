@@ -5,6 +5,10 @@ import { useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { outfitFonts } from '../utils/fonts';
 
+// Polyfill for buffer in React Native
+import { Buffer } from 'buffer';
+global.Buffer = Buffer;
+
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 

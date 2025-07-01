@@ -5,10 +5,17 @@ import { STORAGE_KEYS } from './constants';
 export class StorageService {
   async setSecureItem(key: string, value: string): Promise<void> {
     try {
-      await SecureStore.setItemAsync(key, value);
+      // Ensure value is a string
+      const stringValue = typeof value === 'string' ? value : String(value);
+      if (!stringValue) {
+        throw new Error('Cannot store empty or null value');
+      }
+      await SecureStore.setItemAsync(key, stringValue);
     } catch (error) {
       console.error('Error storing secure item:', error);
-      await AsyncStorage.setItem(key, value);
+      // Fallback to AsyncStorage
+      const stringValue = typeof value === 'string' ? value : String(value);
+      await AsyncStorage.setItem(key, stringValue);
     }
   }
 

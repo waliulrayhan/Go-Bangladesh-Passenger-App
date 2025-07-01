@@ -34,19 +34,19 @@ export default function PassengerLogin() {
   };
 
   const validateIdentifier = (input: string) => {
-    // Check if it's a mobile number
-    const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
-    // Check if it's an email
+    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Validate Bangladeshi mobile number format
+    const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
     
-    return phoneRegex.test(input) || emailRegex.test(input);
+    return emailRegex.test(input) || phoneRegex.test(input);
   };
 
   const handleLogin = async () => {
     clearError();
     
     if (!validateIdentifier(identifier)) {
-      Alert.alert('Error', 'Please enter a valid Email or Mobile Number');
+      Alert.alert('Error', 'Please enter a valid email address or Bangladeshi mobile number (e.g., user@example.com or 01712345678)');
       return;
     }
 
@@ -61,6 +61,8 @@ export default function PassengerLogin() {
       router.replace('/(tabs)');
     }
   };
+
+
 
   return (
     <>
@@ -78,7 +80,7 @@ export default function PassengerLogin() {
             
             <Text style={styles.title}>Welcome Back!</Text>
             <Text style={styles.subtitle}>
-              Sign in to your student account
+              Sign in to your account
             </Text>
           </Animated.View>
 
@@ -89,9 +91,9 @@ export default function PassengerLogin() {
                   label="Email or Mobile Number"
                   value={identifier}
                   onChangeText={setIdentifier}
-                  placeholder="Enter email or mobile number"
+                  placeholder="Enter your email or mobile number"
                   keyboardType="email-address"
-                  icon="mail"
+                  icon="person"
                   autoCapitalize="none"
                 />
                 
@@ -105,7 +107,7 @@ export default function PassengerLogin() {
                   rightIcon={showPassword ? "eye-off" : "eye"}
                   onRightIconPress={() => setShowPassword(!showPassword)}
                 />
-                
+
                 <Button
                   title="Sign In"
                   onPress={handleLogin}
