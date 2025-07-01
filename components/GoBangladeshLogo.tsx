@@ -12,8 +12,8 @@ interface GoBangladeshLogoProps {
 export const GoBangladeshLogo: React.FC<GoBangladeshLogoProps> = ({ 
   size = 24, 
   style,
-  color1 = '#f7941d',
-  color2 = '#5995f7'
+  color1 = '#FF8A00', // Updated to brand orange
+  color2 = '#4A90E2'  // Updated to brand blue
 }) => {
   return (
     <View style={[{ width: size, height: size }, style]}>

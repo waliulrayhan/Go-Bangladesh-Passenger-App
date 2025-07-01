@@ -7,45 +7,48 @@ export const USER_TYPES = {
 } as const;
 
 export const COLORS = {
-  // Go Bangladesh brand colors
+  // Go Bangladesh brand colors (updated to match COLOUR.md)
   primary: '#4A90E2', // Go Bangladesh Blue
-  secondary: '#FF8C42', // Go Bangladesh Orange
-  accent: '#2E5BBA', // Darker blue for accents
-  orange_light: '#FFB366', // Lighter orange for highlights
+  secondary: '#FF8A00', // Go Bangladesh Orange (updated)
+  accent: '#2E5C8A', // Darker blue for accents
+  orange_light: '#FFAB4D', // Lighter orange for highlights
   
-  // Status colors
-  success: '#059669',
-  error: '#dc2626',
-  warning: '#d97706',
-  info: '#0891b2',
+  // System colors (updated to match COLOUR.md)
+  success: '#00C851',
+  error: '#FF4444',
+  warning: '#FF8800',
+  info: '#4A90E2',
   purple: '#7c3aed',
   white: '#ffffff',
   black: '#000000',
   
-  // Gray scale
+  // Gray scale (updated to match COLOUR.md)
   gray: {
-    50: '#f9fafb',
-    100: '#f3f4f6',
-    200: '#e5e7eb',
-    300: '#d1d5db',
-    400: '#9ca3af',
-    500: '#6b7280',
-    600: '#4b5563',
-    700: '#374151',
-    800: '#1f2937',
-    900: '#111827'
+    50: '#FAFAFA',
+    100: '#F5F5F5',
+    200: '#E5E5E5',
+    300: '#D1D1D1',
+    400: '#B8B8B8',
+    500: '#8E8E8E',
+    600: '#6B6B6B',
+    700: '#4A4A4A',
+    800: '#2D2D2D',
+    900: '#1A1A1A'
   },
 
-  // Go Bangladesh specific gradients and variations
+  // Go Bangladesh specific gradients and variations (updated)
   brand: {
     blue: '#4A90E2',
-    orange: '#FF8C42',
-    blue_dark: '#2E5BBA',
+    orange: '#FF8A00',
+    blue_dark: '#2E5C8A',
     blue_light: '#7BB3F0',
-    orange_dark: '#E6742A',
-    orange_light: '#FFB366',
-    background: '#F8FAFC',
-    surface: '#FFFFFF'
+    blue_subtle: '#E8F2FF',
+    orange_dark: '#CC6E00',
+    orange_light: '#FFAB4D',
+    orange_subtle: '#FFF4E6',
+    background: '#FAFAFA',
+    surface: '#FFFFFF',
+    section: '#F5F5F5'
   }
 };
 

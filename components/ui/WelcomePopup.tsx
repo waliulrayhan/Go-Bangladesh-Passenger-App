@@ -70,7 +70,7 @@ export const WelcomePopup: React.FC<WelcomePopupProps> = ({
       onRequestClose={onClose}
     >
       <LinearGradient
-        colors={['#4A90E2', '#2E5BBA', '#1E3A8A']}
+        colors={['#4A90E2', '#2E5C8A', '#2E5C8A']}
         style={styles.overlay}
       >
         <TouchableOpacity 
@@ -175,13 +175,13 @@ const styles = StyleSheet.create({
   lemonBody: {
     width: 85,
     height: 85,
-    backgroundColor: '#FCD34D',
+    backgroundColor: '#FF8A00', // Using brand orange
     borderRadius: 42.5,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
     zIndex: 2,
-    shadowColor: '#F59E0B',
+    shadowColor: '#CC6E00', // Using brand orange dark
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -193,10 +193,10 @@ const styles = StyleSheet.create({
     right: 18,
     width: 22,
     height: 14,
-    backgroundColor: '#22C55E',
+    backgroundColor: '#00C851', // Using brand success color
     borderRadius: 12,
     transform: [{ rotate: '45deg' }],
-    shadowColor: '#16A34A',
+    shadowColor: '#007E35', // Using success dark
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -227,11 +227,11 @@ const styles = StyleSheet.create({
     top: 32,
     width: 28,
     height: 7,
-    backgroundColor: '#FCD34D',
+    backgroundColor: '#FF8A00', // Using brand orange
     borderRadius: 3.5,
     transform: [{ rotate: '-25deg' }],
     zIndex: 1,
-    shadowColor: '#F59E0B',
+    shadowColor: '#CC6E00', // Using brand orange dark
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -243,11 +243,11 @@ const styles = StyleSheet.create({
     top: 32,
     width: 28,
     height: 7,
-    backgroundColor: '#FCD34D',
+    backgroundColor: '#FF8A00', // Using brand orange
     borderRadius: 3.5,
     transform: [{ rotate: '25deg' }],
     zIndex: 1,
-    shadowColor: '#F59E0B',
+    shadowColor: '#CC6E00', // Using brand orange dark
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -259,10 +259,10 @@ const styles = StyleSheet.create({
     bottom: 8,
     width: 7,
     height: 22,
-    backgroundColor: '#FCD34D',
+    backgroundColor: '#FF8A00', // Using brand orange
     borderRadius: 3.5,
     zIndex: 1,
-    shadowColor: '#F59E0B',
+    shadowColor: '#CC6E00', // Using brand orange dark
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -274,10 +274,10 @@ const styles = StyleSheet.create({
     bottom: 8,
     width: 7,
     height: 22,
-    backgroundColor: '#FCD34D',
+    backgroundColor: '#FF8A00', // Using brand orange
     borderRadius: 3.5,
     zIndex: 1,
-    shadowColor: '#F59E0B',
+    shadowColor: '#CC6E00', // Using brand orange dark
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -293,11 +293,11 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#D1D1D1', // Using brand gray 300
     marginHorizontal: 5,
   },
   activeDot: {
-    backgroundColor: '#EF4444',
+    backgroundColor: '#4A90E2', // Using brand primary blue
     transform: [{ scale: 1.2 }],
   },
   title: {
