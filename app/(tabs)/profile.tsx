@@ -6,7 +6,7 @@ import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reani
 import { Text } from '../../components/ui/Text';
 import { useAuthStore } from '../../stores/authStore';
 import { useCardStore } from '../../stores/cardStore';
-import { COLORS } from '../../utils/constants';
+import { API_BASE_URL, COLORS } from '../../utils/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -21,15 +21,24 @@ export default function Profile() {
       console.log('📋 [PROFILE] Profile details:', {
         id: user.id,
         name: user.name,
-        mobile: user.mobile,
-        email: user.email,
+        mobile: user.mobileNumber || user.mobile,
+        email: user.emailAddress || user.email,
         address: user.address,
         passengerId: user.passengerId,
         cardNumber: user.cardNumber,
         balance: user.balance,
         gender: user.gender || user.sex,
         dateOfBirth: user.dateOfBirth,
-        profileImage: user.profileImage ? 'Available' : 'None'
+        profileImage: user.imageUrl || user.profileImage ? 'Available' : 'None',
+        organization: typeof user.organization === 'object' ? user.organization?.name : user.organization
+      });
+      
+      // Additional check for any object values
+      Object.keys(user).forEach(key => {
+        const value = (user as any)[key];
+        if (typeof value === 'object' && value !== null && key !== 'organization') {
+          console.warn(`⚠️ [PROFILE] Object found in user.${key}:`, value);
+        }
       });
     } else {
       console.log('⚠️ [PROFILE] No user data available');
@@ -73,124 +82,89 @@ export default function Profile() {
       ]
     );
   };
-  const renderProfileHeader = () => (
-    <Animated.View entering={FadeInUp.duration(600)} style={styles.headerContainer}>
-      <View style={styles.profileCard}>
-        <View style={styles.avatarSection}>
-          {user?.profileImage ? (
-            <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
-          ) : (
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'G'}</Text>
+  const renderProfileHeader = () => {
+    // Only show profile if we have API data (indicated by having balance)
+    if (typeof user?.balance !== 'number') {
+      return (
+        <Animated.View entering={FadeInUp.duration(600)} style={styles.headerContainer}>
+          <View style={styles.profileCard}>
+            <View style={styles.avatarSection}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
+              </View>
             </View>
-          )}
-          <View style={[styles.statusBadge, { backgroundColor: user?.isActive ? COLORS.success : COLORS.error }]}>
-            <View style={styles.statusDot} />
+            <View style={styles.profileInfo}>
+              <Text style={styles.name}>{user?.name || 'Loading...'}</Text>
+              <Text style={styles.userType}>Loading API data...</Text>
+            </View>
           </View>
-        </View>
-        
-        <View style={styles.profileInfo}>
-          <Text style={styles.name}>{user?.name || 'Guest User'}</Text>
-          <Text style={styles.userType}>Student • Passenger</Text>
-          <View style={styles.statusChip}>
-            <Ionicons 
-              name={user?.isActive ? 'checkmark-circle' : 'alert-circle'} 
-              size={16} 
-              color={user?.isActive ? COLORS.success : COLORS.error} 
-            />
-            <Text style={[styles.statusText, { color: user?.isActive ? COLORS.success : COLORS.error }]}>
-              {user?.isActive ? 'Active' : 'Inactive'}
-            </Text>
-          </View>
-        </View>
-      </View>
-    </Animated.View>
-  );
-  const renderBalanceCard = () => (
-    <Animated.View entering={SlideInRight.duration(600).delay(200)} style={styles.section}>
-      <View style={styles.balanceCard}>
-        <View style={styles.balanceHeader}>
-          <View style={styles.balanceIconContainer}>
-            <Ionicons name="wallet" size={20} color={COLORS.primary} />
-          </View>
-          <View style={styles.balanceInfo}>
-            <Text style={styles.balanceLabel}>Current Balance</Text>
-            <Text style={styles.balanceAmount}>
-              ৳{typeof user?.balance === 'number' ? user.balance.toFixed(2) : (card?.balance?.toFixed(2) || '0.00')}
-            </Text>
-            {typeof user?.balance === 'number' && (
-              <Text style={styles.balanceSource}>From API</Text>
+        </Animated.View>
+      );
+    }
+
+    const profileImageUrl = user?.imageUrl ? `${API_BASE_URL}/${user.imageUrl}` : null;
+
+    return (
+      <Animated.View entering={FadeInUp.duration(600)} style={styles.headerContainer}>
+        <View style={styles.profileCard}>
+          <View style={styles.avatarSection}>
+            {profileImageUrl ? (
+              <Image 
+                source={{ uri: profileImageUrl }} 
+                style={styles.profileImage}
+                onError={() => console.log('❌ [PROFILE] Failed to load profile image:', profileImageUrl)}
+                onLoad={() => console.log('✅ [PROFILE] Profile image loaded successfully')}
+              />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
+              </View>
             )}
-          </View>
-        </View>
-        
-        <View style={styles.cardNumberContainer}>
-          <Text style={styles.cardNumberLabel}>Card Number</Text>
-          <Text style={styles.cardNumber}>{user?.cardNumber || card?.cardNumber || '---- ---- ---- ----'}</Text>
-        </View>
-
-        {user?.passengerId && (
-          <View style={styles.cardNumberContainer}>
-            <Text style={styles.cardNumberLabel}>Passenger ID</Text>
-            <Text style={styles.cardNumber}>{user.passengerId}</Text>
-          </View>
-        )}
-
-        {typeof user?.balance === 'number' && (
-          <View style={styles.cardNumberContainer}>
-            <Text style={styles.cardNumberLabel}>API Balance</Text>
-            <Text style={styles.cardNumber}>৳{user.balance.toFixed(2)}</Text>
-          </View>
-        )}
-      </View>
-    </Animated.View>
-  );
-
-  const renderApiDataSummary = () => (
-    <Animated.View entering={SlideInRight.duration(600).delay(250)} style={styles.section}>
-      <Text style={styles.sectionTitle}>🌐 Live API Data</Text>
-      <View style={styles.infoList}>
-        <View style={styles.infoRow}>
-          <View style={[styles.infoIcon, { backgroundColor: COLORS.success + '15' }]}>
-            <Ionicons name="server" size={16} color={COLORS.success} />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Data Source</Text>
-            <Text style={styles.infoValue}>
-              {typeof user?.balance === 'number' ? '✅ Live API Data' : '💾 Cached/JWT Data'}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.infoRow}>
-          <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
-            <Ionicons name="time" size={16} color={COLORS.info} />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Last Updated</Text>
-            <Text style={styles.infoValue}>
-              {new Date().toLocaleTimeString('en-BD', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-              })}
-            </Text>
-          </View>
-        </View>
-
-        {typeof user?.balance === 'number' && (
-          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-            <View style={[styles.infoIcon, { backgroundColor: COLORS.warning + '15' }]}>
-              <Ionicons name="checkmark-circle" size={16} color={COLORS.warning} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>API Status</Text>
-              <Text style={[styles.infoValue, { color: COLORS.success }]}>Connected & Active</Text>
+            <View style={[styles.statusBadge, { backgroundColor: COLORS.success }]}>
+              <View style={styles.statusDot} />
             </View>
           </View>
-        )}
-      </View>
-    </Animated.View>
-  );
+          
+          <View style={styles.profileInfo}>
+            <Text style={styles.name}>{user.name}</Text>
+            <Text style={styles.userType}>{user.gender || user.sex} • Passenger</Text>
+            <View style={styles.statusChip}>
+              <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+              <Text style={[styles.statusText, { color: COLORS.success }]}>API Connected</Text>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+    );
+  };
+  const renderBalanceCard = () => {
+    // Only show balance card if we have API data
+    if (typeof user?.balance !== 'number') {
+      return null;
+    }
+
+    return (
+      <Animated.View entering={SlideInRight.duration(600).delay(200)} style={styles.section}>
+        <View style={styles.balanceCard}>
+          <View style={styles.balanceHeader}>
+            <View style={styles.balanceIconContainer}>
+              <Ionicons name="wallet" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.balanceInfo}>
+              <Text style={styles.balanceLabel}>Current Balance</Text>
+              <Text style={styles.balanceAmount}>৳{user.balance.toFixed(2)}</Text>
+              <Text style={styles.balanceSource}>From API</Text>
+            </View>
+          </View>
+          
+          <View style={styles.cardNumberContainer}>
+            <Text style={styles.cardNumberLabel}>Card Number</Text>
+            <Text style={styles.cardNumber}>{user.cardNumber}</Text>
+          </View>
+        </View>
+      </Animated.View>
+    );
+  };
 
   const renderAccountInfo = () => (
     <Animated.View entering={FadeInUp.duration(600).delay(400)} style={styles.section}>
@@ -228,6 +202,39 @@ export default function Profile() {
             <Text style={styles.infoValue}>{user?.name || 'Not provided'}</Text>
           </View>
         </View>
+
+        {user?.passengerId && (
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.primary + '15' }]}>
+              <Ionicons name="id-card" size={16} color={COLORS.primary} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Student ID</Text>
+              <Text style={styles.infoValue}>{user.passengerId}</Text>
+            </View>
+          </View>
+        )}
+
+        {user?.organization && (
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
+              <Ionicons name="business" size={16} color={COLORS.info} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Organization</Text>
+              <Text style={styles.infoValue}>
+                {(() => {
+                  if (typeof user.organization === 'string') {
+                    return user.organization;
+                  } else if (typeof user.organization === 'object' && user.organization?.name) {
+                    return user.organization.name;
+                  }
+                  return 'Not provided';
+                })()}
+              </Text>
+            </View>
+          </View>
+        )}
         
         <View style={styles.infoRow}>
           <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
@@ -235,7 +242,7 @@ export default function Profile() {
           </View>
           <View style={styles.infoContent}>
             <Text style={styles.infoLabel}>Phone</Text>
-            <Text style={styles.infoValue}>{user?.mobile || 'Not provided'}</Text>
+            <Text style={styles.infoValue}>{user?.mobileNumber || user?.mobile || 'Not provided'}</Text>
           </View>
         </View>
         
@@ -245,13 +252,13 @@ export default function Profile() {
           </View>
           <View style={styles.infoContent}>
             <Text style={styles.infoLabel}>Email</Text>
-            <Text style={styles.infoValue}>{user?.email || 'Not provided'}</Text>
+            <Text style={styles.infoValue}>{user?.emailAddress || user?.email || 'Not provided'}</Text>
           </View>
         </View>
         
         <View style={styles.infoRow}>
           <View style={[styles.infoIcon, { backgroundColor: COLORS.warning + '15' }]}>
-            <Ionicons name={user?.sex === 'male' ? 'male' : 'female'} size={16} color={COLORS.warning} />
+            <Ionicons name={user?.gender === 'female' || user?.sex === 'female' ? 'female' : 'male'} size={16} color={COLORS.warning} />
           </View>
           <View style={styles.infoContent}>
             <Text style={styles.infoLabel}>Gender</Text>
@@ -281,30 +288,6 @@ export default function Profile() {
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Address</Text>
               <Text style={styles.infoValue}>{user.address}</Text>
-            </View>
-          </View>
-        )}
-
-        {user?.passengerId && (
-          <View style={styles.infoRow}>
-            <View style={[styles.infoIcon, { backgroundColor: COLORS.primary + '15' }]}>
-              <Ionicons name="id-card" size={16} color={COLORS.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Passenger ID</Text>
-              <Text style={styles.infoValue}>{user.passengerId}</Text>
-            </View>
-          </View>
-        )}
-
-        {user?.organization && (
-          <View style={styles.infoRow}>
-            <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
-              <Ionicons name="business" size={16} color={COLORS.info} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Organization</Text>
-              <Text style={styles.infoValue}>{user.organization}</Text>
             </View>
           </View>
         )}
@@ -348,105 +331,16 @@ export default function Profile() {
         {!user?.institution && !user?.studentId && !user?.emergencyContact && !user?.address && !user?.dateOfBirth && (
           <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.warning + '15' }]}>
-              <Ionicons name={user?.sex === 'male' ? 'male' : 'female'} size={16} color={COLORS.warning} />
+              <Ionicons name={user?.gender === 'female' || user?.sex === 'female' ? 'female' : 'male'} size={16} color={COLORS.warning} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Gender</Text>
-              <Text style={styles.infoValue}>{user?.sex ? user.sex.charAt(0).toUpperCase() + user.sex.slice(1) : 'Not specified'}</Text>
-            </View>
-          </View>
-        )}
-      </View>
-    </Animated.View>
-  );
-
-  const renderAccountDetails = () => (
-    <Animated.View entering={FadeInUp.duration(600).delay(550)} style={styles.section}>
-      <Text style={styles.sectionTitle}>Account Details</Text>
-      <View style={styles.infoList}>
-        <View style={styles.infoRow}>
-          <View style={[styles.infoIcon, { backgroundColor: COLORS.success + '15' }]}>
-            <Ionicons name="calendar-outline" size={16} color={COLORS.success} />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Member Since</Text>
-            <Text style={styles.infoValue}>
-              {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-BD', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              }) : 'Not available'}
-            </Text>
-          </View>
-        </View>
-
-        {user?.updatedAt && (
-          <View style={styles.infoRow}>
-            <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
-              <Ionicons name="sync-outline" size={16} color={COLORS.info} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Last Updated</Text>
               <Text style={styles.infoValue}>
-                {new Date(user.updatedAt).toLocaleDateString('en-BD', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                })}
+                {user?.gender || (user?.sex ? user.sex.charAt(0).toUpperCase() + user.sex.slice(1) : 'Not specified')}
               </Text>
             </View>
           </View>
         )}
-
-        <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-          <View style={[styles.infoIcon, { backgroundColor: user?.isActive ? COLORS.success + '15' : COLORS.error + '15' }]}>
-            <Ionicons 
-              name={user?.isActive ? "checkmark-circle-outline" : "close-circle-outline"} 
-              size={16} 
-              color={user?.isActive ? COLORS.success : COLORS.error} 
-            />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Account Status</Text>
-            <Text style={[
-              styles.infoValue, 
-              { color: user?.isActive ? COLORS.success : COLORS.error }
-            ]}>
-              {user?.isActive ? 'Active' : 'Inactive'}
-            </Text>
-          </View>
-        </View>
-      </View>
-    </Animated.View>
-  );
-
-  const renderTravelStats = () => (
-    <Animated.View entering={FadeInUp.duration(600).delay(500)} style={styles.section}>
-      <Text style={styles.sectionTitle}>Travel Statistics</Text>
-      <View style={styles.statsGrid}>
-        <View style={styles.statItem}>
-          <View style={[styles.statIcon, { backgroundColor: COLORS.primary + '15' }]}>
-            <Ionicons name="bus" size={18} color={COLORS.primary} />
-          </View>
-          <Text style={styles.statValue}>24</Text>
-          <Text style={styles.statLabel}>Total Trips</Text>
-        </View>
-        
-        <View style={styles.statItem}>
-          <View style={[styles.statIcon, { backgroundColor: COLORS.success + '15' }]}>
-            <Ionicons name="card" size={18} color={COLORS.success} />
-          </View>
-          <Text style={styles.statValue}>৳450</Text>
-          <Text style={styles.statLabel}>Total Spent</Text>
-        </View>
-        
-        <View style={styles.statItem}>
-          <View style={[styles.statIcon, { backgroundColor: COLORS.info + '15' }]}>
-            <Ionicons name="time" size={18} color={COLORS.info} />
-          </View>
-          <Text style={styles.statValue}>12h</Text>
-          <Text style={styles.statLabel}>Travel Time</Text>
-        </View>
       </View>
     </Animated.View>
   );
@@ -521,10 +415,7 @@ export default function Profile() {
       >
         {renderProfileHeader()}
         {renderBalanceCard()}
-        {renderApiDataSummary()}
         {renderAccountInfo()}
-        {renderAccountDetails()}
-        {renderTravelStats()}
         {renderActions()}
       </ScrollView>
     </SafeAreaView>

@@ -29,7 +29,19 @@ export interface UserResponse {
   imageUrl?: string;
   passengerId: string;
   organizationId?: string;
-  organization?: string;
+  organization?: {
+    name: string;
+    code: string;
+    focalPerson: string;
+    email: string;
+    mobileNumber: string;
+    id: string;
+    createTime: string;
+    lastModifiedTime: string;
+    createdBy: string;
+    lastModifiedBy: string;
+    isDeleted: boolean;
+  };
   cardNumber: string;
   balance: number;
 }
@@ -66,19 +78,39 @@ class ApiService {
       async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
+        if (error.response?.status === 401) {
+          console.log('🚫 [API] 401 Unauthorized response received');
           
-          try {
-            const refreshToken = await storageService.getSecureItem(STORAGE_KEYS.REFRESH_TOKEN);
-            if (refreshToken) {
-              const response = await this.refreshToken(refreshToken);
-              await storageService.setSecureItem(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
-              return this.api(originalRequest);
+          if (!originalRequest._retry) {
+            originalRequest._retry = true;
+            
+            try {
+              const refreshToken = await storageService.getSecureItem(STORAGE_KEYS.REFRESH_TOKEN);
+              if (refreshToken) {
+                console.log('🔄 [API] Attempting token refresh...');
+                const response = await this.refreshToken(refreshToken);
+                await storageService.setSecureItem(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
+                console.log('✅ [API] Token refreshed successfully');
+                return this.api(originalRequest);
+              }
+            } catch (refreshError) {
+              console.log('❌ [API] Token refresh failed');
             }
-          } catch (refreshError) {
-            await storageService.clearAuthData();
           }
+          
+          // If we reach here, token refresh failed or wasn't possible
+          console.log('🔓 [API] Clearing auth data and triggering logout...');
+          
+          // Trigger logout by calling the auth store method
+          const { useAuthStore } = await import('../stores/authStore');
+          const authStore = useAuthStore.getState();
+          
+          console.log('🔓 [API] Triggering automatic logout due to 401...');
+          await authStore.handleUnauthorized();
+          
+          // Redirect to login screen
+          const { router } = await import('expo-router');
+          router.replace('/passenger-login');
         }
 
         return Promise.reject(error);
@@ -182,7 +214,10 @@ class ApiService {
         cardNumber: userData.cardNumber,
         balance: userData.balance,
         hasImageUrl: !!userData.imageUrl,
-        imageUrl: userData.imageUrl?.substring(0, 50) + '...' || 'None'
+        imageUrl: userData.imageUrl?.substring(0, 50) + '...' || 'None',
+        organizationId: userData.organizationId,
+        organizationName: userData.organization?.name || 'None',
+        userType: userData.userType
       });
       
       return userData;

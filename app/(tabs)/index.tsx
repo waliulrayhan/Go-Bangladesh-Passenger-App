@@ -8,7 +8,7 @@ import { Text } from '../../components/ui/Text';
 import { WelcomePopup } from '../../components/ui/WelcomePopup';
 import { useAuthStore } from '../../stores/authStore';
 import { useCardStore } from '../../stores/cardStore';
-import { COLORS } from '../../utils/constants';
+import { API_BASE_URL, COLORS } from '../../utils/constants';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -83,7 +83,9 @@ export default function Dashboard() {
             </Text>
           </View>
           <View style={styles.avatar}>
-            {user?.profileImage ? (
+            {user?.imageUrl ? (
+              <Image source={{ uri: `${API_BASE_URL}/${user.imageUrl}` }} style={styles.avatarImage} />
+            ) : user?.profileImage ? (
               <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
             ) : (
               <Ionicons name="person" size={18} color={COLORS.primary} />

@@ -81,6 +81,7 @@ interface AuthState {
   }) => Promise<boolean>;
   updateUserProfile: (userData: User) => Promise<boolean>;
   refreshUserData: () => Promise<boolean>;
+  handleUnauthorized: () => Promise<void>;
   hideWelcomePopup: () => void;
 }
 
@@ -137,10 +138,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               id: userResponse.id,
               name: userResponse.name,
               email: userResponse.emailAddress,
+              emailAddress: userResponse.emailAddress, // API field
               mobile: userResponse.mobileNumber,
+              mobileNumber: userResponse.mobileNumber, // API field
               sex: userResponse.gender?.toLowerCase() === 'female' ? 'female' : 'male',
               cardNumber: userResponse.cardNumber,
               profileImage: userResponse.imageUrl,
+              imageUrl: userResponse.imageUrl, // API field
               userType: 'passenger' as const,
               isActive: true, // Assuming active if we got the data
               createdAt: new Date().toISOString(), // API doesn't provide this
@@ -148,7 +152,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               address: userResponse.address,
               passengerId: userResponse.passengerId,
               organizationId: userResponse.organizationId,
-              organization: userResponse.organization,
+              organization: typeof userResponse.organization === 'object' ? userResponse.organization?.name : userResponse.organization,
               balance: userResponse.balance,
               gender: userResponse.gender
             };
@@ -297,10 +301,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               id: userResponse.id,
               name: userResponse.name,
               email: userResponse.emailAddress,
+              emailAddress: userResponse.emailAddress, // API field
               mobile: userResponse.mobileNumber,
+              mobileNumber: userResponse.mobileNumber, // API field
               sex: userResponse.gender?.toLowerCase() === 'female' ? 'female' : 'male',
               cardNumber: userResponse.cardNumber,
               profileImage: userResponse.imageUrl,
+              imageUrl: userResponse.imageUrl, // API field
               userType: 'passenger' as const,
               isActive: true, // Assuming active if we got the data
               createdAt: new Date().toISOString(), // API doesn't provide this
@@ -308,7 +315,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               address: userResponse.address,
               passengerId: userResponse.passengerId,
               organizationId: userResponse.organizationId,
-              organization: userResponse.organization,
+              organization: typeof userResponse.organization === 'object' ? userResponse.organization?.name : userResponse.organization,
               balance: userResponse.balance,
               gender: userResponse.gender
             };
@@ -581,7 +588,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               address: userResponse.address,
               passengerId: userResponse.passengerId,
               organizationId: userResponse.organizationId,
-              organization: userResponse.organization,
+              organization: typeof userResponse.organization === 'object' ? userResponse.organization?.name : userResponse.organization,
               balance: userResponse.balance,
               gender: userResponse.gender
             };
@@ -724,7 +731,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         address: userResponse.address,
         passengerId: userResponse.passengerId,
         organizationId: userResponse.organizationId,
-        organization: userResponse.organization,
+        organization: typeof userResponse.organization === 'object' ? userResponse.organization?.name : userResponse.organization,
         balance: userResponse.balance,
         gender: userResponse.gender
       };
@@ -749,6 +756,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       
       return false;
+    }
+  },
+
+  handleUnauthorized: async () => {
+    console.log('🚫 [AUTH] Handling unauthorized access - clearing session...');
+    
+    try {
+      // Clear all auth data
+      await storageService.clearAuthData();
+      
+      // Reset auth state
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: 'Session expired. Please login again.',
+        showWelcomePopup: false
+      });
+      
+      console.log('✅ [AUTH] Session cleared successfully');
+    } catch (error) {
+      console.error('❌ [AUTH] Error clearing session:', error);
+      
+      // Force reset state even if storage clearing fails
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: 'Session expired. Please login again.',
+        showWelcomePopup: false
+      });
     }
   },
 

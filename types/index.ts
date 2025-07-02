@@ -2,13 +2,17 @@ export interface User {
   id: number | string;
   name: string;
   email?: string;
+  emailAddress?: string; // API field
   mobile: string;
+  mobileNumber?: string; // API field
   sex: 'male' | 'female';
+  gender?: string; // API field
   userType: 'passenger';
   cardNumber?: string;
   isActive: boolean;
   createdAt: string;
   profileImage?: string;
+  imageUrl?: string; // API field
   updatedAt?: string;
   dateOfBirth?: string;
   address?: string;
@@ -18,9 +22,20 @@ export interface User {
   // New fields from API
   passengerId?: string;
   organizationId?: string;
-  organization?: string;
+  organization?: string | {
+    name: string;
+    code: string;
+    focalPerson: string;
+    email: string;
+    mobileNumber: string;
+    id: string;
+    createTime: string;
+    lastModifiedTime: string;
+    createdBy: string;
+    lastModifiedBy: string;
+    isDeleted: boolean;
+  };
   balance?: number;
-  gender?: string;
 }
 
 export interface Card {
