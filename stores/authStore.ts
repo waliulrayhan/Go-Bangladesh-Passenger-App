@@ -33,16 +33,21 @@ const storeAuthTokens = async (authResponse: any): Promise<void> => {
 };
 
 // Helper function to extract user info from JWT token
-const extractUserFromJWT = (token: string, mobile: string): User | null => {
+const extractUserFromJWT = (token: string, identifier: string): User | null => {
   const { decodeJWT } = require('../utils/jwt');
   const payload = decodeJWT(token);
   
   if (!payload) return null;
   
+  // Determine if identifier is mobile or email
+  const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
+  const isMobile = phoneRegex.test(identifier);
+  
   return {
     id: payload.UserId || Date.now(),
     name: payload.Name || payload.unique_name || 'User',
-    mobile: mobile,
+    mobile: isMobile ? identifier : '', // Use identifier if it's mobile
+    email: !isMobile ? identifier : undefined, // Use identifier if it's email
     sex: 'male' as const, // Default since JWT doesn't contain this
     userType: 'passenger' as const,
     isActive: true,
@@ -75,6 +80,7 @@ interface AuthState {
     cardNumber: string;
   }) => Promise<boolean>;
   updateUserProfile: (userData: User) => Promise<boolean>;
+  refreshUserData: () => Promise<boolean>;
   hideWelcomePopup: () => void;
 }
 
@@ -126,67 +132,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           // Try to get user details by ID
           const userResponse = await apiService.getUserById(userId);
           
-          const user: User = {
-            id: userResponse.id,
-            name: userResponse.name,
-            email: userResponse.email,
-            mobile: userResponse.mobile,
-            sex: userResponse.sex,
-            cardNumber: userResponse.cardNumber,
-            profileImage: userResponse.profileImage,
-            userType: 'passenger' as const,
-            isActive: userResponse.isActive,
-            createdAt: userResponse.createdAt
-          };
-
-          // Store auth data
-          await storageService.setItem(STORAGE_KEYS.USER_DATA, user);
-          await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
-
-          set({
-            user,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            showWelcomePopup: true
-          });
-
-          return true;
-        } catch (userError: any) {
-          // Try to extract user info from JWT token
-          const jwtUser = extractUserFromJWT(authResponse.token, mobile);
-          
-          if (jwtUser) {
-            await storageService.setItem(STORAGE_KEYS.USER_DATA, jwtUser);
-            await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
-
-            set({
-              user: jwtUser,
-              isAuthenticated: true,
-              isLoading: false,
-              error: null,
-              showWelcomePopup: true
-            });
-
-            return true;
-          } else {
-            // Fallback to basic user object
-            const basicUser: User = {
-              id: userId,
-              name: 'User',
-              mobile: mobile,
-              sex: 'male',
-              profileImage: undefined,
+          if (userResponse) {
+            const user: User = {
+              id: userResponse.id,
+              name: userResponse.name,
+              email: userResponse.emailAddress,
+              mobile: userResponse.mobileNumber,
+              sex: userResponse.gender?.toLowerCase() === 'female' ? 'female' : 'male',
+              cardNumber: userResponse.cardNumber,
+              profileImage: userResponse.imageUrl,
               userType: 'passenger' as const,
-              isActive: true,
-              createdAt: new Date().toISOString()
+              isActive: true, // Assuming active if we got the data
+              createdAt: new Date().toISOString(), // API doesn't provide this
+              dateOfBirth: userResponse.dateOfBirth,
+              address: userResponse.address,
+              passengerId: userResponse.passengerId,
+              organizationId: userResponse.organizationId,
+              organization: userResponse.organization,
+              balance: userResponse.balance,
+              gender: userResponse.gender
             };
 
-            await storageService.setItem(STORAGE_KEYS.USER_DATA, basicUser);
+            // Store auth data
+            await storageService.setItem(STORAGE_KEYS.USER_DATA, user);
             await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
 
             set({
-              user: basicUser,
+              user,
               isAuthenticated: true,
               isLoading: false,
               error: null,
@@ -195,6 +167,51 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             return true;
           }
+        } catch (userError: any) {
+          // API call failed, continue to JWT fallback
+        }
+        
+        // Try to extract user info from JWT token
+        const jwtUser = extractUserFromJWT(authResponse.token, mobile);
+        
+        if (jwtUser) {
+          await storageService.setItem(STORAGE_KEYS.USER_DATA, jwtUser);
+          await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+
+          set({
+            user: jwtUser,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+            showWelcomePopup: true
+          });
+
+          return true;
+        } else {
+          // Fallback to basic user object
+          const basicUser: User = {
+            id: userId,
+            name: 'User',
+            mobile: mobile,
+            sex: 'male',
+            profileImage: undefined,
+            userType: 'passenger' as const,
+            isActive: true,
+            createdAt: new Date().toISOString()
+          };
+
+          await storageService.setItem(STORAGE_KEYS.USER_DATA, basicUser);
+          await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+
+          set({
+            user: basicUser,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+            showWelcomePopup: true
+          });
+
+          return true;
         }
       } else {
         // Try to extract user info from JWT token
@@ -251,6 +268,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   loginWithPassword: async (identifier: string, password: string) => {
+    console.log('🚀 [LOGIN] Starting login with password...');
+    console.log('📱 [LOGIN] Identifier:', identifier);
+    
     set({ isLoading: true, error: null });
     
     try {
@@ -261,72 +281,99 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       // Extract user ID from the JWT token
       const userId = extractUserIdFromToken(authResponse.token);
+      console.log('🆔 [LOGIN] Extracted User ID from JWT:', userId);
       
+      // PRIORITY 1: Try to get user details from API first (this has all the rich data)
       if (userId) {
         try {
-          // Try to get user details by ID
+          console.log('🔄 [LOGIN] Attempting to fetch user details from API...');
           const userResponse = await apiService.getUserById(userId);
           
-          const user: User = {
-            id: userResponse.id,
-            name: userResponse.name,
-            email: userResponse.email,
-            mobile: userResponse.mobile,
-            sex: userResponse.sex,
-            cardNumber: userResponse.cardNumber,
-            profileImage: userResponse.profileImage,
-            userType: 'passenger' as const,
-            isActive: userResponse.isActive,
-            createdAt: userResponse.createdAt
-          };
+          if (userResponse) {
+            console.log('✅ [LOGIN] API user data retrieved successfully!');
+            console.log('📋 [LOGIN] Creating user object from API data...');
+            
+            const user: User = {
+              id: userResponse.id,
+              name: userResponse.name,
+              email: userResponse.emailAddress,
+              mobile: userResponse.mobileNumber,
+              sex: userResponse.gender?.toLowerCase() === 'female' ? 'female' : 'male',
+              cardNumber: userResponse.cardNumber,
+              profileImage: userResponse.imageUrl,
+              userType: 'passenger' as const,
+              isActive: true, // Assuming active if we got the data
+              createdAt: new Date().toISOString(), // API doesn't provide this
+              dateOfBirth: userResponse.dateOfBirth,
+              address: userResponse.address,
+              passengerId: userResponse.passengerId,
+              organizationId: userResponse.organizationId,
+              organization: userResponse.organization,
+              balance: userResponse.balance,
+              gender: userResponse.gender
+            };
 
-          // Store auth data
-          await storageService.setItem(STORAGE_KEYS.USER_DATA, user);
-          await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+            console.log('👤 [LOGIN] Final user object created from API:', {
+              id: user.id,
+              name: user.name,
+              mobile: user.mobile,
+              email: user.email,
+              address: user.address,
+              passengerId: user.passengerId,
+              cardNumber: user.cardNumber,
+              balance: user.balance,
+              gender: user.gender
+            });
 
-          set({
-            user,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            showWelcomePopup: true
-          });
+            // Store auth data
+            await storageService.setItem(STORAGE_KEYS.USER_DATA, user);
+            await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
 
-          return true;
+            set({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+              showWelcomePopup: true
+            });
+
+            console.log('🎉 [LOGIN] Login successful with API data!');
+            return true;
+          } else {
+            console.warn('⚠️ [LOGIN] API returned null, falling back to JWT data...');
+          }
         } catch (userError: any) {
-          console.error('Error fetching user details:', userError);
-          // If we can't get user details, create a basic user object
-          // For mobile, use identifier if it's a phone number, otherwise leave empty
-          const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
-          const mobileNumber = phoneRegex.test(identifier) ? identifier : '';
-          
-          const basicUser: User = {
-            id: userId,
-            name: 'User',
-            mobile: mobileNumber,
-            sex: 'male',
-            profileImage: undefined,
-            userType: 'passenger' as const,
-            isActive: true,
-            createdAt: new Date().toISOString()
-          };
-
-          await storageService.setItem(STORAGE_KEYS.USER_DATA, basicUser);
-          await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
-
-          set({
-            user: basicUser,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            showWelcomePopup: true
-          });
-
-          return true;
+          console.warn('⚠️ [LOGIN] API call failed, falling back to JWT data:', userError.message);
         }
+      }
+      
+      // PRIORITY 2: Fallback to JWT extraction if API fails
+      const jwtUser = extractUserFromJWT(authResponse.token, identifier);
+      
+      if (jwtUser) {
+        console.log('✅ [LOGIN] Using JWT user data as fallback');
+        console.log('👤 [LOGIN] JWT User data:', {
+          id: jwtUser.id,
+          name: jwtUser.name,
+          mobile: jwtUser.mobile,
+          email: jwtUser.email
+        });
+        
+        // Store auth data
+        await storageService.setItem(STORAGE_KEYS.USER_DATA, jwtUser);
+        await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+
+        set({
+          user: jwtUser,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+          showWelcomePopup: true
+        });
+
+        return true;
       } else {
         // If we can't extract user ID from token, create a basic user with timestamp ID
-        // For mobile, use identifier if it's a phone number, otherwise leave empty
         const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
         const mobileNumber = phoneRegex.test(identifier) ? identifier : '';
         
@@ -334,6 +381,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           id: Date.now(),
           name: 'User',
           mobile: mobileNumber,
+          email: !phoneRegex.test(identifier) ? identifier : undefined,
           sex: 'male',
           profileImage: undefined,
           userType: 'passenger' as const,
@@ -517,63 +565,74 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           // Try to get existing user details
           const userResponse = await apiService.getUserById(userId);
           
-          const user: User = {
-            id: userResponse.id,
-            name: userResponse.name || userData.name, // Use provided name if API doesn't have one
-            email: userResponse.email || userData.email,
-            mobile: userResponse.mobile,
-            sex: userResponse.sex || userData.sex,
-            cardNumber: userResponse.cardNumber || userData.cardNumber,
-            profileImage: userResponse.profileImage,
-            userType: 'passenger' as const,
-            isActive: userResponse.isActive,
-            createdAt: userResponse.createdAt
-          };
+          if (userResponse) {
+            const user: User = {
+              id: userResponse.id,
+              name: userResponse.name || userData.name, // Use provided name if API doesn't have one
+              email: userResponse.emailAddress || userData.email,
+              mobile: userResponse.mobileNumber,
+              sex: userResponse.gender?.toLowerCase() === 'female' ? 'female' : (userData.sex || 'male'),
+              cardNumber: userResponse.cardNumber || userData.cardNumber,
+              profileImage: userResponse.imageUrl,
+              userType: 'passenger' as const,
+              isActive: true, // Assuming active if we got the data
+              createdAt: new Date().toISOString(), // API doesn't provide this
+              dateOfBirth: userResponse.dateOfBirth,
+              address: userResponse.address,
+              passengerId: userResponse.passengerId,
+              organizationId: userResponse.organizationId,
+              organization: userResponse.organization,
+              balance: userResponse.balance,
+              gender: userResponse.gender
+            };
 
-          // Store auth data
-          await storeAuthTokens(authResponse);
-          await storageService.setItem(STORAGE_KEYS.USER_DATA, user);
-          await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+            // Store auth data
+            await storeAuthTokens(authResponse);
+            await storageService.setItem(STORAGE_KEYS.USER_DATA, user);
+            await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
 
-          set({
-            user,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            showWelcomePopup: true
-          });
+            set({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+              showWelcomePopup: true
+            });
 
-          return true;
+            return true;
+          }
         } catch (userError: any) {
-          // If user doesn't exist in the system, create a basic profile with provided data
-          const newUser: User = {
-            id: userId,
-            name: userData.name,
-            email: userData.email,
-            mobile: userData.mobile,
-            sex: userData.sex,
-            cardNumber: userData.cardNumber,
-            profileImage: undefined,
-            userType: 'passenger' as const,
-            isActive: true,
-            createdAt: new Date().toISOString()
-          };
-
-          // Store auth data
-          await storeAuthTokens(authResponse);
-          await storageService.setItem(STORAGE_KEYS.USER_DATA, newUser);
-          await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
-
-          set({
-            user: newUser,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            showWelcomePopup: true
-          });
-
-          return true;
+          // API call failed, continue to create basic profile
         }
+        
+        // If user doesn't exist in the system or API is not available, create a basic profile with provided data
+        const newUser: User = {
+          id: userId,
+          name: userData.name,
+          email: userData.email,
+          mobile: userData.mobile,
+          sex: userData.sex,
+          cardNumber: userData.cardNumber,
+          profileImage: undefined,
+          userType: 'passenger' as const,
+          isActive: true,
+          createdAt: new Date().toISOString()
+        };
+
+        // Store auth data
+        await storeAuthTokens(authResponse);
+        await storageService.setItem(STORAGE_KEYS.USER_DATA, newUser);
+        await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+
+        set({
+          user: newUser,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+          showWelcomePopup: true
+        });
+
+        return true;
       } else {
         throw new Error('Unable to extract user information from authentication token');
       }
@@ -605,6 +664,90 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         error: formatApiError(error, 'Profile update failed')
       });
+      return false;
+    }
+  },
+
+  refreshUserData: async () => {
+    const { user } = get();
+    if (!user?.id) {
+      console.warn('⚠️ [REFRESH] No user ID available for refresh');
+      return false;
+    }
+
+    console.log('🔄 [REFRESH] Starting user data refresh...');
+    console.log('🆔 [REFRESH] User ID:', user.id);
+    
+    set({ isLoading: true, error: null });
+    
+    try {
+      // Try to fetch fresh user data from API
+      const userResponse = await apiService.getUserById(user.id.toString());
+      
+      if (!userResponse) {
+        // API returned null (endpoint not available or failed)
+        console.warn('⚠️ [REFRESH] User details API is not available - using cached data');
+        
+        set({
+          isLoading: false,
+          error: null // Don't show error to user, just use cached data silently
+        });
+        
+        return false;
+      }
+      
+      console.log('✅ [REFRESH] Fresh user data retrieved from API!');
+      console.log('📋 [REFRESH] Updated user data:', {
+        id: userResponse.id,
+        name: userResponse.name,
+        mobile: userResponse.mobileNumber,
+        email: userResponse.emailAddress,
+        address: userResponse.address,
+        passengerId: userResponse.passengerId,
+        cardNumber: userResponse.cardNumber,
+        balance: userResponse.balance,
+        gender: userResponse.gender
+      });
+      
+      const updatedUser: User = {
+        id: userResponse.id,
+        name: userResponse.name,
+        email: userResponse.emailAddress,
+        mobile: userResponse.mobileNumber,
+        sex: userResponse.gender?.toLowerCase() === 'female' ? 'female' : 'male',
+        cardNumber: userResponse.cardNumber,
+        profileImage: userResponse.imageUrl,
+        userType: 'passenger' as const,
+        isActive: true, // Assuming active if we got the data
+        createdAt: user.createdAt, // Keep original creation date
+        dateOfBirth: userResponse.dateOfBirth,
+        address: userResponse.address,
+        passengerId: userResponse.passengerId,
+        organizationId: userResponse.organizationId,
+        organization: userResponse.organization,
+        balance: userResponse.balance,
+        gender: userResponse.gender
+      };
+
+      // Update storage and state
+      await storageService.setItem(STORAGE_KEYS.USER_DATA, updatedUser);
+      
+      set({
+        user: updatedUser,
+        isLoading: false,
+        error: null
+      });
+
+      console.log('🎉 [REFRESH] User data refresh completed successfully!');
+      return true;
+    } catch (error: any) {
+      console.warn('💥 [REFRESH] Refresh failed - unexpected error:', error.message);
+      
+      set({
+        isLoading: false,
+        error: null // Don't show error to user, just use cached data silently
+      });
+      
       return false;
     }
   },

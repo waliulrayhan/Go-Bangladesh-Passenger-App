@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import React from 'react';
 import { Alert, Dimensions, Image, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
 import { Text } from '../../components/ui/Text';
@@ -10,8 +11,41 @@ import { COLORS } from '../../utils/constants';
 const { width } = Dimensions.get('window');
 
 export default function Profile() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, refreshUserData, isLoading } = useAuthStore();
   const { card } = useCardStore();
+
+  // Debug logging for profile data
+  React.useEffect(() => {
+    if (user) {
+      console.log('👤 [PROFILE] User data loaded for display:');
+      console.log('📋 [PROFILE] Profile details:', {
+        id: user.id,
+        name: user.name,
+        mobile: user.mobile,
+        email: user.email,
+        address: user.address,
+        passengerId: user.passengerId,
+        cardNumber: user.cardNumber,
+        balance: user.balance,
+        gender: user.gender || user.sex,
+        dateOfBirth: user.dateOfBirth,
+        profileImage: user.profileImage ? 'Available' : 'None'
+      });
+    } else {
+      console.log('⚠️ [PROFILE] No user data available');
+    }
+  }, [user]);
+
+  const handleRefresh = async () => {
+    console.log('🔄 [PROFILE] User initiated refresh...');
+    const success = await refreshUserData();
+    if (!success) {
+      // Don't show error alert since API may not be implemented yet
+      console.log('⚠️ [PROFILE] Refresh not available - using cached data');
+    } else {
+      console.log('✅ [PROFILE] Refresh completed successfully');
+    }
+  };
 
   const handleLogout = async () => {
     Alert.alert(
@@ -81,25 +115,108 @@ export default function Profile() {
           </View>
           <View style={styles.balanceInfo}>
             <Text style={styles.balanceLabel}>Current Balance</Text>
-            <Text style={styles.balanceAmount}>৳{card?.balance?.toFixed(2) || '0.00'}</Text>
+            <Text style={styles.balanceAmount}>
+              ৳{typeof user?.balance === 'number' ? user.balance.toFixed(2) : (card?.balance?.toFixed(2) || '0.00')}
+            </Text>
+            {typeof user?.balance === 'number' && (
+              <Text style={styles.balanceSource}>From API</Text>
+            )}
           </View>
         </View>
         
         <View style={styles.cardNumberContainer}>
           <Text style={styles.cardNumberLabel}>Card Number</Text>
-          <Text style={styles.cardNumber}>{card?.cardNumber || '---- ---- ---- ----'}</Text>
+          <Text style={styles.cardNumber}>{user?.cardNumber || card?.cardNumber || '---- ---- ---- ----'}</Text>
         </View>
+
+        {user?.passengerId && (
+          <View style={styles.cardNumberContainer}>
+            <Text style={styles.cardNumberLabel}>Passenger ID</Text>
+            <Text style={styles.cardNumber}>{user.passengerId}</Text>
+          </View>
+        )}
+
+        {typeof user?.balance === 'number' && (
+          <View style={styles.cardNumberContainer}>
+            <Text style={styles.cardNumberLabel}>API Balance</Text>
+            <Text style={styles.cardNumber}>৳{user.balance.toFixed(2)}</Text>
+          </View>
+        )}
       </View>
     </Animated.View>
   );
+
+  const renderApiDataSummary = () => (
+    <Animated.View entering={SlideInRight.duration(600).delay(250)} style={styles.section}>
+      <Text style={styles.sectionTitle}>🌐 Live API Data</Text>
+      <View style={styles.infoList}>
+        <View style={styles.infoRow}>
+          <View style={[styles.infoIcon, { backgroundColor: COLORS.success + '15' }]}>
+            <Ionicons name="server" size={16} color={COLORS.success} />
+          </View>
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Data Source</Text>
+            <Text style={styles.infoValue}>
+              {typeof user?.balance === 'number' ? '✅ Live API Data' : '💾 Cached/JWT Data'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.infoRow}>
+          <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
+            <Ionicons name="time" size={16} color={COLORS.info} />
+          </View>
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Last Updated</Text>
+            <Text style={styles.infoValue}>
+              {new Date().toLocaleTimeString('en-BD', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
+            </Text>
+          </View>
+        </View>
+
+        {typeof user?.balance === 'number' && (
+          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.warning + '15' }]}>
+              <Ionicons name="checkmark-circle" size={16} color={COLORS.warning} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>API Status</Text>
+              <Text style={[styles.infoValue, { color: COLORS.success }]}>Connected & Active</Text>
+            </View>
+          </View>
+        )}
+      </View>
+    </Animated.View>
+  );
+
   const renderAccountInfo = () => (
     <Animated.View entering={FadeInUp.duration(600).delay(400)} style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Account Information</Text>
-        <TouchableOpacity style={styles.editButton}>
-          <Ionicons name="create-outline" size={16} color={COLORS.primary} />
-          <Text style={styles.editText}>Edit</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={[styles.editButton, { marginRight: 8 }]} 
+            onPress={handleRefresh}
+            disabled={isLoading}
+          >
+            <Ionicons 
+              name={isLoading ? "sync" : "refresh"} 
+              size={16} 
+              color={COLORS.info}
+              style={isLoading ? { transform: [{ rotate: '180deg' }] } : undefined}
+            />
+            <Text style={[styles.editText, { color: COLORS.info }]}>
+              {isLoading ? 'Refreshing...' : 'Refresh'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.editButton}>
+            <Ionicons name="create-outline" size={16} color={COLORS.primary} />
+            <Text style={styles.editText}>Edit</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       <View style={styles.infoList}>
         <View style={styles.infoRow}>
@@ -132,13 +249,171 @@ export default function Profile() {
           </View>
         </View>
         
-        <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
+        <View style={styles.infoRow}>
           <View style={[styles.infoIcon, { backgroundColor: COLORS.warning + '15' }]}>
             <Ionicons name={user?.sex === 'male' ? 'male' : 'female'} size={16} color={COLORS.warning} />
           </View>
           <View style={styles.infoContent}>
             <Text style={styles.infoLabel}>Gender</Text>
-            <Text style={styles.infoValue}>{user?.sex ? user.sex.charAt(0).toUpperCase() + user.sex.slice(1) : 'Not specified'}</Text>
+            <Text style={styles.infoValue}>
+              {user?.gender || (user?.sex ? user.sex.charAt(0).toUpperCase() + user.sex.slice(1) : 'Not specified')}
+            </Text>
+          </View>
+        </View>
+
+        {user?.dateOfBirth && (
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.purple + '15' }]}>
+              <Ionicons name="calendar" size={16} color={COLORS.purple} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Date of Birth</Text>
+              <Text style={styles.infoValue}>{new Date(user.dateOfBirth).toLocaleDateString()}</Text>
+            </View>
+          </View>
+        )}
+
+        {user?.address && (
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.secondary + '15' }]}>
+              <Ionicons name="location" size={16} color={COLORS.secondary} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Address</Text>
+              <Text style={styles.infoValue}>{user.address}</Text>
+            </View>
+          </View>
+        )}
+
+        {user?.passengerId && (
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.primary + '15' }]}>
+              <Ionicons name="id-card" size={16} color={COLORS.primary} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Passenger ID</Text>
+              <Text style={styles.infoValue}>{user.passengerId}</Text>
+            </View>
+          </View>
+        )}
+
+        {user?.organization && (
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
+              <Ionicons name="business" size={16} color={COLORS.info} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Organization</Text>
+              <Text style={styles.infoValue}>{user.organization}</Text>
+            </View>
+          </View>
+        )}
+
+        {user?.emergencyContact && (
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.error + '15' }]}>
+              <Ionicons name="medical" size={16} color={COLORS.error} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Emergency Contact</Text>
+              <Text style={styles.infoValue}>{user.emergencyContact}</Text>
+            </View>
+          </View>
+        )}
+
+        {user?.studentId && (
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
+              <Ionicons name="school" size={16} color={COLORS.info} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Student ID</Text>
+              <Text style={styles.infoValue}>{user.studentId}</Text>
+            </View>
+          </View>
+        )}
+
+        {user?.institution && (
+          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.primary + '15' }]}>
+              <Ionicons name="library" size={16} color={COLORS.primary} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Institution</Text>
+              <Text style={styles.infoValue}>{user.institution}</Text>
+            </View>
+          </View>
+        )}
+
+        {!user?.institution && !user?.studentId && !user?.emergencyContact && !user?.address && !user?.dateOfBirth && (
+          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.warning + '15' }]}>
+              <Ionicons name={user?.sex === 'male' ? 'male' : 'female'} size={16} color={COLORS.warning} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Gender</Text>
+              <Text style={styles.infoValue}>{user?.sex ? user.sex.charAt(0).toUpperCase() + user.sex.slice(1) : 'Not specified'}</Text>
+            </View>
+          </View>
+        )}
+      </View>
+    </Animated.View>
+  );
+
+  const renderAccountDetails = () => (
+    <Animated.View entering={FadeInUp.duration(600).delay(550)} style={styles.section}>
+      <Text style={styles.sectionTitle}>Account Details</Text>
+      <View style={styles.infoList}>
+        <View style={styles.infoRow}>
+          <View style={[styles.infoIcon, { backgroundColor: COLORS.success + '15' }]}>
+            <Ionicons name="calendar-outline" size={16} color={COLORS.success} />
+          </View>
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Member Since</Text>
+            <Text style={styles.infoValue}>
+              {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-BD', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              }) : 'Not available'}
+            </Text>
+          </View>
+        </View>
+
+        {user?.updatedAt && (
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
+              <Ionicons name="sync-outline" size={16} color={COLORS.info} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Last Updated</Text>
+              <Text style={styles.infoValue}>
+                {new Date(user.updatedAt).toLocaleDateString('en-BD', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
+          <View style={[styles.infoIcon, { backgroundColor: user?.isActive ? COLORS.success + '15' : COLORS.error + '15' }]}>
+            <Ionicons 
+              name={user?.isActive ? "checkmark-circle-outline" : "close-circle-outline"} 
+              size={16} 
+              color={user?.isActive ? COLORS.success : COLORS.error} 
+            />
+          </View>
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Account Status</Text>
+            <Text style={[
+              styles.infoValue, 
+              { color: user?.isActive ? COLORS.success : COLORS.error }
+            ]}>
+              {user?.isActive ? 'Active' : 'Inactive'}
+            </Text>
           </View>
         </View>
       </View>
@@ -246,7 +521,9 @@ export default function Profile() {
       >
         {renderProfileHeader()}
         {renderBalanceCard()}
+        {renderApiDataSummary()}
         {renderAccountInfo()}
+        {renderAccountDetails()}
         {renderTravelStats()}
         {renderActions()}
       </ScrollView>
@@ -387,6 +664,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.primary,
   },
+  balanceSource: {
+    fontSize: 10,
+    color: COLORS.gray[500],
+    marginTop: 2,
+    fontWeight: '500',
+  },
   cardNumberContainer: {
     backgroundColor: COLORS.gray[50],
     borderRadius: 8,
@@ -419,6 +702,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   editButton: {
     flexDirection: 'row',

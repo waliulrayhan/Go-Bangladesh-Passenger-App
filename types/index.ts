@@ -9,6 +9,18 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   profileImage?: string;
+  updatedAt?: string;
+  dateOfBirth?: string;
+  address?: string;
+  emergencyContact?: string;
+  studentId?: string;
+  institution?: string;
+  // New fields from API
+  passengerId?: string;
+  organizationId?: string;
+  organization?: string;
+  balance?: number;
+  gender?: string;
 }
 
 export interface Card {

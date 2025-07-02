@@ -44,6 +44,7 @@ export function decodeJWT(token: string): JWTPayload | null {
 
 export function extractUserIdFromToken(token: string): string | null {
   const payload = decodeJWT(token);
+  
   if (!payload) return null;
   
   // Try different common field names for user ID
