@@ -63,10 +63,8 @@ export default function Dashboard() {
     <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
       <View style={styles.headerContent}>
         <View style={styles.brandSection}>
-          <View style={styles.logoIcon}>
-            <GoBangladeshLogo size={24} color1="#ffffff" color2="#ffffff" />
-          </View>
-          <View>
+          <GoBangladeshLogo size={28} color1={COLORS.white} color2={COLORS.brand.orange_light} />
+          <View style={styles.brandTextContainer}>
             <Text variant="h6" color={COLORS.white} style={styles.brandName}>
               Go Bangladesh
             </Text>
@@ -88,7 +86,7 @@ export default function Dashboard() {
             ) : user?.profileImage ? (
               <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
             ) : (
-              <Ionicons name="person" size={18} color={COLORS.primary} />
+              <Ionicons name="person" size={18} color={COLORS.brand.blue} />
             )}
           </View>
         </TouchableOpacity>
@@ -111,17 +109,15 @@ export default function Dashboard() {
     <Animated.View entering={FadeInDown.duration(800).delay(200)} style={styles.cardContainer}>
       <View style={styles.card}>
         <View style={styles.cardTop}>
-          <View style={styles.cardLogo}>
-            <GoBangladeshLogo size={20} color1="#ffffff" color2="#ffffff" />
-          </View>
+          <GoBangladeshLogo size={24} color1={COLORS.white} color2={COLORS.brand.orange_light} />
           <View style={styles.contactless}>
-            <Ionicons name="wifi" size={16} color={COLORS.white} />
+            <Ionicons name="wifi" size={18} color={COLORS.white} />
           </View>
         </View>
         
         <View style={styles.cardContent}>
-          <Text variant="h6" color={COLORS.white} style={styles.cardNumber}>
-            {card?.cardNumber || 'GB-7823456012'}
+          <Text variant="h5" color={COLORS.white} style={styles.cardNumber}>
+            {user?.cardNumber || card?.cardNumber || 'GB-7823456012'}
           </Text>
           
           <View style={styles.cardInfo}>
@@ -129,32 +125,32 @@ export default function Dashboard() {
               <Text variant="caption" color={COLORS.white} style={styles.label}>
                 CARD HOLDER
               </Text>
-              <Text variant="caption" color={COLORS.white} style={styles.value}>
-                {user?.name?.toUpperCase() || 'MOHAMMED RAHIM'}
+              <Text variant="body" color={COLORS.white} style={styles.value}>
+                {user?.name?.toUpperCase() || 'GUEST USER'}
               </Text>
             </View>
             <View style={styles.infoItem}>
               <Text variant="caption" color={COLORS.white} style={styles.label}>
                 TYPE
               </Text>
-              <Text variant="caption" color={COLORS.white} style={styles.value}>
-                STUDENT
+              <Text variant="body" color={COLORS.white} style={styles.value}>
+                {user?.userType?.toUpperCase() || 'PASSENGER'}
               </Text>
             </View>
           </View>
         </View>
         
         <View style={styles.cardBottom}>
-          <View>
+          <View style={styles.balanceSection}>
             <Text variant="caption" color={COLORS.white} style={styles.balanceText}>
               Available Balance
             </Text>
-            <Text variant="h4" color={COLORS.white} style={styles.balance}>
-              ৳{card?.balance?.toFixed(2) || '720.00'}
+            <Text variant="h3" color={COLORS.white} style={styles.balance}>
+              ৳{typeof user?.balance === 'number' ? user.balance.toFixed(2) : (card?.balance?.toFixed(2) || '0.00')}
             </Text>
           </View>
           <View style={styles.nfcIcon}>
-            <Ionicons name="radio" size={16} color={COLORS.white} opacity={0.8} />
+            <Ionicons name="radio" size={18} color={COLORS.white} opacity={0.8} />
           </View>
         </View>
       </View>
@@ -349,11 +345,16 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
-    paddingTop: 50, // Increased to avoid status bar overlap
-    paddingBottom: 20,
+    paddingTop: 50,
+    paddingBottom: 24,
     marginBottom: 16,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   headerContent: {
     flexDirection: 'row',
@@ -365,14 +366,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  logoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.white + '25',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+  brandTextContainer: {
+    marginLeft: 12,
   },
   brandName: {
     fontWeight: '700',
@@ -414,17 +409,17 @@ const styles = StyleSheet.create({
   // Profile Menu
   profileMenu: {
     position: 'absolute',
-    top: 70,
+    top: 75,
     right: 16,
     backgroundColor: COLORS.white,
-    borderRadius: 12,
-    paddingVertical: 8,
-    minWidth: 120,
+    borderRadius: 16,
+    paddingVertical: 12,
+    minWidth: 130,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
   },
   menuItem: {
     flexDirection: 'row',
@@ -444,74 +439,81 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.primary,
     borderRadius: 16,
-    padding: 20,
-    minHeight: 180,
+    padding: 24,
+    minHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   cardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  cardLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.white + '25',
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 20,
   },
   contactless: {
     alignItems: 'center',
+    opacity: 0.8,
   },
   cardContent: {
     flex: 1,
+    marginBottom: 20,
   },
   cardNumber: {
-    fontSize: 18,
-    fontWeight: '600',
-    letterSpacing: 2,
-    marginBottom: 16,
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: 3,
+    marginBottom: 24,
+    textAlign: 'left',
   },
   cardInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    gap: 16,
   },
   infoItem: {
     flex: 1,
   },
   label: {
-    fontSize: 9,
-    opacity: 0.7,
-    marginBottom: 2,
-    letterSpacing: 0.5,
+    fontSize: 10,
+    opacity: 0.8,
+    marginBottom: 6,
+    letterSpacing: 1,
+    fontWeight: '500',
   },
   value: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 16,
   },
   cardBottom: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     borderTopWidth: 1,
     borderTopColor: COLORS.white + '20',
-    paddingTop: 16,
+    paddingTop: 20,
+  },
+  balanceSection: {
+    flex: 1,
   },
   balanceText: {
     fontSize: 11,
     opacity: 0.8,
-    marginBottom: 4,
+    marginBottom: 6,
+    fontWeight: '500',
   },
   balance: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
+    lineHeight: 32,
   },
   nfcIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: COLORS.white + '20',
     alignItems: 'center',
     justifyContent: 'center',
@@ -527,12 +529,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.white,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.primary + '30',
+    borderColor: COLORS.primary + '20',
     gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   simulateText: {
     fontWeight: '600',
@@ -620,8 +627,13 @@ const styles = StyleSheet.create({
   },
   activityList: {
     backgroundColor: COLORS.white,
-    borderRadius: 12,
-    paddingVertical: 4,
+    borderRadius: 16,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   activityItem: {
     flexDirection: 'row',
