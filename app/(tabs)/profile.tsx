@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
-import { Alert, Dimensions, Image, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
 import { Text } from '../../components/ui/Text';
 import { useAuthStore } from '../../stores/authStore';
@@ -13,48 +13,18 @@ const { width } = Dimensions.get('window');
 export default function Profile() {
   const { user, logout, refreshUserData, isLoading } = useAuthStore();
   const { card } = useCardStore();
+  const [refreshing, setRefreshing] = React.useState(false);
 
-  // Debug logging for profile data
-  React.useEffect(() => {
-    if (user) {
-      console.log('👤 [PROFILE] User data loaded for display:');
-      console.log('📋 [PROFILE] Profile details:', {
-        id: user.id,
-        name: user.name,
-        mobile: user.mobileNumber || user.mobile,
-        email: user.emailAddress || user.email,
-        address: user.address,
-        passengerId: user.passengerId,
-        cardNumber: user.cardNumber,
-        balance: user.balance,
-        gender: user.gender || user.sex,
-        dateOfBirth: user.dateOfBirth,
-        profileImage: user.imageUrl || user.profileImage ? 'Available' : 'None',
-        organization: typeof user.organization === 'object' ? user.organization?.name : user.organization
-      });
-      
-      // Additional check for any object values
-      Object.keys(user).forEach(key => {
-        const value = (user as any)[key];
-        if (typeof value === 'object' && value !== null && key !== 'organization') {
-          console.warn(`⚠️ [PROFILE] Object found in user.${key}:`, value);
-        }
-      });
-    } else {
-      console.log('⚠️ [PROFILE] No user data available');
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshUserData();
+    } catch (error) {
+      console.log('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
     }
-  }, [user]);
-
-  const handleRefresh = async () => {
-    console.log('🔄 [PROFILE] User initiated refresh...');
-    const success = await refreshUserData();
-    if (!success) {
-      // Don't show error alert since API may not be implemented yet
-      console.log('⚠️ [PROFILE] Refresh not available - using cached data');
-    } else {
-      console.log('✅ [PROFILE] Refresh completed successfully');
-    }
-  };
+  }, [refreshUserData]);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -83,26 +53,28 @@ export default function Profile() {
     );
   };
   const renderProfileHeader = () => {
-    // Only show profile if we have API data (indicated by having balance)
-    if (typeof user?.balance !== 'number') {
+    // Only show profile if we have user data
+    if (!user) {
       return (
         <Animated.View entering={FadeInUp.duration(600)} style={styles.headerContainer}>
           <View style={styles.profileCard}>
             <View style={styles.avatarSection}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
+                <Text style={styles.avatarText}>U</Text>
               </View>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.name}>{user?.name || 'Loading...'}</Text>
-              <Text style={styles.userType}>Loading API data...</Text>
+              <Text style={styles.name}>Loading...</Text>
+              <Text style={styles.userType}>Please wait...</Text>
             </View>
           </View>
         </Animated.View>
       );
     }
 
+    // Create a unique key for the profile image to force re-render
     const profileImageUrl = user?.imageUrl ? `${API_BASE_URL}/${user.imageUrl}` : null;
+    const imageKey = `profile-${user?.id || 'default'}-${user?.imageUrl || 'no-image'}`;
 
     return (
       <Animated.View entering={FadeInUp.duration(600)} style={styles.headerContainer}>
@@ -110,10 +82,15 @@ export default function Profile() {
           <View style={styles.avatarSection}>
             {profileImageUrl ? (
               <Image 
+                key={imageKey} // Force re-render when URL changes
                 source={{ uri: profileImageUrl }} 
                 style={styles.profileImage}
-                onError={() => console.log('❌ [PROFILE] Failed to load profile image:', profileImageUrl)}
-                onLoad={() => console.log('✅ [PROFILE] Profile image loaded successfully')}
+                onError={(error) => {
+                  console.log('Profile image load error:', error);
+                }}
+                onLoad={() => {
+                  console.log('Profile image loaded successfully');
+                }}
               />
             ) : (
               <View style={styles.avatar}>
@@ -130,7 +107,7 @@ export default function Profile() {
             <Text style={styles.userType}>{user.gender || user.sex} • Passenger</Text>
             <View style={styles.statusChip}>
               <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
-              <Text style={[styles.statusText, { color: COLORS.success }]}>API Connected</Text>
+              <Text style={[styles.statusText, { color: COLORS.success }]}>Active</Text>
             </View>
           </View>
         </View>
@@ -138,7 +115,7 @@ export default function Profile() {
     );
   };
   const renderBalanceCard = () => {
-    // Only show balance card if we have API data
+    // Only show balance card if we have balance data
     if (typeof user?.balance !== 'number') {
       return null;
     }
@@ -153,7 +130,6 @@ export default function Profile() {
             <View style={styles.balanceInfo}>
               <Text style={styles.balanceLabel}>Current Balance</Text>
               <Text style={styles.balanceAmount}>৳{user.balance.toFixed(2)}</Text>
-              <Text style={styles.balanceSource}>From API</Text>
             </View>
           </View>
           
@@ -171,21 +147,6 @@ export default function Profile() {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Account Information</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity 
-            style={[styles.editButton, { marginRight: 8 }]} 
-            onPress={handleRefresh}
-            disabled={isLoading}
-          >
-            <Ionicons 
-              name={isLoading ? "sync" : "refresh"} 
-              size={16} 
-              color={COLORS.info}
-              style={isLoading ? { transform: [{ rotate: '180deg' }] } : undefined}
-            />
-            <Text style={[styles.editText, { color: COLORS.info }]}>
-              {isLoading ? 'Refreshing...' : 'Refresh'}
-            </Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.editButton}>
             <Ionicons name="create-outline" size={16} color={COLORS.primary} />
             <Text style={styles.editText}>Edit</Text>
@@ -395,7 +356,7 @@ export default function Profile() {
             </View>
             <Text style={styles.actionText}>Data Sync</Text>
           </View>
-          <Text style={[styles.serverStatus, { color: COLORS.success }]}>Up to date</Text>
+          <Text style={[styles.serverStatus, { color: COLORS.success }]}>Synced</Text>
         </TouchableOpacity>
       </View>
 
@@ -412,6 +373,14 @@ export default function Profile() {
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
       >
         {renderProfileHeader()}
         {renderBalanceCard()}
@@ -554,12 +523,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.primary,
-  },
-  balanceSource: {
-    fontSize: 10,
-    color: COLORS.gray[500],
-    marginTop: 2,
-    fontWeight: '500',
   },
   cardNumberContainer: {
     backgroundColor: COLORS.gray[50],
