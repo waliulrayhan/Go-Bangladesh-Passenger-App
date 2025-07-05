@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
-import { FlatList, Linking, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Linking, RefreshControl, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Card } from '../../components/ui/Card';
 import { Text } from '../../components/ui/Text';
@@ -13,17 +13,42 @@ export default function History() {
   const { 
     transactions, 
     trips, 
-    loadTransactions, 
-    loadTrips, 
-    isLoading 
+    loadHistory, 
+    loadMoreHistory,
+    isLoading,
+    error,
+    historyPagination
   } = useCardStore();
 
   const [activeTab, setActiveTab] = useState<HistoryTab>('trips');
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    loadTransactions();
-    loadTrips();
+    console.log('🔄 [HISTORY COMPONENT] Component mounted, loading history...');
+    loadHistory(1, true);
   }, []);
+
+  useEffect(() => {
+    console.log('📊 [HISTORY COMPONENT] Data updated:', {
+      transactionsCount: transactions.length,
+      tripsCount: trips.length,
+      isLoading,
+      error,
+      historyPagination
+    });
+  }, [transactions, trips, isLoading, error, historyPagination]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadHistory(1, true);
+    setRefreshing(false);
+  }, [loadHistory]);
+
+  const onLoadMore = useCallback(async () => {
+    if (historyPagination.hasMore && !historyPagination.isLoadingMore) {
+      await loadMoreHistory();
+    }
+  }, [historyPagination.hasMore, historyPagination.isLoadingMore, loadMoreHistory]);
 
   const openMapLocation = (latitude: number, longitude: number, label: string) => {
     const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
@@ -43,157 +68,152 @@ export default function History() {
     return `${day}-${month}-${year}`;
   };
 
-  const renderTripItem = ({ item }: any) => (
-    <Card variant="elevated" style={styles.historyCard}>
-      <View style={styles.cardHeader}>
-        <View style={styles.headerLeft}>
-          <View style={styles.busIconContainer}>
-            <Ionicons name="bus" size={20} color={COLORS.white} />
-          </View>
-          <View>
-            <Text variant="label" color={COLORS.gray[900]} style={styles.cardTitle}>
-              Bus #{item.busNumber}
-            </Text>
-            <Text variant="caption" color={COLORS.gray[500]} style={styles.cardDate}>
-              {formatDate(new Date(item.tapInTime))}
-            </Text>
-          </View>
-        </View>
-        <Text variant="h6" color={COLORS.error} style={styles.fareAmount}>
-          -৳{item.fareAmount?.toFixed(2) || '0.00'}
-        </Text>
-      </View>
-
-      <View style={styles.tripDetails}>
-        <View style={styles.timeRow}>
-          <View style={styles.timeItem}>
-            <Text variant="caption" color={COLORS.gray[600]} style={styles.timeLabel}>
-              Tap In
-            </Text>
-            <TouchableOpacity
-              style={styles.timeButton}
-              onPress={() => item.tapInLocation && openMapLocation(
-                item.tapInLocation.latitude,
-                item.tapInLocation.longitude,
-                'Tap In Location'
-              )}
-            >
-              <Ionicons name="time" size={14} color={COLORS.primary} />
-              <Text variant="bodySmall" color={COLORS.gray[700]} style={styles.timeText}>
-                {new Date(item.tapInTime).toLocaleTimeString()}
-              </Text>
-              {item.tapInLocation && (
-                <Ionicons name="location" size={14} color={COLORS.primary} />
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {item.tapOutTime && (
-            <View style={styles.timeItem}>
-              <Text variant="caption" color={COLORS.gray[600]} style={styles.timeLabel}>
-                Tap Out
-              </Text>
-              <TouchableOpacity
-                style={styles.timeButton}
-                onPress={() => item.tapOutLocation && openMapLocation(
-                  item.tapOutLocation.latitude,
-                  item.tapOutLocation.longitude,
-                  'Tap Out Location'
-                )}
-              >
-                <Ionicons name="time" size={14} color={COLORS.primary} />
-                <Text variant="bodySmall" color={COLORS.gray[700]} style={styles.timeText}>
-                  {new Date(item.tapOutTime).toLocaleTimeString()}
-                </Text>
-                {item.tapOutLocation && (
-                  <Ionicons name="location" size={14} color={COLORS.primary} />
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>        {item.distanceKm && item.tapInLocation && item.tapOutLocation && (
-          <TouchableOpacity
-            style={styles.distanceButton}
-            onPress={() => openRouteMap(
-              item.tapInLocation.latitude,
-              item.tapInLocation.longitude,
-              item.tapOutLocation.latitude,
-              item.tapOutLocation.longitude
-            )}
-          >
-            <Ionicons name="map" size={14} color={COLORS.primary} />
-            <Text variant="bodySmall" color={COLORS.primary} style={styles.distanceText}>
-              Distance: {item.distanceKm}km (View Route)
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </Card>
-  );
-
-  const renderRechargeItem = ({ item }: any) => {
-    // Show both recharge and fare deduction transactions
-    if (item.transactionType !== 'recharge' && item.transactionType !== 'fare_deduction') return null;
-
-    const getChannelInfo = (description: string, transactionType: string) => {
-      if (transactionType === 'fare_deduction') {
-        return { channel: 'Fare', name: 'Bus Fare', icon: 'remove-circle' as const };
-      } else if (description?.toLowerCase().includes('bkash')) {
-        return { channel: 'MFS', name: 'bKash', icon: 'phone-portrait' as const };
-      } else if (description?.toLowerCase().includes('nagad')) {
-        return { channel: 'MFS', name: 'Nagad', icon: 'phone-portrait' as const };
-      } else if (description?.toLowerCase().includes('card')) {
-        return { channel: 'CARD', name: 'Card Payment', icon: 'card' as const };
-      } else if (description?.toLowerCase().includes('mobile')) {
-        return { channel: 'Mobile', name: 'Mobile Recharge', icon: 'phone-portrait' as const };
-      } else {
-        return { channel: 'Other', name: 'Manual Recharge', icon: 'add-circle' as const };
-      }
-    };
-
-    const channelInfo = getChannelInfo(item.description || '', item.transactionType);
-    const isDeduction = item.transactionType === 'fare_deduction';
-    const amountColor = isDeduction ? COLORS.error : COLORS.success;
-    const amountPrefix = isDeduction ? '-' : '+';
+  const renderTripItem = ({ item }: { item: any }) => {
+    // Handle both direct trip objects and transactions with trip data
+    const trip = item.trip || item;
+    const transaction = item.transactionType ? item : null;
+    
+    if (!trip) return null;
 
     return (
       <Card variant="elevated" style={styles.historyCard}>
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
-            <View style={[styles.rechargeIconContainer, isDeduction && styles.deductionIconContainer]}>
-              <Ionicons name={channelInfo.icon} size={20} color={COLORS.white} />
+            <View style={styles.busIconContainer}>
+              <Ionicons name="bus" size={20} color={COLORS.white} />
             </View>
             <View>
               <Text variant="label" color={COLORS.gray[900]} style={styles.cardTitle}>
-                {channelInfo.name}
+                Trip #{trip.id.slice(-8)}
               </Text>
-              <Text variant="caption" color={COLORS.gray[500]} style={styles.cardSubtitle}>
-                {isDeduction ? 'Deduction' : channelInfo.channel}
+              <Text variant="caption" color={COLORS.gray[500]} style={styles.cardDate}>
+                {formatDate(new Date(trip.tripStartTime))}
               </Text>
             </View>
           </View>
-          <Text variant="h6" color={amountColor} style={styles.rechargeAmount}>
-            {amountPrefix}৳{Math.abs(item.amount).toFixed(2)}
+          <Text variant="h6" color={COLORS.error} style={styles.fareAmount}>
+            -৳{trip.amount?.toFixed(2) || '0.00'}
+          </Text>
+        </View>
+
+        <View style={styles.tripDetails}>
+          <View style={styles.timeRow}>
+            <View style={styles.timeItem}>
+              <Text variant="caption" color={COLORS.gray[600]} style={styles.timeLabel}>
+                Tap In
+              </Text>
+              <TouchableOpacity
+                style={styles.timeButton}
+                onPress={() => openMapLocation(
+                  parseFloat(trip.startingLatitude),
+                  parseFloat(trip.startingLongitude),
+                  'Tap In Location'
+                )}
+              >
+                <Ionicons name="time" size={14} color={COLORS.primary} />
+                <Text variant="bodySmall" color={COLORS.gray[700]} style={styles.timeText}>
+                  {new Date(trip.tripStartTime).toLocaleTimeString()}
+                </Text>
+                <Ionicons name="location" size={14} color={COLORS.primary} />
+              </TouchableOpacity>
+            </View>
+
+            {trip.tripEndTime && (
+              <View style={styles.timeItem}>
+                <Text variant="caption" color={COLORS.gray[600]} style={styles.timeLabel}>
+                  Tap Out
+                </Text>
+                <TouchableOpacity
+                  style={styles.timeButton}
+                  onPress={() => openMapLocation(
+                    parseFloat(trip.endingLatitude),
+                    parseFloat(trip.endingLongitude),
+                    'Tap Out Location'
+                  )}
+                >
+                  <Ionicons name="time" size={14} color={COLORS.primary} />
+                  <Text variant="bodySmall" color={COLORS.gray[700]} style={styles.timeText}>
+                    {new Date(trip.tripEndTime).toLocaleTimeString()}
+                  </Text>
+                  <Ionicons name="location" size={14} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+          
+          {trip.distance > 0 && (
+            <TouchableOpacity
+              style={styles.distanceButton}
+              onPress={() => openRouteMap(
+                parseFloat(trip.startingLatitude),
+                parseFloat(trip.startingLongitude),
+                parseFloat(trip.endingLatitude),
+                parseFloat(trip.endingLongitude)
+              )}
+            >
+              <Ionicons name="map" size={14} color={COLORS.primary} />
+              <Text variant="bodySmall" color={COLORS.primary} style={styles.distanceText}>
+                Distance: {trip.distance.toFixed(2)}km (View Route)
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </Card>
+    );
+  };
+
+  const renderRechargeItem = ({ item }: { item: any }) => {
+    // Only show recharge transactions (incoming money)
+    if (item.transactionType !== 'Recharge') return null;
+
+    return (
+      <Card variant="elevated" style={styles.historyCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.headerLeft}>
+            <View style={styles.rechargeIconContainer}>
+              <Ionicons name="add-circle" size={20} color={COLORS.white} />
+            </View>
+            <View>
+              <Text variant="label" color={COLORS.gray[900]} style={styles.cardTitle}>
+                Recharge
+              </Text>
+              <Text variant="caption" color={COLORS.gray[500]} style={styles.cardSubtitle}>
+                {item.agent?.name || 'Manual Recharge'}
+              </Text>
+            </View>
+          </View>
+          <Text variant="h6" color={COLORS.success} style={styles.rechargeAmount}>
+            +৳{item.amount.toFixed(2)}
           </Text>
         </View>
 
         <View style={styles.rechargeDetails}>
+          {item.agent && (
+            <View style={styles.detailRow}>
+              <Ionicons name="person" size={14} color={COLORS.gray[500]} />
+              <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
+                Agent: {item.agent.name}
+              </Text>
+            </View>
+          )}
+          {item.agent?.organization && (
+            <View style={styles.detailRow}>
+              <Ionicons name="business" size={14} color={COLORS.gray[500]} />
+              <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
+                Organization: {item.agent.organization.name || 'N/A'}
+              </Text>
+            </View>
+          )}
           <View style={styles.detailRow}>
             <Ionicons name="calendar" size={14} color={COLORS.gray[500]} />
             <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-              {formatDate(new Date(item.createdAt))}
+              {formatDate(new Date(item.createTime))}
             </Text>
           </View>
           <View style={styles.detailRow}>
             <Ionicons name="time" size={14} color={COLORS.gray[500]} />
             <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-              {new Date(item.createdAt).toLocaleTimeString()}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="wallet" size={14} color={COLORS.gray[500]} />
-            <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-              Balance After: ৳{item.balanceAfter.toFixed(2)}
+              {new Date(item.createTime).toLocaleTimeString()}
             </Text>
           </View>
         </View>
@@ -201,14 +221,44 @@ export default function History() {
     );
   };
   const renderTabContent = () => {
+    console.log('🎨 [HISTORY COMPONENT] Rendering tab content for:', activeTab);
+    console.log('📊 [HISTORY COMPONENT] Available data:', {
+      totalTransactions: transactions.length,
+      totalTrips: trips.length,
+      isLoading,
+      historyPagination
+    });
+    
     if (activeTab === 'trips') {
+      const tripTransactions = transactions.filter(t => t.transactionType === 'BusFare' && t.trip);
+      console.log('🚌 [HISTORY COMPONENT] Trip transactions filtered:', tripTransactions.length);
+      
       return (
         <FlatList
-          data={trips}
+          data={tripTransactions}
           renderItem={renderTripItem}
           keyExtractor={(item) => item.id.toString()}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
+            />
+          }
+          onEndReached={onLoadMore}
+          onEndReachedThreshold={0.1}
+          ListFooterComponent={
+            historyPagination.isLoadingMore ? (
+              <View style={styles.loadingMore}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.loadingText}>
+                  Loading more trips...
+                </Text>
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <Card>
               <View style={styles.emptyContainer}>
@@ -225,7 +275,9 @@ export default function History() {
         />
       );
     } else {
-      const rechargeTransactions = transactions.filter(t => t.transactionType === 'recharge' || t.transactionType === 'fare_deduction');
+      const rechargeTransactions = transactions.filter(t => t.transactionType === 'Recharge'); // Only show recharge transactions
+      console.log('💳 [HISTORY COMPONENT] Recharge transactions for recharge tab:', rechargeTransactions.length);
+      
       return (
         <FlatList
           data={rechargeTransactions}
@@ -233,15 +285,34 @@ export default function History() {
           keyExtractor={(item) => item.id.toString()}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
+            />
+          }
+          onEndReached={onLoadMore}
+          onEndReachedThreshold={0.1}
+          ListFooterComponent={
+            historyPagination.isLoadingMore ? (
+              <View style={styles.loadingMore}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.loadingText}>
+                  Loading more recharges...
+                </Text>
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <Card>
               <View style={styles.emptyContainer}>
                 <Ionicons name="card-outline" size={48} color={COLORS.gray[400]} />
                 <Text variant="h6" color={COLORS.gray[600]} style={styles.emptyText}>
-                  No transaction history found
+                  No recharge history found
                 </Text>
                 <Text variant="body" color={COLORS.gray[500]} style={styles.emptySubtext}>
-                  Your transactions will appear here
+                  Your recharge history will appear here
                 </Text>
               </View>
             </Card>
@@ -288,15 +359,47 @@ export default function History() {
               color={activeTab === 'recharge' ? COLORS.white : COLORS.gray[600]}
               style={styles.tabText}
             >
-              Transactions
+              Recharge History
             </Text>
           </TouchableOpacity>
         </View>
 
+        {/* Error Display */}
+        {error && (
+          <Card style={{ margin: 16 }}>
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle" size={48} color={COLORS.error} />
+              <Text variant="h6" color={COLORS.error} style={styles.errorText}>
+                {error}
+              </Text>
+              <TouchableOpacity 
+                style={styles.retryButton}
+                onPress={() => loadHistory(1, true)}
+              >
+                <Text variant="labelSmall" color={COLORS.primary}>
+                  Retry
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
+        )}
+
+        {/* Loading Indicator for Initial Load */}
+        {isLoading && transactions.length === 0 && !error && (
+          <View style={styles.initialLoading}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text variant="body" color={COLORS.gray[600]} style={styles.loadingText}>
+              Loading history...
+            </Text>
+          </View>
+        )}
+
         {/* Tab Content */}
-        <Animated.View entering={FadeInDown.duration(600)} style={styles.tabContent}>
-          {renderTabContent()}
-        </Animated.View>
+        {(!isLoading || transactions.length > 0) && (
+          <Animated.View entering={FadeInDown.duration(600)} style={styles.tabContent}>
+            {renderTabContent()}
+          </Animated.View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -459,5 +562,38 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     // Font properties handled by Text component
+  },
+  loadingMore: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.md,
+    gap: SPACING.xs,
+  },
+  loadingText: {
+    // Font properties handled by Text component
+  },
+  initialLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    padding: SPACING.xl,
+    gap: SPACING.md,
+  },
+  errorText: {
+    textAlign: 'center',
+    // Font properties handled by Text component
+  },
+  retryButton: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary + '20',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
   },
 });

@@ -134,6 +134,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           const userResponse = await apiService.getUserById(userId);
           
           if (userResponse) {
+            // Validate user type - only allow Passenger users to login
+            if (userResponse.userType !== 'Passenger') {
+              console.warn('❌ [LOGIN] User type validation failed:', userResponse.userType);
+              set({
+                isLoading: false,
+                error: 'Access denied. This app is only for passengers. Please contact your organization if you believe this is an error.'
+              });
+              return false;
+            }
+            
             const user: User = {
               id: userResponse.id,
               name: userResponse.name,
@@ -295,6 +305,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           
           if (userResponse) {
             console.log('✅ [LOGIN] API user data retrieved successfully!');
+            
+            // Validate user type - only allow Passenger users to login
+            if (userResponse.userType !== 'Passenger') {
+              console.warn('❌ [LOGIN] User type validation failed:', userResponse.userType);
+              set({
+                isLoading: false,
+                error: 'Access denied. This app is only for passengers. Please contact your organization if you believe this is an error.'
+              });
+              return false;
+            }
+            
+            console.log('✅ [LOGIN] User type validation passed - User is a Passenger');
             console.log('📋 [LOGIN] Creating user object from API data...');
             
             const user: User = {

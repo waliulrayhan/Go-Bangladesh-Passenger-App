@@ -49,37 +49,67 @@ export interface Card {
 }
 
 export interface Transaction {
-  id: number;
-  cardId: number;
-  transactionType: 'recharge' | 'fare_deduction' | 'refund';
+  id: string;
+  transactionType: 'BusFare' | 'Recharge';
   amount: number;
-  balanceBefore: number;
-  balanceAfter: number;
-  agentId?: number;
-  tripId?: number;
-  description?: string;
-  createdAt: string;
+  passengerId: string;
+  agentId?: string;
+  tripId?: string;
+  passenger?: any;
+  agent?: {
+    id: string;
+    name: string;
+    emailAddress: string;
+    mobileNumber: string;
+    address: string;
+    userType: string;
+    code: string;
+    balance: number;
+    isActive: boolean;
+    createTime: string;
+    lastModifiedTime: string;
+  };
+  trip?: {
+    id: string;
+    passengerId: string;
+    sessionId: string;
+    startingLatitude: string;
+    startingLongitude: string;
+    endingLatitude: string;
+    endingLongitude: string;
+    tripStartTime: string;
+    tripEndTime: string;
+    amount: number;
+    isRunning: boolean;
+    distance: number;
+    createTime: string;
+    lastModifiedTime: string;
+  };
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
 }
 
 export interface Trip {
-  id: number;
-  cardId: number;
-  busId: number;
-  tapInTime: string;
-  tapInLocation?: {
-    latitude: number;
-    longitude: number;
-  };
-  tapOutTime?: string;
-  tapOutLocation?: {
-    latitude: number;
-    longitude: number;
-  };
-  fareAmount?: number;
-  distanceKm?: number;
-  tripStatus: 'ongoing' | 'completed' | 'cancelled';
-  busNumber: string;
-  createdAt: string;
+  id: string;
+  passengerId: string;
+  sessionId: string;
+  startingLatitude: string;
+  startingLongitude: string;
+  endingLatitude: string;
+  endingLongitude: string;
+  tripStartTime: string;
+  tripEndTime: string;
+  amount: number;
+  isRunning: boolean;
+  distance: number;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
 }
 
 export interface Bus {
@@ -122,4 +152,23 @@ export interface TapTransaction {
   driverId?: number;
   helperId?: number;
   passengerName?: string;
+}
+
+// API Response Types
+export interface ApiResponse<T> {
+  data: {
+    isSuccess: boolean;
+    content: T[];
+    timeStamp: string;
+    payloadType: string;
+    message: string | null;
+  };
+}
+
+export interface PaginationState {
+  currentPage: number;
+  pageSize: number;
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  totalLoaded: number;
 }
