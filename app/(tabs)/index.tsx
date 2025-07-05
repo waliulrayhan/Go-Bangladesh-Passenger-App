@@ -18,13 +18,16 @@ export default function Dashboard() {
     loadCardDetails, 
     isLoading,
     tripStatus,
-    currentTrip
+    currentTrip,
+    transactions,
+    loadHistory
   } = useCardStore();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
     loadCardDetails();
+    loadHistory(1, true); // Load recent transactions
   }, [user]);
 
   const handleProfilePress = () => {
@@ -190,7 +193,7 @@ export default function Dashboard() {
                 Trip in Progress
               </Text>
               <Text variant="caption" color={COLORS.white} style={styles.tripStatusSubtitle}>
-                Bus: {currentTrip?.busNumber || 'DHK-123-4567'}
+                Bus: {currentTrip?.sessionId?.slice(-8) || 'DHK-123-4567'}
               </Text>
             </View>
             <TouchableOpacity 
@@ -222,7 +225,7 @@ export default function Dashboard() {
             <View style={styles.tripStatusItem}>
               <Ionicons name="time" size={16} color={COLORS.white} />
               <Text variant="caption" color={COLORS.white} style={styles.tripStatusDetailText}>
-                Started: {currentTrip ? new Date(currentTrip.tapInTime).toLocaleTimeString() : ''}
+                Started: {currentTrip ? new Date(currentTrip.tripStartTime).toLocaleTimeString() : ''}
               </Text>
             </View>
             <View style={styles.tripStatusItem}>
@@ -237,73 +240,138 @@ export default function Dashboard() {
     );
   };
   
-  const renderRecentActivity = () => (
-    <Animated.View entering={FadeInDown.duration(800).delay(600)} style={styles.recentActivity}>
-      <View style={styles.sectionHeader}>
-        <Text variant="h5" color={COLORS.gray[900]} style={styles.sectionTitle}>
-          Recent Activity
-        </Text>
-        <TouchableOpacity onPress={handleViewAllPress}>
-          <Text variant="bodySmall" color={COLORS.primary} style={styles.viewAllText}>
-            View All
+  const renderRecentActivity = () => {
+    // Get the most recent 3 transactions
+    const recentTransactions = transactions.slice(0, 3);
+
+    const getActivityIcon = (transactionType: string) => {
+      if (transactionType === 'BusFare') {
+        return {
+          icon: 'arrow-up' as const,
+          color: COLORS.error,
+          backgroundColor: COLORS.error + '20'
+        };
+      } else {
+        return {
+          icon: 'arrow-down' as const,
+          color: COLORS.success,
+          backgroundColor: COLORS.success + '20'
+        };
+      }
+    };
+
+    const getActivityTitle = (transactionType: string) => {
+      return transactionType === 'BusFare' ? 'Bus Fare' : 'Top Up';
+    };
+
+    const getActivityAmount = (transactionType: string, amount: number) => {
+      const prefix = transactionType === 'BusFare' ? '-' : '+';
+      return `${prefix}৳${amount.toFixed(2)}`;
+    };
+
+    const getActivityColor = (transactionType: string) => {
+      return transactionType === 'BusFare' ? COLORS.error : COLORS.success;
+    };
+
+    return (
+      <Animated.View entering={FadeInDown.duration(800).delay(600)} style={styles.recentActivity}>
+        <View style={styles.sectionHeader}>
+          <Text variant="h5" color={COLORS.gray[900]} style={styles.sectionTitle}>
+            Recent Activity
           </Text>
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.activityList}>
-        <View style={styles.activityItem}>
-          <View style={[styles.activityIcon, { backgroundColor: COLORS.error + '20' }]}>
-            <Ionicons name="arrow-up" size={16} color={COLORS.error} />
-          </View>
-          <View style={styles.activityContent}>
-            <Text variant="label" color={COLORS.gray[900]} style={styles.activityTitle}>
-              Bus Fare
+          <TouchableOpacity onPress={handleViewAllPress}>
+            <Text variant="bodySmall" color={COLORS.primary} style={styles.viewAllText}>
+              View All
             </Text>
-            <Text variant="caption" color={COLORS.gray[500]} style={styles.activityTime}>
-              {formatDate(new Date())}, 2:30 PM
-            </Text>
-          </View>
-          <Text variant="labelSmall" color={COLORS.error} style={styles.activityAmount}>
-            -৳25.00
-          </Text>
+          </TouchableOpacity>
         </View>
         
-        <View style={styles.activityItem}>
-          <View style={[styles.activityIcon, { backgroundColor: COLORS.success + '20' }]}>
-            <Ionicons name="arrow-down" size={16} color={COLORS.success} />
-          </View>
-          <View style={styles.activityContent}>
-            <Text variant="label" color={COLORS.gray[900]} style={styles.activityTitle}>
-              Top Up
-            </Text>
-            <Text variant="caption" color={COLORS.gray[500]} style={styles.activityTime}>
-              {formatDate(new Date(Date.now() - 24 * 60 * 60 * 1000))}, 10:15 AM
-            </Text>
-          </View>
-          <Text variant="labelSmall" color={COLORS.success} style={styles.activityAmount}>
-            +৳500.00
-          </Text>
+        <View style={styles.activityList}>
+          {recentTransactions.length > 0 ? (
+            recentTransactions.map((transaction, index) => {
+              const iconInfo = getActivityIcon(transaction.transactionType);
+              return (
+                <View key={transaction.id} style={styles.activityItem}>
+                  <View style={[styles.activityIcon, { backgroundColor: iconInfo.backgroundColor }]}>
+                    <Ionicons name={iconInfo.icon} size={16} color={iconInfo.color} />
+                  </View>
+                  <View style={styles.activityContent}>
+                    <Text variant="label" color={COLORS.gray[900]} style={styles.activityTitle}>
+                      {getActivityTitle(transaction.transactionType)}
+                    </Text>
+                    <Text variant="caption" color={COLORS.gray[500]} style={styles.activityTime}>
+                      {formatDate(new Date(transaction.createTime))}, {new Date(transaction.createTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                    </Text>
+                  </View>
+                  <Text 
+                    variant="labelSmall" 
+                    color={getActivityColor(transaction.transactionType)} 
+                    style={styles.activityAmount}
+                  >
+                    {getActivityAmount(transaction.transactionType, transaction.amount)}
+                  </Text>
+                </View>
+              );
+            })
+          ) : (
+            // Fallback to mock data if no transactions are loaded
+            <>
+              <View style={styles.activityItem}>
+                <View style={[styles.activityIcon, { backgroundColor: COLORS.error + '20' }]}>
+                  <Ionicons name="arrow-up" size={16} color={COLORS.error} />
+                </View>
+                <View style={styles.activityContent}>
+                  <Text variant="label" color={COLORS.gray[900]} style={styles.activityTitle}>
+                    Bus Fare
+                  </Text>
+                  <Text variant="caption" color={COLORS.gray[500]} style={styles.activityTime}>
+                    {formatDate(new Date())}, 2:30 PM
+                  </Text>
+                </View>
+                <Text variant="labelSmall" color={COLORS.error} style={styles.activityAmount}>
+                  -৳25.00
+                </Text>
+              </View>
+              
+              <View style={styles.activityItem}>
+                <View style={[styles.activityIcon, { backgroundColor: COLORS.success + '20' }]}>
+                  <Ionicons name="arrow-down" size={16} color={COLORS.success} />
+                </View>
+                <View style={styles.activityContent}>
+                  <Text variant="label" color={COLORS.gray[900]} style={styles.activityTitle}>
+                    Top Up
+                  </Text>
+                  <Text variant="caption" color={COLORS.gray[500]} style={styles.activityTime}>
+                    {formatDate(new Date(Date.now() - 24 * 60 * 60 * 1000))}, 10:15 AM
+                  </Text>
+                </View>
+                <Text variant="labelSmall" color={COLORS.success} style={styles.activityAmount}>
+                  +৳500.00
+                </Text>
+              </View>
+              
+              <View style={styles.activityItem}>
+                <View style={[styles.activityIcon, { backgroundColor: COLORS.error + '20' }]}>
+                  <Ionicons name="arrow-up" size={16} color={COLORS.error} />
+                </View>
+                <View style={styles.activityContent}>
+                  <Text variant="label" color={COLORS.gray[900]} style={styles.activityTitle}>
+                    Bus Fare
+                  </Text>
+                  <Text variant="caption" color={COLORS.gray[500]} style={styles.activityTime}>
+                    {formatDate(new Date(Date.now() - 24 * 60 * 60 * 1000))}, 8:45 AM
+                  </Text>
+                </View>
+                <Text variant="labelSmall" color={COLORS.error} style={styles.activityAmount}>
+                  -৳30.00
+                </Text>
+              </View>
+            </>
+          )}
         </View>
-        
-        <View style={styles.activityItem}>
-          <View style={[styles.activityIcon, { backgroundColor: COLORS.error + '20' }]}>
-            <Ionicons name="arrow-up" size={16} color={COLORS.error} />
-          </View>
-          <View style={styles.activityContent}>
-            <Text variant="label" color={COLORS.gray[900]} style={styles.activityTitle}>
-              Bus Fare
-            </Text>
-            <Text variant="caption" color={COLORS.gray[500]} style={styles.activityTime}>
-              {formatDate(new Date(Date.now() - 24 * 60 * 60 * 1000))}, 8:45 AM
-            </Text>
-          </View>
-          <Text variant="labelSmall" color={COLORS.error} style={styles.activityAmount}>
-            -৳30.00
-          </Text>
-        </View>
-      </View>
-    </Animated.View>
-  );  return (
+      </Animated.View>
+    );
+  };  return (
     <SafeAreaView style={styles.container}>
       <ScrollView 
         style={styles.content} 

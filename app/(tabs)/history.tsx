@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Linking, RefreshControl, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Linking, Modal, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Card } from '../../components/ui/Card';
 import { Text } from '../../components/ui/Text';
@@ -8,6 +8,18 @@ import { useCardStore } from '../../stores/cardStore';
 import { COLORS, SPACING } from '../../utils/constants';
 
 type HistoryTab = 'trips' | 'recharge';
+
+type DateFilter = 'all' | 'today' | 'week' | 'month' | 'custom';
+type SortOrder = 'newest' | 'oldest' | 'amount_high' | 'amount_low';
+
+interface FilterOptions {
+  dateFilter: DateFilter;
+  sortOrder: SortOrder;
+  customStartDate?: Date;
+  customEndDate?: Date;
+  minAmount?: number;
+  maxAmount?: number;
+}
 
 export default function History() {
   const { 
@@ -22,6 +34,13 @@ export default function History() {
 
   const [activeTab, setActiveTab] = useState<HistoryTab>('trips');
   const [refreshing, setRefreshing] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filters, setFilters] = useState<FilterOptions>({
+    dateFilter: 'all',
+    sortOrder: 'newest',
+  });
+  const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     console.log('🔄 [HISTORY COMPONENT] Component mounted, loading history...');
@@ -37,6 +56,100 @@ export default function History() {
       historyPagination
     });
   }, [transactions, trips, isLoading, error, historyPagination]);
+
+  // Filter and sort data based on current filters
+  useEffect(() => {
+    console.log('🔍 [HISTORY COMPONENT] Applying filters:', filters);
+    
+    let data = activeTab === 'trips' 
+      ? transactions.filter(t => t.transactionType === 'BusFare' && t.trip)
+      : transactions.filter(t => t.transactionType === 'Recharge');
+
+    // Apply date filter
+    if (filters.dateFilter !== 'all') {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      data = data.filter(item => {
+        const dateString = item.createTime || item.trip?.tripStartTime;
+        if (!dateString) return false;
+        const itemDate = new Date(dateString);
+        
+        switch (filters.dateFilter) {
+          case 'today':
+            return itemDate >= today;
+          case 'week':
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return itemDate >= weekAgo;
+          case 'month':
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return itemDate >= monthAgo;
+          case 'custom':
+            if (filters.customStartDate && filters.customEndDate) {
+              return itemDate >= filters.customStartDate && itemDate <= filters.customEndDate;
+            }
+            return true;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Apply amount filter
+    if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
+      data = data.filter(item => {
+        const amount = item.amount || item.trip?.amount || 0;
+        const minCheck = filters.minAmount === undefined || amount >= filters.minAmount;
+        const maxCheck = filters.maxAmount === undefined || amount <= filters.maxAmount;
+        return minCheck && maxCheck;
+      });
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      data = data.filter(item => {
+        const searchLower = searchQuery.toLowerCase();
+        const tripId = item.trip?.id?.toString() || '';
+        const agentName = item.agent?.name || '';
+        const orgName = (item.agent as any)?.organization?.name || item.agent?.address || '';
+        const amount = (item.amount || item.trip?.amount || 0).toString();
+        
+        return tripId.toLowerCase().includes(searchLower) ||
+               agentName.toLowerCase().includes(searchLower) ||
+               orgName.toLowerCase().includes(searchLower) ||
+               amount.includes(searchQuery);
+      });
+    }
+
+    // Apply sorting
+    data.sort((a, b) => {
+      const aDateString = a.createTime || a.trip?.tripStartTime;
+      const bDateString = b.createTime || b.trip?.tripStartTime;
+      if (!aDateString || !bDateString) return 0;
+      
+      const aDate = new Date(aDateString);
+      const bDate = new Date(bDateString);
+      const aAmount = a.amount || a.trip?.amount || 0;
+      const bAmount = b.amount || b.trip?.amount || 0;
+
+      switch (filters.sortOrder) {
+        case 'oldest':
+          return aDate.getTime() - bDate.getTime();
+        case 'amount_high':
+          return bAmount - aAmount;
+        case 'amount_low':
+          return aAmount - bAmount;
+        case 'newest':
+        default:
+          return bDate.getTime() - aDate.getTime();
+      }
+    });
+
+    setFilteredData(data);
+    console.log('📊 [HISTORY COMPONENT] Filtered data:', data.length);
+  }, [transactions, activeTab, filters, searchQuery]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -58,6 +171,37 @@ export default function History() {
   const openRouteMap = (startLat: number, startLng: number, endLat: number, endLng: number) => {
     const url = `https://www.google.com/maps/dir/${startLat},${startLng}/${endLat},${endLng}`;
     Linking.openURL(url);
+  };
+
+  const getDateFilterLabel = (filter: DateFilter) => {
+    switch (filter) {
+      case 'today': return 'Today';
+      case 'week': return 'This Week';
+      case 'month': return 'This Month';
+      case 'custom': return 'Custom Range';
+      default: return 'All Time';
+    }
+  };
+
+  const getSortOrderLabel = (sort: SortOrder) => {
+    switch (sort) {
+      case 'oldest': return 'Oldest First';
+      case 'amount_high': return 'Amount: High to Low';
+      case 'amount_low': return 'Amount: Low to High';
+      default: return 'Newest First';
+    }
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      dateFilter: 'all',
+      sortOrder: 'newest',
+    });
+  };
+
+  const applyFilters = (newFilters: FilterOptions) => {
+    setFilters(newFilters);
+    setShowFilterModal(false);
   };
 
   const formatDate = (date: Date) => {
@@ -225,101 +369,245 @@ export default function History() {
     console.log('📊 [HISTORY COMPONENT] Available data:', {
       totalTransactions: transactions.length,
       totalTrips: trips.length,
+      filteredData: filteredData.length,
       isLoading,
       historyPagination
     });
     
-    if (activeTab === 'trips') {
-      const tripTransactions = transactions.filter(t => t.transactionType === 'BusFare' && t.trip);
-      console.log('🚌 [HISTORY COMPONENT] Trip transactions filtered:', tripTransactions.length);
-      
-      return (
-        <FlatList
-          data={tripTransactions}
-          renderItem={renderTripItem}
-          keyExtractor={(item) => item.id.toString()}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[COLORS.primary]}
-            />
-          }
-          onEndReached={onLoadMore}
-          onEndReachedThreshold={0.1}
-          ListFooterComponent={
-            historyPagination.isLoadingMore ? (
-              <View style={styles.loadingMore}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-                <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.loadingText}>
-                  Loading more trips...
-                </Text>
+    return (
+      <FlatList
+        data={filteredData}
+        renderItem={activeTab === 'trips' ? renderTripItem : renderRechargeItem}
+        keyExtractor={(item) => item.id.toString()}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.primary]}
+          />
+        }
+        onEndReached={onLoadMore}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={
+          historyPagination.isLoadingMore ? (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.loadingText}>
+                Loading more {activeTab === 'trips' ? 'trips' : 'recharges'}...
+              </Text>
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          <Card>
+            <View style={styles.emptyContainer}>
+              <Ionicons 
+                name={activeTab === 'trips' ? 'bus-outline' : 'card-outline'} 
+                size={48} 
+                color={COLORS.gray[400]} 
+              />
+              <Text variant="h6" color={COLORS.gray[600]} style={styles.emptyText}>
+                No {activeTab === 'trips' ? 'trip' : 'recharge'} history found
+              </Text>
+              <Text variant="body" color={COLORS.gray[500]} style={styles.emptySubtext}>
+                {searchQuery 
+                  ? `No results found for "${searchQuery}"`
+                  : (filters.dateFilter !== 'all' || filters.minAmount !== undefined || filters.maxAmount !== undefined)
+                    ? 'Try adjusting your filters'
+                    : `Your ${activeTab === 'trips' ? 'bus trips' : 'recharge history'} will appear here`}
+              </Text>
+              {(searchQuery || filters.dateFilter !== 'all' || filters.minAmount !== undefined || filters.maxAmount !== undefined) && (
+                <TouchableOpacity
+                  style={styles.clearFiltersButton}
+                  onPress={() => {
+                    setSearchQuery('');
+                    resetFilters();
+                  }}
+                >
+                  <Text variant="labelSmall" color={COLORS.primary}>
+                    Clear {searchQuery ? 'Search & Filters' : 'Filters'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </Card>
+        }
+      />
+    );
+  };
+
+  const FilterModal = () => {
+    const [tempFilters, setTempFilters] = useState<FilterOptions>(filters);
+
+    return (
+      <Modal
+        visible={showFilterModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowFilterModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+              <Ionicons name="close" size={24} color={COLORS.gray[700]} />
+            </TouchableOpacity>
+            <Text variant="h6" color={COLORS.gray[900]} style={styles.modalTitle}>
+              Filter {activeTab === 'trips' ? 'Trips' : 'Recharges'}
+            </Text>
+            <TouchableOpacity onPress={resetFilters}>
+              <Text variant="labelSmall" color={COLORS.primary}>
+                Reset
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            {/* Date Filter */}
+            <View style={styles.filterSection}>
+              <Text variant="label" color={COLORS.gray[700]} style={styles.sectionTitle}>
+                Date Range
+              </Text>
+              <View style={styles.filterOptions}>
+                {(['all', 'today', 'week', 'month'] as DateFilter[]).map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[
+                      styles.filterOption,
+                      tempFilters.dateFilter === option && styles.filterOptionActive
+                    ]}
+                    onPress={() => setTempFilters({...tempFilters, dateFilter: option})}
+                  >
+                    <Text
+                      variant="bodySmall"
+                      color={tempFilters.dateFilter === option ? COLORS.white : COLORS.gray[700]}
+                    >
+                      {getDateFilterLabel(option)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-            ) : null
-          }
-          ListEmptyComponent={
-            <Card>
-              <View style={styles.emptyContainer}>
-                <Ionicons name="bus-outline" size={48} color={COLORS.gray[400]} />
-                <Text variant="h6" color={COLORS.gray[600]} style={styles.emptyText}>
-                  No trip history found
-                </Text>
-                <Text variant="body" color={COLORS.gray[500]} style={styles.emptySubtext}>
-                  Your bus trips will appear here
-                </Text>
+            </View>
+
+            {/* Sort Order */}
+            <View style={styles.filterSection}>
+              <Text variant="label" color={COLORS.gray[700]} style={styles.sectionTitle}>
+                Sort By
+              </Text>
+              <View style={styles.filterOptions}>
+                {(['newest', 'oldest', 'amount_high', 'amount_low'] as SortOrder[]).map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[
+                      styles.filterOption,
+                      tempFilters.sortOrder === option && styles.filterOptionActive
+                    ]}
+                    onPress={() => setTempFilters({...tempFilters, sortOrder: option})}
+                  >
+                    <Text
+                      variant="bodySmall"
+                      color={tempFilters.sortOrder === option ? COLORS.white : COLORS.gray[700]}
+                    >
+                      {getSortOrderLabel(option)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-            </Card>
-          }
-        />
-      );
-    } else {
-      const rechargeTransactions = transactions.filter(t => t.transactionType === 'Recharge'); // Only show recharge transactions
-      console.log('💳 [HISTORY COMPONENT] Recharge transactions for recharge tab:', rechargeTransactions.length);
-      
-      return (
-        <FlatList
-          data={rechargeTransactions}
-          renderItem={renderRechargeItem}
-          keyExtractor={(item) => item.id.toString()}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[COLORS.primary]}
-            />
-          }
-          onEndReached={onLoadMore}
-          onEndReachedThreshold={0.1}
-          ListFooterComponent={
-            historyPagination.isLoadingMore ? (
-              <View style={styles.loadingMore}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-                <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.loadingText}>
-                  Loading more recharges...
-                </Text>
+            </View>
+
+            {/* Amount Range */}
+            <View style={styles.filterSection}>
+              <Text variant="label" color={COLORS.gray[700]} style={styles.sectionTitle}>
+                Amount Range (৳)
+              </Text>
+              <View style={styles.amountInputs}>
+                <View style={styles.amountInput}>
+                  <Text variant="bodySmall" color={COLORS.gray[600]}>Min</Text>
+                  <TouchableOpacity
+                    style={styles.amountButton}
+                    onPress={() => {
+                      // For now, just clear the min amount
+                      setTempFilters({...tempFilters, minAmount: undefined});
+                    }}
+                  >
+                    <Text variant="bodySmall" color={COLORS.gray[700]}>
+                      {tempFilters.minAmount || 'Any'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.amountInput}>
+                  <Text variant="bodySmall" color={COLORS.gray[600]}>Max</Text>
+                  <TouchableOpacity
+                    style={styles.amountButton}
+                    onPress={() => {
+                      // For now, just clear the max amount
+                      setTempFilters({...tempFilters, maxAmount: undefined});
+                    }}
+                  >
+                    <Text variant="bodySmall" color={COLORS.gray[700]}>
+                      {tempFilters.maxAmount || 'Any'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            ) : null
-          }
-          ListEmptyComponent={
-            <Card>
-              <View style={styles.emptyContainer}>
-                <Ionicons name="card-outline" size={48} color={COLORS.gray[400]} />
-                <Text variant="h6" color={COLORS.gray[600]} style={styles.emptyText}>
-                  No recharge history found
+              
+              {/* Quick amount filters */}
+              <View style={styles.quickFilters}>
+                <Text variant="caption" color={COLORS.gray[600]} style={styles.quickFiltersLabel}>
+                  Quick filters:
                 </Text>
-                <Text variant="body" color={COLORS.gray[500]} style={styles.emptySubtext}>
-                  Your recharge history will appear here
-                </Text>
+                <View style={styles.filterOptions}>
+                  <TouchableOpacity
+                    style={styles.filterOption}
+                    onPress={() => setTempFilters({...tempFilters, minAmount: undefined, maxAmount: 50})}
+                  >
+                    <Text variant="bodySmall" color={COLORS.gray[700]}>
+                      Under ৳50
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.filterOption}
+                    onPress={() => setTempFilters({...tempFilters, minAmount: 50, maxAmount: 100})}
+                  >
+                    <Text variant="bodySmall" color={COLORS.gray[700]}>
+                      ৳50-100
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.filterOption}
+                    onPress={() => setTempFilters({...tempFilters, minAmount: 100, maxAmount: undefined})}
+                  >
+                    <Text variant="bodySmall" color={COLORS.gray[700]}>
+                      Over ৳100
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </Card>
-          }
-        />
-      );
-    }
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => setShowFilterModal(false)}
+            >
+              <Text variant="labelSmall" color={COLORS.gray[700]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.applyButton]}
+              onPress={() => applyFilters(tempFilters)}
+            >
+              <Text variant="labelSmall" color={COLORS.white}>
+                Apply Filters
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
+    );
   };
 
   return (
@@ -364,6 +652,69 @@ export default function History() {
           </TouchableOpacity>
         </View>
 
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={20} color={COLORS.gray[500]} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={`Search ${activeTab === 'trips' ? 'trips' : 'recharges'}...`}
+              placeholderTextColor={COLORS.gray[500]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              clearButtonMode="while-editing"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={20} color={COLORS.gray[500]} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Filter Header */}
+        <Animated.View entering={FadeInDown.delay(200)} style={styles.filterHeader}>
+          <View style={styles.filterInfo}>
+            <Text variant="bodySmall" color={COLORS.gray[600]}>
+              {filteredData.length} {activeTab === 'trips' ? 'trips' : 'recharges'}
+              {searchQuery && (
+                <Text variant="bodySmall" color={COLORS.primary}>
+                  {' '}• "{searchQuery}"
+                </Text>
+              )}
+              {filters.dateFilter !== 'all' && (
+                <Text variant="bodySmall" color={COLORS.primary}>
+                  {' '}• {getDateFilterLabel(filters.dateFilter)}
+                </Text>
+              )}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              (filters.dateFilter !== 'all' || filters.minAmount !== undefined || filters.maxAmount !== undefined) && 
+              styles.filterButtonActive
+            ]}
+            onPress={() => setShowFilterModal(true)}
+          >
+            <Ionicons 
+              name="funnel" 
+              size={16} 
+              color={filters.dateFilter !== 'all' || filters.minAmount !== undefined || filters.maxAmount !== undefined 
+                ? COLORS.white 
+                : COLORS.gray[600]} 
+            />
+            <Text 
+              variant="labelSmall"
+              color={filters.dateFilter !== 'all' || filters.minAmount !== undefined || filters.maxAmount !== undefined 
+                ? COLORS.white 
+                : COLORS.gray[600]}
+            >
+              Filter
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+
         {/* Error Display */}
         {error && (
           <Card style={{ margin: 16 }}>
@@ -401,6 +752,8 @@ export default function History() {
           </Animated.View>
         )}
       </View>
+      
+      <FilterModal />
     </SafeAreaView>
   );
 }
@@ -409,7 +762,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.gray[50],
-  },  content: {
+  },
+  content: {
     flex: 1,
   },
   listContent: {
@@ -443,6 +797,49 @@ const styles = StyleSheet.create({
   tabContent: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: COLORS.gray[900],
+    paddingVertical: 4,
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  filterInfo: {
+    flex: 1,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.gray[100],
+    gap: 6,
+  },
+  filterButtonActive: {
+    backgroundColor: COLORS.primary,
   },
   historyCard: {
     marginBottom: 12,
@@ -563,6 +960,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
     // Font properties handled by Text component
   },
+  clearFiltersButton: {
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary + '20',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
   loadingMore: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -595,5 +1001,92 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + '20',
     borderWidth: 1,
     borderColor: COLORS.primary,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[100],
+  },
+  modalTitle: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  filterSection: {
+    marginTop: 24,
+  },
+  sectionTitle: {
+    marginBottom: 12,
+  },
+  filterOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    backgroundColor: COLORS.gray[100],
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
+  },
+  filterOptionActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  amountInputs: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  amountInput: {
+    flex: 1,
+  },
+  amountButton: {
+    marginTop: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    backgroundColor: COLORS.gray[50],
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
+  },
+  quickFilters: {
+    marginTop: 12,
+  },
+  quickFiltersLabel: {
+    marginBottom: 8,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray[100],
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: COLORS.gray[100],
+  },
+  applyButton: {
+    backgroundColor: COLORS.primary,
   },
 });
