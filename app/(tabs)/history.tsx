@@ -228,7 +228,10 @@ export default function History() {
             </View>
             <View>
               <Text variant="label" color={COLORS.gray[900]} style={styles.cardTitle}>
-                Trip #{trip.id.slice(-8)}
+                {trip.session?.bus?.busName || 'Bus Service'}
+              </Text>
+              <Text variant="caption" color={COLORS.gray[600]} style={styles.cardSubtitle}>
+                {trip.session?.bus?.busNumber || 'N/A'}
               </Text>
               <Text variant="caption" color={COLORS.gray[500]} style={styles.cardDate}>
                 {formatDate(new Date(trip.tripStartTime))}
@@ -285,22 +288,26 @@ export default function History() {
             )}
           </View>
           
-          {trip.distance > 0 && (
-            <TouchableOpacity
-              style={styles.distanceButton}
-              onPress={() => openRouteMap(
-                parseFloat(trip.startingLatitude),
-                parseFloat(trip.startingLongitude),
-                parseFloat(trip.endingLatitude),
-                parseFloat(trip.endingLongitude)
-              )}
-            >
-              <Ionicons name="map" size={14} color={COLORS.primary} />
-              <Text variant="bodySmall" color={COLORS.primary} style={styles.distanceText}>
-                Distance: {trip.distance.toFixed(2)}km (View Route)
-              </Text>
-            </TouchableOpacity>
-          )}
+          
+          <TouchableOpacity
+            style={styles.distanceButton}
+            onPress={() => {
+              if (trip.distance > 0) {
+                openRouteMap(
+                  parseFloat(trip.startingLatitude),
+                  parseFloat(trip.startingLongitude),
+                  parseFloat(trip.endingLatitude),
+                  parseFloat(trip.endingLongitude)
+                );
+              }
+            }}
+            disabled={trip.distance === 0}
+          >
+            <Ionicons name="map" size={14} color={trip.distance > 0 ? COLORS.primary : COLORS.gray[400]} />
+            <Text variant="bodySmall" color={trip.distance > 0 ? COLORS.primary : COLORS.gray[600]} style={styles.distanceText}>
+              Distance: {trip.distance.toFixed(2)}km {trip.distance > 0 ? '(View Route)' : ''}
+            </Text>
+          </TouchableOpacity>
         </View>
       </Card>
     );
@@ -319,7 +326,7 @@ export default function History() {
             </View>
             <View>
               <Text variant="label" color={COLORS.gray[900]} style={styles.cardTitle}>
-                Recharge
+                Agent
               </Text>
               <Text variant="caption" color={COLORS.gray[500]} style={styles.cardSubtitle}>
                 {item.agent?.name || 'Manual Recharge'}
@@ -332,14 +339,14 @@ export default function History() {
         </View>
 
         <View style={styles.rechargeDetails}>
-          {item.agent && (
+          {/* {item.agent && (
             <View style={styles.detailRow}>
               <Ionicons name="person" size={14} color={COLORS.gray[500]} />
               <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
                 Agent: {item.agent.name}
               </Text>
             </View>
-          )}
+          )} */}
           {item.agent?.organization && (
             <View style={styles.detailRow}>
               <Ionicons name="business" size={14} color={COLORS.gray[500]} />
@@ -348,17 +355,19 @@ export default function History() {
               </Text>
             </View>
           )}
-          <View style={styles.detailRow}>
-            <Ionicons name="calendar" size={14} color={COLORS.gray[500]} />
-            <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-              {formatDate(new Date(item.createTime))}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="time" size={14} color={COLORS.gray[500]} />
-            <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-              {new Date(item.createTime).toLocaleTimeString()}
-            </Text>
+          <View style={styles.dateTimeRow}>
+            <View style={styles.dateTimeItem}>
+              <Ionicons name="calendar" size={14} color={COLORS.gray[500]} />
+              <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
+                {formatDate(new Date(item.createTime))}
+              </Text>
+            </View>
+            <View style={styles.dateTimeItemRight}>
+              <Ionicons name="time" size={14} color={COLORS.gray[500]} />
+              <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
+                {new Date(item.createTime).toLocaleTimeString()}
+              </Text>
+            </View>
           </View>
         </View>
       </Card>
@@ -939,6 +948,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dateTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateTimeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  dateTimeItemRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
