@@ -219,6 +219,14 @@ export default function History() {
     
     if (!trip) return null;
 
+    // Safety checks for required data
+    const busName = trip.session?.bus?.busName || 'Bus Service';
+    const busNumber = trip.session?.bus?.busNumber || 'N/A';
+    const tripAmount = trip.amount || 0;
+    const tripStartTime = trip.tripStartTime;
+    const tripEndTime = trip.tripEndTime;
+    const distance = trip.distance || 0;
+
     return (
       <Card variant="elevated" style={styles.historyCard}>
         <View style={styles.cardHeader}>
@@ -228,18 +236,18 @@ export default function History() {
             </View>
             <View>
               <Text variant="label" color={COLORS.gray[900]} style={styles.cardTitle}>
-                {trip.session?.bus?.busName || 'Bus Service'}
+                {busName}
               </Text>
               <Text variant="caption" color={COLORS.gray[600]} style={styles.cardSubtitle}>
-                {trip.session?.bus?.busNumber || 'N/A'}
+                {busNumber}
               </Text>
               <Text variant="caption" color={COLORS.gray[500]} style={styles.cardDate}>
-                {formatDate(new Date(trip.tripStartTime))}
+                {tripStartTime ? formatDate(new Date(tripStartTime)) : 'N/A'}
               </Text>
             </View>
           </View>
           <Text variant="h6" color={COLORS.error} style={styles.fareAmount}>
-            -৳{trip.amount?.toFixed(2) || '0.00'}
+            -৳{tripAmount.toFixed(2)}
           </Text>
         </View>
 
@@ -251,36 +259,46 @@ export default function History() {
               </Text>
               <TouchableOpacity
                 style={styles.timeButton}
-                onPress={() => openMapLocation(
-                  parseFloat(trip.startingLatitude),
-                  parseFloat(trip.startingLongitude),
-                  'Tap In Location'
-                )}
+                onPress={() => {
+                  if (trip.startingLatitude && trip.startingLongitude) {
+                    openMapLocation(
+                      parseFloat(trip.startingLatitude),
+                      parseFloat(trip.startingLongitude),
+                      'Tap In Location'
+                    );
+                  }
+                }}
+                disabled={!trip.startingLatitude || !trip.startingLongitude}
               >
                 <Ionicons name="time" size={14} color={COLORS.primary} />
                 <Text variant="bodySmall" color={COLORS.gray[700]} style={styles.timeText}>
-                  {new Date(trip.tripStartTime).toLocaleTimeString()}
+                  {tripStartTime ? new Date(tripStartTime).toLocaleTimeString() : 'N/A'}
                 </Text>
                 <Ionicons name="location" size={14} color={COLORS.primary} />
               </TouchableOpacity>
             </View>
 
-            {trip.tripEndTime && (
+            {tripEndTime && (
               <View style={styles.timeItem}>
                 <Text variant="caption" color={COLORS.gray[600]} style={styles.timeLabel}>
                   Tap Out
                 </Text>
                 <TouchableOpacity
                   style={styles.timeButton}
-                  onPress={() => openMapLocation(
-                    parseFloat(trip.endingLatitude),
-                    parseFloat(trip.endingLongitude),
-                    'Tap Out Location'
-                  )}
+                  onPress={() => {
+                    if (trip.endingLatitude && trip.endingLongitude) {
+                      openMapLocation(
+                        parseFloat(trip.endingLatitude),
+                        parseFloat(trip.endingLongitude),
+                        'Tap Out Location'
+                      );
+                    }
+                  }}
+                  disabled={!trip.endingLatitude || !trip.endingLongitude}
                 >
                   <Ionicons name="time" size={14} color={COLORS.primary} />
                   <Text variant="bodySmall" color={COLORS.gray[700]} style={styles.timeText}>
-                    {new Date(trip.tripEndTime).toLocaleTimeString()}
+                    {tripEndTime ? new Date(tripEndTime).toLocaleTimeString() : 'N/A'}
                   </Text>
                   <Ionicons name="location" size={14} color={COLORS.primary} />
                 </TouchableOpacity>
@@ -292,7 +310,7 @@ export default function History() {
           <TouchableOpacity
             style={styles.distanceButton}
             onPress={() => {
-              if (trip.distance > 0) {
+              if (distance > 0 && trip.startingLatitude && trip.startingLongitude && trip.endingLatitude && trip.endingLongitude) {
                 openRouteMap(
                   parseFloat(trip.startingLatitude),
                   parseFloat(trip.startingLongitude),
@@ -301,11 +319,11 @@ export default function History() {
                 );
               }
             }}
-            disabled={trip.distance === 0}
+            disabled={distance === 0 || !trip.startingLatitude || !trip.startingLongitude || !trip.endingLatitude || !trip.endingLongitude}
           >
-            <Ionicons name="map" size={14} color={trip.distance > 0 ? COLORS.primary : COLORS.gray[400]} />
-            <Text variant="bodySmall" color={trip.distance > 0 ? COLORS.primary : COLORS.gray[600]} style={styles.distanceText}>
-              Distance: {trip.distance.toFixed(2)}km {trip.distance > 0 ? '(View Route)' : ''}
+            <Ionicons name="map" size={14} color={distance > 0 && trip.startingLatitude && trip.startingLongitude && trip.endingLatitude && trip.endingLongitude ? COLORS.primary : COLORS.gray[400]} />
+            <Text variant="bodySmall" color={distance > 0 && trip.startingLatitude && trip.startingLongitude && trip.endingLatitude && trip.endingLongitude ? COLORS.primary : COLORS.gray[600]} style={styles.distanceText}>
+              Distance: {distance.toFixed(2)}km {distance > 0 && trip.startingLatitude && trip.startingLongitude && trip.endingLatitude && trip.endingLongitude ? '(View Route)' : ''}
             </Text>
           </TouchableOpacity>
         </View>
@@ -334,7 +352,7 @@ export default function History() {
             </View>
           </View>
           <Text variant="h6" color={COLORS.success} style={styles.rechargeAmount}>
-            +৳{item.amount.toFixed(2)}
+            +৳{item.amount?.toFixed(2) || '0.00'}
           </Text>
         </View>
 
@@ -347,11 +365,11 @@ export default function History() {
               </Text>
             </View>
           )} */}
-          {item.agent?.organization && (
+          {item.agent?.organization?.name && (
             <View style={styles.detailRow}>
               <Ionicons name="business" size={14} color={COLORS.gray[500]} />
               <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-                Organization: {item.agent.organization.name || 'N/A'}
+                Organization: {item.agent.organization.name}
               </Text>
             </View>
           )}
@@ -359,13 +377,13 @@ export default function History() {
             <View style={styles.dateTimeItem}>
               <Ionicons name="calendar" size={14} color={COLORS.gray[500]} />
               <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-                {formatDate(new Date(item.createTime))}
+                {item.createTime ? formatDate(new Date(item.createTime)) : 'N/A'}
               </Text>
             </View>
             <View style={styles.dateTimeItemRight}>
               <Ionicons name="time" size={14} color={COLORS.gray[500]} />
               <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-                {new Date(item.createTime).toLocaleTimeString()}
+                {item.createTime ? new Date(item.createTime).toLocaleTimeString() : 'N/A'}
               </Text>
             </View>
           </View>
