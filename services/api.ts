@@ -46,6 +46,22 @@ export interface UserResponse {
   balance: number;
 }
 
+export interface Trip {
+  id: string;
+  isRunning: boolean;
+  tripStartTime: string;
+  distance: number;
+  amount: number;
+  session?: {
+    bus?: {
+      busNumber: string;
+      busName: string;
+      tripStartPlace: string;
+      tripEndPlace: string;
+    };
+  };
+}
+
 class ApiService {
   private api: AxiosInstance;
 
@@ -245,6 +261,89 @@ class ApiService {
       }
       
       return null; // Return null instead of throwing for graceful degradation
+    }
+  }
+
+  async getOnGoingTrip(): Promise<Trip | null> {
+    console.log('🚌 [TRIP] Fetching ongoing trip...');
+    
+    try {
+      const response = await this.api.get('/api/passenger/getOnGoingTrip');
+      
+      console.log('📥 [TRIP] Response received:', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message,
+        hasContent: !!response.data.data.content
+      });
+      
+      // Check if the API response indicates success
+      if (!response.data.data.isSuccess) {
+        console.log('ℹ️ [TRIP] No ongoing trip found:', response.data.data.message);
+        return null;
+      }
+      
+      // Return the content if successful
+      if (!response.data.data.content) {
+        console.log('ℹ️ [TRIP] No ongoing trip data in response');
+        return null;
+      }
+      
+      const tripData = response.data.data.content;
+      console.log('✅ [TRIP] Ongoing trip found:', {
+        id: tripData.id,
+        isRunning: tripData.isRunning,
+        startTime: tripData.tripStartTime,
+        busNumber: tripData.session?.bus?.busNumber,
+        busName: tripData.session?.bus?.busName,
+        route: `${tripData.session?.bus?.tripStartPlace} → ${tripData.session?.bus?.tripEndPlace}`,
+        distance: tripData.distance,
+        amount: tripData.amount
+      });
+      
+      return tripData;
+    } catch (error: any) {
+      console.error('💥 [TRIP] Error fetching ongoing trip:', {
+        status: error.response?.status,
+        message: error.response?.data || error.message
+      });
+      
+      // Handle specific error cases silently
+      if (error.response?.status === 404) {
+        console.log('ℹ️ [TRIP] No ongoing trip found (404)');
+        return null;
+      }
+      
+      return null;
+    }
+  }
+
+  async tapOutTrip(): Promise<boolean> {
+    console.log('🚌 [TRIP] Attempting to tap out...');
+    
+    try {
+      const response = await this.api.post('/api/passenger/tapOut');
+      
+      console.log('📥 [TRIP] Tap out response received:', {
+        status: response.status,
+        isSuccess: response.data.data?.isSuccess,
+        message: response.data.data?.message
+      });
+      
+      // Check if the API response indicates success
+      if (response.data.data?.isSuccess) {
+        console.log('✅ [TRIP] Tap out successful');
+        return true;
+      } else {
+        console.log('❌ [TRIP] Tap out failed:', response.data.data?.message);
+        return false;
+      }
+    } catch (error: any) {
+      console.error('💥 [TRIP] Error during tap out:', {
+        status: error.response?.status,
+        message: error.response?.data || error.message
+      });
+      return false;
     }
   }
 

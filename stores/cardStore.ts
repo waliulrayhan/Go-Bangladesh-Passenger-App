@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiService } from '../services/api';
 import { ApiResponse, Bus, Card, PaginationState, Transaction, Trip } from '../types';
 import { useAuthStore } from './authStore';
 
@@ -21,8 +22,10 @@ interface CardState {
   recharge: (cardNumber: string, amount: number) => Promise<boolean>;
   simulateTapIn: () => void;
   simulateTapOut: () => void;
+  realTapOut: () => Promise<boolean>;
   clearError: () => void;
   loadMoreHistory: () => Promise<void>;
+  checkOngoingTrip: () => Promise<void>;
 }
 
 export const useCardStore = create<CardState>((set, get) => ({
@@ -46,17 +49,25 @@ export const useCardStore = create<CardState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      // TODO: Replace with real API call when card endpoints are available
-      // For now, create a basic card object to avoid crashes
+      // Get user data from auth store
+      const authStore = useAuthStore.getState();
+      const user = authStore.user;
+      
+      // Create card object from user data if available
       const card: Card = {
         id: 1,
-        cardNumber: 'GB-0000000000',
-        userId: 1,
-        balance: 0,
+        cardNumber: user?.cardNumber || 'GB-0000000000',
+        userId: parseInt(user?.id?.toString() || '1'),
+        balance: user?.balance || 0,
         isActive: true,
         createdAt: new Date().toISOString()
       };
+      
       set({ card, isLoading: false });
+      
+      // Check for ongoing trip after loading card details
+      get().checkOngoingTrip();
+      
     } catch (error: any) {
       set({
         isLoading: false,
@@ -320,5 +331,64 @@ export const useCardStore = create<CardState>((set, get) => ({
     }
   },
 
-  clearError: () => set({ error: null })
+  realTapOut: async () => {
+    console.log('🔄 [TRIP] Attempting real tap out...');
+    
+    try {
+      const success = await apiService.tapOutTrip();
+      
+      if (success) {
+        console.log('✅ [TRIP] Tap out successful, updating state');
+        set({
+          tripStatus: 'idle',
+          currentTrip: null
+        });
+        
+        // Refresh card details and history after tap out
+        get().loadCardDetails();
+        get().loadHistory(1, true);
+        
+        return true;
+      } else {
+        console.log('❌ [TRIP] Tap out failed');
+        set({ error: 'Failed to tap out. Please try again.' });
+        return false;
+      }
+    } catch (error: any) {
+      console.error('💥 [TRIP] Error during tap out:', error.message);
+      set({ error: error.message || 'Failed to tap out. Please try again.' });
+      return false;
+    }
+  },
+
+  clearError: () => set({ error: null }),
+
+  checkOngoingTrip: async () => {
+    console.log('🔄 [TRIP] Checking for ongoing trip...');
+    
+    try {
+      const ongoingTrip = await apiService.getOnGoingTrip();
+      
+      if (ongoingTrip && ongoingTrip.isRunning) {
+        console.log('✅ [TRIP] Ongoing trip found, updating state');
+        set({
+          tripStatus: 'active',
+          currentTrip: ongoingTrip as Trip
+        });
+      } else {
+        console.log('ℹ️ [TRIP] No ongoing trip found');
+        set({
+          tripStatus: 'idle',
+          currentTrip: null
+        });
+      }
+    } catch (error: any) {
+      console.error('💥 [TRIP] Error checking ongoing trip:', error.message);
+      // Don't set error state for trip checks as this is a background operation
+      set({
+        tripStatus: 'idle',
+        currentTrip: null
+      });
+    }
+  }
 }));

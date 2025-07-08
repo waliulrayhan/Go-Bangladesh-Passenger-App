@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Image, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp, interpolate, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { GoBangladeshLogo } from '../../components/GoBangladeshLogo';
 import { Text } from '../../components/ui/Text';
 import { WelcomePopup } from '../../components/ui/WelcomePopup';
@@ -20,15 +20,56 @@ export default function Dashboard() {
     tripStatus,
     currentTrip,
     transactions,
-    loadHistory
+    loadHistory,
+    checkOngoingTrip,
+    realTapOut
   } = useCardStore();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
+  // Animation for pulse effect - moved to top level
+  const pulseAnimation = useSharedValue(0);
+
   useEffect(() => {
     loadCardDetails();
     loadHistory(1, true); // Load recent transactions
+    
+    // Set up periodic checking for ongoing trips every 30 seconds
+    const tripCheckInterval = setInterval(() => {
+      checkOngoingTrip();
+    }, 30000); // Check every 30 seconds
+    
+    // Check immediately on mount
+    checkOngoingTrip();
+    
+    // Cleanup interval on unmount
+    return () => {
+      clearInterval(tripCheckInterval);
+    };
   }, [user]);
+
+  // Start pulse animation when trip is active
+  useEffect(() => {
+    if (tripStatus === 'active') {
+      pulseAnimation.value = withRepeat(
+        withTiming(1, { duration: 1500 }),
+        -1,
+        true
+      );
+    } else {
+      pulseAnimation.value = 0;
+    }
+  }, [tripStatus]);
+
+  const pulseStyle = useAnimatedStyle(() => {
+    const scale = interpolate(pulseAnimation.value, [0, 1], [1, 1.3]);
+    const opacity = interpolate(pulseAnimation.value, [0, 1], [0.8, 0.3]);
+    
+    return {
+      transform: [{ scale }],
+      opacity,
+    };
+  });
 
   const handleProfilePress = () => {
     setShowProfileMenu(!showProfileMenu);
@@ -109,7 +150,7 @@ export default function Dashboard() {
     </Animated.View>
   );
   const renderRFIDCard = () => (
-    <Animated.View entering={FadeInDown.duration(800).delay(200)} style={styles.cardContainer}>
+    <Animated.View entering={FadeInDown.duration(800).delay(300)} style={styles.cardContainer}>
       <View style={styles.card}>
         <View style={styles.cardTop}>
           <GoBangladeshLogo size={24} color1={COLORS.white} color2={COLORS.brand.orange_light} />
@@ -160,78 +201,39 @@ export default function Dashboard() {
     </Animated.View>
   );
   
-  const renderSimulateButton = () => (
-    <Animated.View entering={FadeInDown.duration(800).delay(300)} style={styles.simulateContainer}>
-      {tripStatus === 'idle' ? (
-        <TouchableOpacity 
-          style={styles.simulateButton}
-          onPress={() => {
-            require('../../stores/cardStore').useCardStore.getState().simulateTapIn();
-          }}
-        >
-          <Ionicons name="radio" size={20} color={COLORS.primary} />
-          <Text variant="labelSmall" color={COLORS.primary} style={styles.simulateText}>
-            Simulate Tap In
-          </Text>
-        </TouchableOpacity>
-      ) : null}
-    </Animated.View>
-  );
+  const renderSimulateButton = () => {
+    // Hide simulate button since we're using real trip data
+    return null;
+  };
   
   const renderTripStatus = () => {
     if (tripStatus === 'idle') return null;
     
     return (
-      <Animated.View entering={FadeInDown.duration(800).delay(400)} style={styles.tripStatusContainer}>
+      <Animated.View entering={FadeInDown.duration(800).delay(200)} style={styles.tripStatusContainer}>
         <View style={styles.tripStatusCard}>
-          <View style={styles.tripStatusHeader}>
-            <View style={styles.tripStatusIcon}>
-              <Ionicons name="bus" size={24} color={COLORS.white} />
+          <View style={styles.tripStatusContent}>
+            <View style={styles.tripStatusIconContainer}>
+              <View style={styles.tripStatusIcon}>
+                <Ionicons name="bus" size={20} color={COLORS.brand.blue} />
+              </View>
+              <View style={styles.pulseIndicator}>
+                <Animated.View style={[styles.pulseRing, pulseStyle]} />
+                <View style={styles.pulseCore} />
+              </View>
             </View>
             <View style={styles.tripStatusInfo}>
-              <Text variant="h6" color={COLORS.white} style={styles.tripStatusTitle}>
+              <Text variant="h6" color={COLORS.brand.blue} style={styles.tripStatusTitle}>
                 Trip in Progress
               </Text>
-              <Text variant="caption" color={COLORS.white} style={styles.tripStatusSubtitle}>
-                Bus: {currentTrip?.sessionId?.slice(-8) || 'DHK-123-4567'}
+              <Text variant="body" color={COLORS.gray[700]} style={styles.busName}>
+                {currentTrip?.session?.bus?.busName || 'Swapnil'}
               </Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.tapOutButton}
-              onPress={() => {
-                Alert.alert(
-                  'Tap Out',
-                  'Are you sure you want to end this trip?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    { 
-                      text: 'Tap Out', 
-                      onPress: () => {
-                        // Call tap out simulation
-                        require('../../stores/cardStore').useCardStore.getState().simulateTapOut();
-                      }
-                    }
-                  ]
-                );
-              }}
-            >
-              <Text variant="caption" color={COLORS.secondary} style={styles.tapOutText}>
-                Tap Out
+              <Text variant="body" color={COLORS.gray[600]} style={styles.busNumber}>
+                {currentTrip?.session?.bus?.busNumber || 'GAIBANDHA-KHA-18-8123'}
               </Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.tripStatusDetails}>
-            <View style={styles.tripStatusItem}>
-              <Ionicons name="time" size={16} color={COLORS.white} />
-              <Text variant="caption" color={COLORS.white} style={styles.tripStatusDetailText}>
-                Started: {currentTrip ? new Date(currentTrip.tripStartTime).toLocaleTimeString() : ''}
-              </Text>
-            </View>
-            <View style={styles.tripStatusItem}>
-              <Ionicons name="location" size={16} color={COLORS.white} />
-              <Text variant="caption" color={COLORS.white} style={styles.tripStatusDetailText}>
-                Ongoing Journey
+              <Text variant="caption" color={COLORS.gray[500]} style={styles.tripTime}>
+                Started: {currentTrip ? new Date(currentTrip.tripStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }) : '8:16:45 PM'}
               </Text>
             </View>
           </View>
@@ -381,9 +383,9 @@ export default function Dashboard() {
         scrollEventThrottle={16}
       >
         {renderHeader()}
+        {renderTripStatus()}
         {renderRFIDCard()}
         {renderSimulateButton()}
-        {renderTripStatus()}
         {renderRecentActivity()}
       </ScrollView>
 
@@ -619,60 +621,81 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tripStatusCard: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
-    borderColor: COLORS.primary + '20',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.brand.blue,
   },
-  tripStatusHeader: {
+  tripStatusContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+  },
+  tripStatusIconContainer: {
+    position: 'relative',
+    marginRight: 14,
+    alignSelf: 'center',
   },
   tripStatusIcon: {
-    width: 40,
-    height: 40,
-    backgroundColor: COLORS.white + '20',
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    backgroundColor: COLORS.brand.blue + '15',
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    borderWidth: 2,
+    borderColor: COLORS.brand.blue + '30',
+  },
+  pulseIndicator: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    width: 14,
+    height: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: COLORS.brand.orange_light + '40',
+    opacity: 0.8,
+  },
+  pulseCore: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: COLORS.brand.orange_light,
   },
   tripStatusInfo: {
     flex: 1,
+    justifyContent: 'center',
   },
   tripStatusTitle: {
+    fontWeight: '700',
+    marginBottom: 4,
+    fontSize: 16,
+  },
+  busName: {
     fontWeight: '600',
     marginBottom: 2,
+    fontSize: 14,
   },
-  tripStatusSubtitle: {
+  busNumber: {
+    fontWeight: '500',
+    marginBottom: 4,
+    fontSize: 13,
+  },
+  tripTime: {
     fontSize: 12,
-    opacity: 0.9,
-  },
-  tapOutButton: {
-    backgroundColor: COLORS.white + '20',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  tapOutText: {
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  tripStatusDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  tripStatusItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  tripStatusDetailText: {
-    marginLeft: 6,
-    fontSize: 12,
-    opacity: 0.9,
+    fontWeight: '500',
   },
 
   // Recent Activity Styles
