@@ -115,6 +115,7 @@ interface AuthState {
   verifyOTP: (mobile: string, otp: string) => Promise<boolean>;
   sendPasswordReset: (identifier: string) => Promise<boolean>;
   resetPassword: (mobile: string, newPassword: string, confirmPassword: string) => Promise<boolean>;
+  changePassword: (oldPassword: string, newPassword: string, confirmNewPassword: string) => Promise<{ success: boolean; message: string }>;
   registerUser: (userData: {
     name: string;
     sex: 'male' | 'female';
@@ -727,6 +728,43 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: formatApiError(error, 'Failed to reset password')
       });
       return false;
+    }
+  },
+
+  changePassword: async (oldPassword: string, newPassword: string, confirmNewPassword: string) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      // Validate password confirmation
+      if (newPassword !== confirmNewPassword) {
+        return { success: false, message: 'New passwords do not match' };
+      }
+      
+      // Validate password strength
+      if (newPassword.length < 6) {
+        return { success: false, message: 'New password must be at least 6 characters long' };
+      }
+      
+      // Use the change password API
+      const response = await apiService.changePassword({
+        oldPassword,
+        newPassword,
+        confirmNewPassword
+      });
+      
+      set({ isLoading: false });
+      
+      return {
+        success: response.isSuccess,
+        message: response.message
+      };
+    } catch (error: any) {
+      const errorMessage = formatApiError(error, 'Failed to change password');
+      set({
+        isLoading: false,
+        error: errorMessage
+      });
+      return { success: false, message: errorMessage };
     }
   },
 

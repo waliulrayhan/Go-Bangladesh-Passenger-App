@@ -93,6 +93,20 @@ export interface Transaction {
   status: string;
 }
 
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  isSuccess: boolean;
+  content: null;
+  timeStamp: string;
+  payloadType: string | null;
+  message: string;
+}
+
 class ApiService {
   private api: AxiosInstance;
 
@@ -596,6 +610,36 @@ class ApiService {
       } else {
         throw new Error('Failed to fetch history. Please try again.');
       }
+    }
+  }
+
+  async changePassword(changePasswordData: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+    console.log('🔑 [PASSWORD] Attempting to change password...');
+    
+    try {
+      const response = await this.api.post<ApiResponse<null>>('/api/user/changePassword', changePasswordData);
+      
+      console.log('📥 [PASSWORD] Change password response received:', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message
+      });
+      
+      // Return the API response data
+      return response.data.data;
+    } catch (error: any) {
+      console.error('💥 [PASSWORD] Error changing password:', {
+        status: error.response?.status,
+        message: error.response?.data?.data?.message || error.message
+      });
+      
+      // If the API returned an error response with data, return it
+      if (error.response?.data?.data) {
+        return error.response.data.data;
+      }
+      
+      // Otherwise, throw the error
+      throw error;
     }
   }
 

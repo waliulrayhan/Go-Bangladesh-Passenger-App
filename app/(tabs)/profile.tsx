@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Alert, Dimensions, Image, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
-import { TokenInfoDemo } from '../../components/TokenInfoDemo';
 import { Text } from '../../components/ui/Text';
 import { useTokenRefresh, useUserContext } from '../../hooks/useTokenRefresh';
 import { useAuthStore } from '../../stores/authStore';
@@ -323,6 +322,19 @@ export default function Profile() {
               <Ionicons name="settings-outline" size={18} color={COLORS.info} />
             </View>
             <Text style={styles.actionText}>Settings</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.actionItem}
+          onPress={() => router.push('/(auth)/change-password')}
+        >
+          <View style={styles.actionLeft}>
+            <View style={[styles.actionIconContainer, { backgroundColor: COLORS.primary + '15' }]}>
+              <Ionicons name="key-outline" size={18} color={COLORS.primary} />
+            </View>
+            <Text style={styles.actionText}>Change Password</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
         </TouchableOpacity>
