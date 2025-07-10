@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Alert, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -95,7 +96,9 @@ export default function ForgotPassword() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <>
+      <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
+      <SafeAreaView style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
         <Text style={styles.backButtonText}>← Back</Text>
       </TouchableOpacity>
@@ -159,6 +162,7 @@ export default function ForgotPassword() {
         </Animated.View>
       </View>
     </SafeAreaView>
+    </>
   );
 }
 

@@ -18,16 +18,16 @@ export default function AuthLayout() {
         }} 
       />
       <Stack.Screen 
-        name="verify-registration" 
+        name="registration-personal-info" 
         options={{ 
-          title: 'Verify Registration',
+          title: 'Personal Information',
           headerShown: false 
         }} 
       />
       <Stack.Screen 
-        name="passenger-login-otp" 
+        name="verify-registration" 
         options={{ 
-          title: 'OTP Verification',
+          title: 'Verify Registration',
           headerShown: false 
         }} 
       />

@@ -149,13 +149,22 @@ export default function PassengerLogin() {
             
             <TouchableOpacity 
               style={styles.createAccountButton}
-              onPress={handleContactOrganization}
+              onPress={() => router.push('/(auth)/passenger-registration')}
             >
               <Text style={styles.createAccountText}>
-                Need help with your account?
+                Don't have an account?
               </Text>
               <Text style={styles.createAccountLink}>
-                Contact your organization
+                Register Now
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.organizationButton}
+              onPress={handleContactOrganization}
+            >
+              <Text style={styles.organizationText}>
+                Need help with your account? Contact your organization
               </Text>
             </TouchableOpacity>
           </Animated.View>
@@ -269,5 +278,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: COLORS.primary,
     fontWeight: '600',
+  },
+  organizationButton: {
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    alignItems: 'center',
+    marginTop: SPACING.xs,
+  },
+  organizationText: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: COLORS.gray[500],
+    lineHeight: 18,
   },
 });
