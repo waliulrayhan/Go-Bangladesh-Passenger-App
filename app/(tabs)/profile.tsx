@@ -4,7 +4,9 @@ import React from 'react';
 import { Alert, Dimensions, Image, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
 import { Text } from '../../components/ui/Text';
+import { UpdateCardModal } from '../../components/UpdateCardModal';
 import { useTokenRefresh, useUserContext } from '../../hooks/useTokenRefresh';
+import { apiService } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 import { useCardStore } from '../../stores/cardStore';
 import { API_BASE_URL, COLORS } from '../../utils/constants';
@@ -20,6 +22,10 @@ export default function Profile() {
   const { userContext } = useUserContext();
   
   const [refreshing, setRefreshing] = React.useState(false);
+  const [showUpdateCardModal, setShowUpdateCardModal] = React.useState(false);
+
+  // Check if user is public type
+  const isPublicUser = user?.userType === 'public';
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -137,6 +143,15 @@ export default function Profile() {
               <Text style={styles.balanceLabel}>Current Balance</Text>
               <Text style={styles.balanceAmount}>৳{user.balance.toFixed(2)}</Text>
             </View>
+            {isPublicUser && (
+              <TouchableOpacity 
+                style={styles.updateCardButton}
+                onPress={() => setShowUpdateCardModal(true)}
+              >
+                <Ionicons name="card" size={16} color={COLORS.primary} />
+                <Text style={styles.updateCardText}>Update Card</Text>
+              </TouchableOpacity>
+            )}
           </View>
           
           <View style={styles.cardNumberContainer}>
@@ -386,6 +401,53 @@ export default function Profile() {
     </Animated.View>
   );
 
+  const handleSendOTPForCardUpdate = async (newCardNumber: string) => {
+    if (!user?.mobileNumber) {
+      throw new Error('Mobile number not found');
+    }
+
+    try {
+      console.log('📱 Sending OTP for card update to:', user.mobileNumber);
+      await apiService.sendOTP(user.mobileNumber);
+      console.log('✅ OTP sent successfully for card update');
+    } catch (error: any) {
+      console.error('❌ Send OTP error:', error);
+      throw error;
+    }
+  };
+
+  const handleUpdateCard = async (newCardNumber: string, otp: string) => {
+    if (!user?.id) {
+      throw new Error('User ID not found');
+    }
+
+    if (!user?.mobileNumber) {
+      throw new Error('Mobile number not found');
+    }
+
+    try {
+      // First verify OTP
+      console.log('🔐 Verifying OTP for card update');
+      await apiService.verifyOTP(user.mobileNumber, otp);
+      console.log('✅ OTP verified successfully');
+      
+      // Then update card number
+      console.log('🔄 Updating card number for user:', user.id);
+      const response = await apiService.updateCardNumber(user.id.toString(), newCardNumber);
+      
+      if (response.isSuccess) {
+        Alert.alert('Success', response.message || 'Card number updated successfully!');
+        // Refresh user data to get the updated card number
+        await refreshAllData();
+      } else {
+        throw new Error(response.message || 'Failed to update card number');
+      }
+    } catch (error: any) {
+      console.error('❌ Update card error:', error);
+      throw error;
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView 
@@ -407,6 +469,16 @@ export default function Profile() {
         {renderAccountInfo()}
         {renderActions()}
       </ScrollView>
+
+      {/* Update Card Modal */}
+      <UpdateCardModal
+        visible={showUpdateCardModal}
+        currentCardNumber={user?.cardNumber}
+        userMobile={user?.mobileNumber || user?.mobile}
+        onClose={() => setShowUpdateCardModal(false)}
+        onUpdate={handleUpdateCard}
+        onSendOTP={handleSendOTPForCardUpdate}
+      />
     </SafeAreaView>
   );
 }
@@ -542,6 +614,20 @@ const styles = StyleSheet.create({
   balanceAmount: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  updateCardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '10',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 4,
+  },
+  updateCardText: {
+    fontSize: 12,
+    fontWeight: '600',
     color: COLORS.primary,
   },
   cardNumberContainer: {

@@ -107,6 +107,19 @@ export interface ChangePasswordResponse {
   message: string;
 }
 
+export interface UpdateCardNumberRequest {
+  userId: string;
+  cardNumber: string;
+}
+
+export interface UpdateCardNumberResponse {
+  isSuccess: boolean;
+  content: null;
+  timeStamp: string;
+  payloadType: string;
+  message: string;
+}
+
 class ApiService {
   private api: AxiosInstance;
 
@@ -703,6 +716,61 @@ class ApiService {
       
       // Otherwise, throw the error
       throw error;
+    }
+  }
+
+  /**
+   * Update card number for public users
+   */
+  async updateCardNumber(userId: string, cardNumber: string): Promise<UpdateCardNumberResponse> {
+    console.log('🔄 [UPDATE CARD] Updating card number for user:', userId);
+    console.log('🆔 [UPDATE CARD] New card number:', cardNumber);
+    
+    try {
+      const requestData: UpdateCardNumberRequest = {
+        userId,
+        cardNumber
+      };
+
+      console.log('📤 [UPDATE CARD] Sending request:', requestData);
+      console.log('🌐 [UPDATE CARD] API URL:', `${API_BASE_URL}/api/passenger/updateCardNumber`);
+
+      const response = await this.api.put<ApiResponse<null>>(
+        '/api/passenger/updateCardNumber',
+        requestData
+      );
+
+      console.log('📥 [UPDATE CARD] Response received:', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message
+      });
+
+      return {
+        isSuccess: response.data.data.isSuccess,
+        content: null,
+        timeStamp: response.data.data.timeStamp,
+        payloadType: response.data.data.payloadType || 'Card Number changer for passenger',
+        message: response.data.data.message
+      };
+    } catch (error: any) {
+      console.error('💥 [UPDATE CARD] Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // Handle specific error cases
+      if (error.response?.data?.data?.message) {
+        throw new Error(error.response.data.data.message);
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error('Failed to update card number. Please try again.');
+      }
     }
   }
 
