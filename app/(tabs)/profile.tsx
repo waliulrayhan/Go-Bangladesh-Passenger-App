@@ -65,7 +65,7 @@ export default function Profile() {
     );
   };
   const renderProfileHeader = () => {
-    // Only show profile if we have user data
+    // Always show profile header, even if user data is loading or incomplete
     if (!user) {
       return (
         <Animated.View entering={FadeInUp.duration(600)} style={styles.headerContainer}>
@@ -87,6 +87,14 @@ export default function Profile() {
     // Create a unique key for the profile image to force re-render
     const profileImageUrl = user?.imageUrl ? `${API_BASE_URL}/${user.imageUrl}` : null;
     const imageKey = `profile-${user?.id || 'default'}-${user?.imageUrl || 'no-image'}`;
+
+    // Safely get user type display text
+    const getUserTypeText = () => {
+      const gender = user?.gender || user?.sex;
+      const genderText = gender ? (gender.charAt(0).toUpperCase() + gender.slice(1)) : '';
+      const userTypeText = user?.userType ? (user.userType.charAt(0).toUpperCase() + user.userType.slice(1)) : 'Passenger';
+      return genderText ? `${genderText} • ${userTypeText}` : userTypeText;
+    };
 
     return (
       <Animated.View entering={FadeInUp.duration(600)} style={styles.headerContainer}>
@@ -115,8 +123,8 @@ export default function Profile() {
           </View>
           
           <View style={styles.profileInfo}>
-            <Text style={styles.name}>{user.name}</Text>
-            <Text style={styles.userType}>{user.gender || user.sex} • Passenger</Text>
+            <Text style={styles.name}>{user?.name || 'Not Provided'}</Text>
+            <Text style={styles.userType}>{getUserTypeText()}</Text>
             <View style={styles.statusChip}>
               <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
               <Text style={[styles.statusText, { color: COLORS.success }]}>Active</Text>
@@ -127,10 +135,15 @@ export default function Profile() {
     );
   };
   const renderBalanceCard = () => {
-    // Only show balance card if we have balance data
-    if (typeof user?.balance !== 'number') {
-      return null;
+    // Always show balance card for both public and private users
+    // If no balance data, show as "Not Provided"
+    if (!user) {
+      return null; // Only hide if no user at all
     }
+
+    const hasBalance = typeof user?.balance === 'number';
+    const displayBalance = hasBalance ? (user.balance as number).toFixed(2) : 'Not Provided';
+    const cardNumber = user?.cardNumber || 'Not Provided';
 
     return (
       <Animated.View entering={SlideInRight.duration(600).delay(200)} style={styles.section}>
@@ -141,9 +154,14 @@ export default function Profile() {
             </View>
             <View style={styles.balanceInfo}>
               <Text style={styles.balanceLabel}>Current Balance</Text>
-              <Text style={styles.balanceAmount}>৳{user.balance.toFixed(2)}</Text>
+              <Text style={[
+                styles.balanceAmount,
+                !hasBalance && { color: COLORS.gray[500], fontSize: 18, fontWeight: '600' }
+              ]}>
+                {hasBalance ? `৳${displayBalance}` : displayBalance}
+              </Text>
             </View>
-            {isPublicUser && (
+            {isPublicUser && hasBalance && (
               <TouchableOpacity 
                 style={styles.updateCardButton}
                 onPress={() => setShowUpdateCardModal(true)}
@@ -156,176 +174,134 @@ export default function Profile() {
           
           <View style={styles.cardNumberContainer}>
             <Text style={styles.cardNumberLabel}>Card Number</Text>
-            <Text style={styles.cardNumber}>{user.cardNumber}</Text>
+            <Text style={styles.cardNumber}>{cardNumber}</Text>
           </View>
         </View>
       </Animated.View>
     );
   };
 
-  const renderAccountInfo = () => (
-    <Animated.View entering={FadeInUp.duration(600).delay(400)} style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Account Information</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.editButton}>
-            <Ionicons name="create-outline" size={16} color={COLORS.primary} />
-            <Text style={styles.editText}>Edit</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      <View style={styles.infoList}>
-        <View style={styles.infoRow}>
-          <View style={[styles.infoIcon, { backgroundColor: COLORS.primary + '15' }]}>
-            <Ionicons name="person" size={16} color={COLORS.primary} />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Full Name</Text>
-            <Text style={styles.infoValue}>{user?.name || 'Not provided'}</Text>
-          </View>
-        </View>
+  const renderAccountInfo = () => {
+    // Helper function to get organization display text
+    const getOrganizationText = () => {
+      if (!user?.organization) return 'Not Provided';
+      if (typeof user.organization === 'string') {
+        return user.organization;
+      } else if (typeof user.organization === 'object' && user.organization?.name) {
+        return user.organization.name;
+      }
+      return 'Not Provided';
+    };
 
-        {user?.passengerId && (
+    // Helper function to get gender display text
+    const getGenderText = () => {
+      const gender = user?.gender || user?.sex;
+      if (!gender) return 'Not Provided';
+      return gender.charAt(0).toUpperCase() + gender.slice(1);
+    };
+
+    return (
+      <Animated.View entering={FadeInUp.duration(600).delay(400)} style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Account Information</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.editButton}>
+              <Ionicons name="create-outline" size={16} color={COLORS.primary} />
+              <Text style={styles.editText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.infoList}>
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.primary + '15' }]}>
-              <Ionicons name="id-card" size={16} color={COLORS.primary} />
+              <Ionicons name="person" size={16} color={COLORS.primary} />
             </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Student ID</Text>
-              <Text style={styles.infoValue}>{user.passengerId}</Text>
+              <Text style={styles.infoLabel}>Full Name</Text>
+              <Text style={styles.infoValue}>{user?.name || 'Not Provided'}</Text>
             </View>
           </View>
-        )}
 
-        {user?.organization && (
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
+              <Ionicons name="call" size={16} color={COLORS.info} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Phone</Text>
+              <Text style={styles.infoValue}>{user?.mobileNumber || user?.mobile || 'Not Provided'}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.success + '15' }]}>
+              <Ionicons name="mail" size={16} color={COLORS.success} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Email</Text>
+              <Text style={styles.infoValue}>{user?.emailAddress || user?.email || 'Not Provided'}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.warning + '15' }]}>
+              <Ionicons name={user?.gender === 'female' || user?.sex === 'female' ? 'female' : 'male'} size={16} color={COLORS.warning} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Gender</Text>
+              <Text style={styles.infoValue}>{getGenderText()}</Text>
+            </View>
+          </View>
+
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
               <Ionicons name="business" size={16} color={COLORS.info} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Organization</Text>
+              <Text style={styles.infoValue}>{getOrganizationText()}</Text>
+            </View>
+          </View>
+
+          {/* Show Student ID / Passenger ID */}
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIcon, { backgroundColor: COLORS.primary + '15' }]}>
+              <Ionicons name="id-card" size={16} color={COLORS.primary} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>
+                {user?.passengerId ? 'Passenger ID' : user?.studentId ? 'Student ID' : 'ID'}
+              </Text>
               <Text style={styles.infoValue}>
-                {(() => {
-                  if (typeof user.organization === 'string') {
-                    return user.organization;
-                  } else if (typeof user.organization === 'object' && user.organization?.name) {
-                    return user.organization.name;
-                  }
-                  return 'Not provided';
-                })()}
+                {user?.passengerId || user?.studentId || 'Not Provided'}
               </Text>
             </View>
           </View>
-        )}
-        
-        <View style={styles.infoRow}>
-          <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
-            <Ionicons name="call" size={16} color={COLORS.info} />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Phone</Text>
-            <Text style={styles.infoValue}>{user?.mobileNumber || user?.mobile || 'Not provided'}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <View style={[styles.infoIcon, { backgroundColor: COLORS.success + '15' }]}>
-            <Ionicons name="mail" size={16} color={COLORS.success} />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Email</Text>
-            <Text style={styles.infoValue}>{user?.emailAddress || user?.email || 'Not provided'}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <View style={[styles.infoIcon, { backgroundColor: COLORS.warning + '15' }]}>
-            <Ionicons name={user?.gender === 'female' || user?.sex === 'female' ? 'female' : 'male'} size={16} color={COLORS.warning} />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Gender</Text>
-            <Text style={styles.infoValue}>
-              {user?.gender || (user?.sex ? user.sex.charAt(0).toUpperCase() + user.sex.slice(1) : 'Not specified')}
-            </Text>
-          </View>
-        </View>
 
-        {user?.dateOfBirth && (
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.purple + '15' }]}>
               <Ionicons name="calendar" size={16} color={COLORS.purple} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Date of Birth</Text>
-              <Text style={styles.infoValue}>{new Date(user.dateOfBirth).toLocaleDateString()}</Text>
+              <Text style={styles.infoValue}>
+                {user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'Not Provided'}
+              </Text>
             </View>
           </View>
-        )}
 
-        {user?.address && (
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.secondary + '15' }]}>
               <Ionicons name="location" size={16} color={COLORS.secondary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Address</Text>
-              <Text style={styles.infoValue}>{user.address}</Text>
+              <Text style={styles.infoValue}>{user?.address || 'Not Provided'}</Text>
             </View>
           </View>
-        )}
-
-        {user?.emergencyContact && (
-          <View style={styles.infoRow}>
-            <View style={[styles.infoIcon, { backgroundColor: COLORS.error + '15' }]}>
-              <Ionicons name="medical" size={16} color={COLORS.error} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Emergency Contact</Text>
-              <Text style={styles.infoValue}>{user.emergencyContact}</Text>
-            </View>
-          </View>
-        )}
-
-        {user?.studentId && (
-          <View style={styles.infoRow}>
-            <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
-              <Ionicons name="school" size={16} color={COLORS.info} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Student ID</Text>
-              <Text style={styles.infoValue}>{user.studentId}</Text>
-            </View>
-          </View>
-        )}
-
-        {user?.institution && (
-          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-            <View style={[styles.infoIcon, { backgroundColor: COLORS.primary + '15' }]}>
-              <Ionicons name="library" size={16} color={COLORS.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Institution</Text>
-              <Text style={styles.infoValue}>{user.institution}</Text>
-            </View>
-          </View>
-        )}
-
-        {!user?.institution && !user?.studentId && !user?.emergencyContact && !user?.address && !user?.dateOfBirth && (
-          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-            <View style={[styles.infoIcon, { backgroundColor: COLORS.warning + '15' }]}>
-              <Ionicons name={user?.gender === 'female' || user?.sex === 'female' ? 'female' : 'male'} size={16} color={COLORS.warning} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Gender</Text>
-              <Text style={styles.infoValue}>
-                {user?.gender || (user?.sex ? user.sex.charAt(0).toUpperCase() + user.sex.slice(1) : 'Not specified')}
-              </Text>
-            </View>
-          </View>
-        )}
-      </View>
-    </Animated.View>
-  );
+        </View>
+      </Animated.View>
+    );
+  };
 
   const renderActions = () => (
     <Animated.View entering={FadeInDown.duration(600).delay(700)} style={styles.section}>
@@ -402,13 +378,14 @@ export default function Profile() {
   );
 
   const handleSendOTPForCardUpdate = async (newCardNumber: string) => {
-    if (!user?.mobileNumber) {
+    const mobileNumber = user?.mobileNumber || user?.mobile;
+    if (!mobileNumber) {
       throw new Error('Mobile number not found');
     }
 
     try {
-      console.log('📱 Sending OTP for card update to:', user.mobileNumber);
-      await apiService.sendOTP(user.mobileNumber);
+      console.log('📱 Sending OTP for card update to:', mobileNumber);
+      await apiService.sendOTP(mobileNumber);
       console.log('✅ OTP sent successfully for card update');
     } catch (error: any) {
       console.error('❌ Send OTP error:', error);
@@ -421,14 +398,15 @@ export default function Profile() {
       throw new Error('User ID not found');
     }
 
-    if (!user?.mobileNumber) {
+    const mobileNumber = user?.mobileNumber || user?.mobile;
+    if (!mobileNumber) {
       throw new Error('Mobile number not found');
     }
 
     try {
       // First verify OTP
       console.log('🔐 Verifying OTP for card update');
-      await apiService.verifyOTP(user.mobileNumber, otp);
+      await apiService.verifyOTP(mobileNumber, otp);
       console.log('✅ OTP verified successfully');
       
       // Then update card number
@@ -473,8 +451,8 @@ export default function Profile() {
       {/* Update Card Modal */}
       <UpdateCardModal
         visible={showUpdateCardModal}
-        currentCardNumber={user?.cardNumber}
-        userMobile={user?.mobileNumber || user?.mobile}
+        currentCardNumber={user?.cardNumber || 'Not Provided'}
+        userMobile={user?.mobileNumber || user?.mobile || 'Not Provided'}
         onClose={() => setShowUpdateCardModal(false)}
         onUpdate={handleUpdateCard}
         onSendOTP={handleSendOTPForCardUpdate}
