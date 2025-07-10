@@ -59,10 +59,10 @@ export default function WelcomeScreen() {
             Go Bangladesh
           </Text>
           <Text variant="h6" color={COLORS.primary} style={styles.subtitle}>
-            Student Transport App
+            One step toward a better future
           </Text>
           <Text variant="body" color={COLORS.gray[600]} style={styles.description}>
-            Your convenient way to pay for student transport with RFID card technology
+            Your convenient way to pay for transport with RFID card technology
           </Text>
         </Animated.View>
 
@@ -81,7 +81,7 @@ export default function WelcomeScreen() {
         
         <Animated.View entering={FadeInUp.duration(800).delay(600)}>
           <Text variant="caption" color={COLORS.gray[500]} style={styles.note}>
-            Safe • Secure • Student-Friendly
+            Safe • Secure • Friendly
           </Text>
         </Animated.View>
       </View>

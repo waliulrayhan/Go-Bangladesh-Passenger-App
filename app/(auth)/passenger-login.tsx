@@ -21,10 +21,6 @@ export default function PassengerLogin() {
   
   const { loginWithPassword, isLoading, error, clearError } = useAuthStore();
 
-  const handleContactOrganization = () => {
-    router.push('/(auth)/organization-contacts');
-  };
-
   const handleForgotPassword = () => {
     router.push('/(auth)/forgot-password');
   };
@@ -159,14 +155,14 @@ export default function PassengerLogin() {
               </Text>
             </TouchableOpacity>
             
-            <TouchableOpacity 
-              style={styles.organizationButton}
-              onPress={handleContactOrganization}
-            >
+            <View style={styles.organizationButton}>
               <Text style={styles.organizationText}>
-                Need help with your account? Contact your organization
+                Need help with your account?
               </Text>
-            </TouchableOpacity>
+              <Text style={styles.organizationEmail}>
+                info.gobangladesh@gmail.com
+              </Text>
+            </View>
           </Animated.View>
         </View>
       </SafeAreaView>
@@ -290,5 +286,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: COLORS.gray[500],
     lineHeight: 18,
+  },
+  organizationEmail: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginTop: 4,
   },
 });

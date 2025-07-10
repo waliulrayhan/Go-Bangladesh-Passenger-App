@@ -22,14 +22,20 @@ export default function PassengerRegistration() {
   };
 
   const validateCardNumber = (input: string) => {
-    // Basic validation for card number (at least 6 digits)
-    const cardRegex = /^\d{6,}$/;
+    // Validation for card number (at least 8 characters, only capital letters and numbers)
+    const cardRegex = /^[A-Z0-9]{8,}$/;
     return cardRegex.test(input.trim());
+  };
+
+  const handleCardNumberChange = (text: string) => {
+    // Convert to uppercase and filter only letters and numbers
+    const filteredText = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    setCardNumber(filteredText);
   };
 
   const handleProceed = async () => {
     if (!validateCardNumber(cardNumber)) {
-      Alert.alert('Invalid Card Number', 'Please enter a valid card number (at least 6 digits)');
+      Alert.alert('Invalid Card Number', 'Please enter a valid card number (at least 6 characters, letters and numbers only)');
       return;
     }
 
@@ -64,7 +70,7 @@ export default function PassengerRegistration() {
               <GoBangladeshLogo size={60} />
             </View>
             
-            <Text style={styles.title}>Student Registration</Text>
+            <Text style={styles.title}>Registration</Text>
             <Text style={styles.subtitle}>
               Enter your card number to get started
             </Text>
@@ -77,18 +83,21 @@ export default function PassengerRegistration() {
                   <Ionicons name="card" size={32} color={COLORS.primary} />
                 </View>
                 
-                <Input
-                  label="Card Number"
-                  value={cardNumber}
-                  onChangeText={setCardNumber}
-                  placeholder="Enter your card number"
-                  keyboardType="numeric"
-                  icon="card"
-                  maxLength={16}
-                />
+                <View style={styles.inputContainer}>
+                  <Input
+                    label="Card Number"
+                    value={cardNumber}
+                    onChangeText={handleCardNumberChange}
+                    placeholder="Enter your card number (e.g. ABC123456)"
+                    keyboardType="default"
+                    icon="card"
+                    maxLength={16}
+                    autoCapitalize="characters"
+                  />
+                </View>
 
                 <Text style={styles.helperText}>
-                  Enter the card number printed on your student/transport card
+                  Enter the card number printed on your Go Bangladesh transport card
                 </Text>
 
                 <Button
@@ -174,9 +183,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   cardContent: {
-    padding: SPACING.md,
+    padding: SPACING.lg,
     alignItems: 'center',
-    gap: SPACING.sm,
+    gap: SPACING.md,
   },
   iconContainer: {
     width: 64,
@@ -186,6 +195,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.sm,
+  },
+  inputContainer: {
+    width: '100%',
+    alignSelf: 'stretch',
   },
   helperText: {
     fontSize: 14,
