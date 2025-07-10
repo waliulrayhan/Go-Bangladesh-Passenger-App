@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Button } from '../../components/ui/Button';
@@ -10,43 +10,107 @@ import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
 import { useAuthStore } from '../../stores/authStore';
 import { COLORS, SPACING } from '../../utils/constants';
+import { FONT_WEIGHTS } from '../../utils/fonts';
 
 export default function ForgotPassword() {
-  const [identifier, setIdentifier] = useState('');
-  const [isEmailSent, setIsEmailSent] = useState(false);
+  const [mobile, setMobile] = useState('');
+  const [otp, setOtp] = useState('');
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [timer, setTimer] = useState(0);
   
-  const { sendPasswordReset, isLoading, error, clearError } = useAuthStore();
+  const { sendOTP, verifyOTP, isLoading, error, clearError } = useAuthStore();
+
+  // Timer effect for OTP resend
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer(timer - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
 
   const handleGoBack = () => {
     router.back();
   };
 
-  const validateIdentifier = (input: string) => {
-    // Check if it's a mobile number
+  const validateMobile = (mobile: string) => {
+    // Bangladesh mobile number format: 01xxxxxxxxx or +8801xxxxxxxxx
     const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
-    // Check if it's an email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
-    return phoneRegex.test(input) || emailRegex.test(input);
+    return phoneRegex.test(mobile);
   };
 
-  const handleSendResetLink = async () => {
+  const formatMobile = (mobile: string) => {
+    // Remove +88 if present
+    let formatted = mobile.replace(/^\+?88/, '');
+    
+    // Ensure it starts with 01 (only add if it doesn't already start with 01)
+    if (!formatted.startsWith('01')) {
+      if (formatted.startsWith('1')) {
+        formatted = '0' + formatted; // Add missing 0 to make it 01xxxxxxxxx
+      } else if (formatted.startsWith('0') && !formatted.startsWith('01')) {
+        formatted = '01' + formatted.substring(1); // Replace 0x with 01x
+      } else {
+        formatted = '01' + formatted; // Add 01 prefix
+      }
+    }
+    
+    return formatted;
+  };
+
+  const handleSendOTP = async () => {
     clearError();
     
-    if (!validateIdentifier(identifier)) {
-      Alert.alert('Error', 'Please enter a valid email address or mobile number');
+    if (!validateMobile(mobile)) {
+      Alert.alert('Error', 'Please enter a valid Bangladesh mobile number (01xxxxxxxxx)');
       return;
     }
 
-    const success = await sendPasswordReset(identifier);
+    const formattedMobile = formatMobile(mobile);
+    const success = await sendOTP(formattedMobile);
     
     if (success) {
-      setIsEmailSent(true);
+      setIsOtpSent(true);
+      setTimer(60); // 60 seconds countdown
       Alert.alert(
-        'Reset Link Sent',
-        `Password reset instructions have been sent to ${identifier}. Please check your email or SMS.`,
+        'OTP Sent',
+        `A verification code has been sent to ${formattedMobile}`,
         [{ text: 'OK' }]
       );
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    clearError();
+    
+    if (!otp || otp.length !== 6) {
+      Alert.alert('Error', 'Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    const formattedMobile = formatMobile(mobile);
+    const success = await verifyOTP(formattedMobile, otp);
+    
+    if (success) {
+      // Navigate to password reset form with the verified mobile number
+      router.push({
+        pathname: '/(auth)/reset-password',
+        params: { mobile: formattedMobile }
+      });
+    }
+  };
+
+  const handleResendOTP = async () => {
+    if (timer > 0) return;
+    
+    clearError();
+    const formattedMobile = formatMobile(mobile);
+    const success = await sendOTP(formattedMobile);
+    
+    if (success) {
+      setTimer(60);
+      Alert.alert('OTP Sent', 'A new verification code has been sent to your mobile');
     }
   };
 
@@ -54,114 +118,155 @@ export default function ForgotPassword() {
     router.push('/(auth)/organization-contacts');
   };
 
-  if (isEmailSent) {
+  // OTP input state
+  if (isOtpSent) {
     return (
+      <>
+        <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
+        <SafeAreaView style={styles.container}>
+          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.content}>
+            <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
+              <Text style={styles.title}>Enter Verification Code</Text>
+              <Text style={styles.subtitle}>
+                We've sent a 6-digit verification code to {formatMobile(mobile)}
+              </Text>
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+              <Card variant="elevated" style={styles.formCard}>
+                <View style={styles.formContent}>
+                  <Input
+                    label="Verification Code"
+                    value={otp}
+                    onChangeText={setOtp}
+                    placeholder="Enter 6-digit OTP"
+                    keyboardType="numeric"
+                    icon="lock-closed"
+                    maxLength={6}
+                  />
+                  
+                  {error && (
+                    <Animated.View entering={FadeInDown.duration(300)} style={styles.errorContainer}>
+                      <Ionicons name="alert-circle" size={16} color={COLORS.error} />
+                      <Text style={styles.errorText}>{error}</Text>
+                    </Animated.View>
+                  )}
+
+                  <Button
+                    title="Verify Code"
+                    onPress={handleVerifyOTP}
+                    loading={isLoading}
+                    variant="primary"
+                    size="medium"
+                    fullWidth
+                    icon="checkmark"
+                  />
+
+                  <View style={styles.resendContainer}>
+                    {timer > 0 ? (
+                      <Text style={styles.timerText}>
+                        Resend code in {timer}s
+                      </Text>
+                    ) : (
+                      <TouchableOpacity onPress={handleResendOTP} disabled={isLoading}>
+                        <Text style={[styles.resendText, isLoading && styles.resendTextDisabled]}>
+                          Resend Code
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              </Card>
+            </Animated.View>
+
+            <Animated.View entering={FadeInUp.duration(800).delay(400)} style={styles.helpSection}>
+              <TouchableOpacity onPress={handleContactOrganization} style={styles.organizationButton}>
+                <Ionicons name="business" size={20} color={COLORS.primary} />
+                <Text style={styles.organizationText}>Contact Your Organization</Text>
+              </TouchableOpacity>
+              
+              <Text style={styles.helpNote}>
+                If you're not receiving the code, contact your institution's admin for assistance.
+              </Text>
+            </Animated.View>
+          </View>
+        </SafeAreaView>
+      </>
+    );
+  }
+
+  // Initial phone number input state
+  return (
+    <>
+      <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
       <SafeAreaView style={styles.container}>
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         
         <View style={styles.content}>
-          <Animated.View entering={FadeInUp.duration(800)} style={styles.successContainer}>
-            <View style={styles.successIcon}>
-              <Ionicons name="mail-outline" size={60} color={COLORS.success} />
-            </View>
-            
-            <Text style={styles.successTitle}>Check Your Email</Text>
-            <Text style={styles.successMessage}>
-              We've sent password reset instructions to {identifier}
-            </Text>
-            
-            <Text style={styles.helpText}>
-              Didn't receive the email? Check your spam folder or try again in a few minutes.
+          <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
+            <Text style={styles.title}>Forgot Password?</Text>
+            <Text style={styles.subtitle}>
+              Enter your mobile number and we'll send you a verification code to reset your password.
             </Text>
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.duration(800).delay(400)} style={styles.actions}>
-            <Button
-              title="Back to Login"
-              onPress={handleGoBack}
-              variant="primary"
-              size="medium"
-              fullWidth
-            />
+          <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+            <Card variant="elevated" style={styles.formCard}>
+              <View style={styles.formContent}>
+                <Input
+                  label="Mobile Number"
+                  value={mobile}
+                  onChangeText={setMobile}
+                  placeholder="Enter your mobile number (01xxxxxxxxx)"
+                  keyboardType="phone-pad"
+                  icon="call"
+                  autoCapitalize="none"
+                />
+                
+                {error && (
+                  <Animated.View entering={FadeInDown.duration(300)} style={styles.errorContainer}>
+                    <Ionicons name="alert-circle" size={16} color={COLORS.error} />
+                    <Text style={styles.errorText}>{error}</Text>
+                  </Animated.View>
+                )}
+
+                <Button
+                  title="Send Verification Code"
+                  onPress={handleSendOTP}
+                  loading={isLoading}
+                  variant="primary"
+                  size="medium"
+                  fullWidth
+                  icon="paper-plane"
+                />
+              </View>
+            </Card>
+          </Animated.View>
+
+          <Animated.View entering={FadeInUp.duration(800).delay(400)} style={styles.helpSection}>
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
             
-            <TouchableOpacity onPress={handleContactOrganization} style={styles.contactButton}>
-              <Text style={styles.contactText}>Still need help? Contact your organization</Text>
+            <TouchableOpacity onPress={handleContactOrganization} style={styles.organizationButton}>
+              <Ionicons name="business" size={20} color={COLORS.primary} />
+              <Text style={styles.organizationText}>Contact Your Organization</Text>
             </TouchableOpacity>
+            
+            <Text style={styles.helpNote}>
+              If you're unable to reset your password, contact your institution's admin for assistance.
+            </Text>
           </Animated.View>
         </View>
       </SafeAreaView>
-    );
-  }
-
-  return (
-    <>
-      <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
-      <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-        <Text style={styles.backButtonText}>← Back</Text>
-      </TouchableOpacity>
-      
-      <View style={styles.content}>
-        <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
-          <Text style={styles.title}>Forgot Password?</Text>
-          <Text style={styles.subtitle}>
-            Enter your email address or mobile number and we'll send you instructions to reset your password.
-          </Text>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-          <Card variant="elevated" style={styles.formCard}>
-            <View style={styles.formContent}>
-              <Input
-                label="Email or Mobile Number"
-                value={identifier}
-                onChangeText={setIdentifier}
-                placeholder="Enter your email or mobile number"
-                keyboardType="email-address"
-                icon="mail"
-                autoCapitalize="none"
-              />
-              
-              {error && (
-                <Animated.View entering={FadeInDown.duration(300)} style={styles.errorContainer}>
-                  <Ionicons name="alert-circle" size={16} color={COLORS.error} />
-                  <Text style={styles.errorText}>{error}</Text>
-                </Animated.View>
-              )}
-
-              <Button
-                title="Send Reset Link"
-                onPress={handleSendResetLink}
-                loading={isLoading}
-                variant="primary"
-                size="medium"
-                fullWidth
-                icon="mail"
-              />
-            </View>
-          </Card>
-        </Animated.View>
-
-        <Animated.View entering={FadeInUp.duration(800).delay(400)} style={styles.helpSection}>
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
-          
-          <TouchableOpacity onPress={handleContactOrganization} style={styles.organizationButton}>
-            <Ionicons name="business" size={20} color={COLORS.primary} />
-            <Text style={styles.organizationText}>Contact Your Organization</Text>
-          </TouchableOpacity>
-          
-          <Text style={styles.helpNote}>
-            If you're unable to reset your password, contact your institution's admin for assistance.
-          </Text>
-        </Animated.View>
-      </View>
-    </SafeAreaView>
     </>
   );
 }
@@ -182,7 +287,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     color: COLORS.primary,
-    fontWeight: '600',
+    fontFamily: FONT_WEIGHTS.semiBold,
   },
   content: {
     flex: 1,
@@ -196,7 +301,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: FONT_WEIGHTS.bold,
     color: COLORS.gray[900],
     marginBottom: SPACING.sm,
     textAlign: 'center',
@@ -207,6 +312,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     paddingHorizontal: SPACING.md,
+    fontFamily: FONT_WEIGHTS.regular,
   },
   formCard: {
     marginBottom: SPACING.md,
@@ -226,6 +332,24 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     fontSize: 14,
     flex: 1,
+    fontFamily: FONT_WEIGHTS.medium,
+  },
+  resendContainer: {
+    alignItems: 'center',
+    marginTop: SPACING.sm,
+  },
+  timerText: {
+    fontSize: 14,
+    color: COLORS.gray[500],
+    fontFamily: FONT_WEIGHTS.regular,
+  },
+  resendText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontFamily: FONT_WEIGHTS.semiBold,
+  },
+  resendTextDisabled: {
+    color: COLORS.gray[400],
   },
   helpSection: {
     alignItems: 'center',
@@ -245,7 +369,7 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.md,
     fontSize: 14,
     color: COLORS.gray[500],
-    fontWeight: '500',
+    fontFamily: FONT_WEIGHTS.medium,
   },
   organizationButton: {
     flexDirection: 'row',
@@ -260,58 +384,13 @@ const styles = StyleSheet.create({
   organizationText: {
     fontSize: 16,
     color: COLORS.primary,
-    fontWeight: '600',
+    fontFamily: FONT_WEIGHTS.semiBold,
   },
   helpNote: {
     fontSize: 14,
     color: COLORS.gray[500],
     textAlign: 'center',
     lineHeight: 20,
-  },
-  // Success state styles
-  successContainer: {
-    alignItems: 'center',
-    marginBottom: SPACING.xl,
-  },
-  successIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.success + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  successTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.gray[900],
-    marginBottom: SPACING.sm,
-    textAlign: 'center',
-  },
-  successMessage: {
-    fontSize: 16,
-    color: COLORS.gray[600],
-    textAlign: 'center',
-    marginBottom: SPACING.lg,
-    lineHeight: 24,
-  },
-  helpText: {
-    fontSize: 14,
-    color: COLORS.gray[500],
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  actions: {
-    gap: SPACING.sm,
-  },
-  contactButton: {
-    alignItems: 'center',
-    paddingVertical: SPACING.md,
-  },
-  contactText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    fontWeight: '500',
+    fontFamily: FONT_WEIGHTS.regular,
   },
 });

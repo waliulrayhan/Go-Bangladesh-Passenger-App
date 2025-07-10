@@ -35,7 +35,7 @@ export default function PassengerRegistration() {
 
   const handleProceed = async () => {
     if (!validateCardNumber(cardNumber)) {
-      Alert.alert('Invalid Card Number', 'Please enter a valid card number (at least 6 characters, letters and numbers only)');
+      Alert.alert('Invalid Card Number', 'Please enter a valid card number (at least 8 characters, letters and numbers only)');
       return;
     }
 

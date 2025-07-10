@@ -347,6 +347,95 @@ class ApiService {
     }
   }
 
+  // OTP API methods
+  async sendOTP(mobileNumber: string): Promise<boolean> {
+    console.log('📱 [OTP] Sending OTP to:', mobileNumber);
+    
+    try {
+      const response = await this.api.get<ApiResponse<null>>(
+        `/api/otp/SendOtp?mobileNumber=${mobileNumber}`
+      );
+      
+      console.log('📥 [OTP] Send response:', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message
+      });
+      
+      if (!response.data.data.isSuccess) {
+        console.error('❌ [OTP] Send failed:', response.data.data.message);
+        throw new Error(response.data.data.message || 'Failed to send OTP');
+      }
+      
+      console.log('✅ [OTP] OTP sent successfully');
+      return true;
+    } catch (error: any) {
+      console.error('💥 [OTP] Send error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  async verifyOTP(mobileNumber: string, otp: string): Promise<boolean> {
+    console.log('🔐 [OTP] Verifying OTP for:', mobileNumber);
+    
+    try {
+      const response = await this.api.get<ApiResponse<null>>(
+        `/api/otp/VerifyOtp?mobileNumber=${mobileNumber}&otp=${otp}`
+      );
+      
+      console.log('📥 [OTP] Verify response:', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message
+      });
+      
+      if (!response.data.data.isSuccess) {
+        console.error('❌ [OTP] Verification failed:', response.data.data.message);
+        throw new Error(response.data.data.message || 'OTP verification failed');
+      }
+      
+      console.log('✅ [OTP] OTP verified successfully');
+      return true;
+    } catch (error: any) {
+      console.error('💥 [OTP] Verify error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  async resetPassword(mobileNumber: string, newPassword: string, confirmNewPassword: string): Promise<boolean> {
+    console.log('🔑 [PASSWORD] Resetting password for:', mobileNumber);
+    
+    try {
+      const payload = {
+        mobileNumber,
+        newPassword,
+        confirmNewPassword
+      };
+      
+      const response = await this.api.post<ApiResponse<null>>(
+        '/api/user/ForgotPassword',
+        payload
+      );
+      
+      console.log('📥 [PASSWORD] Reset response:', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message
+      });
+      
+      if (!response.data.data.isSuccess) {
+        console.error('❌ [PASSWORD] Reset failed:', response.data.data.message);
+        throw new Error(response.data.data.message || 'Password reset failed');
+      }
+      
+      console.log('✅ [PASSWORD] Password reset successfully');
+      return true;
+    } catch (error: any) {
+      console.error('💥 [PASSWORD] Reset error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
   // Generic HTTP methods
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.api.get<T>(url, config);

@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Alert, Dimensions, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Platform, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -45,6 +46,8 @@ export default function RegistrationPersonalInfo() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const handleGoBack = () => {
     router.back();
@@ -74,21 +77,6 @@ export default function RegistrationPersonalInfo() {
       if (!emailRegex.test(form.email.trim())) {
         newErrors.email = 'Please enter a valid email address';
       }
-    }
-
-    // Gender validation
-    if (!form.gender) {
-      newErrors.gender = 'Please select your gender';
-    }
-
-    // Address validation
-    if (!form.address.trim()) {
-      newErrors.address = 'Address is required';
-    }
-
-    // Date of birth validation
-    if (!form.dateOfBirth.trim()) {
-      newErrors.dateOfBirth = 'Date of birth is required';
     }
 
     // Password validation
@@ -144,6 +132,25 @@ export default function RegistrationPersonalInfo() {
     }
   };
 
+  const formatDate = (date: Date) => {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const handleDateChange = (event: any, date?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (date) {
+      setSelectedDate(date);
+      updateForm('dateOfBirth', formatDate(date));
+    }
+  };
+
+  const showDatepicker = () => {
+    setShowDatePicker(true);
+  };
+
   return (
     <>
       <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
@@ -197,7 +204,7 @@ export default function RegistrationPersonalInfo() {
                 />
 
                 <Input
-                  label="Email (Optional)"
+                  label="Email"
                   value={form.email}
                   onChangeText={(value) => updateForm('email', value)}
                   placeholder="your.email@example.com"
@@ -208,7 +215,7 @@ export default function RegistrationPersonalInfo() {
                 />
 
                 <View style={styles.genderSection}>
-                  <Text style={styles.genderLabel}>Gender *</Text>
+                  <Text style={styles.genderLabel}>Gender</Text>
                   <View style={styles.genderButtons}>
                     <TouchableOpacity
                       style={[
@@ -254,24 +261,36 @@ export default function RegistrationPersonalInfo() {
                 </View>
 
                 <Input
-                  label="Address *"
+                  label="Address"
                   value={form.address}
                   onChangeText={(value) => updateForm('address', value)}
                   placeholder="Enter your address"
                   icon="location"
-                  multiline
-                  numberOfLines={3}
                   error={errors.address}
                 />
 
-                <Input
-                  label="Date of Birth *"
-                  value={form.dateOfBirth}
-                  onChangeText={(value) => updateForm('dateOfBirth', value)}
-                  placeholder="DD/MM/YYYY"
-                  icon="calendar"
-                  error={errors.dateOfBirth}
-                />
+                <View style={styles.dateSection}>
+                  <Text style={styles.dateLabel}>Date of Birth</Text>
+                  <TouchableOpacity style={styles.dateInput} onPress={showDatepicker}>
+                    <Ionicons name="calendar" size={20} color={COLORS.primary} style={styles.dateIcon} />
+                    <Text style={[styles.dateText, !form.dateOfBirth && styles.placeholderText]}>
+                      {form.dateOfBirth || 'Select your date of birth'}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color={COLORS.gray[500]} />
+                  </TouchableOpacity>
+                  {errors.dateOfBirth && <Text style={styles.errorText}>{errors.dateOfBirth}</Text>}
+                </View>
+
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={selectedDate || new Date()}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleDateChange}
+                    maximumDate={new Date()}
+                    minimumDate={new Date(1900, 0, 1)}
+                  />
+                )}
 
                 <Input
                   label="Password *"
@@ -325,7 +344,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: SPACING.md,
     paddingBottom: SPACING.xl,
-    paddingTop: SPACING.lg,
+    paddingTop: SPACING.xl + 20, // Extra padding for status bar
   },
   header: {
     alignItems: 'center',
@@ -430,5 +449,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.error,
     marginTop: SPACING.xs,
+  },
+  dateSection: {
+    marginBottom: SPACING.sm,
+  },
+  dateLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray[700],
+    marginBottom: SPACING.sm,
+  },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderWidth: 2,
+    borderColor: COLORS.gray[300],
+    borderRadius: 8,
+    gap: SPACING.sm,
+  },
+  dateIcon: {
+    marginRight: SPACING.xs,
+  },
+  dateText: {
+    flex: 1,
+    fontSize: 16,
+    color: COLORS.gray[900],
+  },
+  placeholderText: {
+    color: COLORS.gray[500],
   },
 });

@@ -72,6 +72,7 @@ interface AuthState {
   checkCardExists: (cardNumber: string) => Promise<boolean>;
   verifyOTP: (mobile: string, otp: string) => Promise<boolean>;
   sendPasswordReset: (identifier: string) => Promise<boolean>;
+  resetPassword: (mobile: string, newPassword: string, confirmPassword: string) => Promise<boolean>;
   registerUser: (userData: {
     name: string;
     sex: 'male' | 'female';
@@ -96,11 +97,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      // For the real API, we'll try to get a token using the mobile number and password
-      // This serves as both auth and OTP sending in one step
-      const authResponse = await apiService.getAuthToken(mobile, '123456');
+      // Use the new OTP API to send OTP
+      await apiService.sendOTP(mobile);
       
-      // Store the mobile number temporarily for the login process
+      // Store the mobile number temporarily for the verification process
       await storageService.setItem('temp_mobile', mobile);
       
       set({ isLoading: false });
@@ -541,11 +541,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      // Since we're using the real API, OTP verification happens during login
-      // This method can be used as a separate verification step if needed
-      const authResponse = await apiService.getAuthToken(mobile, otp || '123456');
+      // Use the new OTP verification API
+      await apiService.verifyOTP(mobile, otp);
       set({ isLoading: false });
-      return !!authResponse.token;
+      return true;
     } catch (error: any) {
       set({
         isLoading: false,
@@ -567,6 +566,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         isLoading: false,
         error: formatApiError(error, 'Failed to send password reset')
+      });
+      return false;
+    }
+  },
+
+  resetPassword: async (mobile: string, newPassword: string, confirmPassword: string) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      // Validate password confirmation
+      if (newPassword !== confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+      
+      // Validate password strength
+      if (newPassword.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+      }
+      
+      // Use the new password reset API
+      await apiService.resetPassword(mobile, newPassword, confirmPassword);
+      set({ isLoading: false });
+      return true;
+    } catch (error: any) {
+      set({
+        isLoading: false,
+        error: formatApiError(error, 'Failed to reset password')
       });
       return false;
     }
