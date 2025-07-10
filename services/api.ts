@@ -17,6 +17,27 @@ export interface ApiResponse<T> {
   };
 }
 
+export interface CardValidationResponse {
+  isSuccess: boolean;
+  content: null;
+  timeStamp: string;
+  payloadType: string;
+  message: string;
+}
+
+export interface RegistrationData {
+  Name: string;
+  MobileNumber: string;
+  EmailAddress?: string;
+  Gender?: string;
+  Address?: string;
+  DateOfBirth?: string; // Format: 2001-11-03 00:00:00.0000000
+  Password: string;
+  UserType: string; // "Public"
+  OrganizationId: string; // Fixed value "1"
+  CardNumber: string;
+}
+
 export interface UserResponse {
   id: string;
   name: string;
@@ -433,6 +454,104 @@ class ApiService {
     } catch (error: any) {
       console.error('💥 [PASSWORD] Reset error:', error.response?.data || error.message);
       throw error;
+    }
+  }
+
+  // Card validation API methods
+  async checkCardValidity(cardNumber: string): Promise<CardValidationResponse> {
+    console.log('🃏 [CARD] Checking card validity for:', cardNumber);
+    
+    try {
+      const response = await this.api.get<ApiResponse<null>>(
+        `/api/card/CheckCardValidity?cardNumber=${cardNumber}`
+      );
+      
+      console.log('📥 [CARD] Validation response:', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message
+      });
+      
+      return response.data.data;
+    } catch (error: any) {
+      console.error('💥 [CARD] Validation error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  // Registration API methods
+  async registerPassenger(registrationData: RegistrationData): Promise<boolean> {
+    console.log('👤 [REGISTRATION] Registering passenger:', registrationData.Name);
+    console.log('📋 [REGISTRATION] Full payload:', JSON.stringify(registrationData, null, 2));
+    
+    try {
+      // Create FormData to match Postman's form-data format
+      const formData = new FormData();
+      
+      // Add all fields to FormData
+      formData.append('Name', registrationData.Name);
+      formData.append('MobileNumber', registrationData.MobileNumber);
+      if (registrationData.EmailAddress) {
+        formData.append('EmailAddress', registrationData.EmailAddress);
+      }
+      if (registrationData.Gender) {
+        formData.append('Gender', registrationData.Gender);
+      }
+      if (registrationData.Address) {
+        formData.append('Address', registrationData.Address);
+      }
+      if (registrationData.DateOfBirth) {
+        formData.append('DateOfBirth', registrationData.DateOfBirth);
+      }
+      formData.append('Password', registrationData.Password);
+      formData.append('UserType', registrationData.UserType);
+      formData.append('OrganizationId', registrationData.OrganizationId);
+      formData.append('CardNumber', registrationData.CardNumber);
+      
+      console.log('📤 [REGISTRATION] Sending as FormData...');
+      
+      const response = await this.api.post<ApiResponse<null>>(
+        '/api/passenger/registration',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      
+      console.log('📥 [REGISTRATION] Response:', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message,
+        fullResponse: response.data
+      });
+      
+      if (!response.data.data.isSuccess) {
+        console.error('❌ [REGISTRATION] Failed:', response.data.data.message);
+        throw new Error(response.data.data.message || 'Registration failed');
+      }
+      
+      console.log('✅ [REGISTRATION] Registration successful');
+      return true;
+    } catch (error: any) {
+      console.error('💥 [REGISTRATION] Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // Handle specific error cases
+      if (error.response?.data?.data?.message) {
+        throw new Error(error.response.data.data.message);
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error('Registration failed. Please try again.');
+      }
     }
   }
 

@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
+import { apiService } from '../../services/api';
 import { COLORS, SPACING } from '../../utils/constants';
 
 const { width } = Dimensions.get('window');
@@ -41,15 +42,57 @@ export default function PassengerRegistration() {
 
     setIsLoading(true);
     
-    // Simulate API call to check if card exists
-    setTimeout(() => {
+    try {
+      // Check card validity using API
+      console.log('🔍 Checking card validity for:', cardNumber);
+      const validationResponse = await apiService.checkCardValidity(cardNumber.trim());
+      
+      if (!validationResponse.isSuccess) {
+        Alert.alert(
+          'Card Issue', 
+          validationResponse.message || 'This card is not available for registration'
+        );
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if the card is available (not already in use)
+      if (validationResponse.message.includes('already in use')) {
+        Alert.alert(
+          'Card Already In Use', 
+          'This card is already registered to another user. Please contact support if this is your card.'
+        );
+        setIsLoading(false);
+        return;
+      }
+      
+      if (validationResponse.message.includes('not available')) {
+        Alert.alert(
+          'Card Not Available', 
+          'This card is not available for registration. Please check your card number or contact support.'
+        );
+        setIsLoading(false);
+        return;
+      }
+      
+      // If card is available, proceed to personal info page
+      if (validationResponse.message.includes('available')) {
+        console.log('✅ Card is available for registration');
+        router.push({
+          pathname: '/(auth)/registration-personal-info',
+          params: { cardNumber: cardNumber.trim() }
+        });
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Card validation error:', error);
+      Alert.alert(
+        'Connection Error', 
+        'Unable to verify card. Please check your internet connection and try again.'
+      );
+    } finally {
       setIsLoading(false);
-      // Navigate to personal info page with card number
-      router.push({
-        pathname: '/(auth)/registration-personal-info',
-        params: { cardNumber: cardNumber.trim() }
-      });
-    }, 1000);
+    }
   };
 
   const handleLogin = () => {

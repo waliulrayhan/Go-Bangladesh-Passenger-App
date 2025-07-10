@@ -7,6 +7,7 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Text } from '../../components/ui/Text';
+import { apiService } from '../../services/api';
 import { COLORS, SPACING } from '../../utils/constants';
 
 export default function VerifyRegistration() {
@@ -84,8 +85,13 @@ export default function VerifyRegistration() {
     setIsLoading(true);
 
     try {
-      // Simulate OTP verification and registration
-      setTimeout(() => {
+      console.log('🔐 Verifying OTP for:', params.phone);
+      
+      // Verify OTP with API
+      const verificationResult = await apiService.verifyOTP(params.phone, otpString);
+      
+      if (verificationResult) {
+        console.log('✅ OTP verification successful');
         setIsLoading(false);
         
         Alert.alert(
@@ -101,11 +107,20 @@ export default function VerifyRegistration() {
             }
           ]
         );
-      }, 2000);
-    } catch (error) {
+      }
+    } catch (error: any) {
       setIsLoading(false);
-      console.error('Verification error:', error);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      console.error('❌ OTP verification error:', error);
+      
+      let errorMessage = 'Invalid OTP. Please try again.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.data?.message) {
+        errorMessage = error.response.data.data.message;
+      }
+      
+      Alert.alert('Verification Failed', errorMessage);
     }
   };
 
@@ -113,19 +128,33 @@ export default function VerifyRegistration() {
     setIsResending(true);
     
     try {
-      // Simulate resending OTP
-      setTimeout(() => {
-        setIsResending(false);
-        setOtp(['', '', '', '', '', '']);
-        setCountdown(60);
-        setCanResend(false);
-        inputRefs.current[0]?.focus();
-        Alert.alert('OTP Sent', 'A new OTP has been sent to your mobile number.');
-      }, 1000);
-    } catch (error) {
+      console.log('🔄 Resending OTP to:', params.phone);
+      
+      // Resend OTP using API
+      await apiService.sendOTP(params.phone);
+      
+      console.log('✅ OTP resent successfully');
+      
       setIsResending(false);
-      console.error('Resend OTP error:', error);
-      Alert.alert('Error', 'Failed to resend OTP. Please try again.');
+      setOtp(['', '', '', '', '', '']);
+      setCountdown(60);
+      setCanResend(false);
+      inputRefs.current[0]?.focus();
+      
+      Alert.alert('OTP Sent', 'A new OTP has been sent to your mobile number.');
+    } catch (error: any) {
+      setIsResending(false);
+      console.error('❌ Resend OTP error:', error);
+      
+      let errorMessage = 'Failed to resend OTP. Please try again.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.data?.message) {
+        errorMessage = error.response.data.data.message;
+      }
+      
+      Alert.alert('Error', errorMessage);
     }
   };
 

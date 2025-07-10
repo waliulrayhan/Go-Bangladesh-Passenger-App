@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
+import { apiService, RegistrationData } from '../../services/api';
 import { COLORS, SPACING } from '../../utils/constants';
 
 const { width } = Dimensions.get('window');
@@ -105,9 +106,51 @@ export default function RegistrationPersonalInfo() {
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Format date for API (YYYY-MM-DD HH:mm:ss.fffffff format)
+      let formattedDate = '';
+      if (form.dateOfBirth && selectedDate) {
+        const year = selectedDate.getFullYear();
+        const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+        const day = selectedDate.getDate().toString().padStart(2, '0');
+        formattedDate = `${year}-${month}-${day} 00:00:00.0000000`;
+      }
+
+      // Prepare registration data for API
+      const registrationData: RegistrationData = {
+        Name: form.name.trim(),
+        MobileNumber: form.phone.trim(),
+        EmailAddress: form.email.trim() || undefined,
+        Gender: form.gender || undefined,
+        Address: form.address.trim() || undefined,
+        DateOfBirth: formattedDate || undefined,
+        Password: form.password,
+        UserType: 'Public',
+        OrganizationId: '1', // Fixed value as required by API
+        CardNumber: params.cardNumber || ''
+      };
+
+      console.log('🚀 Starting registration process...');
+      console.log('📋 Registration data:', {
+        name: registrationData.Name,
+        mobile: registrationData.MobileNumber,
+        email: registrationData.EmailAddress,
+        cardNumber: registrationData.CardNumber,
+        userType: registrationData.UserType
+      });
+
+      // Register the passenger
+      await apiService.registerPassenger(registrationData);
+      
+      console.log('✅ Registration successful, sending OTP...');
+      
+      // Send OTP to mobile number
+      await apiService.sendOTP(form.phone.trim());
+      
+      console.log('✅ OTP sent successfully');
+      
       setIsLoading(false);
+      
       // Navigate to OTP verification page
       router.push({
         pathname: '/(auth)/verify-registration',
@@ -121,7 +164,39 @@ export default function RegistrationPersonalInfo() {
           dateOfBirth: form.dateOfBirth.trim()
         }
       });
-    }, 1000);
+      
+    } catch (error: any) {
+      console.error('❌ Registration error:', error);
+      setIsLoading(false);
+      
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      // Handle specific error messages
+      if (error.message) {
+        errorMessage = error.message;
+        
+        // Handle specific duplicate user cases
+        if (error.message.toLowerCase().includes('duplicate') || 
+            error.message.toLowerCase().includes('already exists') ||
+            error.message.toLowerCase().includes('already registered')) {
+          
+          if (error.message.toLowerCase().includes('mobile') || 
+              error.message.toLowerCase().includes('phone')) {
+            errorMessage = 'This mobile number is already registered. Please use a different mobile number or try logging in.';
+          } else if (error.message.toLowerCase().includes('email')) {
+            errorMessage = 'This email address is already registered. Please use a different email address.';
+          } else if (error.message.toLowerCase().includes('card')) {
+            errorMessage = 'This card is already registered to another user. Please contact support if this is your card.';
+          } else {
+            errorMessage = 'User already exists. Please check your details or try logging in instead.';
+          }
+        }
+      } else if (error.response?.data?.data?.message) {
+        errorMessage = error.response.data.data.message;
+      }
+      
+      Alert.alert('Registration Error', errorMessage);
+    }
   };
 
   const updateForm = (field: keyof PersonalForm, value: string) => {
