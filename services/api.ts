@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { Transaction as TransactionType } from '../types';
 import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
 import { storageService } from '../utils/storage';
 
@@ -81,6 +82,15 @@ export interface Trip {
       tripEndPlace: string;
     };
   };
+}
+
+export interface Transaction {
+  id: string;
+  passengerId: string;
+  tripId: string;
+  amount: number;
+  transactionTime: string;
+  status: string;
 }
 
 class ApiService {
@@ -556,6 +566,35 @@ class ApiService {
         throw new Error(error.message);
       } else {
         throw new Error('Registration failed. Please try again.');
+      }
+    }
+  }
+
+  /**
+   * Fetch passenger transaction history
+   */
+  async getPassengerHistory(passengerId: string, pageNo: number = 1, pageSize: number = 100): Promise<ApiResponse<TransactionType[]>> {
+    try {
+      console.log(`🔄 [API] Fetching history for: ${passengerId}`);
+      
+      const response = await this.api.get<ApiResponse<TransactionType[]>>(
+        `/api/history/passenger?id=${passengerId}&pageNo=${pageNo}&pageSize=${pageSize}`
+      );
+      
+      console.log('✅ [API] History loaded:', response.data?.data?.content?.length || 0, 'items');
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ [API] History error:', error.response?.status || error.message);
+      
+      // Handle specific error cases
+      if (error.response?.data?.data?.message) {
+        throw new Error(error.response.data.data.message);
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error('Failed to fetch history. Please try again.');
       }
     }
   }

@@ -599,10 +599,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
       const userData = await storageService.getItem<User>(STORAGE_KEYS.USER_DATA);
       
+      console.log('🔍 [LOAD-USER] Loading user from storage...');
+      console.log('🔍 [LOAD-USER] Token exists:', !!token);
+      console.log('🔍 [LOAD-USER] User data exists:', !!userData);
+      
       if (token && userData) {
         // Check if token is expired
         const { isTokenExpired } = await import('../utils/jwt');
         if (isTokenExpired(token)) {
+          console.warn('⚠️ [LOAD-USER] Token is expired, clearing auth data');
           // Token is expired, clear auth data
           await storageService.clearAuthData();
           set({
@@ -613,12 +618,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return;
         }
         
+        console.log('✅ [LOAD-USER] Valid token and user data found, setting authenticated state');
         set({
           user: userData,
           isAuthenticated: true,
           isLoading: false
         });
       } else {
+        console.log('ℹ️ [LOAD-USER] No valid token or user data found');
         set({
           user: null,
           isAuthenticated: false,
@@ -626,7 +633,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
       }
     } catch (error) {
-      console.error('Error loading user from storage:', error);
+      console.error('❌ [LOAD-USER] Error loading user from storage:', error);
       set({
         user: null,
         isAuthenticated: false,

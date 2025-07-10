@@ -18,15 +18,32 @@ export default function WelcomeScreen() {
     checkExistingUser();
   }, []);
 
-  const checkExistingUser = async () => {
-    setIsLoading(true);
-    await loadUserFromStorage();
-    
+  // Also check when authentication state changes
+  useEffect(() => {
     if (isAuthenticated) {
+      console.log('🔄 [WELCOME] User is authenticated, redirecting to tabs...');
       router.replace('/(tabs)');
     }
+  }, [isAuthenticated]);
+
+  const checkExistingUser = async () => {
+    setIsLoading(true);
+    console.log('🔍 [WELCOME] Checking existing user...');
     
-    setIsLoading(false);
+    try {
+      await loadUserFromStorage();
+      
+      if (isAuthenticated) {
+        console.log('✅ [WELCOME] User is authenticated, redirecting to tabs...');
+        router.replace('/(tabs)');
+      } else {
+        console.log('ℹ️ [WELCOME] User is not authenticated, showing welcome screen');
+      }
+    } catch (error) {
+      console.error('❌ [WELCOME] Error checking existing user:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGetStarted = () => {

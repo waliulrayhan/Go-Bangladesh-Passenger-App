@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Text } from '../../components/ui/Text';
 import { apiService } from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
 import { COLORS, SPACING } from '../../utils/constants';
 
 export default function VerifyRegistration() {
@@ -21,6 +22,7 @@ export default function VerifyRegistration() {
     dateOfBirth: string;
   }>();
 
+  const { login } = useAuthStore();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
@@ -92,21 +94,86 @@ export default function VerifyRegistration() {
       
       if (verificationResult) {
         console.log('✅ OTP verification successful');
-        setIsLoading(false);
         
-        Alert.alert(
-          'Registration Successful!',
-          'Your account has been created successfully. Welcome to Go Bangladesh!',
-          [
-            {
-              text: 'Continue',
-              onPress: () => {
-                // Navigate to main app
-                router.replace('/(tabs)');
+        // After successful OTP verification, properly log in the user
+        // This ensures the auth state is properly set with fresh tokens
+        console.log('🔑 Logging in user after successful registration...');
+        const loginSuccess = await login(params.phone, otpString);
+        
+        if (loginSuccess) {
+          console.log('✅ User logged in successfully after registration');
+          
+          // Small delay to ensure authentication state is set
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          setIsLoading(false);
+          
+          Alert.alert(
+            'Registration Successful!',
+            'Your account has been created successfully. Welcome to Go Bangladesh!',
+            [
+              {
+                text: 'Continue',
+                onPress: () => {
+                  // Navigate to main app - router.replace will be handled by _layout.tsx
+                  router.replace('/(tabs)');
+                }
               }
+            ]
+          );
+        } else {
+          console.warn('⚠️ Login failed after registration - trying alternative approach');
+          
+          // Alternative: Use the registerUser function with provided data
+          // This ensures the authentication state is properly set
+          try {
+            const registrationSuccess = await useAuthStore.getState().registerUser({
+              name: params.name,
+              sex: params.gender,
+              mobile: params.phone,
+              email: params.email,
+              cardNumber: params.cardNumber
+            });
+            
+            if (registrationSuccess) {
+              console.log('✅ Alternative registration approach successful');
+              
+              await new Promise(resolve => setTimeout(resolve, 500));
+              setIsLoading(false);
+              
+              Alert.alert(
+                'Registration Successful!',
+                'Your account has been created successfully. Welcome to Go Bangladesh!',
+                [
+                  {
+                    text: 'Continue',
+                    onPress: () => {
+                      router.replace('/(tabs)');
+                    }
+                  }
+                ]
+              );
+            } else {
+              throw new Error('Alternative registration failed');
             }
-          ]
-        );
+          } catch (altError) {
+            console.warn('⚠️ Alternative registration also failed');
+            setIsLoading(false);
+            
+            Alert.alert(
+              'Registration Complete',
+              'Your account has been created successfully. Please log in to continue.',
+              [
+                {
+                  text: 'Go to Login',
+                  onPress: () => {
+                    router.replace('/(auth)/passenger-login');
+                  }
+                }
+              ]
+            );
+          }
+        }
       }
     } catch (error: any) {
       setIsLoading(false);

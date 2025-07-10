@@ -4,7 +4,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { outfitFonts } from '../utils/fonts';
-import { SessionManager } from '../utils/sessionManager';
 
 // Polyfill for buffer in React Native
 import { Buffer } from 'buffer';
@@ -25,9 +24,6 @@ export default function RootLayout() {
       try {
         // First load user from storage
         await loadUserFromStorage();
-        
-        // Then initialize session with token-based refresh
-        await SessionManager.initializeSessionWithToken();
         
         console.log('✅ [APP] Session initialization completed');
       } catch (error) {

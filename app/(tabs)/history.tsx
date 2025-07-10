@@ -234,6 +234,8 @@ export default function History() {
     // Safety checks for required data
     const busName = trip.session?.bus?.busName || 'Bus Service';
     const busNumber = trip.session?.bus?.busNumber || 'N/A';
+    const organization = trip.session?.bus?.organization;
+    const sessionCode = trip.session?.sessionCode || 'N/A';
     const tripAmount = trip.amount || 0;
     const tripStartTime = trip.tripStartTime;
     const tripEndTime = trip.tripEndTime;
@@ -253,6 +255,11 @@ export default function History() {
               <Text variant="caption" color={COLORS.gray[600]} style={styles.cardSubtitle}>
                 {busNumber}
               </Text>
+              {organization && (
+                <Text variant="caption" color={COLORS.gray[500]} style={styles.cardSubtitle}>
+                  {organization.name} ({organization.code})
+                </Text>
+              )}
               <Text variant="caption" color={COLORS.gray[500]} style={styles.cardDate}>
                 {tripStartTime ? formatDate(new Date(tripStartTime)) : 'N/A'}
               </Text>
@@ -264,6 +271,14 @@ export default function History() {
         </View>
 
         <View style={styles.tripDetails}>
+          {/* Session Info */}
+          <View style={styles.detailRow}>
+            <Ionicons name="receipt" size={14} color={COLORS.gray[500]} />
+            <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
+              Session: {sessionCode}
+            </Text>
+          </View>
+
           <View style={styles.timeRow}>
             <View style={styles.timeItem}>
               <Text variant="caption" color={COLORS.gray[600]} style={styles.timeLabel}>
@@ -347,6 +362,9 @@ export default function History() {
     // Only show recharge transactions (incoming money)
     if (item.transactionType !== 'Recharge') return null;
 
+    const agent = item.agent;
+    const organization = agent?.organization;
+
     return (
       <Card variant="elevated" style={styles.historyCard}>
         <View style={styles.cardHeader}>
@@ -356,10 +374,18 @@ export default function History() {
             </View>
             <View>
               <Text variant="label" color={COLORS.gray[900]} style={styles.cardTitle}>
-                Agent
+                {agent?.name || 'Manual Recharge'}
               </Text>
-              <Text variant="caption" color={COLORS.gray[500]} style={styles.cardSubtitle}>
-                {item.agent?.name || 'Manual Recharge'}
+              <Text variant="caption" color={COLORS.gray[600]} style={styles.cardSubtitle}>
+                {agent?.code || 'Recharge'}
+              </Text>
+              {organization && (
+                <Text variant="caption" color={COLORS.gray[500]} style={styles.cardSubtitle}>
+                  {organization.name} ({organization.code})
+                </Text>
+              )}
+              <Text variant="caption" color={COLORS.gray[500]} style={styles.cardDate}>
+                {item.createTime ? formatDate(new Date(item.createTime)) : 'N/A'}
               </Text>
             </View>
           </View>
@@ -369,19 +395,27 @@ export default function History() {
         </View>
 
         <View style={styles.rechargeDetails}>
-          {/* {item.agent && (
+          {agent?.mobileNumber && (
             <View style={styles.detailRow}>
-              <Ionicons name="person" size={14} color={COLORS.gray[500]} />
+              <Ionicons name="call" size={14} color={COLORS.gray[500]} />
               <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-                Agent: {item.agent.name}
+                {agent.mobileNumber}
               </Text>
             </View>
-          )} */}
-          {item.agent?.organization?.name && (
+          )}
+          {agent?.address && (
+            <View style={styles.detailRow}>
+              <Ionicons name="location-outline" size={14} color={COLORS.gray[500]} />
+              <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
+                {agent.address}
+              </Text>
+            </View>
+          )}
+          {organization && (
             <View style={styles.detailRow}>
               <Ionicons name="business" size={14} color={COLORS.gray[500]} />
               <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-                Organization: {item.agent.organization.name}
+                {organization.name} - {organization.organizationType}
               </Text>
             </View>
           )}

@@ -48,43 +48,119 @@ export interface Card {
   createdAt: string;
 }
 
-export interface Transaction {
+export interface Organization {
+  name: string;
+  code: string;
+  focalPerson: string;
+  designation: string;
+  email: string;
+  mobileNumber: string;
+  organizationType: string;
   id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
+}
+
+export interface Agent {
+  isSuperAdmin: boolean;
+  name: string;
+  emailAddress: string;
+  passwordHash: string;
+  imageUrl: string;
+  isApproved: boolean;
+  isActive: boolean;
+  roleId?: string;
+  dateOfBirth: string;
+  mobileNumber: string;
+  address: string;
+  gender: string;
+  userType: string;
+  passengerId?: string;
+  organizationId: string;
+  organization: Organization;
+  serial: number;
+  code: string;
+  cardNumber?: string;
+  designation?: string;
+  balance: number;
+  id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
+}
+
+export interface BusInfo {
+  busNumber: string;
+  busName: string;
+  routeId: string;
+  route?: any;
+  organizationId: string;
+  organization: Organization;
+  presentLatitude: string;
+  presentLongitude: string;
+  id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
+}
+
+export interface Session {
+  busId: string;
+  userId: string;
+  startTime: string;
+  endTime: string;
+  isRunning: boolean;
+  serial: number;
+  sessionCode: string;
+  user?: any;
+  bus: BusInfo;
+  id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
+}
+
+export interface TripDetails {
+  passengerId: string;
+  sessionId: string;
+  startingLatitude: string;
+  startingLongitude: string;
+  endingLatitude: string;
+  endingLongitude: string;
+  tripStartTime: string;
+  tripEndTime: string;
+  amount: number;
+  isRunning: boolean;
+  distance: number;
+  session: Session;
+  passenger?: any;
+  id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
+}
+
+export interface Transaction {
   transactionType: 'BusFare' | 'Recharge';
   amount: number;
   passengerId: string;
   agentId?: string;
   tripId?: string;
   passenger?: any;
-  agent?: {
-    id: string;
-    name: string;
-    emailAddress: string;
-    mobileNumber: string;
-    address: string;
-    userType: string;
-    code: string;
-    balance: number;
-    isActive: boolean;
-    createTime: string;
-    lastModifiedTime: string;
-  };
-  trip?: {
-    id: string;
-    passengerId: string;
-    sessionId: string;
-    startingLatitude: string;
-    startingLongitude: string;
-    endingLatitude: string;
-    endingLongitude: string;
-    tripStartTime: string;
-    tripEndTime: string;
-    amount: number;
-    isRunning: boolean;
-    distance: number;
-    createTime: string;
-    lastModifiedTime: string;
-  };
+  agent?: Agent;
+  trip?: TripDetails;
+  id: string;
   createTime: string;
   lastModifiedTime: string;
   createdBy: string;
@@ -105,67 +181,8 @@ export interface Trip {
   amount: number;
   isRunning: boolean;
   distance: number;
-  session?: {
-    busId: string;
-    userId: string;
-    startTime: string;
-    endTime: string;
-    isRunning: boolean;
-    serial: number;
-    sessionCode: string;
-    user: any;
-    bus: {
-      busNumber: string;
-      busName: string;
-      tripStartPlace: string;
-      tripEndPlace: string;
-      organizationId: string;
-      organization: any;
-      presentLatitude: string;
-      presentLongitude: string;
-      id: string;
-      createTime: string;
-      lastModifiedTime: string;
-      createdBy: string;
-      lastModifiedBy: string;
-      isDeleted: boolean;
-    };
-    id: string;
-    createTime: string;
-    lastModifiedTime: string;
-    createdBy: string;
-    lastModifiedBy: string;
-    isDeleted: boolean;
-  };
-  passenger?: {
-    isSuperAdmin: boolean;
-    name: string;
-    emailAddress: string;
-    passwordHash: string;
-    imageUrl: string;
-    isApproved: boolean;
-    isActive: boolean;
-    roleId: string | null;
-    dateOfBirth: string;
-    mobileNumber: string;
-    address: string;
-    gender: string;
-    userType: string;
-    passengerId: string;
-    organizationId: string;
-    organization: any;
-    serial: number;
-    code: string | null;
-    cardNumber: string;
-    designation: string | null;
-    balance: number;
-    id: string;
-    createTime: string;
-    lastModifiedTime: string;
-    createdBy: string;
-    lastModifiedBy: string;
-    isDeleted: boolean;
-  };
+  session?: Session;
+  passenger?: any;
   createTime: string;
   lastModifiedTime: string;
   createdBy: string;
@@ -174,27 +191,17 @@ export interface Trip {
 }
 
 export interface Bus {
-  id: number;
+  id: string;
   busNumber: string;
-  organizationId: number;
-  capacity: number;
+  organizationId: string;
+  capacity?: number;
   route: string;
   currentDriverId?: number;
   currentHelperId?: number;
   isActive: boolean;
 }
 
-export interface Organization {
-  id: number;
-  name: string;
-  type: 'institute' | 'company';
-  isActive: boolean;
-  logo?: string;
-  adminName?: string;
-  adminPhone?: string;
-  adminEmail?: string;
-  createdAt: string;
-}
+// Removed duplicate Organization interface
 
 export interface TapTransaction {
   id: number;

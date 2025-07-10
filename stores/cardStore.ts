@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { apiService } from '../services/api';
-import { ApiResponse, Bus, Card, PaginationState, Transaction, Trip } from '../types';
+import { Bus, Card, PaginationState, Transaction, Trip } from '../types';
 import { useAuthStore } from './authStore';
 
 interface CardState {
@@ -123,61 +123,25 @@ export const useCardStore = create<CardState>((set, get) => ({
     }
     
     try {
-      // Get passenger ID from auth store (NO MOCK DATA)
+      // Get user ID from auth store
       const authStore = useAuthStore.getState();
       const user = authStore.user;
-      console.log('👤 [HISTORY] Current user from auth store:', user);
       
-      // Use real passenger ID from user data (NO TEST IDs)
-      const passengerId = user?.passengerId || user?.id?.toString();
+      // Use the user ID for the history API call (as shown in working Postman request)
+      const userId = user?.id?.toString();
       
-      if (!passengerId) {
-        console.warn('⚠️ [HISTORY] No passenger ID available - user may not be properly authenticated');
-        throw new Error('No passenger ID available. Please login again.');
+      if (!userId) {
+        throw new Error('No user ID available. Please login again.');
       }
       
-      console.log('🔄 [HISTORY] Loading fresh history for passenger:', passengerId);
-      console.log('📄 [HISTORY] Page:', pageNo, 'Page Size:', historyPagination.pageSize);
+      console.log('🔄 [HISTORY] Loading history for user:', userId);
       
-      const apiUrl = `https://mhmahi-001-site1.qtempurl.com/api/history/passenger?id=${passengerId}&pageNo=${pageNo}&pageSize=${historyPagination.pageSize}`;
-      console.log('🌐 [HISTORY] API URL:', apiUrl);
+      // Use the new API service method
+      const response = await apiService.getPassengerHistory(userId, pageNo, historyPagination.pageSize);
       
-      // Make fresh API call with authentication token
-      const { storageService } = await import('../utils/storage');
-      const { STORAGE_KEYS } = await import('../utils/constants');
-      const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers
-      });
-      
-      if (!response.ok) {
-        console.error('❌ [HISTORY] Fresh API request failed:', response.status, response.statusText);
-        throw new Error(`API request failed: ${response.status}`);
-      }
-      
-      const data: ApiResponse<Transaction> = await response.json();
-      console.log('📥 [HISTORY] Fresh API response received:', data);
-      
-      if (data.data.isSuccess) {
-        const newTransactions = data.data.content || [];
-        console.log('📊 [HISTORY] Fresh transactions loaded:', newTransactions.length);
-        
-        if (newTransactions.length > 0) {
-          console.log('🔍 [HISTORY] Sample fresh transaction:', newTransactions[0]);
-        } else {
-          console.log('ℹ️ [HISTORY] No transactions found for this user');
-        }
+      if (response.data.isSuccess) {
+        const newTransactions = response.data.content || [];
+        console.log('✅ [HISTORY] Loaded:', newTransactions.length, 'transactions');
         
         const hasMore = newTransactions.length === historyPagination.pageSize;
         
@@ -205,24 +169,21 @@ export const useCardStore = create<CardState>((set, get) => ({
             totalLoaded: reset ? newTransactions.length : historyPagination.totalLoaded + newTransactions.length
           }
         });
-        console.log('✅ [HISTORY] Fresh history data updated successfully');
-        console.log('📊 [HISTORY] Total transactions:', reset ? newTransactions.length : get().transactions.length);
-        console.log('🚌 [HISTORY] Total trips:', reset ? 
-          newTransactions.filter(t => t.transactionType === 'BusFare' && t.trip).length : 
-          get().trips.length);
+        
+        console.log('✅ [HISTORY] Updated - Total transactions:', reset ? newTransactions.length : get().transactions.length);
       } else {
-        console.error('❌ [HISTORY] API returned error:', data.data.message);
-        throw new Error(data.data.message || 'Failed to load history');
+        console.error('❌ [HISTORY] API returned unsuccessful response:', response.data.message);
+        throw new Error(response.data.message || 'Failed to load history');
       }
     } catch (error: any) {
-      console.error('❌ [HISTORY] Error loading fresh history:', error);
+      console.error('❌ [HISTORY] Error loading history:', error);
       set({
         isLoading: false,
+        error: error.message || 'Failed to load history',
         historyPagination: {
           ...historyPagination,
           isLoadingMore: false
-        },
-        error: error.message || 'Failed to load history'
+        }
       });
     }
   },
