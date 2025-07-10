@@ -23,7 +23,8 @@ export default function Dashboard() {
     transactions,
     loadHistory,
     checkOngoingTrip,
-    realTapOut
+    realTapOut,
+    forceTapOut
   } = useCardStore();
 
   // Use token refresh hook to get fresh data
@@ -117,6 +118,32 @@ export default function Dashboard() {
 
   const handleViewAllPress = () => {
     router.push('/(tabs)/history');
+  };
+
+  const handleForceTapOut = () => {
+    Alert.alert(
+      'Force Tap Out',
+      'Are you sure you want to force tap out? This will deduct ৳100.00 from your balance.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Force Tap Out', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await forceTapOut();
+              if (result.success) {
+                Alert.alert('Success', result.message);
+              } else {
+                Alert.alert('Failed', result.message);
+              }
+            } catch (error) {
+              Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+            }
+          }
+        }
+      ]
+    );
   };
   const renderHeader = () => (
     <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
@@ -251,6 +278,16 @@ export default function Dashboard() {
                 Started: {currentTrip ? new Date(currentTrip.tripStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }) : '8:16:45 PM'}
               </Text>
             </View>
+            <TouchableOpacity 
+              style={styles.forceTapOutButton}
+              onPress={handleForceTapOut}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="exit-outline" size={16} color={COLORS.white} />
+              <Text variant="caption" color={COLORS.white} style={styles.forceTapOutText}>
+                Force Tap Out
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Animated.View>
@@ -683,6 +720,30 @@ const styles = StyleSheet.create({
   tripTime: {
     fontSize: 12,
     fontWeight: '500',
+  },
+
+  // Force Tap Out Button Styles
+  forceTapOutButton: {
+    backgroundColor: COLORS.error,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.error,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    gap: 4,
+    minWidth: 80,
+  },
+  forceTapOutText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 12,
   },
 
   // Recent Activity Styles

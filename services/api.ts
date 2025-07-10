@@ -397,6 +397,69 @@ class ApiService {
     }
   }
 
+  async forceTripStop(passengerId: string, tripId: string, sessionId: string): Promise<{ success: boolean; message: string }> {
+    console.log('🚌 [FORCE TAP OUT] Attempting force trip stop...');
+    console.log('📋 [FORCE TAP OUT] Request payload:', { passengerId, tripId, sessionId });
+    
+    try {
+      const payload = {
+        passengerId,
+        tripId,
+        sessionId
+      };
+
+      console.log('🌐 [FORCE TAP OUT] Sending request to: /api/transaction/ForceTripStop');
+      console.log('📤 [FORCE TAP OUT] Full payload:', JSON.stringify(payload, null, 2));
+
+      const response = await this.api.post<ApiResponse<null>>('/api/transaction/ForceTripStop', payload);
+      
+      console.log('📥 [FORCE TAP OUT] Force trip stop response received:', {
+        status: response.status,
+        isSuccess: response.data.data?.isSuccess,
+        message: response.data.data?.message,
+        fullResponse: JSON.stringify(response.data, null, 2)
+      });
+      
+      // Check if the API response indicates success
+      if (response.data.data?.isSuccess) {
+        console.log('✅ [FORCE TAP OUT] Force trip stop successful');
+        return { 
+          success: true, 
+          message: response.data.data.message || 'Bus fare deduction has been successful!' 
+        };
+      } else {
+        console.log('❌ [FORCE TAP OUT] Force trip stop failed:', response.data.data?.message);
+        return { 
+          success: false, 
+          message: response.data.data?.message || 'Force trip stop failed' 
+        };
+      }
+    } catch (error: any) {
+      console.error('💥 [FORCE TAP OUT] Error during force trip stop:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // Check if there's a specific error message from the API
+      let errorMessage = 'Network error occurred';
+      
+      if (error.response?.data?.data?.message) {
+        errorMessage = error.response.data.data.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return { 
+        success: false, 
+        message: errorMessage
+      };
+    }
+  }
+
   // OTP API methods
   async sendOTP(mobileNumber: string): Promise<boolean> {
     console.log('📱 [OTP] Sending OTP to:', mobileNumber);

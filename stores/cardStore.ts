@@ -23,6 +23,7 @@ interface CardState {
   simulateTapIn: () => void;
   simulateTapOut: () => void;
   realTapOut: () => Promise<boolean>;
+  forceTapOut: () => Promise<{ success: boolean; message: string }>;
   clearError: () => void;
   loadMoreHistory: () => Promise<void>;
   checkOngoingTrip: () => Promise<void>;
@@ -338,6 +339,91 @@ export const useCardStore = create<CardState>((set, get) => ({
       console.error('💥 [TRIP] Error during tap out:', error.message);
       set({ error: error.message || 'Failed to tap out. Please try again.' });
       return false;
+    }
+  },
+
+  forceTapOut: async () => {
+    console.log('🔄 [FORCE TAP OUT] Attempting force tap out...');
+    
+    try {
+      const state = get();
+      const { user } = useAuthStore.getState();
+      
+      if (!state.currentTrip || !user) {
+        console.log('❌ [FORCE TAP OUT] No active trip or user found');
+        return { 
+          success: false, 
+          message: 'No active trip found or user not logged in' 
+        };
+      }
+
+      // Debug user data structure
+      console.log('🔍 [FORCE TAP OUT] User data available:', {
+        id: user.id,
+        passengerId: user.passengerId,
+        userType: user.userType,
+        name: user.name
+      });
+
+      // Use user.id as the actual passenger ID for the API
+      // user.passengerId appears to be a different field (like student ID or card number)
+      // but the API expects the actual user UUID which is in user.id
+      const passengerId = user.id.toString();
+      
+      console.log('💡 [FORCE TAP OUT] Using user.id as passengerId:', passengerId);
+
+      const tripId = state.currentTrip.id;
+      const sessionId = state.currentTrip.sessionId;
+      
+      console.log('📋 [FORCE TAP OUT] Trip details:', { 
+        passengerId, 
+        tripId, 
+        sessionId,
+        currentTripData: state.currentTrip 
+      });
+      
+      // Ensure all required IDs are available
+      if (!passengerId || !tripId || !sessionId) {
+        console.log('❌ [FORCE TAP OUT] Missing required IDs:', { passengerId, tripId, sessionId });
+        return { 
+          success: false, 
+          message: 'Missing required trip information. Please try again.' 
+        };
+      }
+      
+      const result = await apiService.forceTripStop(passengerId, tripId, sessionId);
+      
+      if (result.success) {
+        console.log('✅ [FORCE TAP OUT] Force tap out successful, updating state');
+        set({
+          tripStatus: 'idle',
+          currentTrip: null
+        });
+        
+        // Refresh card details and history after force tap out
+        get().loadCardDetails();
+        get().loadHistory(1, true);
+        
+        return { 
+          success: true, 
+          message: result.message 
+        };
+      } else {
+        console.log('❌ [FORCE TAP OUT] Force tap out failed');
+        set({ error: result.message });
+        return { 
+          success: false, 
+          message: result.message 
+        };
+      }
+    } catch (error: any) {
+      console.error('💥 [FORCE TAP OUT] Error during force tap out:', error.message);
+      const errorMessage = error.message || 'Failed to force tap out. Please try again.';
+      set({ error: errorMessage });
+      return { 
+        success: false, 
+        message: errorMessage 
+      };
     }
   },
 
