@@ -8,6 +8,7 @@ import { Text } from '../../components/ui/Text';
 import { WelcomePopup } from '../../components/ui/WelcomePopup';
 import { useAuthStore } from '../../stores/authStore';
 import { useCardStore } from '../../stores/cardStore';
+import { useTokenRefresh, useUserContext } from '../../hooks/useTokenRefresh';
 import { API_BASE_URL, COLORS } from '../../utils/constants';
 
 export default function Dashboard() {
@@ -24,6 +25,10 @@ export default function Dashboard() {
     checkOngoingTrip,
     realTapOut
   } = useCardStore();
+
+  // Use token refresh hook to get fresh data
+  const { isRefreshing, refreshAllData } = useTokenRefresh();
+  const { userContext } = useUserContext();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
@@ -85,7 +90,17 @@ export default function Dashboard() {
           text: 'Logout', 
           style: 'destructive',
           onPress: async () => {
-            await logout();
+            try {
+              await logout();
+              // Use router.dismissAll() and then navigate to ensure clean navigation stack
+              router.dismissAll();
+              router.replace('/');
+            } catch (error) {
+              console.error('Logout error:', error);
+              // Force navigation even if logout fails
+              router.dismissAll();
+              router.replace('/');
+            }
           }
         }
       ]
@@ -161,7 +176,7 @@ export default function Dashboard() {
         
         <View style={styles.cardContent}>
           <Text variant="h5" color={COLORS.white} style={styles.cardNumber}>
-            {user?.cardNumber || card?.cardNumber || 'GB-7823456012'}
+            {user?.cardNumber || card?.cardNumber || 'GB-0000000000'}
           </Text>
           
           <View style={styles.cardInfo}>
@@ -200,6 +215,62 @@ export default function Dashboard() {
       </View>
     </Animated.View>
   );
+
+  // User context display section
+  const renderUserContext = () => {
+    if (!userContext) return null;
+
+    return (
+      <Animated.View entering={FadeInDown.duration(800).delay(200)} style={styles.userContextContainer}>
+        <View style={styles.userContextCard}>
+          <View style={styles.userContextHeader}>
+            <View style={styles.userContextIcon}>
+              <Ionicons 
+                name={userContext.isPrivateUser ? "business" : "globe-outline"} 
+                size={20} 
+                color={COLORS.brand.blue} 
+              />
+            </View>
+            <View style={styles.userContextInfo}>
+              <Text variant="h6" color={COLORS.brand.blue} style={styles.userContextTitle}>
+                {userContext.contextTitle}
+              </Text>
+              {userContext.showOrganizationInfo && (
+                <Text variant="body" color={COLORS.gray[700]} style={styles.organizationName}>
+                  {userContext.organizationName}
+                </Text>
+              )}
+              <Text variant="caption" color={COLORS.gray[500]} style={styles.userType}>
+                {userContext.userType.toUpperCase()} USER
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.userContextActions}>
+            <TouchableOpacity
+              style={[styles.refreshButton, isRefreshing && styles.refreshButtonDisabled]}
+              onPress={refreshAllData}
+              disabled={isRefreshing}
+            >
+              <Ionicons 
+                name="refresh" 
+                size={16} 
+                color={isRefreshing ? COLORS.gray[400] : COLORS.brand.blue}
+                style={[isRefreshing && styles.refreshingIcon]}
+              />
+              <Text 
+                variant="caption" 
+                color={isRefreshing ? COLORS.gray[400] : COLORS.brand.blue} 
+                style={styles.refreshButtonText}
+              >
+                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Animated.View>
+    );
+  };
   
   const renderSimulateButton = () => {
     // Hide simulate button since we're using real trip data
@@ -289,7 +360,20 @@ export default function Dashboard() {
         </View>
         
         <View style={styles.activityList}>
-          {recentTransactions.length > 0 ? (
+          {isLoading ? (
+            // Show loading state while fetching data
+            <View style={styles.emptyActivityContainer}>
+              <View style={styles.emptyActivityIcon}>
+                <Ionicons name="refresh" size={24} color={COLORS.gray[400]} />
+              </View>
+              <Text variant="body" color={COLORS.gray[500]} style={styles.emptyActivityTitle}>
+                Loading activity...
+              </Text>
+              <Text variant="caption" color={COLORS.gray[400]} style={styles.emptyActivitySubtitle}>
+                Fetching your latest transactions
+              </Text>
+            </View>
+          ) : recentTransactions.length > 0 ? (
             recentTransactions.map((transaction, index) => {
               const iconInfo = getActivityIcon(transaction.transactionType);
               return (
@@ -316,59 +400,18 @@ export default function Dashboard() {
               );
             })
           ) : (
-            // Fallback to mock data if no transactions are loaded
-            <>
-              <View style={styles.activityItem}>
-                <View style={[styles.activityIcon, { backgroundColor: COLORS.error + '20' }]}>
-                  <Ionicons name="arrow-up" size={16} color={COLORS.error} />
-                </View>
-                <View style={styles.activityContent}>
-                  <Text variant="label" color={COLORS.gray[900]} style={styles.activityTitle}>
-                    Bus Fare
-                  </Text>
-                  <Text variant="caption" color={COLORS.gray[500]} style={styles.activityTime}>
-                    {formatDate(new Date())}, 2:30 PM
-                  </Text>
-                </View>
-                <Text variant="labelSmall" color={COLORS.error} style={styles.activityAmount}>
-                  -৳25.00
-                </Text>
+            // Show empty state for new users (NO MOCK DATA)
+            <View style={styles.emptyActivityContainer}>
+              <View style={styles.emptyActivityIcon}>
+                <Ionicons name="receipt-outline" size={24} color={COLORS.gray[400]} />
               </View>
-              
-              <View style={styles.activityItem}>
-                <View style={[styles.activityIcon, { backgroundColor: COLORS.success + '20' }]}>
-                  <Ionicons name="arrow-down" size={16} color={COLORS.success} />
-                </View>
-                <View style={styles.activityContent}>
-                  <Text variant="label" color={COLORS.gray[900]} style={styles.activityTitle}>
-                    Top Up
-                  </Text>
-                  <Text variant="caption" color={COLORS.gray[500]} style={styles.activityTime}>
-                    {formatDate(new Date(Date.now() - 24 * 60 * 60 * 1000))}, 10:15 AM
-                  </Text>
-                </View>
-                <Text variant="labelSmall" color={COLORS.success} style={styles.activityAmount}>
-                  +৳500.00
-                </Text>
-              </View>
-              
-              <View style={styles.activityItem}>
-                <View style={[styles.activityIcon, { backgroundColor: COLORS.error + '20' }]}>
-                  <Ionicons name="arrow-up" size={16} color={COLORS.error} />
-                </View>
-                <View style={styles.activityContent}>
-                  <Text variant="label" color={COLORS.gray[900]} style={styles.activityTitle}>
-                    Bus Fare
-                  </Text>
-                  <Text variant="caption" color={COLORS.gray[500]} style={styles.activityTime}>
-                    {formatDate(new Date(Date.now() - 24 * 60 * 60 * 1000))}, 8:45 AM
-                  </Text>
-                </View>
-                <Text variant="labelSmall" color={COLORS.error} style={styles.activityAmount}>
-                  -৳30.00
-                </Text>
-              </View>
-            </>
+              <Text variant="body" color={COLORS.gray[500]} style={styles.emptyActivityTitle}>
+                No recent activity
+              </Text>
+              <Text variant="caption" color={COLORS.gray[400]} style={styles.emptyActivitySubtitle}>
+                Your transaction history will appear here once you start using your card
+              </Text>
+            </View>
           )}
         </View>
       </Animated.View>
@@ -385,6 +428,7 @@ export default function Dashboard() {
         {renderHeader()}
         {renderTripStatus()}
         {renderRFIDCard()}
+        {renderUserContext()}
         {renderSimulateButton()}
         {renderRecentActivity()}
       </ScrollView>
@@ -755,5 +799,105 @@ const styles = StyleSheet.create({
   activityAmount: {
     fontSize: 14,
     fontWeight: '600',
+  },
+
+  // Empty Activity State Styles
+  emptyActivityContainer: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyActivityIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.gray[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyActivityTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyActivitySubtitle: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 240,
+  },
+
+  // User Context Styles
+  userContextContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  userContextCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  userContextHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  userContextIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.brand.blue + '10',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  userContextInfo: {
+    flex: 1,
+  },
+  userContextTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  organizationName: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  userType: {
+    fontSize: 11,
+    fontWeight: '500',
+    opacity: 0.7,
+  },
+  userContextActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.brand.blue + '10',
+  },
+  refreshButtonDisabled: {
+    backgroundColor: COLORS.gray[100],
+  },
+  refreshingIcon: {
+    transform: [{ rotate: '0deg' }],
+  },
+  refreshButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginLeft: 4,
   },
 });

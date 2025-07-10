@@ -83,6 +83,36 @@ export class StorageService {
       this.removeItem(STORAGE_KEYS.USER_TYPE)
     ]);
   }
+
+  async clearAllAppData(): Promise<void> {
+    console.log('🧹 [STORAGE] Clearing all application data...');
+    
+    try {
+      // Clear all auth-related data
+      await this.clearAuthData();
+      
+      // Clear additional app-specific data
+      const additionalKeys = [
+        'temp_mobile',
+        'temp_registration_data',
+        'card_data',
+        'trip_data',
+        'transaction_cache',
+        'history_cache',
+        'bus_data_cache',
+        'profile_cache'
+      ];
+      
+      await Promise.all(
+        additionalKeys.map(key => this.removeItem(key))
+      );
+      
+      console.log('✅ [STORAGE] All application data cleared successfully');
+    } catch (error) {
+      console.error('❌ [STORAGE] Error clearing application data:', error);
+      throw error;
+    }
+  }
 }
 
 export const storageService = new StorageService();

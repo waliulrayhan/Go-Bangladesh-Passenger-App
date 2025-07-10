@@ -26,6 +26,8 @@ interface CardState {
   clearError: () => void;
   loadMoreHistory: () => Promise<void>;
   checkOngoingTrip: () => Promise<void>;
+  clearAllCardData: () => Promise<void>;
+  refreshCardData: () => Promise<void>;
 }
 
 export const useCardStore = create<CardState>((set, get) => ({
@@ -46,29 +48,50 @@ export const useCardStore = create<CardState>((set, get) => ({
   },
 
   loadCardDetails: async () => {
+    console.log('💳 [CARD] Loading fresh card details for current user...');
     set({ isLoading: true, error: null });
     
     try {
-      // Get user data from auth store
+      // Get fresh user data from auth store (NO MOCK DATA)
       const authStore = useAuthStore.getState();
       const user = authStore.user;
       
-      // Create card object from user data if available
+      if (!user) {
+        console.warn('⚠️ [CARD] No user data available');
+        throw new Error('No user data available. Please login again.');
+      }
+      
+      console.log('👤 [CARD] Loading card for user:', {
+        id: user.id,
+        name: user.name,
+        cardNumber: user.cardNumber,
+        balance: user.balance
+      });
+      
+      // Create fresh card object from current user data (NO MOCK DATA)
       const card: Card = {
-        id: 1,
-        cardNumber: user?.cardNumber || 'GB-0000000000',
-        userId: parseInt(user?.id?.toString() || '1'),
-        balance: user?.balance || 0,
+        id: user.id ? parseInt(user.id.toString()) : Date.now(),
+        cardNumber: user.cardNumber || 'GB-0000000000', // Default for new users without card
+        userId: parseInt(user.id?.toString() || '1'),
+        balance: typeof user.balance === 'number' ? user.balance : 0,
         isActive: true,
         createdAt: new Date().toISOString()
       };
       
+      console.log('✅ [CARD] Fresh card details loaded:', {
+        cardNumber: card.cardNumber,
+        balance: card.balance,
+        userId: card.userId,
+        isNewUser: !user.cardNumber
+      });
+      
       set({ card, isLoading: false });
       
-      // Check for ongoing trip after loading card details
+      // Check for ongoing trip after loading fresh card details
       get().checkOngoingTrip();
       
     } catch (error: any) {
+      console.error('❌ [CARD] Error loading fresh card details:', error);
       set({
         isLoading: false,
         error: error.message || 'Failed to load card details'
@@ -100,43 +123,58 @@ export const useCardStore = create<CardState>((set, get) => ({
     }
     
     try {
-      // Get passenger ID from auth store
+      // Get passenger ID from auth store (NO MOCK DATA)
       const authStore = useAuthStore.getState();
       const user = authStore.user;
       console.log('👤 [HISTORY] Current user from auth store:', user);
       
-      // For testing, use the test ID that we know has data, then fallback to user ID
-      const testPassengerId = '585ce04804e64057a2dc6a0840c4f53e'; // This ID has data
-      const passengerId = testPassengerId; // Use test ID for now to verify API works
+      // Use real passenger ID from user data (NO TEST IDs)
+      const passengerId = user?.passengerId || user?.id?.toString();
       
-      console.log('🔄 [HISTORY] Loading history for passenger:', passengerId);
+      if (!passengerId) {
+        console.warn('⚠️ [HISTORY] No passenger ID available - user may not be properly authenticated');
+        throw new Error('No passenger ID available. Please login again.');
+      }
+      
+      console.log('🔄 [HISTORY] Loading fresh history for passenger:', passengerId);
       console.log('📄 [HISTORY] Page:', pageNo, 'Page Size:', historyPagination.pageSize);
       
       const apiUrl = `https://mhmahi-001-site1.qtempurl.com/api/history/passenger?id=${passengerId}&pageNo=${pageNo}&pageSize=${historyPagination.pageSize}`;
       console.log('🌐 [HISTORY] API URL:', apiUrl);
       
+      // Make fresh API call with authentication token
+      const { storageService } = await import('../utils/storage');
+      const { STORAGE_KEYS } = await import('../utils/constants');
+      const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(apiUrl, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers
       });
       
       if (!response.ok) {
-        console.error('❌ [HISTORY] API request failed:', response.status, response.statusText);
+        console.error('❌ [HISTORY] Fresh API request failed:', response.status, response.statusText);
         throw new Error(`API request failed: ${response.status}`);
       }
       
       const data: ApiResponse<Transaction> = await response.json();
-      console.log('📥 [HISTORY] API response received:', data);
+      console.log('📥 [HISTORY] Fresh API response received:', data);
       
       if (data.data.isSuccess) {
         const newTransactions = data.data.content || [];
-        console.log('📊 [HISTORY] Transactions loaded:', newTransactions.length);
+        console.log('📊 [HISTORY] Fresh transactions loaded:', newTransactions.length);
         
         if (newTransactions.length > 0) {
-          console.log('🔍 [HISTORY] Sample transaction:', newTransactions[0]);
+          console.log('🔍 [HISTORY] Sample fresh transaction:', newTransactions[0]);
         } else {
           console.log('ℹ️ [HISTORY] No transactions found for this user');
         }
@@ -167,7 +205,7 @@ export const useCardStore = create<CardState>((set, get) => ({
             totalLoaded: reset ? newTransactions.length : historyPagination.totalLoaded + newTransactions.length
           }
         });
-        console.log('✅ [HISTORY] History data updated successfully');
+        console.log('✅ [HISTORY] Fresh history data updated successfully');
         console.log('📊 [HISTORY] Total transactions:', reset ? newTransactions.length : get().transactions.length);
         console.log('🚌 [HISTORY] Total trips:', reset ? 
           newTransactions.filter(t => t.transactionType === 'BusFare' && t.trip).length : 
@@ -177,7 +215,7 @@ export const useCardStore = create<CardState>((set, get) => ({
         throw new Error(data.data.message || 'Failed to load history');
       }
     } catch (error: any) {
-      console.error('❌ [HISTORY] Error loading history:', error);
+      console.error('❌ [HISTORY] Error loading fresh history:', error);
       set({
         isLoading: false,
         historyPagination: {
@@ -389,6 +427,71 @@ export const useCardStore = create<CardState>((set, get) => ({
         tripStatus: 'idle',
         currentTrip: null
       });
+    }
+  },
+
+  clearAllCardData: async () => {
+    console.log('🧹 [CARD] Clearing all card data for fresh session...');
+    
+    try {
+      // Clear card-related storage
+      const keysToRemove = [
+        'card_data',
+        'trip_data',
+        'transaction_cache',
+        'history_cache',
+        'bus_data_cache'
+      ];
+      
+      const { storageService } = await import('../utils/storage');
+      await Promise.all(
+        keysToRemove.map(key => storageService.removeItem(key))
+      );
+      
+      // Reset card store state
+      set({
+        card: null,
+        transactions: [],
+        trips: [],
+        buses: [],
+        tripStatus: 'idle',
+        currentTrip: null,
+        error: null,
+        historyPagination: {
+          currentPage: 1,
+          pageSize: 20,
+          hasMore: true,
+          isLoadingMore: false,
+          totalLoaded: 0,
+        }
+      });
+      
+      console.log('✅ [CARD] All card data cleared successfully');
+    } catch (error) {
+      console.error('❌ [CARD] Error clearing card data:', error);
+    }
+  },
+
+  refreshCardData: async () => {
+    console.log('🔄 [CARD] Refreshing all card data with fresh API calls...');
+    
+    try {
+      // Clear existing data first
+      await get().clearAllCardData();
+      
+      // Load fresh data (NO CACHE, NO MOCK DATA)
+      await Promise.all([
+        get().loadCardDetails(),
+        get().loadHistory(1, true),
+        get().loadBuses()
+      ]);
+      
+      // Check for ongoing trips with fresh data
+      await get().checkOngoingTrip();
+      
+      console.log('✅ [CARD] All card data refreshed successfully');
+    } catch (error) {
+      console.error('❌ [CARD] Error refreshing card data:', error);
     }
   }
 }));

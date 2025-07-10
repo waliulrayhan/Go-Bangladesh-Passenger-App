@@ -145,9 +145,14 @@ class ApiService {
           console.log('🔓 [API] Triggering automatic logout due to 401...');
           await authStore.handleUnauthorized();
           
-          // Redirect to login screen
+          // Redirect to login screen with proper navigation handling
           const { router } = await import('expo-router');
-          router.replace('/passenger-login');
+          try {
+            router.dismissAll();
+            router.replace('/');
+          } catch (navError) {
+            console.warn('⚠️ [API] Navigation error during unauthorized redirect:', navError);
+          }
         }
 
         return Promise.reject(error);

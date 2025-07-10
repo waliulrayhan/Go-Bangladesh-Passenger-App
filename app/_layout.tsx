@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { outfitFonts } from '../utils/fonts';
+import { SessionManager } from '../utils/sessionManager';
 
 // Polyfill for buffer in React Native
 import { Buffer } from 'buffer';
@@ -18,9 +19,24 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
 
-  // Load user from storage
+  // Load user from storage with token-based refresh
   useEffect(() => {
-    loadUserFromStorage();
+    const initializeSession = async () => {
+      try {
+        // First load user from storage
+        await loadUserFromStorage();
+        
+        // Then initialize session with token-based refresh
+        await SessionManager.initializeSessionWithToken();
+        
+        console.log('✅ [APP] Session initialization completed');
+      } catch (error) {
+        console.error('❌ [APP] Error during session initialization:', error);
+        // Continue with normal app flow even if session init fails
+      }
+    };
+
+    initializeSession();
   }, []);
 
   // Hide splash screen when fonts are loaded

@@ -6,6 +6,8 @@ import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reani
 import { Text } from '../../components/ui/Text';
 import { useAuthStore } from '../../stores/authStore';
 import { useCardStore } from '../../stores/cardStore';
+import { useTokenRefresh, useUserContext } from '../../hooks/useTokenRefresh';
+import { TokenInfoDemo } from '../../components/TokenInfoDemo';
 import { API_BASE_URL, COLORS } from '../../utils/constants';
 
 const { width } = Dimensions.get('window');
@@ -13,18 +15,23 @@ const { width } = Dimensions.get('window');
 export default function Profile() {
   const { user, logout, refreshUserData, isLoading } = useAuthStore();
   const { card } = useCardStore();
+  
+  // Use token refresh hook to get fresh data
+  const { isRefreshing, refreshAllData } = useTokenRefresh();
+  const { userContext } = useUserContext();
+  
   const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      await refreshUserData();
+      await refreshAllData(); // Use the new token-based refresh
     } catch (error) {
       console.log('Refresh error:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [refreshUserData]);
+  }, [refreshAllData]);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -384,6 +391,7 @@ export default function Profile() {
       >
         {renderProfileHeader()}
         {renderBalanceCard()}
+        <TokenInfoDemo />
         {renderAccountInfo()}
         {renderActions()}
       </ScrollView>

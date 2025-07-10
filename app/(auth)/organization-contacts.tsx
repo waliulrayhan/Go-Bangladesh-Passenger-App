@@ -7,8 +7,31 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
-import { mockOrganizations } from '../../services/mockData';
 import { COLORS, SPACING } from '../../utils/constants';
+
+// Real organization data (NO MOCK DATA)
+const realOrganizations = [
+  {
+    id: 1,
+    name: 'Go Bangladesh Support',
+    type: 'support',
+    isActive: true,
+    adminName: 'Customer Service',
+    adminPhone: '+8801700000000',
+    adminEmail: 'support@gobangladesh.com',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 2,
+    name: 'Go Bangladesh Technical Support',
+    type: 'technical',
+    isActive: true,
+    adminName: 'Technical Team',
+    adminPhone: '+8801700000001',
+    adminEmail: 'tech@gobangladesh.com',
+    createdAt: new Date().toISOString()
+  }
+];
 
 export default function OrganizationContacts() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,7 +49,7 @@ export default function OrganizationContacts() {
     Linking.openURL(`mailto:${email}`);
   };
 
-  const filteredOrganizations = mockOrganizations.filter(org =>
+  const filteredOrganizations = realOrganizations.filter(org =>
     org.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

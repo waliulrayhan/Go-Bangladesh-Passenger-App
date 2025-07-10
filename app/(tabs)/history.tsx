@@ -5,6 +5,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Card } from '../../components/ui/Card';
 import { Text } from '../../components/ui/Text';
 import { useCardStore } from '../../stores/cardStore';
+import { useTokenRefresh } from '../../hooks/useTokenRefresh';
 import { COLORS, SPACING } from '../../utils/constants';
 
 type HistoryTab = 'trips' | 'recharge';
@@ -31,6 +32,9 @@ export default function History() {
     error,
     historyPagination
   } = useCardStore();
+
+  // Use token refresh hook to get fresh data
+  const { isRefreshing, refreshAllData } = useTokenRefresh();
 
   const [activeTab, setActiveTab] = useState<HistoryTab>('trips');
   const [refreshing, setRefreshing] = useState(false);
@@ -153,9 +157,17 @@ export default function History() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadHistory(1, true);
-    setRefreshing(false);
-  }, [loadHistory]);
+    try {
+      // Use the new token-based refresh to get fresh data
+      await refreshAllData();
+      // Also refresh the history data
+      await loadHistory(1, true);
+    } catch (error) {
+      console.log('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshAllData, loadHistory]);
 
   const onLoadMore = useCallback(async () => {
     if (historyPagination.hasMore && !historyPagination.isLoadingMore) {

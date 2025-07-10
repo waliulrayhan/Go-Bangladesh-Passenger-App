@@ -8,12 +8,15 @@ export interface JWTPayload {
   mobile?: string;
   exp?: number;
   iat?: number;
+  nbf?: number;
   // API-specific fields
   UserId?: string;
   Name?: string;
   UserType?: string;
   unique_name?: string;
   IsSuperAdmin?: string;
+  OrganizationId?: string;
+  OrganizationName?: string;
   [key: string]: any;
 }
 
@@ -63,4 +66,94 @@ export function isTokenExpired(token: string): boolean {
   
   const currentTime = Date.now() / 1000;
   return payload.exp < currentTime;
+}
+
+/**
+ * Extract comprehensive user information from JWT token
+ * Handles both Private (organization) and Public (Go Bangladesh) user types
+ */
+export function extractUserInfoFromJWT(token: string) {
+  const payload = decodeJWT(token);
+  
+  if (!payload) {
+    console.error('❌ [JWT] Failed to decode token');
+    return null;
+  }
+
+  console.log('🔍 [JWT] Decoded payload:', payload);
+
+  // Determine user type and organization info
+  const userType = payload.UserType?.toLowerCase() || 'passenger';
+  const isPrivateUser = userType === 'private';
+  const isPublicUser = userType === 'public';
+  const isSuperAdmin = payload.IsSuperAdmin === 'True';
+
+  // Extract organization information
+  const organizationId = payload.OrganizationId;
+  const organizationName = payload.OrganizationName;
+
+  // Create user info object
+  const userInfo = {
+    // Basic user information
+    userId: payload.UserId,
+    name: payload.Name || payload.unique_name || 'User',
+    uniqueName: payload.unique_name,
+    userType: userType,
+    isSuperAdmin: isSuperAdmin,
+    
+    // Organization information
+    organizationId: organizationId,
+    organizationName: organizationName,
+    isPrivateUser: isPrivateUser,
+    isPublicUser: isPublicUser,
+    
+    // Token timing information
+    issuedAt: payload.iat ? new Date(payload.iat * 1000) : null,
+    expiresAt: payload.exp ? new Date(payload.exp * 1000) : null,
+    notBefore: payload.nbf ? new Date(payload.nbf * 1000) : null,
+    
+    // Additional metadata
+    tokenValid: !isTokenExpired(token),
+    extractedAt: new Date()
+  };
+
+  console.log('✅ [JWT] Extracted user info:', userInfo);
+  return userInfo;
+}
+
+/**
+ * Check if user should have access to fresh data based on token
+ */
+export function shouldRefreshUserData(token: string): boolean {
+  const userInfo = extractUserInfoFromJWT(token);
+  
+  if (!userInfo) return false;
+  
+  // Always refresh for valid tokens
+  return userInfo.tokenValid;
+}
+
+/**
+ * Get user display context for UI based on token
+ */
+export function getUserDisplayContext(token: string) {
+  const userInfo = extractUserInfoFromJWT(token);
+  
+  if (!userInfo) return null;
+  
+  return {
+    displayName: userInfo.name,
+    userType: userInfo.userType,
+    organizationName: userInfo.organizationName,
+    isPrivateUser: userInfo.isPrivateUser,
+    isPublicUser: userInfo.isPublicUser,
+    showOrganizationInfo: userInfo.isPrivateUser && userInfo.organizationName !== 'Go Bangladesh',
+    contextTitle: userInfo.isPrivateUser ? 
+      `${userInfo.organizationName} Member` : 
+      'Public User',
+    shouldShowRecentActivity: true,
+    shouldShowTripHistory: true,
+    shouldShowRechargeHistory: true,
+    shouldShowProfile: true
+  };
 }

@@ -18,7 +18,47 @@ const formatApiError = (error: any, defaultMessage: string = 'Operation failed')
   return defaultMessage;
 };
 
-// Helper function to safely store auth tokens
+// Helper function to clear all app data for fresh login/registration
+const clearAllAppData = async (): Promise<void> => {
+  console.log('🧹 [AUTH] Clearing all app data for fresh session...');
+  
+  try {
+    // Clear all auth-related data
+    await storageService.clearAuthData();
+    
+    // Clear additional temporary data
+    const keysToRemove = [
+      'temp_mobile',
+      'temp_registration_data',
+      'card_data',
+      'trip_data',
+      'transaction_cache',
+      'history_cache',
+      'bus_data_cache',
+      'profile_cache'
+    ];
+    
+    await Promise.all(
+      keysToRemove.map(key => storageService.removeItem(key))
+    );
+    
+    // Clear card store data
+    try {
+      const { useCardStore } = await import('./cardStore');
+      const cardStore = useCardStore.getState();
+      await cardStore.clearAllCardData();
+    } catch (cardError) {
+      console.warn('⚠️ [AUTH] Could not clear card store data:', cardError);
+    }
+    
+    console.log('✅ [AUTH] All app data cleared successfully');
+  } catch (error) {
+    console.error('❌ [AUTH] Error clearing app data:', error);
+    // Continue anyway - we'll force clear in the next step
+  }
+};
+
+// Helper function to safely store auth tokens after clearing old data
 const storeAuthTokens = async (authResponse: any): Promise<void> => {
   // Validate and store access token
   if (!authResponse.token || typeof authResponse.token !== 'string') {
@@ -82,6 +122,7 @@ interface AuthState {
   }) => Promise<boolean>;
   updateUserProfile: (userData: User) => Promise<boolean>;
   refreshUserData: () => Promise<boolean>;
+  refreshUserFromToken: () => Promise<boolean>;
   handleUnauthorized: () => Promise<void>;
   hideWelcomePopup: () => void;
 }
@@ -117,23 +158,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   login: async (mobile: string, otp: string) => {
+    console.log('🚀 [LOGIN] Starting fresh login process...');
+    console.log('📱 [LOGIN] Mobile:', mobile);
+    
     set({ isLoading: true, error: null });
     
     try {
-      // Get bearer token using mobile number and OTP as password
+      // STEP 1: Clear all existing data for fresh session
+      await clearAllAppData();
+      
+      // STEP 2: Get fresh bearer token using mobile number and OTP
+      console.log('🔐 [LOGIN] Requesting fresh authentication token...');
       const authResponse = await apiService.getAuthToken(mobile, otp || '123456');
       
+      // STEP 3: Store fresh auth tokens
       await storeAuthTokens(authResponse);
+      console.log('✅ [LOGIN] Fresh tokens stored successfully');
       
-      // Extract user ID from the JWT token
+      // STEP 4: Extract user ID from the fresh JWT token
       const userId = extractUserIdFromToken(authResponse.token);
+      console.log('🆔 [LOGIN] Extracted User ID from fresh JWT:', userId);
       
       if (userId) {
         try {
-          // Try to get user details by ID
+          // STEP 5: Make fresh API call to get user details (NO CACHE, NO MOCK DATA)
+          console.log('🔄 [LOGIN] Making fresh API call for user details...');
           const userResponse = await apiService.getUserById(userId);
           
           if (userResponse) {
+            console.log('✅ [LOGIN] Fresh user data retrieved from API!');
+            
             // Validate user type - only allow Public or Private users to login
             if (userResponse.userType !== 'Public' && userResponse.userType !== 'Private') {
               console.warn('❌ [LOGIN] User type validation failed:', userResponse.userType);
@@ -144,21 +198,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               return false;
             }
             
+            // STEP 6: Create fresh user object from API data (NO MOCK DATA)
             const user: User = {
               id: userResponse.id,
               name: userResponse.name,
               email: userResponse.emailAddress,
-              emailAddress: userResponse.emailAddress, // API field
+              emailAddress: userResponse.emailAddress,
               mobile: userResponse.mobileNumber,
-              mobileNumber: userResponse.mobileNumber, // API field
+              mobileNumber: userResponse.mobileNumber,
               sex: userResponse.gender?.toLowerCase() === 'female' ? 'female' : 'male',
               cardNumber: userResponse.cardNumber,
               profileImage: userResponse.imageUrl,
-              imageUrl: userResponse.imageUrl, // API field
+              imageUrl: userResponse.imageUrl,
               userType: (userResponse.userType?.toLowerCase() === 'public' ? 'public' : 
                         userResponse.userType?.toLowerCase() === 'private' ? 'private' : 'passenger') as 'passenger' | 'public' | 'private',
-              isActive: true, // Assuming active if we got the data
-              createdAt: new Date().toISOString(), // API doesn't provide this
+              isActive: true,
+              createdAt: new Date().toISOString(),
               dateOfBirth: userResponse.dateOfBirth,
               address: userResponse.address,
               passengerId: userResponse.passengerId,
@@ -168,7 +223,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               gender: userResponse.gender
             };
 
-            // Store auth data
+            // STEP 7: Store fresh user data
             await storageService.setItem(STORAGE_KEYS.USER_DATA, user);
             await storageService.setItem(STORAGE_KEYS.USER_TYPE, userResponse.userType?.toLowerCase() || 'passenger');
 
@@ -180,13 +235,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               showWelcomePopup: true
             });
 
+            // Load fresh card data after successful login
+            try {
+              const { useCardStore } = await import('./cardStore');
+              const cardStore = useCardStore.getState();
+              await cardStore.refreshCardData();
+            } catch (cardError) {
+              console.warn('⚠️ [LOGIN] Could not load fresh card data:', cardError);
+            }
+
+            console.log('🎉 [LOGIN] Fresh login completed successfully with API data!');
             return true;
           }
         } catch (userError: any) {
-          // API call failed, continue to JWT fallback
+          console.warn('⚠️ [LOGIN] Fresh API call failed, using JWT fallback:', userError.message);
         }
         
-        // Try to extract user info from JWT token
+        // STEP 8: JWT fallback (if API fails but token is valid)
         const jwtUser = extractUserFromJWT(authResponse.token, mobile);
         
         if (jwtUser) {
@@ -201,9 +266,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             showWelcomePopup: true
           });
 
+          console.log('✅ [LOGIN] Fresh login completed with JWT fallback');
           return true;
         } else {
-          // Fallback to basic user object
+          // STEP 9: Basic fallback (last resort)
           const basicUser: User = {
             id: userId,
             name: 'User',
@@ -226,10 +292,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             showWelcomePopup: true
           });
 
+          console.log('✅ [LOGIN] Fresh login completed with basic fallback');
           return true;
         }
       } else {
-        // Try to extract user info from JWT token
+        // JWT extraction failed - try to extract from token
         const jwtUser = extractUserFromJWT(authResponse.token, mobile);
         
         if (jwtUser) {
@@ -246,7 +313,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
           return true;
         } else {
-          // Fallback to timestamp ID
+          // Final fallback
           const basicUser: User = {
             id: Date.now(),
             name: 'User',
@@ -273,7 +340,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
     } catch (error: any) {
-      console.error('❌ Login failed:', error.message || error);
+      console.error('❌ [LOGIN] Fresh login failed:', error.message || error);
       set({
         isLoading: false,
         error: formatApiError(error, 'Login failed')
@@ -283,29 +350,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   loginWithPassword: async (identifier: string, password: string) => {
-    console.log('🚀 [LOGIN] Starting login with password...');
+    console.log('🚀 [LOGIN] Starting fresh login with password process...');
     console.log('📱 [LOGIN] Identifier:', identifier);
     
     set({ isLoading: true, error: null });
     
     try {
-      // Use the real API login flow with identifier and password
+      // STEP 1: Clear all existing data for fresh session
+      await clearAllAppData();
+      
+      // STEP 2: Use fresh API login flow with identifier and password
+      console.log('🔐 [LOGIN] Requesting fresh authentication token with password...');
       const authResponse = await apiService.getAuthToken(identifier, password);
       
+      // STEP 3: Store fresh auth tokens
       await storeAuthTokens(authResponse);
+      console.log('✅ [LOGIN] Fresh tokens stored successfully');
       
-      // Extract user ID from the JWT token
+      // STEP 4: Extract user ID from the fresh JWT token
       const userId = extractUserIdFromToken(authResponse.token);
-      console.log('🆔 [LOGIN] Extracted User ID from JWT:', userId);
+      console.log('🆔 [LOGIN] Extracted User ID from fresh JWT:', userId);
       
-      // PRIORITY 1: Try to get user details from API first (this has all the rich data)
+      // STEP 5: Try to get fresh user details from API first (NO CACHE, NO MOCK DATA)
       if (userId) {
         try {
-          console.log('🔄 [LOGIN] Attempting to fetch user details from API...');
+          console.log('🔄 [LOGIN] Making fresh API call for user details...');
           const userResponse = await apiService.getUserById(userId);
           
           if (userResponse) {
-            console.log('✅ [LOGIN] API user data retrieved successfully!');
+            console.log('✅ [LOGIN] Fresh user data retrieved from API!');
             
             // Validate user type - only allow Public or Private users to login
             if (userResponse.userType !== 'Public' && userResponse.userType !== 'Private') {
@@ -318,23 +391,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
             
             console.log('✅ [LOGIN] User type validation passed - User is', userResponse.userType);
-            console.log('📋 [LOGIN] Creating user object from API data...');
+            console.log('📋 [LOGIN] Creating fresh user object from API data...');
             
+            // STEP 6: Create fresh user object from API data (NO MOCK DATA)
             const user: User = {
               id: userResponse.id,
               name: userResponse.name,
               email: userResponse.emailAddress,
-              emailAddress: userResponse.emailAddress, // API field
+              emailAddress: userResponse.emailAddress,
               mobile: userResponse.mobileNumber,
-              mobileNumber: userResponse.mobileNumber, // API field
+              mobileNumber: userResponse.mobileNumber,
               sex: userResponse.gender?.toLowerCase() === 'female' ? 'female' : 'male',
               cardNumber: userResponse.cardNumber,
               profileImage: userResponse.imageUrl,
-              imageUrl: userResponse.imageUrl, // API field
+              imageUrl: userResponse.imageUrl,
               userType: (userResponse.userType?.toLowerCase() === 'public' ? 'public' : 
                         userResponse.userType?.toLowerCase() === 'private' ? 'private' : 'passenger') as 'passenger' | 'public' | 'private',
-              isActive: true, // Assuming active if we got the data
-              createdAt: new Date().toISOString(), // API doesn't provide this
+              isActive: true,
+              createdAt: new Date().toISOString(),
               dateOfBirth: userResponse.dateOfBirth,
               address: userResponse.address,
               passengerId: userResponse.passengerId,
@@ -344,7 +418,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               gender: userResponse.gender
             };
 
-            console.log('👤 [LOGIN] Final user object created from API:', {
+            console.log('👤 [LOGIN] Fresh user object created from API:', {
               id: user.id,
               name: user.name,
               mobile: user.mobile,
@@ -356,7 +430,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               gender: user.gender
             });
 
-            // Store auth data
+            // STEP 7: Store fresh user data
             await storageService.setItem(STORAGE_KEYS.USER_DATA, user);
             await storageService.setItem(STORAGE_KEYS.USER_TYPE, userResponse.userType?.toLowerCase() || 'passenger');
 
@@ -368,17 +442,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               showWelcomePopup: true
             });
 
-            console.log('🎉 [LOGIN] Login successful with API data!');
+            // Load fresh card data after successful login
+            try {
+              const { useCardStore } = await import('./cardStore');
+              const cardStore = useCardStore.getState();
+              await cardStore.refreshCardData();
+            } catch (cardError) {
+              console.warn('⚠️ [LOGIN] Could not load fresh card data:', cardError);
+            }
+
+            console.log('🎉 [LOGIN] Fresh login successful with API data!');
             return true;
           } else {
             console.warn('⚠️ [LOGIN] API returned null, falling back to JWT data...');
           }
         } catch (userError: any) {
-          console.warn('⚠️ [LOGIN] API call failed, falling back to JWT data:', userError.message);
+          console.warn('⚠️ [LOGIN] Fresh API call failed, falling back to JWT data:', userError.message);
         }
       }
       
-      // PRIORITY 2: Fallback to JWT extraction if API fails
+      // STEP 8: JWT fallback (if API fails but token is valid)
       const jwtUser = extractUserFromJWT(authResponse.token, identifier);
       
       if (jwtUser) {
@@ -390,7 +473,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           email: jwtUser.email
         });
         
-        // Store auth data
+        // Store fresh auth data
         await storageService.setItem(STORAGE_KEYS.USER_DATA, jwtUser);
         await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
 
@@ -404,7 +487,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         return true;
       } else {
-        // If we can't extract user ID from token, create a basic user with timestamp ID
+        // STEP 9: Basic fallback (last resort)
         const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
         const mobileNumber = phoneRegex.test(identifier) ? identifier : '';
         
@@ -434,6 +517,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return true;
       }
     } catch (error: any) {
+      console.error('❌ [LOGIN] Fresh login with password failed:', error.message || error);
       set({
         isLoading: false,
         error: formatApiError(error, 'Login failed')
@@ -443,14 +527,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
+    console.log('🚪 [LOGOUT] Starting complete logout process...');
     set({ isLoading: true });
     
     try {
-      // Clear all auth-related data
+      // STEP 1: Clear all auth-related data
       await storageService.clearAuthData();
-      // Also clear any temporary data
-      await storageService.removeItem('temp_mobile');
       
+      // STEP 2: Clear all additional app data to ensure fresh state
+      const keysToRemove = [
+        'temp_mobile',
+        'temp_registration_data',
+        'card_data',
+        'trip_data',
+        'transaction_cache',
+        'history_cache',
+        'bus_data_cache',
+        'profile_cache'
+      ];
+      
+      await Promise.all(
+        keysToRemove.map(key => storageService.removeItem(key))
+      );
+      
+      // STEP 3: Reset all store states
       set({
         user: null,
         isAuthenticated: false,
@@ -458,16 +558,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
         showWelcomePopup: false
       });
+      
+      // STEP 4: Clear card store data
+      try {
+        const { useCardStore } = await import('./cardStore');
+        const cardStore = useCardStore.getState();
+        await cardStore.clearAllCardData();
+      } catch (cardError) {
+        console.warn('⚠️ [LOGOUT] Could not clear card store data:', cardError);
+      }
+      
+      console.log('✅ [LOGOUT] Complete logout successful - all data cleared');
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('❌ [LOGOUT] Logout error:', error);
       // Force clear everything even if there's an error
       try {
         await storageService.clearAuthData();
         await storageService.removeItem('temp_mobile');
       } catch (clearError) {
-        console.error('Error clearing storage:', clearError);
+        console.error('❌ [LOGOUT] Error clearing storage:', clearError);
       }
       
+      // Force reset state anyway
       set({
         user: null,
         isAuthenticated: false,
@@ -475,6 +587,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
         showWelcomePopup: false
       });
+      
+      console.log('⚠️ [LOGOUT] Forced logout completed despite errors');
     }
   },
 
@@ -607,33 +721,49 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     email?: string;
     cardNumber: string;
   }) => {
+    console.log('🚀 [REGISTRATION] Starting fresh user registration process...');
+    console.log('👤 [REGISTRATION] User data:', {
+      name: userData.name,
+      mobile: userData.mobile,
+      email: userData.email,
+      cardNumber: userData.cardNumber
+    });
+    
     set({ isLoading: true, error: null });
     
     try {
-      // Since we don't have a registration endpoint yet, we'll use the auth token endpoint
-      // to verify the mobile number and then create a basic user profile
+      // STEP 1: Clear all existing data for fresh session
+      await clearAllAppData();
+      
+      // STEP 2: Get fresh authentication token for registration
+      console.log('🔐 [REGISTRATION] Requesting fresh authentication token...');
       const authResponse = await apiService.getAuthToken(userData.mobile, '123456');
       
-      // Extract user ID from token
+      // STEP 3: Extract user ID from fresh token
       const userId = extractUserIdFromToken(authResponse.token);
+      console.log('🆔 [REGISTRATION] Extracted User ID from fresh JWT:', userId);
       
       if (userId) {
         try {
-          // Try to get existing user details
+          // STEP 4: Make fresh API call to get existing user details (NO CACHE, NO MOCK DATA)
+          console.log('🔄 [REGISTRATION] Making fresh API call to check user details...');
           const userResponse = await apiService.getUserById(userId);
           
           if (userResponse) {
+            console.log('✅ [REGISTRATION] Fresh user data retrieved from API!');
+            
+            // STEP 5: Create fresh user object from API data (prioritize API over provided data)
             const user: User = {
               id: userResponse.id,
-              name: userResponse.name || userData.name, // Use provided name if API doesn't have one
+              name: userResponse.name || userData.name, // Use API name if available, fallback to provided
               email: userResponse.emailAddress || userData.email,
               mobile: userResponse.mobileNumber,
               sex: userResponse.gender?.toLowerCase() === 'female' ? 'female' : (userData.sex || 'male'),
               cardNumber: userResponse.cardNumber || userData.cardNumber,
               profileImage: userResponse.imageUrl,
               userType: 'passenger' as const,
-              isActive: true, // Assuming active if we got the data
-              createdAt: new Date().toISOString(), // API doesn't provide this
+              isActive: true,
+              createdAt: new Date().toISOString(),
               dateOfBirth: userResponse.dateOfBirth,
               address: userResponse.address,
               passengerId: userResponse.passengerId,
@@ -643,7 +773,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               gender: userResponse.gender
             };
 
-            // Store auth data
+            // STEP 6: Store fresh auth data and user data
             await storeAuthTokens(authResponse);
             await storageService.setItem(STORAGE_KEYS.USER_DATA, user);
             await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
@@ -656,13 +786,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               showWelcomePopup: true
             });
 
+            // Load fresh card data after successful registration
+            try {
+              const { useCardStore } = await import('./cardStore');
+              const cardStore = useCardStore.getState();
+              await cardStore.refreshCardData();
+            } catch (cardError) {
+              console.warn('⚠️ [REGISTRATION] Could not load fresh card data:', cardError);
+            }
+
+            console.log('🎉 [REGISTRATION] Fresh registration completed successfully with API data!');
             return true;
           }
         } catch (userError: any) {
-          // API call failed, continue to create basic profile
+          console.warn('⚠️ [REGISTRATION] Fresh API call failed, creating new profile:', userError.message);
         }
         
-        // If user doesn't exist in the system or API is not available, create a basic profile with provided data
+        // STEP 7: If user doesn't exist in API, create fresh profile with provided data (NO MOCK DATA)
+        console.log('📝 [REGISTRATION] Creating fresh user profile with provided data...');
         const newUser: User = {
           id: userId,
           name: userData.name,
@@ -676,7 +817,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           createdAt: new Date().toISOString()
         };
 
-        // Store auth data
+        // STEP 8: Store fresh auth data and new user data
         await storeAuthTokens(authResponse);
         await storageService.setItem(STORAGE_KEYS.USER_DATA, newUser);
         await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
@@ -689,11 +830,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           showWelcomePopup: true
         });
 
+        // Load fresh card data after successful registration
+        try {
+          const { useCardStore } = await import('./cardStore');
+          const cardStore = useCardStore.getState();
+          await cardStore.refreshCardData();
+        } catch (cardError) {
+          console.warn('⚠️ [REGISTRATION] Could not load fresh card data:', cardError);
+        }
+
+        console.log('🎉 [REGISTRATION] Fresh registration completed successfully with new profile!');
         return true;
       } else {
-        throw new Error('Unable to extract user information from authentication token');
+        throw new Error('Unable to extract user information from fresh authentication token');
       }
     } catch (error: any) {
+      console.error('❌ [REGISTRATION] Fresh registration failed:', error.message || error);
       set({
         isLoading: false,
         error: formatApiError(error, 'Registration failed')
@@ -803,6 +955,135 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       set({
         isLoading: false,
+        error: null // Don't show error to user, just use cached data silently
+      });
+      
+      return false;
+    }
+  },
+
+  refreshUserFromToken: async () => {
+    console.log('🔄 [TOKEN-REFRESH] Starting user refresh from token...');
+    
+    try {
+      // Get stored auth token
+      const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
+      
+      if (!token) {
+        console.warn('⚠️ [TOKEN-REFRESH] No auth token found');
+        return false;
+      }
+
+      // Import JWT utilities
+      const { extractUserInfoFromJWT, getUserDisplayContext, isTokenExpired } = await import('../utils/jwt');
+      
+      // Check if token is expired
+      if (isTokenExpired(token)) {
+        console.warn('⚠️ [TOKEN-REFRESH] Token is expired');
+        await get().handleUnauthorized();
+        return false;
+      }
+
+      // Extract user info from token
+      const userInfo = extractUserInfoFromJWT(token);
+      const displayContext = getUserDisplayContext(token);
+      
+      if (!userInfo || !displayContext) {
+        console.warn('⚠️ [TOKEN-REFRESH] Failed to extract user info from token');
+        return false;
+      }
+
+      console.log('✅ [TOKEN-REFRESH] Extracted user info:', userInfo);
+      console.log('🎨 [TOKEN-REFRESH] Display context:', displayContext);
+
+      const { user: currentUser } = get();
+      
+      // If we have a user ID, try to get fresh data from API
+      if (userInfo.userId) {
+        try {
+          console.log('🔄 [TOKEN-REFRESH] Attempting to fetch fresh user data from API...');
+          const userResponse = await apiService.getUserById(userInfo.userId);
+          
+          if (userResponse) {
+            console.log('✅ [TOKEN-REFRESH] Fresh user data retrieved from API!');
+            
+            // Create updated user object with fresh API data
+            const updatedUser: User = {
+              id: userResponse.id,
+              name: userResponse.name,
+              email: userResponse.emailAddress,
+              emailAddress: userResponse.emailAddress,
+              mobile: userResponse.mobileNumber,
+              mobileNumber: userResponse.mobileNumber,
+              sex: userResponse.gender?.toLowerCase() === 'female' ? 'female' : 'male',
+              cardNumber: userResponse.cardNumber,
+              profileImage: userResponse.imageUrl,
+              imageUrl: userResponse.imageUrl,
+              userType: (userResponse.userType?.toLowerCase() === 'public' ? 'public' : 
+                        userResponse.userType?.toLowerCase() === 'private' ? 'private' : 'passenger') as 'passenger' | 'public' | 'private',
+              isActive: true,
+              createdAt: currentUser?.createdAt || new Date().toISOString(),
+              dateOfBirth: userResponse.dateOfBirth,
+              address: userResponse.address,
+              passengerId: userResponse.passengerId,
+              organizationId: userResponse.organizationId,
+              organization: typeof userResponse.organization === 'object' ? userResponse.organization?.name : userResponse.organization,
+              balance: userResponse.balance,
+              gender: userResponse.gender
+            };
+
+            // Update storage and state
+            await storageService.setItem(STORAGE_KEYS.USER_DATA, updatedUser);
+            await storageService.setItem(STORAGE_KEYS.USER_TYPE, updatedUser.userType);
+            
+            set({
+              user: updatedUser,
+              isAuthenticated: true,
+              error: null
+            });
+
+            console.log('🎉 [TOKEN-REFRESH] User data refreshed successfully from API!');
+            return true;
+          }
+        } catch (apiError: any) {
+          console.warn('⚠️ [TOKEN-REFRESH] API call failed, using token data:', apiError.message);
+        }
+      }
+
+      // Fallback to token-based user data
+      const tokenBasedUser: User = {
+        id: userInfo.userId || currentUser?.id || Date.now(),
+        name: userInfo.name,
+        mobile: currentUser?.mobile || '',
+        email: currentUser?.email,
+        sex: currentUser?.sex || 'male',
+        userType: userInfo.userType as 'passenger' | 'public' | 'private',
+        isActive: true,
+        createdAt: currentUser?.createdAt || new Date().toISOString(),
+        profileImage: currentUser?.profileImage,
+        organizationId: userInfo.organizationId,
+        organization: userInfo.organizationName,
+        cardNumber: currentUser?.cardNumber,
+        balance: currentUser?.balance
+      };
+
+      // Update storage and state
+      await storageService.setItem(STORAGE_KEYS.USER_DATA, tokenBasedUser);
+      await storageService.setItem(STORAGE_KEYS.USER_TYPE, tokenBasedUser.userType);
+      
+      set({
+        user: tokenBasedUser,
+        isAuthenticated: true,
+        error: null
+      });
+
+      console.log('🎉 [TOKEN-REFRESH] User data refreshed successfully from token!');
+      return true;
+      
+    } catch (error: any) {
+      console.error('❌ [TOKEN-REFRESH] Error refreshing user from token:', error);
+      
+      set({
         error: null // Don't show error to user, just use cached data silently
       });
       

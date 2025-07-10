@@ -9,8 +9,16 @@ export default function TabsLayout() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    await logout();
-    router.replace('/');
+    try {
+      await logout();
+      router.dismissAll();
+      router.replace('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force navigation even if logout fails
+      router.dismissAll();
+      router.replace('/');
+    }
   };
 
   return (
