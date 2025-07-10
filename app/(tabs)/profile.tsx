@@ -3,11 +3,11 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Alert, Dimensions, Image, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
+import { TokenInfoDemo } from '../../components/TokenInfoDemo';
 import { Text } from '../../components/ui/Text';
+import { useTokenRefresh, useUserContext } from '../../hooks/useTokenRefresh';
 import { useAuthStore } from '../../stores/authStore';
 import { useCardStore } from '../../stores/cardStore';
-import { useTokenRefresh, useUserContext } from '../../hooks/useTokenRefresh';
-import { TokenInfoDemo } from '../../components/TokenInfoDemo';
 import { API_BASE_URL, COLORS } from '../../utils/constants';
 
 const { width } = Dimensions.get('window');

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Text } from './ui/Text';
+import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
+import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTokenRefresh, useUserContext } from '../hooks/useTokenRefresh';
 import { COLORS } from '../utils/constants';
-import { Ionicons } from '@expo/vector-icons';
+import { Text } from './ui/Text';
 
 /**
  * Demo component to show token-based user information
