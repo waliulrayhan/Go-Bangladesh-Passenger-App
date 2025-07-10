@@ -80,7 +80,8 @@ export class StorageService {
       this.removeSecureItem(STORAGE_KEYS.AUTH_TOKEN),
       this.removeSecureItem(STORAGE_KEYS.REFRESH_TOKEN),
       this.removeItem(STORAGE_KEYS.USER_DATA),
-      this.removeItem(STORAGE_KEYS.USER_TYPE)
+      this.removeItem(STORAGE_KEYS.USER_TYPE),
+      this.removeItem(STORAGE_KEYS.REGISTRATION_COMPLETE)
     ]);
   }
 

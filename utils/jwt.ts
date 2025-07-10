@@ -80,8 +80,6 @@ export function extractUserInfoFromJWT(token: string) {
     return null;
   }
 
-  console.log('🔍 [JWT] Decoded payload:', payload);
-
   // Determine user type and organization info
   const userType = payload.UserType?.toLowerCase() || 'passenger';
   const isPrivateUser = userType === 'private';
@@ -117,7 +115,6 @@ export function extractUserInfoFromJWT(token: string) {
     extractedAt: new Date()
   };
 
-  console.log('✅ [JWT] Extracted user info:', userInfo);
   return userInfo;
 }
 

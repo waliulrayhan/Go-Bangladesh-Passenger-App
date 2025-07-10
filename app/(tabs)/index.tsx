@@ -215,62 +215,6 @@ export default function Dashboard() {
       </View>
     </Animated.View>
   );
-
-  // User context display section
-  const renderUserContext = () => {
-    if (!userContext) return null;
-
-    return (
-      <Animated.View entering={FadeInDown.duration(800).delay(200)} style={styles.userContextContainer}>
-        <View style={styles.userContextCard}>
-          <View style={styles.userContextHeader}>
-            <View style={styles.userContextIcon}>
-              <Ionicons 
-                name={userContext.isPrivateUser ? "business" : "globe-outline"} 
-                size={20} 
-                color={COLORS.brand.blue} 
-              />
-            </View>
-            <View style={styles.userContextInfo}>
-              <Text variant="h6" color={COLORS.brand.blue} style={styles.userContextTitle}>
-                {userContext.contextTitle}
-              </Text>
-              {userContext.showOrganizationInfo && (
-                <Text variant="body" color={COLORS.gray[700]} style={styles.organizationName}>
-                  {userContext.organizationName}
-                </Text>
-              )}
-              <Text variant="caption" color={COLORS.gray[500]} style={styles.userType}>
-                {userContext.userType.toUpperCase()} USER
-              </Text>
-            </View>
-          </View>
-          
-          <View style={styles.userContextActions}>
-            <TouchableOpacity
-              style={[styles.refreshButton, isRefreshing && styles.refreshButtonDisabled]}
-              onPress={refreshAllData}
-              disabled={isRefreshing}
-            >
-              <Ionicons 
-                name="refresh" 
-                size={16} 
-                color={isRefreshing ? COLORS.gray[400] : COLORS.brand.blue}
-                style={[isRefreshing && styles.refreshingIcon]}
-              />
-              <Text 
-                variant="caption" 
-                color={isRefreshing ? COLORS.gray[400] : COLORS.brand.blue} 
-                style={styles.refreshButtonText}
-              >
-                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Animated.View>
-    );
-  };
   
   const renderSimulateButton = () => {
     // Hide simulate button since we're using real trip data
@@ -428,7 +372,6 @@ export default function Dashboard() {
         {renderHeader()}
         {renderTripStatus()}
         {renderRFIDCard()}
-        {renderUserContext()}
         {renderSimulateButton()}
         {renderRecentActivity()}
       </ScrollView>

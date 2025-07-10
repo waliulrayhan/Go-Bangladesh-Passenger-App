@@ -48,7 +48,6 @@ export const useCardStore = create<CardState>((set, get) => ({
   },
 
   loadCardDetails: async () => {
-    console.log('💳 [CARD] Loading fresh card details for current user...');
     set({ isLoading: true, error: null });
     
     try {
@@ -57,16 +56,8 @@ export const useCardStore = create<CardState>((set, get) => ({
       const user = authStore.user;
       
       if (!user) {
-        console.warn('⚠️ [CARD] No user data available');
         throw new Error('No user data available. Please login again.');
       }
-      
-      console.log('👤 [CARD] Loading card for user:', {
-        id: user.id,
-        name: user.name,
-        cardNumber: user.cardNumber,
-        balance: user.balance
-      });
       
       // Create fresh card object from current user data (NO MOCK DATA)
       const card: Card = {
@@ -78,20 +69,13 @@ export const useCardStore = create<CardState>((set, get) => ({
         createdAt: new Date().toISOString()
       };
       
-      console.log('✅ [CARD] Fresh card details loaded:', {
-        cardNumber: card.cardNumber,
-        balance: card.balance,
-        userId: card.userId,
-        isNewUser: !user.cardNumber
-      });
-      
       set({ card, isLoading: false });
       
       // Check for ongoing trip after loading fresh card details
       get().checkOngoingTrip();
       
     } catch (error: any) {
-      console.error('❌ [CARD] Error loading fresh card details:', error);
+      console.error('❌ [CARD] Error loading card details:', error);
       set({
         isLoading: false,
         error: error.message || 'Failed to load card details'
@@ -169,10 +153,7 @@ export const useCardStore = create<CardState>((set, get) => ({
             totalLoaded: reset ? newTransactions.length : historyPagination.totalLoaded + newTransactions.length
           }
         });
-        
-        console.log('✅ [HISTORY] Updated - Total transactions:', reset ? newTransactions.length : get().transactions.length);
       } else {
-        console.error('❌ [HISTORY] API returned unsuccessful response:', response.data.message);
         throw new Error(response.data.message || 'Failed to load history');
       }
     } catch (error: any) {
@@ -392,8 +373,6 @@ export const useCardStore = create<CardState>((set, get) => ({
   },
 
   clearAllCardData: async () => {
-    console.log('🧹 [CARD] Clearing all card data for fresh session...');
-    
     try {
       // Clear card-related storage
       const keysToRemove = [
@@ -434,8 +413,6 @@ export const useCardStore = create<CardState>((set, get) => ({
   },
 
   refreshCardData: async () => {
-    console.log('🔄 [CARD] Refreshing all card data with fresh API calls...');
-    
     try {
       // Clear existing data first
       await get().clearAllCardData();

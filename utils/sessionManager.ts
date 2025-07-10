@@ -76,8 +76,6 @@ export class SessionManager {
    * This ensures the UI shows the most up-to-date information
    */
   static async refreshAllUserData(): Promise<void> {
-    console.log('🔄 [SESSION] Refreshing all user data...');
-    
     try {
       // Refresh auth store data
       const authStore = useAuthStore.getState();
@@ -86,8 +84,6 @@ export class SessionManager {
       // Refresh card store data
       const cardStore = useCardStore.getState();
       await cardStore.refreshCardData();
-      
-      console.log('✅ [SESSION] All user data refreshed successfully');
     } catch (error) {
       console.error('❌ [SESSION] Error refreshing user data:', error);
       throw error;
@@ -144,14 +140,11 @@ export class SessionManager {
    * This should be called when app starts or when returning to app
    */
   static async initializeSessionWithToken(): Promise<boolean> {
-    console.log('🚀 [SESSION] Initializing session with token-based refresh...');
-    
     try {
       // Check if user is authenticated
       const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
       
       if (!token) {
-        console.log('ℹ️ [SESSION] No auth token found - user not authenticated');
         return false;
       }
 
@@ -159,7 +152,6 @@ export class SessionManager {
       const { isTokenExpired } = await import('./jwt');
       
       if (isTokenExpired(token)) {
-        console.warn('⚠️ [SESSION] Token is expired - clearing session');
         const authStore = useAuthStore.getState();
         await authStore.handleUnauthorized();
         return false;
@@ -170,20 +162,16 @@ export class SessionManager {
       const refreshSuccess = await authStore.refreshUserFromToken();
       
       if (refreshSuccess) {
-        console.log('✅ [SESSION] User data refreshed successfully from token');
-        
         // Load fresh card data
         try {
           const cardStore = useCardStore.getState();
           await cardStore.refreshCardData();
-          console.log('✅ [SESSION] Card data refreshed successfully');
         } catch (cardError) {
-          console.warn('⚠️ [SESSION] Could not refresh card data:', cardError);
+          // Silent failure for card data
         }
         
         return true;
       } else {
-        console.warn('⚠️ [SESSION] Failed to refresh user data from token');
         return false;
       }
       
@@ -198,14 +186,11 @@ export class SessionManager {
    * This ensures the UI shows fresh data for the current user type
    */
   static async refreshAllDataFromToken(): Promise<boolean> {
-    console.log('🔄 [SESSION] Refreshing all data from token...');
-    
     try {
       // Get current token and user info
       const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
       
       if (!token) {
-        console.warn('⚠️ [SESSION] No auth token found for refresh');
         return false;
       }
 
@@ -215,19 +200,14 @@ export class SessionManager {
       const displayContext = getUserDisplayContext(token);
       
       if (!userInfo || !displayContext) {
-        console.warn('⚠️ [SESSION] Failed to extract user info from token');
         return false;
       }
-
-      console.log('🎯 [SESSION] Refreshing data for user type:', userInfo.userType);
-      console.log('🏢 [SESSION] Organization:', userInfo.organizationName);
       
       // Refresh auth store data
       const authStore = useAuthStore.getState();
       const userRefreshSuccess = await authStore.refreshUserFromToken();
       
       if (!userRefreshSuccess) {
-        console.warn('⚠️ [SESSION] Failed to refresh user data');
         return false;
       }
 
@@ -235,16 +215,14 @@ export class SessionManager {
       try {
         const cardStore = useCardStore.getState();
         await cardStore.refreshCardData();
-        console.log('✅ [SESSION] Card data refreshed');
       } catch (cardError) {
-        console.warn('⚠️ [SESSION] Could not refresh card data:', cardError);
+        // Silent failure for card data
       }
 
-      console.log('🎉 [SESSION] All data refreshed successfully from token');
       return true;
       
     } catch (error) {
-      console.error('❌ [SESSION] Error refreshing all data from token:', error);
+      console.error('❌ [SESSION] Error refreshing data from token:', error);
       return false;
     }
   }

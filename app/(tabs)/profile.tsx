@@ -391,7 +391,7 @@ export default function Profile() {
       >
         {renderProfileHeader()}
         {renderBalanceCard()}
-        <TokenInfoDemo />
+        {/* <TokenInfoDemo /> */}
         {renderAccountInfo()}
         {renderActions()}
       </ScrollView>

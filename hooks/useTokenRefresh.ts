@@ -32,9 +32,6 @@ export const useTokenRefresh = () => {
       
       if (success) {
         setLastRefreshTime(new Date());
-        console.log('✅ [TOKEN-REFRESH] Manual refresh completed successfully');
-      } else {
-        console.warn('⚠️ [TOKEN-REFRESH] Manual refresh failed');
       }
       
       return success;
@@ -96,7 +93,6 @@ export const useTokenRefresh = () => {
       const shouldRefresh = await shouldRefreshData();
       
       if (shouldRefresh) {
-        console.log('🔄 [TOKEN-REFRESH] Auto-refreshing data for user:', user.name);
         await refreshAllData();
       }
     };

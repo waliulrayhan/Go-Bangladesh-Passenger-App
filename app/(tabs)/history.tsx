@@ -47,24 +47,11 @@ export default function History() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    console.log('🔄 [HISTORY COMPONENT] Component mounted, loading history...');
     loadHistory(1, true);
   }, []);
 
-  useEffect(() => {
-    console.log('📊 [HISTORY COMPONENT] Data updated:', {
-      transactionsCount: transactions.length,
-      tripsCount: trips.length,
-      isLoading,
-      error,
-      historyPagination
-    });
-  }, [transactions, trips, isLoading, error, historyPagination]);
-
   // Filter and sort data based on current filters
   useEffect(() => {
-    console.log('🔍 [HISTORY COMPONENT] Applying filters:', filters);
-    
     let data = activeTab === 'trips' 
       ? transactions.filter(t => t.transactionType === 'BusFare' && t.trip)
       : transactions.filter(t => t.transactionType === 'Recharge');
@@ -438,15 +425,6 @@ export default function History() {
     );
   };
   const renderTabContent = () => {
-    console.log('🎨 [HISTORY COMPONENT] Rendering tab content for:', activeTab);
-    console.log('📊 [HISTORY COMPONENT] Available data:', {
-      totalTransactions: transactions.length,
-      totalTrips: trips.length,
-      filteredData: filteredData.length,
-      isLoading,
-      historyPagination
-    });
-    
     return (
       <FlatList
         data={filteredData}

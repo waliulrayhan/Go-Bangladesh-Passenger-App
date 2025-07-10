@@ -35,7 +35,8 @@ const clearAllAppData = async (): Promise<void> => {
       'transaction_cache',
       'history_cache',
       'bus_data_cache',
-      'profile_cache'
+      'profile_cache',
+      STORAGE_KEYS.REGISTRATION_COMPLETE
     ];
     
     await Promise.all(
@@ -102,6 +103,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   showWelcomePopup: boolean;
+  isRegistering: boolean;
   
   login: (mobile: string, otp: string) => Promise<boolean>;
   loginWithPassword: (identifier: string, password: string) => Promise<boolean>;
@@ -133,6 +135,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   error: null,
   showWelcomePopup: false,
+  isRegistering: false,
 
   sendOTP: async (mobile: string) => {
     set({ isLoading: true, error: null });
@@ -158,8 +161,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   login: async (mobile: string, otp: string) => {
-    console.log('🚀 [LOGIN] Starting fresh login process...');
-    console.log('📱 [LOGIN] Mobile:', mobile);
+    console.log('🚀 [LOGIN] Starting login for:', mobile);
     
     set({ isLoading: true, error: null });
     
@@ -168,26 +170,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await clearAllAppData();
       
       // STEP 2: Get fresh bearer token using mobile number and OTP
-      console.log('🔐 [LOGIN] Requesting fresh authentication token...');
       const authResponse = await apiService.getAuthToken(mobile, otp || '123456');
       
       // STEP 3: Store fresh auth tokens
       await storeAuthTokens(authResponse);
-      console.log('✅ [LOGIN] Fresh tokens stored successfully');
+      console.log('✅ [LOGIN] Authentication successful!');
       
       // STEP 4: Extract user ID from the fresh JWT token
       const userId = extractUserIdFromToken(authResponse.token);
-      console.log('🆔 [LOGIN] Extracted User ID from fresh JWT:', userId);
       
       if (userId) {
         try {
           // STEP 5: Make fresh API call to get user details (NO CACHE, NO MOCK DATA)
-          console.log('🔄 [LOGIN] Making fresh API call for user details...');
           const userResponse = await apiService.getUserById(userId);
           
           if (userResponse) {
-            console.log('✅ [LOGIN] Fresh user data retrieved from API!');
-            
             // Validate user type - only allow Public or Private users to login
             if (userResponse.userType !== 'Public' && userResponse.userType !== 'Private') {
               console.warn('❌ [LOGIN] User type validation failed:', userResponse.userType);
@@ -241,10 +238,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               const cardStore = useCardStore.getState();
               await cardStore.refreshCardData();
             } catch (cardError) {
-              console.warn('⚠️ [LOGIN] Could not load fresh card data:', cardError);
+              console.warn('⚠️ [LOGIN] Could not load card data:', cardError);
             }
 
-            console.log('🎉 [LOGIN] Fresh login completed successfully with API data!');
+            console.log('🎉 [LOGIN] Login completed successfully!');
             return true;
           }
         } catch (userError: any) {
@@ -598,6 +595,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
       const userData = await storageService.getItem<User>(STORAGE_KEYS.USER_DATA);
+      const registrationComplete = await storageService.getItem<string>(STORAGE_KEYS.REGISTRATION_COMPLETE);
       
       console.log('🔍 [LOAD-USER] Loading user from storage...');
       console.log('🔍 [LOAD-USER] Token exists:', !!token);
@@ -610,6 +608,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           console.warn('⚠️ [LOAD-USER] Token is expired, clearing auth data');
           // Token is expired, clear auth data
           await storageService.clearAuthData();
+          await storageService.removeItem(STORAGE_KEYS.REGISTRATION_COMPLETE);
           set({
             user: null,
             isAuthenticated: false,
@@ -619,10 +618,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
         
         console.log('✅ [LOAD-USER] Valid token and user data found, setting authenticated state');
+        
+        // Check if user just registered - show welcome popup only if registration was just completed
+        const shouldShowWelcomePopup = registrationComplete === 'true';
+        
+        // Clear the registration complete flag after first load
+        if (shouldShowWelcomePopup) {
+          await storageService.removeItem(STORAGE_KEYS.REGISTRATION_COMPLETE);
+        }
+        
         set({
           user: userData,
           isAuthenticated: true,
-          isLoading: false
+          isLoading: false,
+          showWelcomePopup: shouldShowWelcomePopup
         });
       } else {
         console.log('ℹ️ [LOAD-USER] No valid token or user data found');
@@ -736,7 +745,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       cardNumber: userData.cardNumber
     });
     
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, isRegistering: true });
     
     try {
       // STEP 1: Clear all existing data for fresh session
@@ -784,13 +793,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             await storeAuthTokens(authResponse);
             await storageService.setItem(STORAGE_KEYS.USER_DATA, user);
             await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+            await storageService.setItem(STORAGE_KEYS.REGISTRATION_COMPLETE, 'true');
 
             set({
               user,
               isAuthenticated: true,
               isLoading: false,
               error: null,
-              showWelcomePopup: true
+              showWelcomePopup: true,
+              isRegistering: false
             });
 
             // Load fresh card data after successful registration
@@ -828,13 +839,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await storeAuthTokens(authResponse);
         await storageService.setItem(STORAGE_KEYS.USER_DATA, newUser);
         await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+        await storageService.setItem(STORAGE_KEYS.REGISTRATION_COMPLETE, 'true');
 
         set({
           user: newUser,
           isAuthenticated: true,
           isLoading: false,
           error: null,
-          showWelcomePopup: true
+          showWelcomePopup: true,
+          isRegistering: false
         });
 
         // Load fresh card data after successful registration
@@ -855,7 +868,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.error('❌ [REGISTRATION] Fresh registration failed:', error.message || error);
       set({
         isLoading: false,
-        error: formatApiError(error, 'Registration failed')
+        error: formatApiError(error, 'Registration failed'),
+        isRegistering: false
       });
       return false;
     }
@@ -970,14 +984,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   refreshUserFromToken: async () => {
-    console.log('🔄 [TOKEN-REFRESH] Starting user refresh from token...');
-    
     try {
       // Get stored auth token
       const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
       
       if (!token) {
-        console.warn('⚠️ [TOKEN-REFRESH] No auth token found');
         return false;
       }
 
@@ -986,7 +997,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       // Check if token is expired
       if (isTokenExpired(token)) {
-        console.warn('⚠️ [TOKEN-REFRESH] Token is expired');
         await get().handleUnauthorized();
         return false;
       }
@@ -996,24 +1006,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const displayContext = getUserDisplayContext(token);
       
       if (!userInfo || !displayContext) {
-        console.warn('⚠️ [TOKEN-REFRESH] Failed to extract user info from token');
         return false;
       }
-
-      console.log('✅ [TOKEN-REFRESH] Extracted user info:', userInfo);
-      console.log('🎨 [TOKEN-REFRESH] Display context:', displayContext);
 
       const { user: currentUser } = get();
       
       // If we have a user ID, try to get fresh data from API
       if (userInfo.userId) {
         try {
-          console.log('🔄 [TOKEN-REFRESH] Attempting to fetch fresh user data from API...');
           const userResponse = await apiService.getUserById(userInfo.userId);
           
           if (userResponse) {
-            console.log('✅ [TOKEN-REFRESH] Fresh user data retrieved from API!');
-            
             // Create updated user object with fresh API data
             const updatedUser: User = {
               id: userResponse.id,
@@ -1049,11 +1052,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               error: null
             });
 
-            console.log('🎉 [TOKEN-REFRESH] User data refreshed successfully from API!');
             return true;
           }
         } catch (apiError: any) {
-          console.warn('⚠️ [TOKEN-REFRESH] API call failed, using token data:', apiError.message);
+          // Silent fallback to token data
         }
       }
 
@@ -1084,12 +1086,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null
       });
 
-      console.log('🎉 [TOKEN-REFRESH] User data refreshed successfully from token!');
       return true;
       
     } catch (error: any) {
-      console.error('❌ [TOKEN-REFRESH] Error refreshing user from token:', error);
-      
       set({
         error: null // Don't show error to user, just use cached data silently
       });
@@ -1104,6 +1103,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       // Clear all auth data
       await storageService.clearAuthData();
+      await storageService.removeItem(STORAGE_KEYS.REGISTRATION_COMPLETE);
       
       // Reset auth state
       set({
@@ -1111,7 +1111,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: false,
         isLoading: false,
         error: 'Session expired. Please login again.',
-        showWelcomePopup: false
+        showWelcomePopup: false,
+        isRegistering: false
       });
       
       console.log('✅ [AUTH] Session cleared successfully');
@@ -1124,7 +1125,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: false,
         isLoading: false,
         error: 'Session expired. Please login again.',
-        showWelcomePopup: false
+        showWelcomePopup: false,
+        isRegistering: false
       });
     }
   },
