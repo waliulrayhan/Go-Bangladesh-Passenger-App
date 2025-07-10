@@ -64,6 +64,7 @@ export function TestRegistrationAPI() {
         DateOfBirth: '2001-11-03 00:00:00.0000000',
         Password: '12345678',
         UserType: 'Public',
+        OrganizationId: '1', // Fixed value as required by API
         CardNumber: cardNumber
       };
       
