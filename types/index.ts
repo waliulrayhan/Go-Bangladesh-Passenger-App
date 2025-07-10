@@ -7,7 +7,7 @@ export interface User {
   mobileNumber?: string; // API field
   sex: 'male' | 'female';
   gender?: string; // API field
-  userType: 'passenger';
+  userType: 'passenger' | 'public' | 'private';
   cardNumber?: string;
   isActive: boolean;
   createdAt: string;

@@ -134,12 +134,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           const userResponse = await apiService.getUserById(userId);
           
           if (userResponse) {
-            // Validate user type - only allow Passenger users to login
-            if (userResponse.userType !== 'Passenger') {
+            // Validate user type - only allow Public or Private users to login
+            if (userResponse.userType !== 'Public' && userResponse.userType !== 'Private') {
               console.warn('❌ [LOGIN] User type validation failed:', userResponse.userType);
               set({
                 isLoading: false,
-                error: 'Access denied. This app is only for passengers. Please contact your organization if you believe this is an error.'
+                error: 'Access denied. This app is only for Public or Private users. Please contact your organization if you believe this is an error.'
               });
               return false;
             }
@@ -155,7 +155,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               cardNumber: userResponse.cardNumber,
               profileImage: userResponse.imageUrl,
               imageUrl: userResponse.imageUrl, // API field
-              userType: 'passenger' as const,
+              userType: (userResponse.userType?.toLowerCase() === 'public' ? 'public' : 
+                        userResponse.userType?.toLowerCase() === 'private' ? 'private' : 'passenger') as 'passenger' | 'public' | 'private',
               isActive: true, // Assuming active if we got the data
               createdAt: new Date().toISOString(), // API doesn't provide this
               dateOfBirth: userResponse.dateOfBirth,
@@ -169,7 +170,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             // Store auth data
             await storageService.setItem(STORAGE_KEYS.USER_DATA, user);
-            await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+            await storageService.setItem(STORAGE_KEYS.USER_TYPE, userResponse.userType?.toLowerCase() || 'passenger');
 
             set({
               user,
@@ -306,17 +307,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           if (userResponse) {
             console.log('✅ [LOGIN] API user data retrieved successfully!');
             
-            // Validate user type - only allow Passenger users to login
-            if (userResponse.userType !== 'Passenger') {
+            // Validate user type - only allow Public or Private users to login
+            if (userResponse.userType !== 'Public' && userResponse.userType !== 'Private') {
               console.warn('❌ [LOGIN] User type validation failed:', userResponse.userType);
               set({
                 isLoading: false,
-                error: 'Access denied. This app is only for passengers. Please contact your organization if you believe this is an error.'
+                error: 'Access denied. This app is only for Public or Private users. Please contact your organization if you believe this is an error.'
               });
               return false;
             }
             
-            console.log('✅ [LOGIN] User type validation passed - User is a Passenger');
+            console.log('✅ [LOGIN] User type validation passed - User is', userResponse.userType);
             console.log('📋 [LOGIN] Creating user object from API data...');
             
             const user: User = {
@@ -330,7 +331,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               cardNumber: userResponse.cardNumber,
               profileImage: userResponse.imageUrl,
               imageUrl: userResponse.imageUrl, // API field
-              userType: 'passenger' as const,
+              userType: (userResponse.userType?.toLowerCase() === 'public' ? 'public' : 
+                        userResponse.userType?.toLowerCase() === 'private' ? 'private' : 'passenger') as 'passenger' | 'public' | 'private',
               isActive: true, // Assuming active if we got the data
               createdAt: new Date().toISOString(), // API doesn't provide this
               dateOfBirth: userResponse.dateOfBirth,
@@ -356,7 +358,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             // Store auth data
             await storageService.setItem(STORAGE_KEYS.USER_DATA, user);
-            await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+            await storageService.setItem(STORAGE_KEYS.USER_TYPE, userResponse.userType?.toLowerCase() || 'passenger');
 
             set({
               user,
@@ -772,7 +774,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         sex: userResponse.gender?.toLowerCase() === 'female' ? 'female' : 'male',
         cardNumber: userResponse.cardNumber,
         profileImage: userResponse.imageUrl,
-        userType: 'passenger' as const,
+        userType: (userResponse.userType?.toLowerCase() === 'public' ? 'public' : 
+                  userResponse.userType?.toLowerCase() === 'private' ? 'private' : 'passenger') as 'passenger' | 'public' | 'private',
         isActive: true, // Assuming active if we got the data
         createdAt: user.createdAt, // Keep original creation date
         dateOfBirth: userResponse.dateOfBirth,
