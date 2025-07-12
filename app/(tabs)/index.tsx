@@ -68,8 +68,18 @@ export default function Dashboard() {
   }, [tripStatus]);
 
   const pulseStyle = useAnimatedStyle(() => {
-    const scale = interpolate(pulseAnimation.value, [0, 1], [1, 1.3]);
+    const scale = interpolate(pulseAnimation.value, [0, 1], [1, 1.2]);
     const opacity = interpolate(pulseAnimation.value, [0, 1], [0.8, 0.3]);
+    
+    return {
+      transform: [{ scale }],
+      opacity,
+    };
+  });
+
+  const dotPulseStyle = useAnimatedStyle(() => {
+    const scale = interpolate(pulseAnimation.value, [0, 1], [1, 1.4]);
+    const opacity = interpolate(pulseAnimation.value, [0, 1], [1, 0.6]);
     
     return {
       transform: [{ scale }],
@@ -247,17 +257,6 @@ export default function Dashboard() {
     // Hide simulate button since we're using real trip data
     return null;
   };
-  
-  const renderWelcomeMessage = () => (
-    <Animated.View entering={FadeInDown.duration(800).delay(100)} style={styles.welcomeContainer}>
-      <Text variant="h6" color={COLORS.gray[900]} style={styles.welcomeTitle}>
-        Welcome back, {user?.name?.split(' ')[0] || 'User'}!
-      </Text>
-      <Text variant="body" color={COLORS.gray[600]} style={styles.welcomeSubtitle}>
-        Have a safe trip with Go Bangladesh
-      </Text>
-    </Animated.View>
-  );
 
   const renderTripStatus = () => {
     if (!currentTrip || tripStatus !== 'active') {
@@ -265,7 +264,7 @@ export default function Dashboard() {
     }
 
     const handleForceTapOut = () => {
-      const penaltyAmount = currentTrip?.session?.bus?.route?.penaltyAmount || 60.00;
+      const penaltyAmount = currentTrip?.session?.bus?.route?.penaltyAmount || "N/A";
       
       Alert.alert(
         'Force Tap Out',
@@ -284,83 +283,80 @@ export default function Dashboard() {
     return (
       <Animated.View entering={FadeInDown.duration(800).delay(200)} style={styles.tripContainer}>
         <View style={styles.tripCard}>
-          {/* Trip Status Header */}
-          <View style={styles.tripHeader}>
-            <View style={styles.tripStatusBadge}>
-              <View style={styles.activeDot} />
-              <Text variant="bodySmall" color={COLORS.white} style={styles.tripStatusText}>
+          {/* Pulse Animation Background */}
+          <Animated.View style={[styles.pulseBackground, pulseStyle]} />
+          
+          {/* Compact Header */}
+          <View style={styles.compactHeader}>
+            <View style={styles.statusContainer}>
+              <View style={styles.statusIndicator}>
+                <Animated.View style={[styles.pulsingDot, dotPulseStyle]} />
+              </View>
+              <Text variant="bodySmall" style={styles.statusText}>
                 Trip in Progress
               </Text>
             </View>
             <TouchableOpacity 
-              style={styles.forceTapOutButton}
+              style={styles.exitButton}
               onPress={handleForceTapOut}
             >
-              <Ionicons name="power" size={16} color={COLORS.error} />
-              <Text variant="caption" color={COLORS.error} style={styles.forceTapOutText}>
-                Force Tap Out
-              </Text>
+              <Ionicons name="stop-circle" size={18} color={COLORS.white} />
             </TouchableOpacity>
           </View>
 
-          {/* Trip Details */}
-          <View style={styles.tripDetails}>
-            <View style={styles.routeInfo}>
-              <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.routeLabel}>
-                Route
+          {/* Main Trip Content */}
+          <View style={styles.tripContent}>
+            {/* Bus - Prominent Display */}
+            <View style={styles.busContainer}>
+              <View style={styles.busHeader}>
+                <Ionicons name="bus" size={16} color={COLORS.brand.orange_light} />
+                <Text variant="caption" style={styles.busLabel}>BUS</Text>
+              </View>
+              <Text variant="h6" style={styles.busText} numberOfLines={1}>
+                {currentTrip?.session?.bus?.busName || 'N/A'}
               </Text>
-              <Text variant="h6" color={COLORS.gray[900]} style={styles.routeText}>
-                {currentTrip?.session?.bus?.route?.tripStartPlace || 'N/A'} → {currentTrip?.session?.bus?.route?.tripEndPlace || 'N/A'}
+              <Text variant="caption" style={styles.busNumber} numberOfLines={1}>
+                {currentTrip?.session?.bus?.busNumber || 'N/A'}
               </Text>
             </View>
 
-            <View style={styles.tripInfoGrid}>
-              <View style={styles.tripInfoItem}>
-                <Text variant="caption" color={COLORS.gray[500]} style={styles.tripInfoLabel}>
-                  Bus
-                </Text>
-                <Text variant="body" color={COLORS.gray[900]} style={styles.tripInfoValue}>
-                  {currentTrip?.session?.bus?.busName || 'N/A'}
-                </Text>
-                <Text variant="caption" color={COLORS.gray[600]} style={styles.tripInfoExtra}>
-                  {currentTrip?.session?.bus?.busNumber || 'N/A'}
-                </Text>
+            {/* Route & Time Info - Bottom Row */}
+            <View style={styles.bottomDetailsRow}>
+              <View style={styles.bottomDetailItem}>
+                <Ionicons name="navigate" size={14} color={COLORS.primary} />
+                <View style={styles.bottomDetailInfo}>
+                  <Text variant="caption" style={styles.bottomDetailLabel}>ROUTE</Text>
+                  <Text variant="bodySmall" style={styles.bottomDetailValue} numberOfLines={2}>
+                    {currentTrip?.session?.bus?.route?.tripStartPlace || 'N/A'} 
+                    <Text style={styles.routeArrowSmall}> → </Text>
+                    {currentTrip?.session?.bus?.route?.tripEndPlace || 'N/A'}
+                  </Text>
+                </View>
               </View>
 
-              <View style={styles.tripInfoItem}>
-                <Text variant="caption" color={COLORS.gray[500]} style={styles.tripInfoLabel}>
-                  Distance
-                </Text>
-                <Text variant="body" color={COLORS.gray[900]} style={styles.tripInfoValue}>
-                  {currentTrip?.distance ? `${currentTrip.distance.toFixed(2)} km` : 'N/A'}
-                </Text>
-              </View>
+              <View style={styles.bottomDetailDivider} />
 
-              <View style={styles.tripInfoItem}>
-                <Text variant="caption" color={COLORS.gray[500]} style={styles.tripInfoLabel}>
-                  Amount
-                </Text>
-                <Text variant="body" color={COLORS.gray[900]} style={styles.tripInfoValue}>
-                  ৳{currentTrip?.amount ? currentTrip.amount.toFixed(2) : '0.00'}
-                </Text>
-              </View>
-
-              <View style={styles.tripInfoItem}>
-                <Text variant="caption" color={COLORS.gray[500]} style={styles.tripInfoLabel}>
-                  Started
-                </Text>
-                <Text variant="body" color={COLORS.gray[900]} style={styles.tripInfoValue}>
-                  {currentTrip?.tripStartTime ? new Date(currentTrip.tripStartTime).toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  }) : 'N/A'}
-                </Text>
+              <View style={styles.bottomDetailItem}>
+                <Ionicons name="time" size={14} color={COLORS.success} />
+                <View style={styles.bottomDetailInfo}>
+                  <Text variant="caption" style={styles.bottomDetailLabel}>START TIME</Text>
+                  <Text variant="bodySmall" style={styles.bottomDetailValue}>
+                    {currentTrip?.tripStartTime ? new Date(currentTrip.tripStartTime).toLocaleTimeString('en-US', { 
+                      hour: '2-digit', 
+                      minute: '2-digit',
+                      hour12: true
+                    }) : 'N/A'}
+                  </Text>
+                  <Text variant="caption" style={styles.bottomDetailSubtext}>
+                    {currentTrip?.tripStartTime ? new Date(currentTrip.tripStartTime).toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric' 
+                    }) : ''}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
-
-          {/* Pulse Animation Background */}
-          <Animated.View style={[styles.pulseBackground, pulseStyle]} />
         </View>
       </Animated.View>
     );
@@ -482,7 +478,6 @@ export default function Dashboard() {
         }
       >
         {renderHeader()}
-        {renderWelcomeMessage()}
         {renderTripStatus()}
         {renderRFIDCard()}
         {renderSimulateButton()}
@@ -708,126 +703,168 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
-  // Trip Status Styles
+  // Trip Status Styles - Compact Design
   tripContainer: {
     marginHorizontal: 16,
     marginBottom: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: COLORS.white,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 8,
   },
   tripCard: {
-    padding: 16,
+    padding: 12,
+    position: 'relative',
   },
-  tripHeader: {
+
+  // Compact Header Styles
+  compactHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  tripStatusBadge: {
+  statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.brand.blue,
-    borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    backgroundColor: COLORS.success + '12',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: COLORS.success + '20',
   },
-  activeDot: {
+  statusIndicator: {
+    marginRight: 8,
+  },
+  pulsingDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: COLORS.success,
-    marginRight: 4,
   },
-  tripStatusText: {
+  statusText: {
     fontSize: 12,
-    fontWeight: '500',
-    color: COLORS.white,
+    fontWeight: '700',
+    color: COLORS.success,
   },
-  tripDetails: {
-    marginTop: 8,
+  exitButton: {
+    backgroundColor: COLORS.error,
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: COLORS.error,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+    minWidth: 36,
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  routeInfo: {
-    marginBottom: 16,
+
+  // Trip Content Styles
+  tripContent: {
+    gap: 8,
   },
-  routeLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: COLORS.gray[600],
-    marginBottom: 4,
+  
+  // Bus Container - Prominent Display
+  busContainer: {
+    backgroundColor: COLORS.brand.orange_light + '08',
+    borderRadius: 12,
+    padding: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.brand.orange_light,
   },
-  routeText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.gray[900],
-  },
-  tripInfoGrid: {
+  busHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
-  tripInfoItem: {
-    flex: 1,
-    minWidth: 120,
-  },
-  tripInfoLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: COLORS.gray[500],
+    alignItems: 'center',
     marginBottom: 4,
+    gap: 6,
   },
-  tripInfoValue: {
-    fontSize: 14,
-    fontWeight: '600',
+  busLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.brand.orange_light,
+    letterSpacing: 1,
+  },
+  busText: {
+    fontSize: 16,
+    fontWeight: '700',
     color: COLORS.gray[900],
+    lineHeight: 20,
+    marginBottom: 2,
   },
-  tripInfoExtra: {
-    fontSize: 12,
+  busNumber: {
+    fontSize: 11,
     fontWeight: '500',
     color: COLORS.gray[600],
   },
 
-  // Pulse Animation Background
+  // Bottom Details Row - Route & Time
+  bottomDetailsRow: {
+    backgroundColor: COLORS.gray[50],
+    borderRadius: 12,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: COLORS.gray[100],
+  },
+  bottomDetailItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  bottomDetailInfo: {
+    flex: 1,
+  },
+  bottomDetailDivider: {
+    width: 1,
+    height: 35,
+    backgroundColor: COLORS.gray[200],
+    marginHorizontal: 12,
+  },
+  bottomDetailLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: COLORS.gray[600],
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  bottomDetailValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.gray[900],
+    lineHeight: 16,
+  },
+  bottomDetailSubtext: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: COLORS.gray[500],
+    marginTop: 1,
+  },
+  routeArrowSmall: {
+    color: COLORS.primary,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+
+  // Pulse Animation Background - Improved
   pulseBackground: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: 16,
-    backgroundColor: COLORS.brand.orange_light + '40',
-    opacity: 0.6,
-  },
-
-  // Force Tap Out Button Styles
-  forceTapOutButton: {
-    backgroundColor: COLORS.error,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: COLORS.error,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-    gap: 4,
-    minWidth: 80,
-  },
-  forceTapOutText: {
-    fontSize: 10,
-    fontWeight: '600',
-    textAlign: 'center',
-    lineHeight: 12,
+    borderRadius: 20,
+    backgroundColor: COLORS.success + '08',
+    zIndex: -1,
   },
 
   // Recent Activity Styles
