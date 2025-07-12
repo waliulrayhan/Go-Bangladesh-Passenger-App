@@ -1,11 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Image, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, interpolate, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { GoBangladeshLogo } from '../../components/GoBangladeshLogo';
 import { Text } from '../../components/ui/Text';
-import { WelcomePopup } from '../../components/ui/WelcomePopup';
 import { useTokenRefresh, useUserContext } from '../../hooks/useTokenRefresh';
 import { useAuthStore } from '../../stores/authStore';
 import { useCardStore } from '../../stores/cardStore';
@@ -13,7 +12,7 @@ import { API_BASE_URL, COLORS } from '../../utils/constants';
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user, logout, showWelcomePopup, hideWelcomePopup } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { 
     card, 
     loadCardDetails, 
@@ -32,6 +31,7 @@ export default function Dashboard() {
   const { userContext } = useUserContext();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Animation for pulse effect - moved to top level
   const pulseAnimation = useSharedValue(0);
@@ -53,6 +53,21 @@ export default function Dashboard() {
       clearInterval(tripCheckInterval);
     };
   }, [user]);
+
+  // Handle pull-to-refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshAllData();
+      await loadCardDetails();
+      await loadHistory(1, true);
+      await checkOngoingTrip();
+    } catch (error) {
+      console.error('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Start pulse animation when trip is active
   useEffect(() => {
@@ -203,7 +218,7 @@ export default function Dashboard() {
         
         <View style={styles.cardContent}>
           <Text variant="h5" color={COLORS.white} style={styles.cardNumber}>
-            {user?.cardNumber || card?.cardNumber || 'GB-0000000000'}
+            {user?.cardNumber || card?.cardNumber || 'N/A'}
           </Text>
           
           <View style={styles.cardInfo}>
@@ -212,7 +227,7 @@ export default function Dashboard() {
                 CARD HOLDER
               </Text>
               <Text variant="body" color={COLORS.white} style={styles.value}>
-                {user?.name?.toUpperCase() || 'GUEST USER'}
+                {user?.name?.toUpperCase() || 'N/A'}
               </Text>
             </View>
             <View style={styles.infoItem}>
@@ -220,7 +235,7 @@ export default function Dashboard() {
                 TYPE
               </Text>
               <Text variant="body" color={COLORS.white} style={styles.value}>
-                {user?.userType?.toUpperCase() || 'PASSENGER'}
+                {user?.userType?.toUpperCase() || 'N/A'}
               </Text>
             </View>
           </View>
@@ -248,47 +263,119 @@ export default function Dashboard() {
     return null;
   };
   
+  const renderWelcomeMessage = () => (
+    <Animated.View entering={FadeInDown.duration(800).delay(100)} style={styles.welcomeContainer}>
+      <Text variant="h6" color={COLORS.gray[900]} style={styles.welcomeTitle}>
+        Welcome back, {user?.name?.split(' ')[0] || 'User'}!
+      </Text>
+      <Text variant="body" color={COLORS.gray[600]} style={styles.welcomeSubtitle}>
+        Have a safe trip with Go Bangladesh
+      </Text>
+    </Animated.View>
+  );
+
   const renderTripStatus = () => {
-    if (tripStatus === 'idle') return null;
-    
+    if (!currentTrip || tripStatus !== 'active') {
+      return null;
+    }
+
+    const handleForceTapOut = () => {
+      const penaltyAmount = currentTrip?.session?.bus?.route?.penaltyAmount || 60.00;
+      
+      Alert.alert(
+        'Force Tap Out',
+        `Are you sure you want to force tap out? A penalty of ৳${penaltyAmount.toFixed(2)} will be charged.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Force Tap Out', 
+            style: 'destructive',
+            onPress: () => forceTapOut()
+          }
+        ]
+      );
+    };
+
     return (
-      <Animated.View entering={FadeInDown.duration(800).delay(200)} style={styles.tripStatusContainer}>
-        <View style={styles.tripStatusCard}>
-          <View style={styles.tripStatusContent}>
-            <View style={styles.tripStatusIconContainer}>
-              <View style={styles.tripStatusIcon}>
-                <Ionicons name="bus" size={20} color={COLORS.brand.blue} />
-              </View>
-              <View style={styles.pulseIndicator}>
-                <Animated.View style={[styles.pulseRing, pulseStyle]} />
-                <View style={styles.pulseCore} />
-              </View>
-            </View>
-            <View style={styles.tripStatusInfo}>
-              <Text variant="h6" color={COLORS.brand.blue} style={styles.tripStatusTitle}>
+      <Animated.View entering={FadeInDown.duration(800).delay(200)} style={styles.tripContainer}>
+        <View style={styles.tripCard}>
+          {/* Trip Status Header */}
+          <View style={styles.tripHeader}>
+            <View style={styles.tripStatusBadge}>
+              <View style={styles.activeDot} />
+              <Text variant="bodySmall" color={COLORS.white} style={styles.tripStatusText}>
                 Trip in Progress
-              </Text>
-              <Text variant="body" color={COLORS.gray[700]} style={styles.busName}>
-                {currentTrip?.session?.bus?.busName || 'Swapnil'}
-              </Text>
-              <Text variant="body" color={COLORS.gray[600]} style={styles.busNumber}>
-                {currentTrip?.session?.bus?.busNumber || 'GAIBANDHA-KHA-18-8123'}
-              </Text>
-              <Text variant="caption" color={COLORS.gray[500]} style={styles.tripTime}>
-                Started: {currentTrip ? new Date(currentTrip.tripStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }) : '8:16:45 PM'}
               </Text>
             </View>
             <TouchableOpacity 
               style={styles.forceTapOutButton}
               onPress={handleForceTapOut}
-              activeOpacity={0.7}
             >
-              <Ionicons name="exit-outline" size={16} color={COLORS.white} />
-              <Text variant="caption" color={COLORS.white} style={styles.forceTapOutText}>
+              <Ionicons name="power" size={16} color={COLORS.error} />
+              <Text variant="caption" color={COLORS.error} style={styles.forceTapOutText}>
                 Force Tap Out
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Trip Details */}
+          <View style={styles.tripDetails}>
+            <View style={styles.routeInfo}>
+              <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.routeLabel}>
+                Route
+              </Text>
+              <Text variant="h6" color={COLORS.gray[900]} style={styles.routeText}>
+                {currentTrip?.session?.bus?.route?.tripStartPlace || 'N/A'} → {currentTrip?.session?.bus?.route?.tripEndPlace || 'N/A'}
+              </Text>
+            </View>
+
+            <View style={styles.tripInfoGrid}>
+              <View style={styles.tripInfoItem}>
+                <Text variant="caption" color={COLORS.gray[500]} style={styles.tripInfoLabel}>
+                  Bus
+                </Text>
+                <Text variant="body" color={COLORS.gray[900]} style={styles.tripInfoValue}>
+                  {currentTrip?.session?.bus?.busName || 'N/A'}
+                </Text>
+                <Text variant="caption" color={COLORS.gray[600]} style={styles.tripInfoExtra}>
+                  {currentTrip?.session?.bus?.busNumber || 'N/A'}
+                </Text>
+              </View>
+
+              <View style={styles.tripInfoItem}>
+                <Text variant="caption" color={COLORS.gray[500]} style={styles.tripInfoLabel}>
+                  Distance
+                </Text>
+                <Text variant="body" color={COLORS.gray[900]} style={styles.tripInfoValue}>
+                  {currentTrip?.distance ? `${currentTrip.distance.toFixed(2)} km` : 'N/A'}
+                </Text>
+              </View>
+
+              <View style={styles.tripInfoItem}>
+                <Text variant="caption" color={COLORS.gray[500]} style={styles.tripInfoLabel}>
+                  Amount
+                </Text>
+                <Text variant="body" color={COLORS.gray[900]} style={styles.tripInfoValue}>
+                  ৳{currentTrip?.amount ? currentTrip.amount.toFixed(2) : '0.00'}
+                </Text>
+              </View>
+
+              <View style={styles.tripInfoItem}>
+                <Text variant="caption" color={COLORS.gray[500]} style={styles.tripInfoLabel}>
+                  Started
+                </Text>
+                <Text variant="body" color={COLORS.gray[900]} style={styles.tripInfoValue}>
+                  {currentTrip?.tripStartTime ? new Date(currentTrip.tripStartTime).toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  }) : 'N/A'}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Pulse Animation Background */}
+          <Animated.View style={[styles.pulseBackground, pulseStyle]} />
         </View>
       </Animated.View>
     );
@@ -405,20 +492,17 @@ export default function Dashboard() {
         contentContainerStyle={styles.scrollContent}
         onScroll={() => setShowProfileMenu(false)}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {renderHeader()}
+        {renderWelcomeMessage()}
         {renderTripStatus()}
         {renderRFIDCard()}
         {renderSimulateButton()}
         {renderRecentActivity()}
       </ScrollView>
-
-      {/* Welcome Popup */}
-      <WelcomePopup
-        visible={showWelcomePopup}
-        userName={user?.name || 'User'}
-        onClose={hideWelcomePopup}
-      />
     </SafeAreaView>
   );
 }
@@ -640,86 +724,101 @@ const styles = StyleSheet.create({
   },
   
   // Trip Status Styles
-  tripStatusContainer: {
+  tripContainer: {
     marginHorizontal: 16,
     marginBottom: 16,
-  },
-  tripStatusCard: {
-    backgroundColor: COLORS.white,
     borderRadius: 16,
-    padding: 16,
+    overflow: 'hidden',
+    backgroundColor: COLORS.white,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.brand.blue,
   },
-  tripStatusContent: {
+  tripCard: {
+    padding: 16,
+  },
+  tripHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  tripStatusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: COLORS.brand.blue,
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
-  tripStatusIconContainer: {
-    position: 'relative',
-    marginRight: 14,
-    alignSelf: 'center',
+  activeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.success,
+    marginRight: 4,
   },
-  tripStatusIcon: {
-    width: 44,
-    height: 44,
-    backgroundColor: COLORS.brand.blue + '15',
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.brand.blue + '30',
-  },
-  pulseIndicator: {
-    position: 'absolute',
-    top: -3,
-    right: -3,
-    width: 14,
-    height: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pulseRing: {
-    position: 'absolute',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: COLORS.brand.orange_light + '40',
-    opacity: 0.8,
-  },
-  pulseCore: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: COLORS.brand.orange_light,
-  },
-  tripStatusInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  tripStatusTitle: {
-    fontWeight: '700',
-    marginBottom: 4,
-    fontSize: 16,
-  },
-  busName: {
-    fontWeight: '600',
-    marginBottom: 2,
-    fontSize: 14,
-  },
-  busNumber: {
-    fontWeight: '500',
-    marginBottom: 4,
-    fontSize: 13,
-  },
-  tripTime: {
+  tripStatusText: {
     fontSize: 12,
     fontWeight: '500',
+    color: COLORS.white,
+  },
+  tripDetails: {
+    marginTop: 8,
+  },
+  routeInfo: {
+    marginBottom: 16,
+  },
+  routeLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.gray[600],
+    marginBottom: 4,
+  },
+  routeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray[900],
+  },
+  tripInfoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  tripInfoItem: {
+    flex: 1,
+    minWidth: 120,
+  },
+  tripInfoLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: COLORS.gray[500],
+    marginBottom: 4,
+  },
+  tripInfoValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray[900],
+  },
+  tripInfoExtra: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.gray[600],
+  },
+
+  // Pulse Animation Background
+  pulseBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 16,
+    backgroundColor: COLORS.brand.orange_light + '40',
+    opacity: 0.6,
   },
 
   // Force Tap Out Button Styles
@@ -903,5 +1002,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginLeft: 4,
+  },
+  welcomeContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  welcomeTitle: {
+    fontWeight: '700',
+    fontSize: 18,
+    marginBottom: 4,
+  },
+  welcomeSubtitle: {
+    fontSize: 14,
+    color: COLORS.gray[600],
   },
 });

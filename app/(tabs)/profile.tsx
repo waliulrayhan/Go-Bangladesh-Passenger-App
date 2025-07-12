@@ -31,12 +31,13 @@ export default function Profile() {
     setRefreshing(true);
     try {
       await refreshAllData(); // Use the new token-based refresh
+      await refreshUserData(); // Refresh user data
     } catch (error) {
       console.log('Refresh error:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [refreshAllData]);
+  }, [refreshAllData, refreshUserData]);
 
   const handleLogout = async () => {
     Alert.alert(

@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, SafeAreaView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -14,11 +14,12 @@ import { FONT_WEIGHTS } from '../../utils/fonts';
 
 export default function ForgotPassword() {
   const [mobile, setMobile] = useState('');
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [timer, setTimer] = useState(0);
   
   const { sendOTP, verifyOTP, isLoading, error, clearError } = useAuthStore();
+  const inputRefs = useRef<(TextInput | null)[]>([]);
 
   // Timer effect for OTP resend
   useEffect(() => {
@@ -81,16 +82,43 @@ export default function ForgotPassword() {
     }
   };
 
-  const handleVerifyOTP = async () => {
+  const handleOtpChange = (value: string, index: number) => {
+    if (value.length > 1) return; // Prevent multiple characters
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-verify when all 6 digits are entered
+    if (newOtp.every(digit => digit !== '') && newOtp.length === 6) {
+      setTimeout(() => {
+        handleVerifyOTP(newOtp.join(''));
+      }, 100);
+    }
+  };
+
+  const handleKeyPress = (e: any, index: number) => {
+    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerifyOTP = async (otpCode?: string) => {
     clearError();
     
-    if (!otp || otp.length !== 6) {
+    const otpString = otpCode || otp.join('');
+    if (!otpString || otpString.length !== 6) {
       Alert.alert('Error', 'Please enter a valid 6-digit OTP');
       return;
     }
 
     const formattedMobile = formatMobile(mobile);
-    const success = await verifyOTP(formattedMobile, otp);
+    const success = await verifyOTP(formattedMobile, otpString);
     
     if (success) {
       // Navigate to password reset form with the verified mobile number
@@ -139,15 +167,27 @@ export default function ForgotPassword() {
             <Animated.View entering={FadeInDown.duration(800).delay(200)}>
               <Card variant="elevated" style={styles.formCard}>
                 <View style={styles.formContent}>
-                  <Input
-                    label="Verification Code"
-                    value={otp}
-                    onChangeText={setOtp}
-                    placeholder="Enter 6-digit OTP"
-                    keyboardType="numeric"
-                    icon="lock-closed"
-                    maxLength={6}
-                  />
+                  <Text style={styles.otpLabel}>Enter Verification Code</Text>
+                  
+                  <View style={styles.otpInputContainer}>
+                    {otp.map((digit, index) => (
+                      <TextInput
+                        key={index}
+                        ref={(ref) => { inputRefs.current[index] = ref; }}
+                        style={[
+                          styles.otpInput,
+                          digit && styles.otpInputFilled
+                        ]}
+                        value={digit}
+                        onChangeText={(value) => handleOtpChange(value, index)}
+                        onKeyPress={(e) => handleKeyPress(e, index)}
+                        keyboardType="numeric"
+                        maxLength={1}
+                        autoFocus={index === 0}
+                        selectTextOnFocus
+                      />
+                    ))}
+                  </View>
                   
                   {error && (
                     <Animated.View entering={FadeInDown.duration(300)} style={styles.errorContainer}>
@@ -155,16 +195,6 @@ export default function ForgotPassword() {
                       <Text style={styles.errorText}>{error}</Text>
                     </Animated.View>
                   )}
-
-                  <Button
-                    title="Verify Code"
-                    onPress={handleVerifyOTP}
-                    loading={isLoading}
-                    variant="primary"
-                    size="medium"
-                    fullWidth
-                    icon="checkmark"
-                  />
 
                   <View style={styles.resendContainer}>
                     {timer > 0 ? (
@@ -179,6 +209,10 @@ export default function ForgotPassword() {
                       </TouchableOpacity>
                     )}
                   </View>
+
+                  <Text style={styles.helpText}>
+                    Enter all 6 digits for automatic verification.
+                  </Text>
                 </View>
               </Card>
             </Animated.View>
@@ -350,6 +384,42 @@ const styles = StyleSheet.create({
   },
   resendTextDisabled: {
     color: COLORS.gray[400],
+  },
+  otpLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray[900],
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  otpInputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+  },
+  otpInput: {
+    width: 45,
+    height: 55,
+    borderWidth: 2,
+    borderColor: COLORS.gray[300],
+    borderRadius: 12,
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.gray[900],
+    backgroundColor: COLORS.white,
+  },
+  otpInputFilled: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.brand.blue_subtle,
+  },
+  helpText: {
+    fontSize: 14,
+    color: COLORS.gray[600],
+    textAlign: 'center',
+    marginTop: SPACING.sm,
+    lineHeight: 18,
   },
   helpSection: {
     alignItems: 'center',

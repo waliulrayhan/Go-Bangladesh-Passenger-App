@@ -34,8 +34,8 @@ export interface RegistrationData {
   Address?: string;
   DateOfBirth?: string; // Format: 2001-11-03 00:00:00.0000000
   Password: string;
-  UserType: string; // "Public"
-  OrganizationId: string; // Fixed value "1"
+  UserType?: string; // Made optional
+  OrganizationId?: string; // Made optional
   CardNumber: string;
 }
 
@@ -69,19 +69,99 @@ export interface UserResponse {
 }
 
 export interface Trip {
-  id: string;
-  isRunning: boolean;
+  passengerId: string;
+  sessionId: string;
+  startingLatitude: string;
+  startingLongitude: string;
+  endingLatitude: string | null;
+  endingLongitude: string | null;
   tripStartTime: string;
-  distance: number;
+  tripEndTime: string | null;
   amount: number;
-  session?: {
-    bus?: {
+  isRunning: boolean;
+  distance: number;
+  session: {
+    busId: string;
+    userId: string;
+    startTime: string;
+    endTime: string;
+    isRunning: boolean;
+    serial: number;
+    sessionCode: string;
+    user: any;
+    bus: {
       busNumber: string;
       busName: string;
-      tripStartPlace: string;
-      tripEndPlace: string;
+      routeId: string;
+      route: {
+        tripStartPlace: string;
+        tripEndPlace: string;
+        organizationId: string;
+        perKmFare: number;
+        baseFare: number;
+        minimumBalance: number;
+        penaltyAmount: number;
+        organization: any;
+        id: string;
+        createTime: string;
+        lastModifiedTime: string;
+        createdBy: string;
+        lastModifiedBy: string;
+        isDeleted: boolean;
+      };
+      organizationId: string;
+      organization: any;
+      presentLatitude: string;
+      presentLongitude: string;
+      id: string;
+      createTime: string;
+      lastModifiedTime: string;
+      createdBy: string;
+      lastModifiedBy: string;
+      isDeleted: boolean;
     };
+    id: string;
+    createTime: string;
+    lastModifiedTime: string;
+    createdBy: string;
+    lastModifiedBy: string;
+    isDeleted: boolean;
   };
+  passenger: {
+    isSuperAdmin: boolean;
+    name: string;
+    emailAddress: string;
+    passwordHash: string;
+    imageUrl: string;
+    isApproved: boolean;
+    isActive: boolean;
+    roleId: string | null;
+    dateOfBirth: string;
+    mobileNumber: string;
+    address: string;
+    gender: string;
+    userType: string;
+    passengerId: string;
+    organizationId: string;
+    organization: any;
+    serial: number;
+    code: string | null;
+    cardNumber: string;
+    designation: string | null;
+    balance: number;
+    id: string;
+    createTime: string;
+    lastModifiedTime: string;
+    createdBy: string;
+    lastModifiedBy: string;
+    isDeleted: boolean;
+  };
+  id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
 }
 
 export interface Transaction {
@@ -609,8 +689,12 @@ class ApiService {
         formData.append('DateOfBirth', registrationData.DateOfBirth);
       }
       formData.append('Password', registrationData.Password);
-      formData.append('UserType', registrationData.UserType);
-      formData.append('OrganizationId', registrationData.OrganizationId);
+      if (registrationData.UserType) {
+        formData.append('UserType', registrationData.UserType);
+      }
+      if (registrationData.OrganizationId) {
+        formData.append('OrganizationId', registrationData.OrganizationId);
+      }
       formData.append('CardNumber', registrationData.CardNumber);
       
       console.log('📤 [REGISTRATION] Sending as FormData...');

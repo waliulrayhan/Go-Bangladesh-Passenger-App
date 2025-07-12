@@ -11,6 +11,7 @@ import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
 import { apiService, RegistrationData } from '../../services/api';
 import { COLORS, SPACING } from '../../utils/constants';
+import { storageService } from '../../utils/storage';
 
 const { width } = Dimensions.get('window');
 
@@ -104,6 +105,21 @@ export default function RegistrationPersonalInfo() {
       return;
     }
 
+    // Check age requirement (must be 5 years or older)
+    if (selectedDate) {
+      const today = new Date();
+      const birthDate = new Date(selectedDate);
+      const age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      // Check if the user is less than 5 years old
+      if (age < 5 || (age === 5 && monthDiff < 0) || 
+          (age === 5 && monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        Alert.alert('Age Requirement', 'You must be at least 5 years old to register.');
+        return;
+      }
+    }
+
     setIsLoading(true);
     
     try {
@@ -116,7 +132,7 @@ export default function RegistrationPersonalInfo() {
         formattedDate = `${year}-${month}-${day} 00:00:00.0000000`;
       }
 
-      // Prepare registration data for API
+      // Prepare registration data for API - UserType is required as "Public" for passenger registration
       const registrationData: RegistrationData = {
         Name: form.name.trim(),
         MobileNumber: form.phone.trim(),
@@ -125,8 +141,8 @@ export default function RegistrationPersonalInfo() {
         Address: form.address.trim() || undefined,
         DateOfBirth: formattedDate || undefined,
         Password: form.password,
-        UserType: 'Public',
-        OrganizationId: '1', // Fixed value as required by API
+        UserType: "Public", // Required field for passenger registration
+        OrganizationId: "1",
         CardNumber: params.cardNumber || ''
       };
 
@@ -143,6 +159,18 @@ export default function RegistrationPersonalInfo() {
       await apiService.registerPassenger(registrationData);
       
       console.log('✅ Registration successful, sending OTP...');
+      
+      // Store registration data temporarily for use after OTP verification
+      await storageService.setItem('temp_registration_data', {
+        cardNumber: params.cardNumber,
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        gender: form.gender,
+        address: form.address.trim(),
+        dateOfBirth: form.dateOfBirth.trim(),
+        password: form.password // Store securely for post-OTP login
+      });
       
       // Send OTP to mobile number
       await apiService.sendOTP(form.phone.trim());
@@ -362,7 +390,11 @@ export default function RegistrationPersonalInfo() {
                     mode="date"
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     onChange={handleDateChange}
-                    maximumDate={new Date()}
+                    maximumDate={(() => {
+                      const fiveYearsAgo = new Date();
+                      fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+                      return fiveYearsAgo;
+                    })()}
                     minimumDate={new Date(1900, 0, 1)}
                   />
                 )}

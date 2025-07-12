@@ -4,12 +4,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, BackHandler, SafeAreaView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Text } from '../../components/ui/Text';
 import { apiService } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { useCardStore } from '../../stores/cardStore';
 import { COLORS, SPACING } from '../../utils/constants';
+import { storageService } from '../../utils/storage';
 
 export default function VerifyRegistration() {
   const params = useLocalSearchParams<{
@@ -68,6 +69,14 @@ export default function VerifyRegistration() {
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
+
+    // Auto-verify when all 6 digits are entered
+    if (newOtp.every(digit => digit !== '') && newOtp.length === 6) {
+      // Small delay to ensure UI updates first
+      setTimeout(() => {
+        handleVerify(newOtp.join(''));
+      }, 100);
+    }
   };
 
   const handleKeyPress = (e: any, index: number) => {
@@ -76,8 +85,8 @@ export default function VerifyRegistration() {
     }
   };
 
-  const handleVerify = async () => {
-    const otpString = otp.join('');
+  const handleVerify = async (otpCode?: string) => {
+    const otpString = otpCode || otp.join('');
     
     if (otpString.length !== 6) {
       Alert.alert('Invalid OTP', 'Please enter the complete 6-digit OTP.');
@@ -95,16 +104,46 @@ export default function VerifyRegistration() {
       if (verificationResult) {
         console.log('✅ OTP verification successful');
         
-        // After successful OTP verification, properly log in the user
-        // This ensures the auth state is properly set with fresh tokens
-        console.log('🔑 Logging in user after successful registration...');
-        const loginSuccess = await login(params.phone, otpString);
+        // After successful OTP verification, login using the user's actual password
+        console.log('🔑 Logging in user with stored credentials...');
+        
+        // Retrieve stored registration data
+        const tempData = await storageService.getItem<any>('temp_registration_data');
+        console.log('🔍 Retrieved temp data:', tempData);
+        
+        if (!tempData) {
+          console.error('❌ No stored registration data found');
+          setIsLoading(false);
+          
+          Alert.alert(
+            'Registration Complete',
+            'Your account has been created successfully. Please log in with your credentials.',
+            [
+              {
+                text: 'Go to Login',
+                onPress: () => {
+                  router.replace('/(auth)/passenger-login');
+                }
+              }
+            ]
+          );
+          return;
+        }
+        
+        // Clean up temporary storage immediately
+        await storageService.removeItem('temp_registration_data');
+        
+        // Use loginWithPassword with the stored password
+        const { loginWithPassword } = useAuthStore.getState();
+        const loginSuccess = await loginWithPassword(tempData.phone, tempData.password);
         
         if (loginSuccess) {
-          console.log('✅ User logged in successfully after registration');
-          
-          // Small delay to ensure authentication state is set
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Load card data using the store's loadCardDetails method
+          try {
+            await useCardStore.getState().loadCardDetails();
+          } catch (cardError) {
+            console.log('ℹ️ Card data loading failed:', cardError);
+          }
           
           setIsLoading(false);
           
@@ -115,64 +154,27 @@ export default function VerifyRegistration() {
               {
                 text: 'Continue',
                 onPress: () => {
-                  // Navigate to main app - router.replace will be handled by _layout.tsx
                   router.replace('/(tabs)');
                 }
               }
             ]
           );
         } else {
-          console.warn('⚠️ Login failed after registration - trying alternative approach');
+          // If login fails, still show success message but redirect to login
+          setIsLoading(false);
           
-          // Alternative: Use the registerUser function with provided data
-          // This ensures the authentication state is properly set
-          try {
-            const registrationSuccess = await useAuthStore.getState().registerUser({
-              name: params.name,
-              sex: params.gender,
-              mobile: params.phone,
-              email: params.email,
-              cardNumber: params.cardNumber
-            });
-            
-            if (registrationSuccess) {
-              console.log('✅ Alternative registration approach successful');
-              
-              await new Promise(resolve => setTimeout(resolve, 500));
-              setIsLoading(false);
-              
-              Alert.alert(
-                'Registration Successful!',
-                'Your account has been created successfully. Welcome to Go Bangladesh!',
-                [
-                  {
-                    text: 'Continue',
-                    onPress: () => {
-                      router.replace('/(tabs)');
-                    }
-                  }
-                ]
-              );
-            } else {
-              throw new Error('Alternative registration failed');
-            }
-          } catch (altError) {
-            console.warn('⚠️ Alternative registration also failed');
-            setIsLoading(false);
-            
-            Alert.alert(
-              'Registration Complete',
-              'Your account has been created successfully. Please log in to continue.',
-              [
-                {
-                  text: 'Go to Login',
-                  onPress: () => {
-                    router.replace('/(auth)/passenger-login');
-                  }
+          Alert.alert(
+            'Registration Complete',
+            'Your account has been created successfully. Please log in to continue.',
+            [
+              {
+                text: 'Go to Login',
+                onPress: () => {
+                  router.replace('/(auth)/passenger-login');
                 }
-              ]
-            );
-          }
+              }
+            ]
+          );
         }
       }
     } catch (error: any) {
@@ -301,19 +303,9 @@ export default function VerifyRegistration() {
                   )}
                 </View>
 
-                <Button
-                  title="Verify & Complete Registration"
-                  onPress={handleVerify}
-                  loading={isLoading}
-                  disabled={otp.join('').length !== 6}
-                  icon="checkmark-circle"
-                  size="medium"
-                  fullWidth
-                />
-
                 <Text style={styles.helpText}>
-                  Didn't receive the code?{'\n'}
-                  Check your SMS or try resending.
+                  Enter all 6 digits for automatic verification.{'\n'}
+                  Didn't receive the code? Check your SMS or try resending.
                 </Text>
               </View>
             </Card>

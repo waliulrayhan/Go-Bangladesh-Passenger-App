@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
-import { Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { COLORS, SPACING } from '../utils/constants';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -27,17 +27,18 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
 }) => {
   const [step, setStep] = useState<Step>('card-input');
   const [cardNumber, setCardNumber] = useState('');
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [otpTimer, setOtpTimer] = useState(0);
+  const inputRefs = useRef<(TextInput | null)[]>([]);
 
   // Reset state when modal opens/closes
   useEffect(() => {
     if (visible) {
       setStep('card-input');
       setCardNumber('');
-      setOtp('');
+      setOtp(['', '', '', '', '', '']);
       setError('');
       setOtpTimer(0);
     }
@@ -73,11 +74,30 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
     setError(''); // Clear error when user types
   };
 
-  const handleOtpChange = (text: string) => {
-    // Filter only digits and limit to 6 characters
-    const filteredText = text.replace(/[^0-9]/g, '').slice(0, 6);
-    setOtp(filteredText);
-    setError(''); // Clear error when user types
+  const handleOtpChange = (value: string, index: number) => {
+    if (value.length > 1) return; // Prevent multiple characters
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-verify when all 6 digits are entered
+    if (newOtp.every(digit => digit !== '') && newOtp.length === 6) {
+      setTimeout(() => {
+        handleUpdateCard(newOtp.join(''));
+      }, 100);
+    }
+  };
+
+  const handleKeyPress = (e: any, index: number) => {
+    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
   };
 
   const handleSendOTP = async () => {
