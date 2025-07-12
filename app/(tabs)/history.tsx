@@ -255,13 +255,6 @@ export default function History() {
         </View>
 
         <View style={styles.tripDetails}>
-          {/* Session Info */}
-          <View style={styles.detailRow}>
-            <Ionicons name="receipt" size={14} color={COLORS.gray[500]} />
-            <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-              Session: {sessionCode}
-            </Text>
-          </View>
 
           <View style={styles.timeRow}>
             <View style={styles.timeItem}>
@@ -283,7 +276,7 @@ export default function History() {
               >
                 <Ionicons name="time" size={14} color={COLORS.primary} />
                 <Text variant="bodySmall" color={COLORS.gray[700]} style={styles.timeText}>
-                  {tripStartTime ? new Date(tripStartTime).toLocaleTimeString() : 'N/A'}
+                  {tripStartTime ? new Date(new Date(tripStartTime).getTime() + 6 * 60 * 60 * 1000).toLocaleTimeString() : 'N/A'}
                 </Text>
                 <Ionicons name="location" size={14} color={COLORS.primary} />
               </TouchableOpacity>
@@ -309,7 +302,7 @@ export default function History() {
                 >
                   <Ionicons name="time" size={14} color={COLORS.primary} />
                   <Text variant="bodySmall" color={COLORS.gray[700]} style={styles.timeText}>
-                    {tripEndTime ? new Date(tripEndTime).toLocaleTimeString() : 'N/A'}
+                    {tripEndTime ? new Date(new Date(tripEndTime).getTime() + 6 * 60 * 60 * 1000).toLocaleTimeString() : 'N/A'}
                   </Text>
                   <Ionicons name="location" size={14} color={COLORS.primary} />
                 </TouchableOpacity>
@@ -360,17 +353,11 @@ export default function History() {
               <Text variant="label" color={COLORS.gray[900]} style={styles.cardTitle}>
                 {agent?.name || 'Manual Recharge'}
               </Text>
-              <Text variant="caption" color={COLORS.gray[600]} style={styles.cardSubtitle}>
-                {agent?.code || 'Recharge'}
-              </Text>
               {organization && (
                 <Text variant="caption" color={COLORS.gray[500]} style={styles.cardSubtitle}>
                   {organization.name} ({organization.code})
                 </Text>
               )}
-              <Text variant="caption" color={COLORS.gray[500]} style={styles.cardDate}>
-                {item.createTime ? formatDate(new Date(item.createTime)) : 'N/A'}
-              </Text>
             </View>
           </View>
           <Text variant="h6" color={COLORS.success} style={styles.rechargeAmount}>
@@ -379,11 +366,11 @@ export default function History() {
         </View>
 
         <View style={styles.rechargeDetails}>
-          {agent?.mobileNumber && (
+          {organization && (
             <View style={styles.detailRow}>
-              <Ionicons name="call" size={14} color={COLORS.gray[500]} />
+              <Ionicons name="business" size={14} color={COLORS.gray[500]} />
               <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-                {agent.mobileNumber}
+                {organization.name} - {organization.organizationType}
               </Text>
             </View>
           )}
@@ -392,14 +379,6 @@ export default function History() {
               <Ionicons name="location-outline" size={14} color={COLORS.gray[500]} />
               <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
                 {agent.address}
-              </Text>
-            </View>
-          )}
-          {organization && (
-            <View style={styles.detailRow}>
-              <Ionicons name="business" size={14} color={COLORS.gray[500]} />
-              <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-                {organization.name} - {organization.organizationType}
               </Text>
             </View>
           )}
@@ -413,7 +392,7 @@ export default function History() {
             <View style={styles.dateTimeItemRight}>
               <Ionicons name="time" size={14} color={COLORS.gray[500]} />
               <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-                {item.createTime ? new Date(item.createTime).toLocaleTimeString() : 'N/A'}
+                {item.createTime ? new Date(new Date(item.createTime).getTime() + 6 * 60 * 60 * 1000).toLocaleTimeString() : 'N/A'}
               </Text>
             </View>
           </View>
