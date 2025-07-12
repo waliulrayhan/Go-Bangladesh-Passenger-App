@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, View } from 'react-native';
@@ -13,36 +12,32 @@ import { COLORS, SPACING } from '../utils/constants';
 export default function WelcomeScreen() {
   const { isAuthenticated, loadUserFromStorage } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    checkExistingUser();
+    initializeApp();
   }, []);
 
-  // Also check when authentication state changes
+  // Only redirect after initialization is complete
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isInitialized && isAuthenticated) {
       console.log('🔄 [WELCOME] User is authenticated, redirecting to tabs...');
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated]);
+  }, [isInitialized, isAuthenticated]);
 
-  const checkExistingUser = async () => {
+  const initializeApp = async () => {
     setIsLoading(true);
-    console.log('🔍 [WELCOME] Checking existing user...');
+    console.log('� [WELCOME] Initializing app and checking authentication...');
     
     try {
       await loadUserFromStorage();
-      
-      if (isAuthenticated) {
-        console.log('✅ [WELCOME] User is authenticated, redirecting to tabs...');
-        router.replace('/(tabs)');
-      } else {
-        console.log('ℹ️ [WELCOME] User is not authenticated, showing welcome screen');
-      }
+      console.log('✅ [WELCOME] Authentication check completed');
     } catch (error) {
-      console.error('❌ [WELCOME] Error checking existing user:', error);
+      console.error('❌ [WELCOME] Error during app initialization:', error);
     } finally {
       setIsLoading(false);
+      setIsInitialized(true);
     }
   };
 
@@ -50,12 +45,14 @@ export default function WelcomeScreen() {
     router.push('/(auth)/passenger-login');
   };
 
-  if (isLoading) {
+  if (isLoading || !isInitialized) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <Animated.View entering={FadeInUp.duration(800)}>
-            <Ionicons name="sync" size={32} color={COLORS.primary} />
+            <GoBangladeshLogo size={80} />
+          </Animated.View>
+          <Animated.View entering={FadeInDown.duration(800).delay(200)}>
             <Text variant="body" color={COLORS.gray[600]} style={styles.loadingText}>
               Loading...
             </Text>
@@ -65,45 +62,51 @@ export default function WelcomeScreen() {
     );
   }
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Animated.View entering={FadeInUp.duration(800).delay(200)} style={styles.header}>
-          <View style={styles.logoContainer}>
-            <GoBangladeshLogo size={140} />
-          </View>
-          <Text variant="h1" color={COLORS.gray[900]} style={styles.title}>
-            Go Bangladesh
-          </Text>
-          <Text variant="h6" color={COLORS.primary} style={styles.subtitle}>
-            One step toward a better future
-          </Text>
-          <Text variant="body" color={COLORS.gray[600]} style={styles.description}>
-            Your convenient way to pay for transport with RFID card technology
-          </Text>
-        </Animated.View>
+  // Only show welcome screen if user is definitely not authenticated
+  if (isInitialized && !isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          <Animated.View entering={FadeInUp.duration(800).delay(200)} style={styles.header}>
+            <View style={styles.logoContainer}>
+              <GoBangladeshLogo size={140} />
+            </View>
+            <Text variant="h1" color={COLORS.gray[900]} style={styles.title}>
+              Go Bangladesh
+            </Text>
+            <Text variant="h6" color={COLORS.primary} style={styles.subtitle}>
+              One step toward a better future
+            </Text>
+            <Text variant="body" color={COLORS.gray[600]} style={styles.description}>
+              Your convenient way to pay for transport with RFID card technology
+            </Text>
+          </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(800).delay(400)} style={styles.buttonContainer}>
-          <Card variant="elevated" delay={0}>
-            <Button
-              title="Get Started"
-              onPress={handleGetStarted}
-              variant="primary"
-              size="large"
-              icon="arrow-forward"
-              fullWidth
-            />
-          </Card>
-        </Animated.View>
-        
-        <Animated.View entering={FadeInUp.duration(800).delay(600)}>
-          <Text variant="caption" color={COLORS.gray[500]} style={styles.note}>
-            Safe • Secure • Friendly
-          </Text>
-        </Animated.View>
-      </View>
-    </SafeAreaView>
-  );
+          <Animated.View entering={FadeInDown.duration(800).delay(400)} style={styles.buttonContainer}>
+            <Card variant="elevated" delay={0}>
+              <Button
+                title="Get Started"
+                onPress={handleGetStarted}
+                variant="primary"
+                size="large"
+                icon="arrow-forward"
+                fullWidth
+              />
+            </Card>
+          </Animated.View>
+          
+          <Animated.View entering={FadeInUp.duration(800).delay(600)}>
+            <Text variant="caption" color={COLORS.gray[500]} style={styles.note}>
+              Safe • Secure • Friendly
+            </Text>
+          </Animated.View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Return null if user is authenticated (will redirect to tabs)
+  return null;
 }
 
 const styles = StyleSheet.create({

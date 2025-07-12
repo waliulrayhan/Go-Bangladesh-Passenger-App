@@ -61,11 +61,36 @@ export function extractUserIdFromToken(token: string): string | null {
 }
 
 export function isTokenExpired(token: string): boolean {
-  const payload = decodeJWT(token);
-  if (!payload || !payload.exp) return true;
-  
-  const currentTime = Date.now() / 1000;
-  return payload.exp < currentTime;
+  try {
+    if (!token || typeof token !== 'string') {
+      console.warn('⚠️ [JWT] Invalid token format');
+      return true;
+    }
+
+    const payload = decodeJWT(token);
+    if (!payload) {
+      console.warn('⚠️ [JWT] Could not decode token payload');
+      return true;
+    }
+
+    if (!payload.exp) {
+      console.warn('⚠️ [JWT] Token missing expiration time');
+      return true;
+    }
+    
+    const currentTime = Math.floor(Date.now() / 1000);
+    const isExpired = payload.exp < currentTime;
+    
+    if (isExpired) {
+      const expiredTime = new Date(payload.exp * 1000);
+      console.log(`⏰ [JWT] Token expired at: ${expiredTime.toISOString()}`);
+    }
+    
+    return isExpired;
+  } catch (error) {
+    console.error('❌ [JWT] Error checking token expiration:', error);
+    return true; // Consider expired if we can't validate
+  }
 }
 
 /**

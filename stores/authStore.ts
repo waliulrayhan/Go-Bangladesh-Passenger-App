@@ -603,11 +603,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('🔍 [LOAD-USER] User data exists:', !!userData);
       
       if (token && userData) {
-        // Check if token is expired
-        const { isTokenExpired } = await import('../utils/jwt');
-        if (isTokenExpired(token)) {
-          console.warn('⚠️ [LOAD-USER] Token is expired, clearing auth data');
-          // Token is expired, clear auth data
+        try {
+          // Check if token is expired
+          const { isTokenExpired } = await import('../utils/jwt');
+          if (isTokenExpired(token)) {
+            console.warn('⚠️ [LOAD-USER] Token is expired, clearing auth data');
+            // Token is expired, clear auth data
+            await storageService.clearAuthData();
+            await storageService.removeItem(STORAGE_KEYS.REGISTRATION_COMPLETE);
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false
+            });
+            return;
+          }
+        } catch (jwtError) {
+          console.warn('⚠️ [LOAD-USER] JWT validation failed, clearing auth data:', jwtError);
+          // If JWT validation fails, clear auth data to be safe
           await storageService.clearAuthData();
           await storageService.removeItem(STORAGE_KEYS.REGISTRATION_COMPLETE);
           set({
@@ -634,6 +647,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isLoading: false,
           showWelcomePopup: shouldShowWelcomePopup
         });
+        
+        console.log('🎉 [LOAD-USER] User authentication restored successfully');
       } else {
         console.log('ℹ️ [LOAD-USER] No valid token or user data found');
         set({
@@ -644,6 +659,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch (error) {
       console.error('❌ [LOAD-USER] Error loading user from storage:', error);
+      // Clear potentially corrupted data
+      try {
+        await storageService.clearAuthData();
+      } catch (clearError) {
+        console.error('❌ [LOAD-USER] Error clearing corrupted data:', clearError);
+      }
+      
       set({
         user: null,
         isAuthenticated: false,
