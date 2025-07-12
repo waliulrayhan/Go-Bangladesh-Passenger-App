@@ -297,10 +297,13 @@ export default function Dashboard() {
               </Text>
             </View>
             <TouchableOpacity 
-              style={styles.exitButton}
+              style={styles.tapOutButton}
               onPress={handleForceTapOut}
             >
-              <Ionicons name="stop-circle" size={18} color={COLORS.white} />
+              <Ionicons name="exit-outline" size={16} color={COLORS.white} />
+              <Text variant="caption" style={styles.tapOutButtonText}>
+                Tap Out
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -341,17 +344,17 @@ export default function Dashboard() {
                 <View style={styles.bottomDetailInfo}>
                   <Text variant="caption" style={styles.bottomDetailLabel}>START TIME</Text>
                   <Text variant="bodySmall" style={styles.bottomDetailValue}>
-                    {currentTrip?.tripStartTime ? new Date(currentTrip.tripStartTime).toLocaleTimeString('en-US', { 
-                      hour: '2-digit', 
-                      minute: '2-digit',
-                      hour12: true
-                    }) : 'N/A'}
+                  {currentTrip?.tripStartTime ? new Date(new Date(currentTrip.tripStartTime).getTime() + 6 * 60 * 60 * 1000).toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true
+                  }) : 'N/A'}
                   </Text>
                   <Text variant="caption" style={styles.bottomDetailSubtext}>
-                    {currentTrip?.tripStartTime ? new Date(currentTrip.tripStartTime).toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric' 
-                    }) : ''}
+                  {currentTrip?.tripStartTime ? new Date(new Date(currentTrip.tripStartTime).getTime() + 6 * 60 * 60 * 1000).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                  }) : ''}
                   </Text>
                 </View>
               </View>
@@ -752,19 +755,26 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.success,
   },
-  exitButton: {
+  tapOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.error,
     borderRadius: 20,
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 6,
     shadowColor: COLORS.error,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
-    minWidth: 36,
     minHeight: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+  },
+  tapOutButtonText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.white,
+    letterSpacing: 0.5,
   },
 
   // Trip Content Styles
