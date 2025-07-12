@@ -30,14 +30,13 @@ export default function Profile() {
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      await refreshAllData(); // Use the new token-based refresh
-      await refreshUserData(); // Refresh user data
+      await refreshAllData();
     } catch (error) {
       console.log('Refresh error:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [refreshAllData, refreshUserData]);
+  }, [refreshAllData]);
 
   const handleLogout = async () => {
     Alert.alert(

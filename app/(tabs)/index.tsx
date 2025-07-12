@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Image, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, interpolate, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { GoBangladeshLogo } from '../../components/GoBangladeshLogo';
@@ -39,19 +39,7 @@ export default function Dashboard() {
   useEffect(() => {
     loadCardDetails();
     loadHistory(1, true); // Load recent transactions
-    
-    // Set up periodic checking for ongoing trips every 30 seconds
-    const tripCheckInterval = setInterval(() => {
-      checkOngoingTrip();
-    }, 30000); // Check every 30 seconds
-    
-    // Check immediately on mount
     checkOngoingTrip();
-    
-    // Cleanup interval on unmount
-    return () => {
-      clearInterval(tripCheckInterval);
-    };
   }, [user]);
 
   // Handle pull-to-refresh
@@ -59,9 +47,6 @@ export default function Dashboard() {
     setRefreshing(true);
     try {
       await refreshAllData();
-      await loadCardDetails();
-      await loadHistory(1, true);
-      await checkOngoingTrip();
     } catch (error) {
       console.error('Refresh error:', error);
     } finally {

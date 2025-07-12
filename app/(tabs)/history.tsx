@@ -145,16 +145,13 @@ export default function History() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Use the new token-based refresh to get fresh data
       await refreshAllData();
-      // Also refresh the history data
-      await loadHistory(1, true);
     } catch (error) {
       console.log('Refresh error:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [refreshAllData, loadHistory]);
+  }, [refreshAllData]);
 
   const onLoadMore = useCallback(async () => {
     if (historyPagination.hasMore && !historyPagination.isLoadingMore) {
