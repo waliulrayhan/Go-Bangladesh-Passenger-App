@@ -131,7 +131,7 @@ export default function PassengerRegistration() {
                     label="Card Number"
                     value={cardNumber}
                     onChangeText={handleCardNumberChange}
-                    placeholder="Enter your card number (e.g. ABC123456)"
+                    placeholder="(e.g. ABC123456)"
                     keyboardType="default"
                     icon="card"
                     maxLength={16}

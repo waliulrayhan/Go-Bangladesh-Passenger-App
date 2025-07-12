@@ -2,15 +2,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, SafeAreaView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, SafeAreaView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { GoBangladeshLogo } from '../../components/GoBangladeshLogo';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
 import { useAuthStore } from '../../stores/authStore';
 import { COLORS, SPACING } from '../../utils/constants';
-import { FONT_WEIGHTS } from '../../utils/fonts';
+
+const { width } = Dimensions.get('window');
 
 export default function ForgotPassword() {
   const [mobile, setMobile] = useState('');
@@ -153,11 +155,15 @@ export default function ForgotPassword() {
         <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
         <SafeAreaView style={styles.container}>
           <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+            <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
           </TouchableOpacity>
           
           <View style={styles.content}>
             <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
+              <View style={styles.logoContainer}>
+                <GoBangladeshLogo size={60} />
+              </View>
+              
               <Text style={styles.title}>Enter Verification Code</Text>
               <Text style={styles.subtitle}>
                 We've sent a 6-digit verification code to {formatMobile(mobile)}
@@ -165,9 +171,9 @@ export default function ForgotPassword() {
             </Animated.View>
 
             <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-              <Card variant="elevated" style={styles.formCard}>
-                <View style={styles.formContent}>
-                  <Text style={styles.otpLabel}>Enter Verification Code</Text>
+              <Card variant="elevated" style={styles.otpCard}>
+                <View style={styles.otpContent}>
+                  <Text style={styles.otpLabel}>Verification Code</Text>
                   
                   <View style={styles.otpInputContainer}>
                     {otp.map((digit, index) => (
@@ -217,15 +223,21 @@ export default function ForgotPassword() {
               </Card>
             </Animated.View>
 
-            <Animated.View entering={FadeInUp.duration(800).delay(400)} style={styles.helpSection}>
-              <TouchableOpacity onPress={handleContactOrganization} style={styles.organizationButton}>
-                <Ionicons name="business" size={20} color={COLORS.primary} />
-                <Text style={styles.organizationText}>Contact Your Organization</Text>
+            <Animated.View 
+              entering={FadeInDown.duration(800).delay(400)} 
+              style={styles.bottomSection}
+            >
+              <TouchableOpacity 
+                onPress={handleContactOrganization} 
+                style={styles.organizationButton}
+              >
+                <Text style={styles.organizationText}>
+                  Need help with your account?
+                </Text>
+                <Text style={styles.organizationEmail}>
+                  info.gobangladesh@gmail.com
+                </Text>
               </TouchableOpacity>
-              
-              <Text style={styles.helpNote}>
-                If you're not receiving the code, contact your institution's admin for assistance.
-              </Text>
             </Animated.View>
           </View>
         </SafeAreaView>
@@ -239,11 +251,15 @@ export default function ForgotPassword() {
       <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
       <SafeAreaView style={styles.container}>
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
         
         <View style={styles.content}>
           <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
+            <View style={styles.logoContainer}>
+              <GoBangladeshLogo size={60} />
+            </View>
+            
             <Text style={styles.title}>Forgot Password?</Text>
             <Text style={styles.subtitle}>
               Enter your mobile number and we'll send you a verification code to reset your password.
@@ -251,13 +267,13 @@ export default function ForgotPassword() {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-            <Card variant="elevated" style={styles.formCard}>
-              <View style={styles.formContent}>
+            <Card variant="elevated" style={styles.loginCard}>
+              <View style={styles.loginContent}>
                 <Input
                   label="Mobile Number"
                   value={mobile}
                   onChangeText={setMobile}
-                  placeholder="Enter your mobile number (01xxxxxxxxx)"
+                  placeholder="(e.g. 01xxxxxxxxx)"
                   keyboardType="phone-pad"
                   icon="call"
                   autoCapitalize="none"
@@ -274,30 +290,36 @@ export default function ForgotPassword() {
                   title="Send Verification Code"
                   onPress={handleSendOTP}
                   loading={isLoading}
-                  variant="primary"
+                  disabled={!mobile.trim()}
+                  icon="paper-plane"
                   size="medium"
                   fullWidth
-                  icon="paper-plane"
                 />
               </View>
             </Card>
           </Animated.View>
 
-          <Animated.View entering={FadeInUp.duration(800).delay(400)} style={styles.helpSection}>
+          <Animated.View 
+            entering={FadeInDown.duration(800).delay(400)} 
+            style={styles.bottomSection}
+          >
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
               <Text style={styles.dividerText}>OR</Text>
               <View style={styles.dividerLine} />
             </View>
             
-            <TouchableOpacity onPress={handleContactOrganization} style={styles.organizationButton}>
-              <Ionicons name="business" size={20} color={COLORS.primary} />
-              <Text style={styles.organizationText}>Contact Your Organization</Text>
+            <TouchableOpacity 
+              style={styles.organizationButton}
+              onPress={handleContactOrganization}
+            >
+              <Text style={styles.organizationText}>
+                Need help with your account?
+              </Text>
+              <Text style={styles.organizationEmail}>
+                info.gobangladesh@gmail.com
+              </Text>
             </TouchableOpacity>
-            
-            <Text style={styles.helpNote}>
-              If you're unable to reset your password, contact your institution's admin for assistance.
-            </Text>
           </Animated.View>
         </View>
       </SafeAreaView>
@@ -310,63 +332,67 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.brand.background,
   },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: SPACING.md,
-    zIndex: 1,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: COLORS.primary,
-    fontFamily: FONT_WEIGHTS.semiBold,
-  },
   content: {
     flex: 1,
     paddingHorizontal: SPACING.md,
     justifyContent: 'center',
-    paddingTop: SPACING.lg,
   },
   header: {
     alignItems: 'center',
     marginBottom: SPACING.lg,
   },
-  title: {
-    fontSize: 24,
-    fontFamily: FONT_WEIGHTS.bold,
-    color: COLORS.gray[900],
+  backButton: {
+    position: 'absolute',
+    left: SPACING.md,
+    top: 48,
+    padding: SPACING.sm,
+    zIndex: 1,
+  },
+  logoContainer: {
     marginBottom: SPACING.sm,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
     textAlign: 'center',
+    color: COLORS.gray[900],
+    marginBottom: SPACING.xs,
   },
   subtitle: {
-    fontSize: 16,
-    color: COLORS.gray[600],
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 24,
+    color: COLORS.gray[600],
     paddingHorizontal: SPACING.md,
-    fontFamily: FONT_WEIGHTS.regular,
+    lineHeight: 20,
   },
-  formCard: {
+  loginCard: {
     marginBottom: SPACING.md,
   },
-  formContent: {
+  loginContent: {
+    padding: SPACING.md,
+    gap: SPACING.sm,
+  },
+  otpCard: {
+    marginBottom: SPACING.md,
+  },
+  otpContent: {
+    padding: SPACING.md,
     gap: SPACING.sm,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.error + '10',
     padding: SPACING.sm,
+    backgroundColor: COLORS.error + '10',
     borderRadius: 8,
-    gap: SPACING.xs,
+    borderWidth: 1,
+    borderColor: COLORS.error + '30',
   },
   errorText: {
     color: COLORS.error,
     fontSize: 14,
+    marginLeft: SPACING.sm,
     flex: 1,
-    fontFamily: FONT_WEIGHTS.medium,
   },
   resendContainer: {
     alignItems: 'center',
@@ -375,12 +401,11 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 14,
     color: COLORS.gray[500],
-    fontFamily: FONT_WEIGHTS.regular,
   },
   resendText: {
     fontSize: 14,
     color: COLORS.primary,
-    fontFamily: FONT_WEIGHTS.semiBold,
+    fontWeight: '600',
   },
   resendTextDisabled: {
     color: COLORS.gray[400],
@@ -421,14 +446,14 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
     lineHeight: 18,
   },
-  helpSection: {
+  bottomSection: {
     alignItems: 'center',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: SPACING.lg,
-    width: '100%',
+    marginVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
   dividerLine: {
     flex: 1,
@@ -439,28 +464,24 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.md,
     fontSize: 14,
     color: COLORS.gray[500],
-    fontFamily: FONT_WEIGHTS.medium,
+    fontWeight: '500',
   },
   organizationButton: {
-    flexDirection: 'row',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     alignItems: 'center',
-    backgroundColor: COLORS.primary + '10',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderRadius: 8,
-    gap: SPACING.sm,
-    marginBottom: SPACING.md,
   },
   organizationText: {
-    fontSize: 16,
-    color: COLORS.primary,
-    fontFamily: FONT_WEIGHTS.semiBold,
-  },
-  helpNote: {
     fontSize: 14,
-    color: COLORS.gray[500],
     textAlign: 'center',
-    lineHeight: 20,
-    fontFamily: FONT_WEIGHTS.regular,
+    color: COLORS.gray[500],
+    lineHeight: 18,
+  },
+  organizationEmail: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginTop: 4,
   },
 });
