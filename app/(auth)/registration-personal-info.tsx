@@ -141,8 +141,8 @@ export default function RegistrationPersonalInfo() {
         Address: form.address.trim() || undefined,
         DateOfBirth: formattedDate || undefined,
         Password: form.password,
-        UserType: "Public", // Required field for passenger registration
-        OrganizationId: "1",
+        // UserType: "Public", // Required field for passenger registration
+        // OrganizationId: "1",
         CardNumber: params.cardNumber || ''
       };
 

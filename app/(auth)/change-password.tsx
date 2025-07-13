@@ -1,15 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Alert, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { GoBangladeshLogo } from '../../components/GoBangladeshLogo';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
 import { useAuthStore } from '../../stores/authStore';
 import { COLORS, SPACING } from '../../utils/constants';
+
+const { width } = Dimensions.get('window');
 
 export default function ChangePassword() {
   const [oldPassword, setOldPassword] = useState('');
@@ -92,17 +94,17 @@ export default function ChangePassword() {
 
   return (
     <>
-      <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
       <SafeAreaView style={styles.container}>
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
         
         <View style={styles.content}>
           <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="key" size={40} color={COLORS.primary} />
+            <View style={styles.logoContainer}>
+              <GoBangladeshLogo size={60} />
             </View>
+            
             <Text style={styles.title}>Change Password</Text>
             <Text style={styles.subtitle}>
               Update your account password for better security
@@ -118,6 +120,7 @@ export default function ChangePassword() {
                   onChangeText={setOldPassword}
                   placeholder="Enter your current password"
                   secureTextEntry={!showOldPassword}
+                  icon="lock-closed"
                   rightIcon={showOldPassword ? "eye-off" : "eye"}
                   onRightIconPress={() => setShowOldPassword(!showOldPassword)}
                 />
@@ -128,6 +131,7 @@ export default function ChangePassword() {
                   onChangeText={setNewPassword}
                   placeholder="Enter new password"
                   secureTextEntry={!showNewPassword}
+                  icon="lock-closed"
                   rightIcon={showNewPassword ? "eye-off" : "eye"}
                   onRightIconPress={() => setShowNewPassword(!showNewPassword)}
                 />
@@ -138,19 +142,10 @@ export default function ChangePassword() {
                   onChangeText={setConfirmNewPassword}
                   placeholder="Confirm new password"
                   secureTextEntry={!showConfirmPassword}
+                  icon="lock-closed"
                   rightIcon={showConfirmPassword ? "eye-off" : "eye"}
                   onRightIconPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 />
-
-                {error && (
-                  <Animated.View 
-                    entering={FadeInUp.duration(300)} 
-                    style={styles.errorContainer}
-                  >
-                    <Ionicons name="alert-circle" size={16} color={COLORS.error} />
-                    <Text style={styles.errorText}>{error}</Text>
-                  </Animated.View>
-                )}
 
                 <View style={styles.passwordRequirements}>
                   <Text style={styles.requirementsTitle}>Password Requirements:</Text>
@@ -186,11 +181,34 @@ export default function ChangePassword() {
                   title="Change Password"
                   onPress={handleChangePassword}
                   loading={isLoading}
-                  variant="primary"
                   disabled={!oldPassword || !newPassword || !confirmNewPassword || newPassword !== confirmNewPassword || newPassword.length < 6}
+                  icon="checkmark"
+                  size="medium"
+                  fullWidth
                 />
+
+                {error && (
+                  <View style={styles.errorContainer}>
+                    <Ionicons name="alert-circle" size={16} color={COLORS.error} />
+                    <Text style={styles.errorText}>{error}</Text>
+                  </View>
+                )}
               </View>
             </Card>
+          </Animated.View>
+
+          <Animated.View 
+            entering={FadeInDown.duration(800).delay(400)} 
+            style={styles.bottomSection}
+          >
+            <View style={styles.helpSection}>
+              <Text style={styles.helpText}>
+                Need help with your password?
+              </Text>
+              <Text style={styles.helpEmail}>
+                info.gobangladesh@gmail.com
+              </Text>
+            </View>
           </Animated.View>
         </View>
       </SafeAreaView>
@@ -203,74 +221,66 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.brand.background,
   },
-  backButton: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    marginTop: SPACING.sm,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: COLORS.primary,
-    fontWeight: '500',
-  },
   content: {
     flex: 1,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.md,
     justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: SPACING.xl,
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primary + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.md,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.gray[900],
-    textAlign: 'center',
-    marginBottom: SPACING.sm,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: COLORS.gray[600],
-    textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 300,
-  },
-  formCard: {
     marginBottom: SPACING.lg,
   },
+  backButton: {
+    position: 'absolute',
+    left: SPACING.md,
+    top: 48,
+    padding: SPACING.sm,
+    zIndex: 1,
+  },
+  logoContainer: {
+    marginBottom: SPACING.sm,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: COLORS.gray[900],
+    marginBottom: SPACING.xs,
+  },
+  subtitle: {
+    fontSize: 15,
+    textAlign: 'center',
+    color: COLORS.gray[600],
+    paddingHorizontal: SPACING.md,
+    lineHeight: 20,
+  },
+  formCard: {
+    marginBottom: SPACING.md,
+  },
   formContent: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
+    gap: SPACING.sm,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.error + '10',
     padding: SPACING.sm,
+    backgroundColor: COLORS.error + '10',
     borderRadius: 8,
-    marginBottom: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.error + '30',
   },
   errorText: {
-    fontSize: 14,
     color: COLORS.error,
-    marginLeft: SPACING.xs,
+    fontSize: 14,
+    marginLeft: SPACING.sm,
     flex: 1,
-    fontWeight: '500',
   },
   passwordRequirements: {
     backgroundColor: COLORS.gray[50],
     padding: SPACING.md,
     borderRadius: 12,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.sm,
   },
   requirementsTitle: {
     fontSize: 14,
@@ -287,5 +297,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: SPACING.xs,
     fontWeight: '500',
+  },
+  bottomSection: {
+    alignItems: 'center',
+  },
+  helpSection: {
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    alignItems: 'center',
+    marginTop: SPACING.xs,
+  },
+  helpText: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: COLORS.gray[500],
+    lineHeight: 18,
+  },
+  helpEmail: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginTop: 4,
   },
 });
