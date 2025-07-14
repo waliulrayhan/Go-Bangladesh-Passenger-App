@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
@@ -237,6 +238,15 @@ export default function VerifyRegistration() {
     <>
       <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
       <SafeAreaView style={styles.container}>
+        {/* Orange Soft Glow Background */}
+        <LinearGradient
+          colors={['#FF7112', 'transparent']}
+          locations={[0, 1]}
+          style={[styles.glowBackground, { opacity: 0.3, mixBlendMode: 'multiply' }]}
+          start={{ x: 0.5, y: 0.5 }}
+          end={{ x: 1, y: 1 }}
+        />
+        
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
@@ -325,6 +335,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: SPACING.md,
     justifyContent: 'center',
+    zIndex: 1,
   },
   header: {
     alignItems: 'center',
@@ -335,7 +346,7 @@ const styles = StyleSheet.create({
     left: SPACING.md,
     top: 48,
     padding: SPACING.sm,
-    zIndex: 1,
+    zIndex: 2,
   },
   iconContainer: {
     width: 64,
@@ -442,5 +453,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: SPACING.sm,
     lineHeight: 16,
+  },
+  glowBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#ffffff',
+    zIndex: 0,
   },
 });

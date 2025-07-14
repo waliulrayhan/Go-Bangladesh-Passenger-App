@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
@@ -75,6 +76,15 @@ export default function ResetPassword() {
     <>
       <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
       <SafeAreaView style={styles.container}>
+        {/* Teal Glow Background */}
+        <LinearGradient
+          colors={['rgba(56, 193, 182, 0.5)', 'rgba(56, 193, 182, 0.1)', 'transparent']}
+          locations={[0, 0.4, 0.7]}
+          style={styles.glowBackground}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+        />
+        
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
@@ -187,7 +197,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 50,
     left: SPACING.md,
-    zIndex: 1,
+    zIndex: 2,
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
   },
@@ -201,6 +211,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     justifyContent: 'center',
     paddingTop: SPACING.lg,
+    zIndex: 1,
   },
   header: {
     alignItems: 'center',
@@ -287,5 +298,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     fontFamily: FONT_WEIGHTS.regular,
+  },
+  glowBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#ffffff',
+    zIndex: 0,
   },
 });

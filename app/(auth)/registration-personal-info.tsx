@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
@@ -258,6 +259,15 @@ export default function RegistrationPersonalInfo() {
     <>
       <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
       <SafeAreaView style={styles.container}>
+        {/* Purple Glow Background */}
+        <LinearGradient
+          colors={['rgba(173, 109, 244, 0.5)', 'rgba(173, 109, 244, 0.1)', 'transparent']}
+          locations={[0, 0.4, 0.7]}
+          style={styles.glowBackground}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+        />
+        
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
@@ -447,6 +457,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    zIndex: 1,
   },
   scrollContent: {
     paddingHorizontal: SPACING.md,
@@ -463,7 +474,7 @@ const styles = StyleSheet.create({
     left: SPACING.md,
     top: 48,
     padding: SPACING.sm,
-    zIndex: 1,
+    zIndex: 2,
   },
   iconContainer: {
     width: 64,
@@ -587,5 +598,14 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     color: COLORS.gray[500],
+  },
+  glowBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#ffffff',
+    zIndex: 0,
   },
 });

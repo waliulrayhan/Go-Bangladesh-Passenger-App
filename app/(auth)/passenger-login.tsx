@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
@@ -64,6 +65,15 @@ export default function PassengerLogin() {
     <>
       <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
       <SafeAreaView style={styles.container}>
+        {/* Teal Glow Background */}
+        <LinearGradient
+          colors={['rgba(56, 193, 182, 0.5)', 'rgba(56, 193, 182, 0.1)', 'transparent']}
+          locations={[0, 0.4, 0.7]}
+          style={styles.glowBackground}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+        />
+        
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
@@ -74,7 +84,7 @@ export default function PassengerLogin() {
               <GoBangladeshLogo size={60} />
             </View>
             
-            <Text style={styles.title}>Welcome Back!</Text>
+            <Text style={styles.title}>Welcome Bagk!</Text>
             <Text style={styles.subtitle}>
               Sign in to your account
             </Text>
@@ -179,6 +189,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: SPACING.md,
     justifyContent: 'center',
+    zIndex: 1,
   },
   header: {
     alignItems: 'center',
@@ -189,7 +200,7 @@ const styles = StyleSheet.create({
     left: SPACING.md,
     top: 48,
     padding: SPACING.sm,
-    zIndex: 1,
+    zIndex: 2,
   },
   logoContainer: {
     marginBottom: SPACING.sm,
@@ -293,5 +304,14 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
     marginTop: 4,
+  },
+  glowBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#ffffff',
+    zIndex: 0,
   },
 });

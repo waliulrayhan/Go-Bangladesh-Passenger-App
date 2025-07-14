@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
@@ -154,6 +155,15 @@ export default function ForgotPassword() {
       <>
         <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
         <SafeAreaView style={styles.container}>
+          {/* Teal Glow Right Background */}
+          <LinearGradient
+            colors={['rgba(56, 193, 182, 0.5)', 'rgba(56, 193, 182, 0.1)', 'transparent']}
+            locations={[0, 0.4, 0.7]}
+            style={styles.glowBackgroundRight}
+            start={{ x: 1, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          />
+          
           <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
             <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
           </TouchableOpacity>
@@ -250,6 +260,15 @@ export default function ForgotPassword() {
     <>
       <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
       <SafeAreaView style={styles.container}>
+        {/* Teal Glow Right Background */}
+        <LinearGradient
+          colors={['rgba(56, 193, 182, 0.5)', 'rgba(56, 193, 182, 0.1)', 'transparent']}
+          locations={[0, 0.4, 0.7]}
+          style={styles.glowBackgroundRight}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        />
+        
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
@@ -336,6 +355,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: SPACING.md,
     justifyContent: 'center',
+    zIndex: 1,
   },
   header: {
     alignItems: 'center',
@@ -346,7 +366,7 @@ const styles = StyleSheet.create({
     left: SPACING.md,
     top: 48,
     padding: SPACING.sm,
-    zIndex: 1,
+    zIndex: 2,
   },
   logoContainer: {
     marginBottom: SPACING.sm,
@@ -356,7 +376,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     color: COLORS.gray[900],
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.lg,
   },
   subtitle: {
     fontSize: 15,
@@ -483,5 +503,14 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
     marginTop: 4,
+  },
+  glowBackgroundRight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#ffffff',
+    zIndex: 0,
   },
 });
