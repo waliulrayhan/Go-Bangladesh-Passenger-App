@@ -84,7 +84,7 @@ export default function PassengerLogin() {
               <GoBangladeshLogo size={60} />
             </View>
             
-            <Text style={styles.title}>Welcome Bagk!</Text>
+            <Text style={styles.title}>Welcome Back!</Text>
             <Text style={styles.subtitle}>
               Sign in to your account
             </Text>

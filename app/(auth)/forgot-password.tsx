@@ -279,7 +279,7 @@ export default function ForgotPassword() {
               <GoBangladeshLogo size={60} />
             </View>
             
-            <Text style={styles.title}>Forgot Password?</Text>
+            <Text variant="h1" color={COLORS.white} style={styles.title}>Forgot Password?</Text>
             <Text style={styles.subtitle}>
               Enter your mobile number and we'll send you a verification code to reset your password.
             </Text>
@@ -292,7 +292,7 @@ export default function ForgotPassword() {
                   label="Mobile Number"
                   value={mobile}
                   onChangeText={setMobile}
-                  placeholder="(e.g. 01xxxxxxxxx)"
+                  placeholder="(e.g. 01XXXXXXXXXX)"
                   keyboardType="phone-pad"
                   icon="call"
                   autoCapitalize="none"

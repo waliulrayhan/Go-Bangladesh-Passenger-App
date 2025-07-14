@@ -310,7 +310,7 @@ export default function RegistrationPersonalInfo() {
                   label="Phone Number *"
                   value={form.phone}
                   onChangeText={(value) => updateForm('phone', value)}
-                  placeholder="01XXXXXXXXX"
+                  placeholder="(e.g. 01XXXXXXXXXX)"
                   keyboardType="phone-pad"
                   icon="call"
                   error={errors.phone}

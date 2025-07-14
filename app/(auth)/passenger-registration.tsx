@@ -123,7 +123,7 @@ export default function PassengerRegistration() {
               <GoBangladeshLogo size={60} />
             </View>
             
-            <Text style={styles.title}>Registration</Text>
+            <Text variant="h1" color={COLORS.white} style={styles.title}>User Registration</Text>
             <Text style={styles.subtitle}>
               Enter your card number to get started
             </Text>
@@ -141,7 +141,7 @@ export default function PassengerRegistration() {
                     label="Card Number"
                     value={cardNumber}
                     onChangeText={handleCardNumberChange}
-                    placeholder="(e.g. ABC123456)"
+                    placeholder="(e.g. ABCD1234)"
                     keyboardType="default"
                     icon="card"
                     maxLength={16}

@@ -257,7 +257,7 @@ export default function VerifyRegistration() {
               <Ionicons name="shield-checkmark" size={32} color={COLORS.primary} />
             </View>
             
-            <Text style={styles.title}>Verify Your Mobile</Text>
+            <Text variant="h1" color={COLORS.white} style={styles.title}>Verify Your Mobile Number</Text>
             <Text style={styles.subtitle}>
               Enter the 6-digit code sent to{'\n'}
               <Text style={styles.phoneNumber}>{params.phone}</Text>
