@@ -60,6 +60,7 @@ export default function VerifyRegistration() {
   }, []);
 
   const handleOtpChange = (value: string, index: number) => {
+    if (isLoading) return; // Prevent changes while loading
     if (value.length > 1) return; // Prevent multiple characters
 
     const newOtp = [...otp];
@@ -182,6 +183,12 @@ export default function VerifyRegistration() {
       setIsLoading(false);
       console.error('❌ OTP verification error:', error);
       
+      // Clear OTP form on error
+      setOtp(['', '', '', '', '', '']);
+      if (inputRefs.current[0]) {
+        inputRefs.current[0].focus();
+      }
+      
       let errorMessage = 'Invalid OTP. Please try again.';
       
       if (error.message) {
@@ -215,6 +222,9 @@ export default function VerifyRegistration() {
     } catch (error: any) {
       setIsResending(false);
       console.error('❌ Resend OTP error:', error);
+      
+      // Clear OTP form when resending
+      setOtp(['', '', '', '', '', '']);
       
       let errorMessage = 'Failed to resend OTP. Please try again.';
       
@@ -275,6 +285,12 @@ export default function VerifyRegistration() {
               <View style={styles.otpContainer}>
                 <Text style={styles.otpLabel}>Enter OTP</Text>
                 
+                {isLoading && (
+                  <View style={styles.loadingContainer}>
+                    <Text style={styles.loadingText}>Verifying...</Text>
+                  </View>
+                )}
+                
                 <View style={styles.otpInputContainer}>
                   {otp.map((digit, index) => (
                     <TextInput
@@ -282,7 +298,8 @@ export default function VerifyRegistration() {
                       ref={(ref) => { inputRefs.current[index] = ref; }}
                       style={[
                         styles.otpInput,
-                        digit && styles.otpInputFilled
+                        digit && styles.otpInputFilled,
+                        isLoading && styles.otpInputDisabled
                       ]}
                       value={digit}
                       onChangeText={(value) => handleOtpChange(value, index)}
@@ -291,6 +308,7 @@ export default function VerifyRegistration() {
                       maxLength={1}
                       autoFocus={index === 0}
                       selectTextOnFocus
+                      editable={!isLoading}
                     />
                   ))}
                 </View>
@@ -429,6 +447,18 @@ const styles = StyleSheet.create({
   otpInputFilled: {
     borderColor: COLORS.primary,
     backgroundColor: COLORS.brand.blue_subtle,
+  },
+  otpInputDisabled: {
+    opacity: 0.5,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '500',
   },
   resendContainer: {
     alignItems: 'center',

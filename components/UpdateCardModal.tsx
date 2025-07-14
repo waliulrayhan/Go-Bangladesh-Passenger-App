@@ -27,7 +27,7 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
 }) => {
   const [step, setStep] = useState<Step>('card-input');
   const [cardNumber, setCardNumber] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [otpTimer, setOtpTimer] = useState(0);
@@ -38,7 +38,7 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
     if (visible) {
       setStep('card-input');
       setCardNumber('');
-      setOtp(['', '', '', '', '', '']);
+      setOtp('');
       setError('');
       setOtpTimer(0);
     }
@@ -74,24 +74,10 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
     setError(''); // Clear error when user types
   };
 
-  const handleOtpChange = (value: string, index: number) => {
-    if (value.length > 1) return; // Prevent multiple characters
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    // Auto-verify when all 6 digits are entered
-    if (newOtp.every(digit => digit !== '') && newOtp.length === 6) {
-      setTimeout(() => {
-        handleUpdateCard(newOtp.join(''));
-      }, 100);
-    }
+  const handleOtpChange = (value: string) => {
+    if (isLoading) return; // Prevent changes while loading
+    setOtp(value);
+    setError(''); // Clear error when user types
   };
 
   const handleKeyPress = (e: any, index: number) => {
@@ -142,6 +128,8 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
       onClose();
     } catch (error: any) {
       setError(error.message || 'Failed to update card number');
+      // Clear OTP form on error
+      setOtp('');
     } finally {
       setIsLoading(false);
     }
@@ -313,7 +301,7 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
