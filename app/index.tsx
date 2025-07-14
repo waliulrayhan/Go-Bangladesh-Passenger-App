@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { GoBangladeshLogo } from '../components/GoBangladeshLogo';
+import { BubbleAnimation } from '../components/ui/BubbleAnimation';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { GradientBackground } from '../components/ui/GradientBackground';
 import { Text } from '../components/ui/Text';
 import { useAuthStore } from '../stores/authStore';
 import { COLORS, SPACING } from '../utils/constants';
@@ -47,34 +48,39 @@ export default function WelcomeScreen() {
 
   if (isLoading || !isInitialized) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Animated.View entering={FadeInUp.duration(800)}>
-            <GoBangladeshLogo size={80} />
-          </Animated.View>
-          <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-            <Text variant="body" color={COLORS.gray[600]} style={styles.loadingText}>
-              Loading...
-            </Text>
-          </Animated.View>
-        </View>
-      </SafeAreaView>
+      <GradientBackground variant="subtle">
+        <SafeAreaView style={styles.container}>
+          <BubbleAnimation bubbleCount={10} />
+          <View style={styles.loadingContainer}>
+            <Animated.View entering={FadeInUp.duration(800)}>
+              <GoBangladeshLogo size={80} />
+            </Animated.View>
+            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+              <Text variant="body" color={COLORS.gray[600]} style={styles.loadingText}>
+                Loading...
+              </Text>
+            </Animated.View>
+          </View>
+        </SafeAreaView>
+      </GradientBackground>
     );
   }
 
   // Only show welcome screen if user is definitely not authenticated
   if (isInitialized && !isAuthenticated) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
+      <GradientBackground variant="primary">
+        <SafeAreaView style={styles.container}>
+          <BubbleAnimation bubbleCount={15} />
+          <View style={styles.content}>
           <Animated.View entering={FadeInUp.duration(800).delay(200)} style={styles.header}>
             <View style={styles.logoContainer}>
-              <GoBangladeshLogo size={140} />
+              <GoBangladeshLogo size={120} />
             </View>
-            <Text variant="h1" color={COLORS.gray[900]} style={styles.title}>
+            <Text variant="h1" color={COLORS.white} style={styles.title}>
               Go Bangladesh
             </Text>
-            <Text variant="h6" color={COLORS.primary} style={styles.subtitle}>
+            <Text variant="h6" color={COLORS.white} style={styles.subtitle}>
               One step toward a better future
             </Text>
             <Text variant="body" color={COLORS.gray[600]} style={styles.description}>
@@ -83,16 +89,14 @@ export default function WelcomeScreen() {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.duration(800).delay(400)} style={styles.buttonContainer}>
-            <Card variant="elevated" delay={0}>
-              <Button
-                title="Get Started"
-                onPress={handleGetStarted}
-                variant="primary"
-                size="large"
-                icon="arrow-forward"
-                fullWidth
-              />
-            </Card>
+            <Button
+              title="Get Started"
+              onPress={handleGetStarted}
+              variant="primary"
+              size="large"
+              icon="arrow-forward"
+              fullWidth
+            />
           </Animated.View>
           
           <Animated.View entering={FadeInUp.duration(800).delay(600)}>
@@ -102,6 +106,7 @@ export default function WelcomeScreen() {
           </Animated.View>
         </View>
       </SafeAreaView>
+      </GradientBackground>
     );
   }
 
@@ -112,12 +117,13 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.brand.background,
+    backgroundColor: 'transparent',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1,
   },
   loadingText: {
     marginTop: SPACING.md,
@@ -127,6 +133,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: SPACING.lg,
     justifyContent: 'center',
+    zIndex: 1,
   },
   header: {
     alignItems: 'center',
@@ -136,30 +143,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.lg,
-    padding: SPACING.md,
+    padding: SPACING.sm,
+    backgroundColor: COLORS.white + '99',
+    borderRadius: 60,
+    shadowColor: COLORS.primary,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
   },
   title: {
     textAlign: 'center',
     marginBottom: SPACING.xs,
     fontWeight: 'bold',
+    textShadowColor: COLORS.white + '40',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   subtitle: {
     textAlign: 'center',
     marginBottom: SPACING.sm,
     fontWeight: '600',
+    textShadowColor: COLORS.white + '30',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   description: {
     textAlign: 'center',
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.sm,
     lineHeight: 24,
+    padding: SPACING.md,
+    borderRadius: 12,
+    marginTop: SPACING.sm,
   },
   buttonContainer: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING['4xl'],
   },
   note: {
     textAlign: 'center',
     paddingHorizontal: SPACING.md,
     fontStyle: 'italic',
     fontWeight: '500',
+    padding: SPACING.sm,
+    borderRadius: 20,
+    alignSelf: 'center',
   },
 });
