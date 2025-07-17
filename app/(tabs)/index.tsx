@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Image, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, interpolate, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { GoBangladeshLogo } from '../../components/GoBangladeshLogo';
 import { Text } from '../../components/ui/Text';
@@ -104,90 +104,123 @@ export default function Dashboard() {
   };
   const renderHeader = () => (
     <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
+      {/* Status Bar Area - Same color as header */}
+      <View style={styles.statusBarArea} />
+      
+      {/* Main Header Content */}
       <View style={styles.headerContent}>
-      <View style={styles.brandSection}>
-        <GoBangladeshLogo size={28} />
-        <View style={styles.brandTextContainer}>
-        <Text variant="h6" color={COLORS.white} style={styles.brandName}>
-          Go Bangladesh
-        </Text>
-        <Text variant="caption" color={COLORS.white} style={styles.brandSlogan}>
-          One step towards better future
-        </Text>
+        <View style={styles.brandSection}>
+          <View style={styles.logoContainer}>
+            <GoBangladeshLogo size={28} />
+          </View>
+          <View style={styles.brandTextContainer}>
+            <Text variant="h4" color={COLORS.white} style={styles.brandName}>
+              Go Bangladesh
+            </Text>
+            <Text variant="caption" color={COLORS.white} style={styles.brandSlogan}>
+              One step toward a better future
+            </Text>
+          </View>
         </View>
-      </View>
 
-      <TouchableOpacity style={styles.profileSection} onPress={handleProfilePress}>
-        <View style={styles.profileInfo}>
-        <Text variant="caption" color={COLORS.white} style={styles.greeting} numberOfLines={1}>
-          Hello, {user?.name?.split(' ')[0] || 'User'}
-        </Text>
-        </View>
-        <View style={styles.avatar}>
-        {user?.imageUrl ? (
-          <Image source={{ uri: `${API_BASE_URL}/${user.imageUrl}` }} style={styles.avatarImage} />
-        ) : user?.profileImage ? (
-          <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
-        ) : (
-          <Ionicons name="person" size={18} color={COLORS.brand.blue} />
-        )}
-        </View>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.profileSection} onPress={handleProfilePress}>
+          <View style={styles.avatar}>
+            {user?.imageUrl ? (
+              <Image source={{ uri: `${API_BASE_URL}/${user.imageUrl}` }} style={styles.avatarImage} />
+            ) : user?.profileImage ? (
+              <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarFallback}>
+                <Text variant="bodyLarge" color={COLORS.primary} style={styles.avatarText}>
+                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
       </View>
 
       {/* Profile Menu */}
       {showProfileMenu && (
-      <Animated.View entering={FadeInDown.duration(300)} style={styles.profileMenu}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(tabs)/profile')}>
-        <Ionicons name="person-outline" size={16} color={COLORS.primary} />
-        <Text variant="bodySmall" color={COLORS.primary} style={styles.menuText}>
-          Profile
-        </Text>
-        </TouchableOpacity>
-      </Animated.View>
+        <Animated.View entering={FadeInDown.duration(300)} style={styles.profileMenu}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(tabs)/profile')}>
+            <Ionicons name="person-outline" size={18} color={COLORS.primary} />
+            <Text variant="bodySmall" color={COLORS.primary} style={styles.menuText}>
+              View Profile
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity style={styles.menuItem} onPress={() => logout()}>
+            <Ionicons name="log-out-outline" size={18} color={COLORS.error} />
+            <Text variant="bodySmall" color={COLORS.error} style={styles.menuText}>
+              Logout
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
       )}
     </Animated.View>
   );
   const renderRFIDCard = () => (
     <Animated.View entering={FadeInDown.duration(800).delay(300)} style={styles.cardContainer}>
       <View style={styles.card}>
-        
-        <View style={styles.cardContent}>
-          <Text variant="h5" color={COLORS.white} style={styles.cardNumber}>
-            {user?.cardNumber || card?.cardNumber || 'N/A'}
-          </Text>
-          
-          <View style={styles.cardInfo}>
-            <View style={styles.infoItem}>
-              <Text variant="caption" color={COLORS.white} style={styles.label}>
-                CARD HOLDER
-              </Text>
-              <Text variant="body" color={COLORS.white} style={styles.value}>
-                {user?.name?.toUpperCase() || 'N/A'}
-              </Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text variant="caption" color={COLORS.white} style={styles.label}>
-                TYPE
-              </Text>
-              <Text variant="body" color={COLORS.white} style={styles.value}>
-                {user?.userType?.toUpperCase() || 'N/A'}
+        {/* Card Header */}
+        <View style={styles.cardTop}>
+          <View style={styles.cardTypeSection}>
+            <Text variant="caption" color={COLORS.white} style={styles.cardTypeLabel}>
+              GO BANGLADESH
+            </Text>
+            <Text variant="caption" color={COLORS.white} style={styles.cardSubLabel}>
+              TRANSIT CARD
+            </Text>
+          </View>
+          <View style={styles.cardLogo}>
+            <View style={styles.visaStyleLogo}>
+              <Text variant="bodySmall" color={COLORS.white} style={styles.logoText}>
+                GB
               </Text>
             </View>
           </View>
         </View>
         
+        {/* Card Number */}
+        <View style={styles.cardNumberSection}>
+          <Text variant="h3" color={COLORS.white} style={styles.cardNumber}>
+            {user?.cardNumber || card?.cardNumber || '•••• •••• •••• ••••'}
+          </Text>
+        </View>
+        
+        {/* Card Info */}
+        <View style={styles.cardInfo}>
+          <View style={styles.cardInfoItem}>
+            <Text variant="caption" color={COLORS.white} style={styles.label}>
+              CARD HOLDER
+            </Text>
+            <Text variant="bodySmall" color={COLORS.white} style={styles.value} numberOfLines={1}>
+              {user?.name?.toUpperCase() || 'CARD HOLDER'}
+            </Text>
+          </View>
+          <View style={styles.cardInfoItem}>
+            <Text variant="caption" color={COLORS.white} style={styles.label}>
+              TYPE
+            </Text>
+            <Text variant="bodySmall" color={COLORS.white} style={styles.value}>
+              {user?.userType?.toUpperCase() || 'STANDARD'}
+            </Text>
+          </View>
+        </View>
+        
+        {/* Card Bottom - Balance */}
         <View style={styles.cardBottom}>
           <View style={styles.balanceSection}>
-            <Text variant="caption" color={COLORS.white} style={styles.balanceText}>
-              Available Balance
+            <Text variant="caption" color={COLORS.white} style={styles.balanceLabel}>
+              CURRENT BALANCE
             </Text>
-            <Text variant="h3" color={COLORS.white} style={styles.balance}>
+            <Text variant="h2" color={COLORS.white} style={styles.balance}>
               ৳{typeof user?.balance === 'number' ? user.balance.toFixed(2) : (card?.balance?.toFixed(2) || '0.00')}
             </Text>
           </View>
-          <View style={styles.nfcIcon}>
-            <Ionicons name="radio" size={18} color={COLORS.white} opacity={0.8} />
+          <View style={styles.nfcIconContainer}>
+            <Ionicons name="radio" size={24} color={COLORS.white} style={styles.nfcIcon} />
           </View>
         </View>
       </View>
@@ -336,7 +369,7 @@ export default function Dashboard() {
     return (
       <Animated.View entering={FadeInDown.duration(800).delay(600)} style={styles.recentActivity}>
         <View style={styles.sectionHeader}>
-          <Text variant="h5" color={COLORS.gray[900]} style={styles.sectionTitle}>
+          <Text variant="h5" color={COLORS.secondary} style={styles.sectionTitle}>
             Recent Activity
           </Text>
           <TouchableOpacity onPress={handleViewAllPress}>
@@ -404,23 +437,30 @@ export default function Dashboard() {
       </Animated.View>
     );
   };  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView 
-        style={styles.content} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        onScroll={() => setShowProfileMenu(false)}
-        scrollEventThrottle={16}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {renderHeader()}
-        {renderTripStatus()}
-        {renderRFIDCard()}
-        {renderRecentActivity()}
-      </ScrollView>
-    </SafeAreaView>
+    <>
+      <StatusBar 
+        backgroundColor={COLORS.primary} 
+        barStyle="light-content" 
+        translucent={false}
+      />
+      <SafeAreaView style={styles.container}>
+        <ScrollView 
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          onScroll={() => setShowProfileMenu(false)}
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          {renderHeader()}
+          {renderTripStatus()}
+          {renderRFIDCard()}
+          {renderRecentActivity()}
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -436,19 +476,19 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   
-  // Header Styles
+  // Header Styles - Modern Clean Design
   header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 24,
-    marginBottom: 16,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingBottom: 20,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  statusBarArea: {
+    height: 20, // iOS status bar height
+    backgroundColor: COLORS.primary, // Same color as header
   },
   headerContent: {
     flexDirection: 'row',
@@ -460,44 +500,65 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
+  logoContainer: {
+    marginRight: 12,
+  },
   brandTextContainer: {
-    marginLeft: 12,
+    flex: 1,
   },
   brandName: {
     fontWeight: '700',
     fontSize: 18,
+    letterSpacing: -0.3,
   },
   brandSlogan: {
-    fontSize: 11,
-    opacity: 0.9,
-    marginTop: 1,
+    fontSize: 12,
+    opacity: 0.85,
+    marginTop: 2,
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
   profileSection: {
-    flexDirection: 'row',
     alignItems: 'center',
-    maxWidth: 140, // Limit width to prevent overflow
+    justifyContent: 'center',
   },
   profileInfo: {
     alignItems: 'flex-end',
-    marginRight: 8,
+    marginRight: 12,
     flex: 1,
   },
   greeting: {
     fontSize: 11,
-    opacity: 0.9,
+    opacity: 0.8,
+    fontWeight: '500',
+    marginBottom: 2,
   },
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  avatarFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarImage: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  avatarText: {
+    fontSize: 16,
+    fontWeight: '700',
   },
 
   // Profile Menu
@@ -506,11 +567,11 @@ const styles = StyleSheet.create({
     top: 75,
     right: 16,
     backgroundColor: COLORS.white,
-    borderRadius: 16,
-    paddingVertical: 12,
-    minWidth: 130,
+    borderRadius: 12,
+    paddingVertical: 8,
+    minWidth: 140,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
   },
@@ -518,97 +579,146 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   menuText: {
     marginLeft: 8,
+    fontWeight: '500',
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: COLORS.gray[200],
+    marginHorizontal: 16,
+    marginVertical: 4,
   },
 
-  // Card Styles
+  // Card Styles - VISA Style Blue Card
   cardContainer: {
     paddingHorizontal: 16,
     marginBottom: 20,
   },
   card: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 16,
-    padding: 24,
-    minHeight: 200,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: '#1e3c72', // Deep blue like VISA cards
+    borderRadius: 20,
+    padding: 28,
+    minHeight: 220,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+    position: 'relative',
+    overflow: 'hidden',
+    marginTop: 20,
   },
   cardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+    alignItems: 'flex-start',
+    marginBottom: 24,
   },
-  contactless: {
-    alignItems: 'center',
-    opacity: 0.8,
-  },
-  cardContent: {
+  cardTypeSection: {
     flex: 1,
-    marginBottom: 20,
+  },
+  cardTypeLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2,
+    opacity: 0.9,
+    marginBottom: 2,
+  },
+  cardSubLabel: {
+    fontSize: 9,
+    fontWeight: '500',
+    letterSpacing: 1,
+    opacity: 0.7,
+  },
+  cardLogo: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  visaStyleLogo: {
+    width: 48,
+    height: 32,
+    backgroundColor: COLORS.white + '15',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.white + '20',
+  },
+  logoText: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  cardNumberSection: {
+    marginBottom: 24,
   },
   cardNumber: {
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: 3,
-    marginBottom: 24,
-    textAlign: 'left',
+    fontSize: 22,
+    fontWeight: '400',
+    letterSpacing: 4,
+    fontFamily: 'monospace', // Better for card numbers
+    lineHeight: 28,
   },
   cardInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 16,
+    marginBottom: 20,
+    gap: 24,
   },
-  infoItem: {
+  cardInfoItem: {
     flex: 1,
   },
   label: {
-    fontSize: 10,
+    fontSize: 9,
     opacity: 0.8,
     marginBottom: 6,
-    letterSpacing: 1,
-    fontWeight: '500',
+    letterSpacing: 1.5,
+    fontWeight: '600',
   },
   value: {
     fontSize: 13,
     fontWeight: '600',
     lineHeight: 16,
+    letterSpacing: 0.5,
   },
   cardBottom: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     borderTopWidth: 1,
-    borderTopColor: COLORS.white + '20',
+    borderTopColor: COLORS.white + '15',
     paddingTop: 20,
   },
   balanceSection: {
     flex: 1,
   },
-  balanceText: {
-    fontSize: 11,
+  balanceLabel: {
+    fontSize: 10,
     opacity: 0.8,
-    marginBottom: 6,
-    fontWeight: '500',
+    marginBottom: 8,
+    fontWeight: '600',
+    letterSpacing: 1,
   },
   balance: {
-    fontSize: 28,
-    fontWeight: '800',
-    lineHeight: 32,
+    fontSize: 32,
+    fontWeight: '700',
+    lineHeight: 36,
+    letterSpacing: -0.5,
   },
-  nfcIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.white + '20',
+  nfcIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  nfcIcon: {
+    opacity: 0.8,
+  },
+  
+  // Header styles updates
+  userName: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 
   // Simulate Button Styles
