@@ -334,7 +334,7 @@ export default function Dashboard() {
   
   const renderRecentActivity = () => {
     // Get the most recent 3 transactions
-    const recentTransactions = transactions.slice(0, 5);
+    const recentTransactions = transactions.slice(0, 3);
 
     const getActivityIcon = (transactionType: string) => {
       if (transactionType === 'BusFare') {
