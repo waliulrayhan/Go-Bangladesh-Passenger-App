@@ -120,7 +120,7 @@ export default function ChangePassword() {
         <View style={styles.content}>
           <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
             <View style={styles.logoContainer}>
-              <GoBangladeshLogo size={60} />
+              <GoBangladeshLogo size={50} />
             </View>
             
             <Text variant="h3" style={styles.title}>Change Password</Text>
@@ -167,31 +167,33 @@ export default function ChangePassword() {
 
                 <View style={styles.passwordRequirements}>
                   <Text style={styles.requirementsTitle}>Password Requirements:</Text>
-                  <View style={styles.requirement}>
-                    <Ionicons 
-                      name={newPassword.length >= 6 ? "checkmark-circle" : "ellipse-outline"} 
-                      size={16} 
-                      color={newPassword.length >= 6 ? COLORS.success : COLORS.gray[400]} 
-                    />
-                    <Text style={[
-                      styles.requirementText,
-                      { color: newPassword.length >= 6 ? COLORS.success : COLORS.gray[600] }
-                    ]}>
-                      At least 6 characters
-                    </Text>
-                  </View>
-                  <View style={styles.requirement}>
-                    <Ionicons 
-                      name={newPassword === confirmNewPassword && newPassword ? "checkmark-circle" : "ellipse-outline"} 
-                      size={16} 
-                      color={newPassword === confirmNewPassword && newPassword ? COLORS.success : COLORS.gray[400]} 
-                    />
-                    <Text style={[
-                      styles.requirementText,
-                      { color: newPassword === confirmNewPassword && newPassword ? COLORS.success : COLORS.gray[600] }
-                    ]}>
-                      Passwords match
-                    </Text>
+                  <View style={styles.requirementsRow}>
+                    <View style={styles.requirement}>
+                      <Ionicons 
+                        name={newPassword.length >= 6 ? "checkmark-circle" : "ellipse-outline"} 
+                        size={14} 
+                        color={newPassword.length >= 6 ? COLORS.success : COLORS.gray[400]} 
+                      />
+                      <Text style={[
+                        styles.requirementText,
+                        { color: newPassword.length >= 6 ? COLORS.success : COLORS.gray[600] }
+                      ]}>
+                        6+ characters
+                      </Text>
+                    </View>
+                    <View style={styles.requirement}>
+                      <Ionicons 
+                        name={newPassword === confirmNewPassword && newPassword ? "checkmark-circle" : "ellipse-outline"} 
+                        size={14} 
+                        color={newPassword === confirmNewPassword && newPassword ? COLORS.success : COLORS.gray[400]} 
+                      />
+                      <Text style={[
+                        styles.requirementText,
+                        { color: newPassword === confirmNewPassword && newPassword ? COLORS.success : COLORS.gray[600] }
+                      ]}>
+                        Passwords match
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
@@ -247,7 +249,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   backButton: {
     position: 'absolute',
@@ -257,7 +259,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   logoContainer: {
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   title: {
     textAlign: 'center',
@@ -265,17 +267,17 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 14,
     textAlign: 'center',
     color: COLORS.gray[600],
     paddingHorizontal: SPACING.md,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   formCard: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   formContent: {
-    padding: SPACING.md,
+    padding: SPACING.sm,
     gap: SPACING.sm,
   },
   errorContainer: {
@@ -295,23 +297,30 @@ const styles = StyleSheet.create({
   },
   passwordRequirements: {
     backgroundColor: COLORS.gray[50],
-    padding: SPACING.md,
-    borderRadius: 12,
+    padding: SPACING.sm,
+    borderRadius: 8,
     marginBottom: SPACING.sm,
   },
   requirementsTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.gray[900],
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  requirementsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
   },
   requirement: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.xs,
+    flex: 1,
+    minWidth: '45%',
   },
   requirementText: {
-    fontSize: 14,
+    fontSize: 12,
     marginLeft: SPACING.xs,
     fontWeight: '500',
   },
@@ -319,23 +328,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   helpSection: {
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
     alignItems: 'center',
     marginTop: SPACING.xs,
   },
   helpText: {
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
     color: COLORS.gray[500],
-    lineHeight: 18,
+    lineHeight: 16,
   },
   helpEmail: {
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
     color: COLORS.primary,
     fontWeight: '600',
-    marginTop: 4,
+    marginTop: 2,
   },
   glowBackground: {
     position: 'absolute',

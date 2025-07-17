@@ -119,7 +119,7 @@ export default function Dashboard() {
               </View>
             </View>
           <View style={styles.brandTextContainer}>
-            <Text variant="h4" color={COLORS.white} style={styles.brandName}>
+            <Text variant="h6" color={COLORS.white} style={styles.brandName}>
               Go Bangladesh
             </Text>
             <Text variant="caption" color={COLORS.white} style={styles.brandSlogan}>
@@ -528,12 +528,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   brandName: {
-    fontWeight: '700',
     fontSize: 18,
     letterSpacing: -0.3,
   },
   brandSlogan: {
-    fontSize: 12,
+    fontSize: 11,
     opacity: 0.85,
     fontWeight: '500',
     letterSpacing: 0.2,
