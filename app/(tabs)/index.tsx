@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Image, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, interpolate, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { Text } from '../../components/ui/Text';
-import { useTokenRefresh, useUserContext } from '../../hooks/useTokenRefresh';
+import { useTokenRefresh } from '../../hooks/useTokenRefresh';
 import { useAuthStore } from '../../stores/authStore';
 import { useCardStore } from '../../stores/cardStore';
 import { API_BASE_URL, COLORS } from '../../utils/constants';
@@ -22,13 +22,11 @@ export default function Dashboard() {
     transactions,
     loadHistory,
     checkOngoingTrip,
-    realTapOut,
     forceTapOut
   } = useCardStore();
 
   // Use token refresh hook to get fresh data
-  const { isRefreshing, refreshAllData } = useTokenRefresh();
-  const { userContext } = useUserContext();
+  const { refreshAllData } = useTokenRefresh();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -443,22 +441,19 @@ export default function Dashboard() {
         translucent={false}
       />
       <SafeAreaView style={styles.container}>
-        {/* Teal Glow Background - Top */}
+        {/* Dual Color Glow Background - Teal Top, Orange Bottom */}
         <LinearGradient
-          colors={['rgba(56, 193, 182, 0.5)', 'transparent']}
-          locations={[0, 0.7]}
-          start={{ x: 1, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.tealGlowBackground}
-        />
-        
-        {/* Warm Pastel Background - Bottom */}
-        <LinearGradient
-          colors={['transparent', 'rgba(255, 182, 153, 0.3)', 'rgba(255, 244, 214, 0.5)', 'rgba(255, 182, 153, 0.1)']}
-          locations={[0, 0.3, 0.6, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.warmPastelBackground}
+          colors={[
+            'rgba(56, 193, 182, 0.5)',   // Teal at top
+            'rgba(56, 193, 182, 0.2)', 
+            'transparent',
+            'rgba(255, 140, 60, 0.2)',   // Orange transition
+            'rgba(255, 140, 60, 0.4)'    // Orange at bottom
+          ]}
+          locations={[0, 0.2, 0.5, 0.8, 1]}
+          style={styles.glowBackground}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
         />
         
         <ScrollView 
@@ -484,25 +479,17 @@ export default function Dashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: 'transparent',
     position: 'relative',
   },
   
   // Background Gradient Styles
-  tealGlowBackground: {
+  glowBackground: {
     position: 'absolute',
     top: 0,
-    right: 0,
-    width: '100%',
-    height: '50%',
-    zIndex: -1,
-  },
-  warmPastelBackground: {
-    position: 'absolute',
-    bottom: 0,
     left: 0,
     right: 0,
-    height: '70%',
+    bottom: 0,
     zIndex: -1,
   },
   
@@ -1021,84 +1008,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     maxWidth: 240,
-  },
-
-  // User Context Styles
-  userContextContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 20,
-  },
-  userContextCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
-  },
-  userContextHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  userContextIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.brand.blue + '10',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  userContextInfo: {
-    flex: 1,
-  },
-  userContextTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  organizationName: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  userType: {
-    fontSize: 11,
-    fontWeight: '500',
-    opacity: 0.7,
-  },
-  userContextActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  refreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: COLORS.brand.blue + '10',
-  },
-  refreshButtonDisabled: {
-    backgroundColor: COLORS.gray[100],
-  },
-  refreshingIcon: {
-    transform: [{ rotate: '0deg' }],
-  },
-  refreshButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginLeft: 4,
-  },
-  welcomeContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  welcomeTitle: {
-    fontWeight: '700',
-    fontSize: 18,
-    marginBottom: 4,
-  },
-  welcomeSubtitle: {
-    fontSize: 14,
-    color: COLORS.gray[600],
   },
 });

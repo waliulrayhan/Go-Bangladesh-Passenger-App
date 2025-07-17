@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
 import { Alert, Dimensions, Image, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
 import { Text } from '../../components/ui/Text';
 import { UpdateCardModal } from '../../components/UpdateCardModal';
-import { useTokenRefresh, useUserContext } from '../../hooks/useTokenRefresh';
+import { useTokenRefresh } from '../../hooks/useTokenRefresh';
 import { apiService } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 import { useCardStore } from '../../stores/cardStore';
@@ -18,8 +19,7 @@ export default function Profile() {
   const { card } = useCardStore();
   
   // Use token refresh hook to get fresh data
-  const { isRefreshing, refreshAllData } = useTokenRefresh();
-  const { userContext } = useUserContext();
+  const { refreshAllData } = useTokenRefresh();
   
   const [refreshing, setRefreshing] = React.useState(false);
   const [showUpdateCardModal, setShowUpdateCardModal] = React.useState(false);
@@ -93,7 +93,7 @@ export default function Profile() {
       const gender = user?.gender || user?.sex;
       const genderText = gender ? (gender.charAt(0).toUpperCase() + gender.slice(1)) : '';
       const userTypeText = user?.userType ? (user.userType.charAt(0).toUpperCase() + user.userType.slice(1)) : 'Passenger';
-      return genderText ? `${genderText} • ${userTypeText}` : userTypeText;
+      return genderText ? `${genderText} • ${userTypeText+" User"}` : userTypeText;
     };
 
     return (
@@ -428,6 +428,21 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Dual Color Glow Background - Teal Top, Orange Bottom */}
+      <LinearGradient
+        colors={[
+          'rgba(56, 193, 182, 0.5)',   // Teal at top
+          'rgba(56, 193, 182, 0.2)', 
+          'transparent',
+          'rgba(255, 140, 60, 0.2)',   // Orange transition
+          'rgba(255, 140, 60, 0.4)'    // Orange at bottom
+        ]}
+        locations={[0, 0.2, 0.5, 0.8, 1]}
+        style={styles.glowBackground}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
+      
       <ScrollView 
         style={styles.content} 
         showsVerticalScrollIndicator={false}
@@ -463,10 +478,23 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: 'transparent',
+    position: 'relative',
   },
+  
+  // Background Gradient Styles
+  glowBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: -1,
+  },
+  
   content: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingBottom: 20,
@@ -483,11 +511,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   profileCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   avatarSection: {
     position: 'relative',
@@ -561,9 +592,12 @@ const styles = StyleSheet.create({
 
   // Balance Card Styles
   balanceCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 16,
     padding: 16,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   balanceHeader: {
     flexDirection: 'row',
@@ -659,8 +693,11 @@ const styles = StyleSheet.create({
 
   // Info List Styles
   infoList: {
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 12,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   infoRow: {
     flexDirection: 'row',
@@ -728,9 +765,12 @@ const styles = StyleSheet.create({
 
   // Actions Styles
   actionsList: {
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 12,
     marginBottom: 16,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   actionItem: {
     flexDirection: 'row',
