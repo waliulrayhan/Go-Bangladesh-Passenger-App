@@ -774,7 +774,8 @@ const styles = StyleSheet.create({
   // Trip Status Styles - Compact Design
   tripContainer: {
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 5,
+    marginTop: 15,
     borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: 'rgba(255, 255, 255, 0.92)',
