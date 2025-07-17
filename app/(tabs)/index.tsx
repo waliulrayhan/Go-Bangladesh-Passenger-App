@@ -443,6 +443,24 @@ export default function Dashboard() {
         translucent={false}
       />
       <SafeAreaView style={styles.container}>
+        {/* Teal Glow Background - Top */}
+        <LinearGradient
+          colors={['rgba(56, 193, 182, 0.5)', 'transparent']}
+          locations={[0, 0.7]}
+          start={{ x: 1, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.tealGlowBackground}
+        />
+        
+        {/* Warm Pastel Background - Bottom */}
+        <LinearGradient
+          colors={['transparent', 'rgba(255, 182, 153, 0.3)', 'rgba(255, 244, 214, 0.5)', 'rgba(255, 182, 153, 0.1)']}
+          locations={[0, 0.3, 0.6, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.warmPastelBackground}
+        />
+        
         <ScrollView 
           style={styles.content} 
           showsVerticalScrollIndicator={false}
@@ -466,10 +484,31 @@ export default function Dashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: '#ffffff',
+    position: 'relative',
   },
+  
+  // Background Gradient Styles
+  tealGlowBackground: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: '100%',
+    height: '50%',
+    zIndex: -1,
+  },
+  warmPastelBackground: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '70%',
+    zIndex: -1,
+  },
+  
   content: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingBottom: 30,
@@ -480,10 +519,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingBottom: 20,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
   },
   statusBarArea: {
     height: 20, // iOS status bar height
@@ -547,10 +582,6 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   avatarImage: {
     width: 40,
@@ -579,10 +610,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 8,
     minWidth: 140,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
   },
   menuItem: {
     flexDirection: 'row',
@@ -610,10 +637,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     minHeight: 180,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
+    elevation: 12,
     position: 'relative',
     overflow: 'hidden',
     marginTop: 16,
@@ -742,10 +766,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.primary + '20',
     gap: 8,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   simulateText: {
     fontWeight: '600',
@@ -757,11 +777,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: COLORS.white,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-    elevation: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   tripCard: {
     padding: 12,
@@ -807,10 +826,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     gap: 6,
-    shadowColor: COLORS.error,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
     elevation: 3,
     minHeight: 36,
   },
@@ -940,13 +955,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   activityList: {
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 16,
     paddingVertical: 8,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   activityItem: {
     flexDirection: 'row',
@@ -1017,10 +1031,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   userContextHeader: {
     flexDirection: 'row',
