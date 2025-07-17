@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   buttonContainer: {
-    marginBottom: SPACING['4xl'],
+    marginBottom: SPACING['5xl'],
   },
   note: {
     textAlign: 'center',

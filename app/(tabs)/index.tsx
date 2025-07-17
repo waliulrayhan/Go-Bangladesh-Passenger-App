@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Image, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -167,68 +168,61 @@ export default function Dashboard() {
   );
   const renderRFIDCard = () => (
     <Animated.View entering={FadeInDown.duration(800).delay(300)} style={styles.cardContainer}>
-      <View style={styles.card}>
-        {/* Card Header */}
-        <View style={styles.cardTop}>
-          <View style={styles.cardTypeSection}>
-            <Text variant="caption" color={COLORS.white} style={styles.cardTypeLabel}>
-              GO BANGLADESH
+      <LinearGradient
+        colors={['#4A90E2', '#7BB3F0', '#FF8A00']}
+        locations={[0, 0.7, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.card}
+      >
+        {/* Top Section - Card holder name, user type & RFID icon */}
+        <View style={styles.cardTopSection}>
+          <View style={styles.cardHolderInfo}>
+            <Text variant="bodySmall" color={COLORS.white} style={styles.cardHolderName} numberOfLines={1}>
+              {user?.name?.toUpperCase() || 'Not Provided'}
             </Text>
-            <Text variant="caption" color={COLORS.white} style={styles.cardSubLabel}>
-              TRANSIT CARD
+            <Text variant="caption" color={COLORS.white} style={styles.cardUserType}>
+              {user?.userType?.toUpperCase()+" USER" || 'N/A'}
             </Text>
           </View>
-          <View style={styles.cardLogo}>
-            <View style={styles.visaStyleLogo}>
-              <Text variant="bodySmall" color={COLORS.white} style={styles.logoText}>
-                GB
-              </Text>
-            </View>
+          <View style={styles.rfidIconContainer}>
+            <Ionicons name="radio" size={18} color={COLORS.white} style={styles.rfidIcon} />
           </View>
         </View>
         
-        {/* Card Number */}
+        {/* Middle Section - Card Number */}
         <View style={styles.cardNumberSection}>
-          <Text variant="h3" color={COLORS.white} style={styles.cardNumber}>
-            {user?.cardNumber || card?.cardNumber || '•••• •••• •••• ••••'}
+          <Text variant="h4" color={COLORS.white} style={styles.cardNumber}>
+            {user?.cardNumber || card?.cardNumber || 'Not Available'}
           </Text>
         </View>
         
-        {/* Card Info */}
-        <View style={styles.cardInfo}>
-          <View style={styles.cardInfoItem}>
-            <Text variant="caption" color={COLORS.white} style={styles.label}>
-              CARD HOLDER
-            </Text>
-            <Text variant="bodySmall" color={COLORS.white} style={styles.value} numberOfLines={1}>
-              {user?.name?.toUpperCase() || 'CARD HOLDER'}
-            </Text>
-          </View>
-          <View style={styles.cardInfoItem}>
-            <Text variant="caption" color={COLORS.white} style={styles.label}>
-              TYPE
-            </Text>
-            <Text variant="bodySmall" color={COLORS.white} style={styles.value}>
-              {user?.userType?.toUpperCase() || 'STANDARD'}
-            </Text>
-          </View>
+        {/* Center Section - Available Balance */}
+        <View style={styles.balanceSection}>
+          <Text variant="caption" color={COLORS.white} style={styles.balanceLabel}>
+            Available Balance
+          </Text>
+          <Text variant="h2" color={COLORS.white} style={styles.balance}>
+            ৳{typeof user?.balance === 'number' ? user.balance.toFixed(2)+" BDT" : (card?.balance?.toFixed(2)+" BDT" || 'N/A')}
+          </Text>
         </View>
         
-        {/* Card Bottom - Balance */}
-        <View style={styles.cardBottom}>
-          <View style={styles.balanceSection}>
-            <Text variant="caption" color={COLORS.white} style={styles.balanceLabel}>
-              CURRENT BALANCE
+        {/* Bottom Section - Brand name with logo on the left */}
+        <View style={styles.cardBottomSection}>
+          <View style={styles.brandContainer}>
+            <View style={styles.brandLogo}>
+              <Image 
+                source={require('../../assets/images/icon-full-01.png')} 
+                style={styles.brandLogoImage} 
+                resizeMode="contain"
+              />
+            </View>
+            <Text variant="bodySmall" color={COLORS.white} style={styles.cardBrandName}>
+              GO BANGLADESH RFID CARD
             </Text>
-            <Text variant="h2" color={COLORS.white} style={styles.balance}>
-              ৳{typeof user?.balance === 'number' ? user.balance.toFixed(2) : (card?.balance?.toFixed(2) || '0.00')}
-            </Text>
-          </View>
-          <View style={styles.nfcIconContainer}>
-            <Ionicons name="radio" size={24} color={COLORS.white} style={styles.nfcIcon} />
           </View>
         </View>
-      </View>
+      </LinearGradient>
     </Animated.View>
   );
     const renderTripStatus = () => {
@@ -512,13 +506,9 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 20,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.white+'90',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
   },
   logoImage: {
     width: 28,
@@ -617,121 +607,117 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   card: {
-    backgroundColor: '#1e3c72', // Deep blue like VISA cards
-    borderRadius: 20,
-    padding: 28,
-    minHeight: 220,
-    shadowOffset: { width: 0, height: 8 },
+    borderRadius: 16,
+    padding: 20,
+    minHeight: 180,
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
-    shadowRadius: 20,
+    shadowRadius: 16,
     elevation: 8,
     position: 'relative',
     overflow: 'hidden',
-    marginTop: 20,
+    marginTop: 16,
   },
-  cardTop: {
+  // Card styles for new layout
+  cardTopSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 24,
+    marginBottom: 16,
   },
-  cardTypeSection: {
+  cardHolderInfo: {
     flex: 1,
   },
-  cardTypeLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 2,
-    opacity: 0.9,
+  cardHolderName: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.5,
     marginBottom: 2,
+    lineHeight: 16,
   },
-  cardSubLabel: {
-    fontSize: 9,
+  cardUserType: {
+    fontSize: 12,
     fontWeight: '500',
-    letterSpacing: 1,
-    opacity: 0.7,
+    letterSpacing: 0.8,
+    opacity: 0.8,
   },
-  cardLogo: {
+  rfidIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  visaStyleLogo: {
-    width: 48,
-    height: 32,
-    backgroundColor: COLORS.white + '15',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 34,
+    height: 34,
+    backgroundColor: COLORS.gray[900] + '15',
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.white + '20',
   },
-  logoText: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 1,
+  rfidIcon: {
+    opacity: 0.9,
   },
   cardNumberSection: {
     marginBottom: 24,
+    alignItems: 'center',
   },
   cardNumber: {
     fontSize: 22,
     fontWeight: '400',
-    letterSpacing: 4,
-    fontFamily: 'monospace', // Better for card numbers
-    lineHeight: 28,
-  },
-  cardInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    gap: 24,
-  },
-  cardInfoItem: {
-    flex: 1,
-  },
-  label: {
-    fontSize: 9,
-    opacity: 0.8,
-    marginBottom: 6,
-    letterSpacing: 1.5,
-    fontWeight: '600',
-  },
-  value: {
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 16,
-    letterSpacing: 0.5,
-  },
-  cardBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    borderTopWidth: 1,
-    borderTopColor: COLORS.white + '15',
-    paddingTop: 20,
+    letterSpacing: 2.5,
+    fontFamily: 'monospace',
+    lineHeight: 24,
+    textAlign: 'center',
   },
   balanceSection: {
-    flex: 1,
+    alignItems: 'center',
+    marginBottom: 24,
   },
   balanceLabel: {
-    fontSize: 10,
-    opacity: 0.8,
-    marginBottom: 8,
+    fontSize: 14,
+    opacity: 0.85,
+    marginBottom: 2,
     fontWeight: '600',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
+    textAlign: 'center',
   },
   balance: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
-    lineHeight: 36,
+    lineHeight: 38,
     letterSpacing: -0.5,
+    textAlign: 'center',
   },
-  nfcIconContainer: {
+  cardBottomSection: {
+    alignItems: 'flex-start',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.white + '15',
+    paddingTop: 12,
+  },
+  brandContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  brandLogo: {
+    width: 24,
+    height: 24,
+    backgroundColor: COLORS.white + '90',
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nfcIcon: {
-    opacity: 0.8,
+  brandLogoImage: {
+    width: 18,
+    height: 18,
+  },
+  brandLogoText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  cardBrandName: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    opacity: 0.9,
   },
   
   // Header styles updates
