@@ -169,6 +169,22 @@ export interface Transaction {
 }
 
 export interface Trip {
+  tripId: string;
+  cardId: string;
+  sessionId: string;
+  startingLatitude: string;
+  startingLongitude: string;
+  tripStartTime: string;
+  isRunning: boolean;
+  busNumber: string;
+  busName: string;
+  tripStartPlace: string;
+  tripEndPlace: string;
+  penaltyAmount: number;
+}
+
+// Legacy Trip interface for backward compatibility
+export interface LegacyTrip {
   id: string;
   passengerId: string;
   sessionId: string;

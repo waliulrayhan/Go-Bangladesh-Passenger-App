@@ -69,6 +69,22 @@ export interface UserResponse {
 }
 
 export interface Trip {
+  tripId: string;
+  cardId: string;
+  sessionId: string;
+  startingLatitude: string;
+  startingLongitude: string;
+  tripStartTime: string;
+  isRunning: boolean;
+  busNumber: string;
+  busName: string;
+  tripStartPlace: string;
+  tripEndPlace: string;
+  penaltyAmount: number;
+}
+
+// Legacy Trip interface for backward compatibility
+export interface LegacyTrip {
   passengerId: string;
   sessionId: string;
   startingLatitude: string;
@@ -411,7 +427,7 @@ class ApiService {
     console.log('🚌 [TRIP] Fetching ongoing trip...');
     
     try {
-      const response = await this.api.get('/api/passenger/getOnGoingTrip');
+      const response = await this.api.get<ApiResponse<Trip>>('/api/passenger/getOnGoingTrip');
       
       console.log('📥 [TRIP] Response received:', {
         status: response.status,
@@ -434,14 +450,13 @@ class ApiService {
       
       const tripData = response.data.data.content;
       console.log('✅ [TRIP] Ongoing trip found:', {
-        id: tripData.id,
+        tripId: tripData.tripId,
         isRunning: tripData.isRunning,
         startTime: tripData.tripStartTime,
-        busNumber: tripData.session?.bus?.busNumber,
-        busName: tripData.session?.bus?.busName,
-        route: `${tripData.session?.bus?.tripStartPlace} → ${tripData.session?.bus?.tripEndPlace}`,
-        distance: tripData.distance,
-        amount: tripData.amount
+        busNumber: tripData.busNumber,
+        busName: tripData.busName,
+        route: `${tripData.tripStartPlace} → ${tripData.tripEndPlace}`,
+        penaltyAmount: tripData.penaltyAmount
       });
       
       return tripData;
@@ -490,13 +505,13 @@ class ApiService {
     }
   }
 
-  async forceTripStop(passengerId: string, tripId: string, sessionId: string): Promise<{ success: boolean; message: string }> {
+  async forceTripStop(cardNumber: string, tripId: string, sessionId: string): Promise<{ success: boolean; message: string }> {
     console.log('🚌 [FORCE TAP OUT] Attempting force trip stop...');
-    console.log('📋 [FORCE TAP OUT] Request payload:', { passengerId, tripId, sessionId });
+    console.log('📋 [FORCE TAP OUT] Request payload:', { cardNumber, tripId, sessionId });
     
     try {
       const payload = {
-        passengerId,
+        cardNumber,
         tripId,
         sessionId
       };

@@ -86,6 +86,7 @@ export default function ForgotPassword() {
   };
 
   const handleOtpChange = (value: string, index: number) => {
+    if (isLoading) return; // Prevent changes while loading
     if (value.length > 1) return; // Prevent multiple characters
 
     const newOtp = [...otp];
@@ -112,6 +113,8 @@ export default function ForgotPassword() {
   };
 
   const handleVerifyOTP = async (otpCode?: string) => {
+    if (isLoading) return; // Prevent multiple submissions
+    
     clearError();
     
     const otpString = otpCode || otp.join('');
@@ -120,15 +123,59 @@ export default function ForgotPassword() {
       return;
     }
 
-    const formattedMobile = formatMobile(mobile);
-    const success = await verifyOTP(formattedMobile, otpString);
-    
-    if (success) {
-      // Navigate to password reset form with the verified mobile number
-      router.push({
-        pathname: '/(auth)/reset-password',
-        params: { mobile: formattedMobile }
-      });
+    try {
+      const formattedMobile = formatMobile(mobile);
+      const success = await verifyOTP(formattedMobile, otpString);
+      
+      if (success) {
+        // Navigate to password reset form with the verified mobile number
+        router.push({
+          pathname: '/(auth)/reset-password',
+          params: { mobile: formattedMobile }
+        });
+      } else {
+        // Clear OTP inputs on error
+        setOtp(['', '', '', '', '', '']);
+        
+        // Show error alert
+        Alert.alert(
+          'Verification Failed',
+          'The OTP you entered is incorrect. Please try again.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Refocus first input after alert is dismissed
+                setTimeout(() => {
+                  inputRefs.current[0]?.focus();
+                }, 100);
+              }
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('[ForgotPassword] OTP verification failed:', error);
+      
+      // Clear OTP inputs on error
+      setOtp(['', '', '', '', '', '']);
+      
+      // Show error alert
+      Alert.alert(
+        'Verification Failed',
+        'Failed to verify OTP. Please try again.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Refocus first input after alert is dismissed
+              setTimeout(() => {
+                inputRefs.current[0]?.focus();
+              }, 100);
+            }
+          }
+        ]
+      );
     }
   };
 
@@ -186,13 +233,19 @@ export default function ForgotPassword() {
                   <Text style={styles.otpLabel}>Verification Code</Text>
                   
                   <View style={styles.otpInputContainer}>
+                    {isLoading && (
+                      <View style={styles.loadingContainer}>
+                        <Text style={styles.loadingText}>Verifying...</Text>
+                      </View>
+                    )}
                     {otp.map((digit, index) => (
                       <TextInput
                         key={index}
                         ref={(ref) => { inputRefs.current[index] = ref; }}
                         style={[
                           styles.otpInput,
-                          digit && styles.otpInputFilled
+                          digit && styles.otpInputFilled,
+                          isLoading && styles.otpInputDisabled
                         ]}
                         value={digit}
                         onChangeText={(value) => handleOtpChange(value, index)}
@@ -201,6 +254,7 @@ export default function ForgotPassword() {
                         maxLength={1}
                         autoFocus={index === 0}
                         selectTextOnFocus
+                        editable={!isLoading}
                       />
                     ))}
                   </View>
@@ -458,6 +512,24 @@ const styles = StyleSheet.create({
   otpInputFilled: {
     borderColor: COLORS.primary,
     backgroundColor: COLORS.brand.blue_subtle,
+  },
+  otpInputDisabled: {
+    backgroundColor: COLORS.gray[100],
+    borderColor: COLORS.gray[200],
+    color: COLORS.gray[400],
+  },
+  loadingContainer: {
+    position: 'absolute',
+    top: -30,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
   helpText: {
     fontSize: 14,

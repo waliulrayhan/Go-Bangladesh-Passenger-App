@@ -129,32 +129,6 @@ export default function Dashboard() {
   const handleViewAllPress = () => {
     router.push('/(tabs)/history');
   };
-
-  const handleForceTapOut = () => {
-    Alert.alert(
-      'Force Tap Out',
-      'Are you sure you want to force tap out? This will deduct ৳100.00 from your balance.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Force Tap Out', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const result = await forceTapOut();
-              if (result.success) {
-                Alert.alert('Success', result.message);
-              } else {
-                Alert.alert('Failed', result.message);
-              }
-            } catch (error) {
-              Alert.alert('Error', 'An unexpected error occurred. Please try again.');
-            }
-          }
-        }
-      ]
-    );
-  };
   const renderHeader = () => (
     <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
       <View style={styles.headerContent}>
@@ -252,19 +226,13 @@ export default function Dashboard() {
       </View>
     </Animated.View>
   );
-  
-  const renderSimulateButton = () => {
-    // Hide simulate button since we're using real trip data
-    return null;
-  };
-
-  const renderTripStatus = () => {
+    const renderTripStatus = () => {
     if (!currentTrip || tripStatus !== 'active') {
       return null;
     }
 
     const handleForceTapOut = () => {
-      const penaltyAmount = currentTrip?.session?.bus?.route?.penaltyAmount || "N/A";
+      const penaltyAmount = currentTrip?.penaltyAmount || 0;
       
       Alert.alert(
         'Force Tap Out',
@@ -316,10 +284,10 @@ export default function Dashboard() {
                 <Text variant="caption" style={styles.busLabel}>BUS</Text>
               </View>
               <Text variant="h6" style={styles.busText} numberOfLines={1}>
-                {currentTrip?.session?.bus?.busName || 'N/A'}
+                {currentTrip?.busName || 'N/A'}
               </Text>
               <Text variant="caption" style={styles.busNumber} numberOfLines={1}>
-                {currentTrip?.session?.bus?.busNumber || 'N/A'}
+                {currentTrip?.busNumber || 'N/A'}
               </Text>
             </View>
 
@@ -330,9 +298,9 @@ export default function Dashboard() {
                 <View style={styles.bottomDetailInfo}>
                   <Text variant="caption" style={styles.bottomDetailLabel}>ROUTE</Text>
                   <Text variant="bodySmall" style={styles.bottomDetailValue} numberOfLines={2}>
-                    {currentTrip?.session?.bus?.route?.tripStartPlace || 'N/A'} 
+                    {currentTrip?.tripStartPlace || 'N/A'} 
                     <Text style={styles.routeArrowSmall}> → </Text>
-                    {currentTrip?.session?.bus?.route?.tripEndPlace || 'N/A'}
+                    {currentTrip?.tripEndPlace || 'N/A'}
                   </Text>
                 </View>
               </View>
@@ -483,7 +451,6 @@ export default function Dashboard() {
         {renderHeader()}
         {renderTripStatus()}
         {renderRFIDCard()}
-        {renderSimulateButton()}
         {renderRecentActivity()}
       </ScrollView>
     </SafeAreaView>

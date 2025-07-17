@@ -20,8 +20,6 @@ interface CardState {
   tapIn: (cardNumber: string, busId: number) => Promise<boolean>;
   tapOut: (cardNumber: string) => Promise<boolean>;
   recharge: (cardNumber: string, amount: number) => Promise<boolean>;
-  simulateTapIn: () => void;
-  simulateTapOut: () => void;
   realTapOut: () => Promise<boolean>;
   forceTapOut: () => Promise<{ success: boolean; message: string }>;
   clearError: () => void;
@@ -132,19 +130,6 @@ export const useCardStore = create<CardState>((set, get) => ({
         
         set({
           transactions: reset ? newTransactions : [...get().transactions, ...newTransactions],
-          trips: reset ? 
-            newTransactions.filter(t => t.transactionType === 'BusFare' && t.trip).map(t => ({
-              ...t.trip!,
-              createdBy: t.createdBy,
-              lastModifiedBy: t.lastModifiedBy,
-              isDeleted: t.isDeleted
-            })) :
-            [...get().trips, ...newTransactions.filter(t => t.transactionType === 'BusFare' && t.trip).map(t => ({
-              ...t.trip!,
-              createdBy: t.createdBy,
-              lastModifiedBy: t.lastModifiedBy,
-              isDeleted: t.isDeleted
-            }))],
           isLoading: false,
           historyPagination: {
             ...historyPagination,
@@ -255,63 +240,6 @@ export const useCardStore = create<CardState>((set, get) => ({
     }
   },
 
-  simulateTapIn: () => {
-    const currentTime = new Date().toISOString();
-    const mockTrip: Trip = {
-      id: Date.now().toString(),
-      passengerId: '585ce04804e64057a2dc6a0840c4f53e',
-      sessionId: 'mock-session-' + Date.now(),
-      startingLatitude: '23.7808',
-      startingLongitude: '90.2792',
-      endingLatitude: '23.7808',
-      endingLongitude: '90.2792',
-      tripStartTime: currentTime,
-      tripEndTime: currentTime,
-      amount: 0,
-      isRunning: true,
-      distance: 0,
-      createTime: currentTime,
-      lastModifiedTime: currentTime,
-      createdBy: 'mock-user',
-      lastModifiedBy: 'mock-user',
-      isDeleted: false
-    };
-
-    set({
-      tripStatus: 'active',
-      currentTrip: mockTrip
-    });
-  },
-
-  simulateTapOut: () => {
-    const currentTrip = get().currentTrip;
-    const card = get().card;
-    
-    if (currentTrip && card) {
-      const fare = 25; // Mock fare
-      const newBalance = card.balance - fare;
-      const currentTime = new Date().toISOString();
-      
-      const completedTrip: Trip = {
-        ...currentTrip,
-        tripEndTime: currentTime,
-        endingLatitude: '23.7908',
-        endingLongitude: '90.2892',
-        amount: fare,
-        isRunning: false,
-        distance: 5.2,
-        lastModifiedTime: currentTime
-      };
-
-      set({
-        tripStatus: 'idle',
-        currentTrip: null,
-        card: { ...card, balance: newBalance },
-        trips: [completedTrip, ...get().trips]
-      });
-    }
-  },
-
   realTapOut: async () => {
     console.log('🔄 [TRIP] Attempting real tap out...');
     
@@ -361,37 +289,44 @@ export const useCardStore = create<CardState>((set, get) => ({
       console.log('🔍 [FORCE TAP OUT] User data available:', {
         id: user.id,
         passengerId: user.passengerId,
+        cardNumber: user.cardNumber,
         userType: user.userType,
         name: user.name
       });
 
-      // Use user.id as the actual passenger ID for the API
-      // user.passengerId appears to be a different field (like student ID or card number)
-      // but the API expects the actual user UUID which is in user.id
-      const passengerId = user.id.toString();
+      // Use user.cardNumber for the new API
+      const cardNumber = user.cardNumber;
       
-      console.log('💡 [FORCE TAP OUT] Using user.id as passengerId:', passengerId);
+      if (!cardNumber) {
+        console.log('❌ [FORCE TAP OUT] No card number found for user');
+        return { 
+          success: false, 
+          message: 'Card number not found. Please contact support.' 
+        };
+      }
+      
+      console.log('💡 [FORCE TAP OUT] Using cardNumber:', cardNumber);
 
-      const tripId = state.currentTrip.id;
+      const tripId = state.currentTrip.tripId;
       const sessionId = state.currentTrip.sessionId;
       
       console.log('📋 [FORCE TAP OUT] Trip details:', { 
-        passengerId, 
+        cardNumber, 
         tripId, 
         sessionId,
         currentTripData: state.currentTrip 
       });
       
       // Ensure all required IDs are available
-      if (!passengerId || !tripId || !sessionId) {
-        console.log('❌ [FORCE TAP OUT] Missing required IDs:', { passengerId, tripId, sessionId });
+      if (!cardNumber || !tripId || !sessionId) {
+        console.log('❌ [FORCE TAP OUT] Missing required IDs:', { cardNumber, tripId, sessionId });
         return { 
           success: false, 
           message: 'Missing required trip information. Please try again.' 
         };
       }
       
-      const result = await apiService.forceTripStop(passengerId, tripId, sessionId);
+      const result = await apiService.forceTripStop(cardNumber, tripId, sessionId);
       
       if (result.success) {
         console.log('✅ [FORCE TAP OUT] Force tap out successful, updating state');
