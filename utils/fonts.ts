@@ -1,37 +1,31 @@
 import {
-  Outfit_100Thin,
-  Outfit_200ExtraLight,
-  Outfit_300Light,
-  Outfit_400Regular,
-  Outfit_500Medium,
-  Outfit_600SemiBold,
-  Outfit_700Bold,
-  Outfit_800ExtraBold,
-  Outfit_900Black,
-} from '@expo-google-fonts/outfit';
+  PlusJakartaSans_200ExtraLight,
+  PlusJakartaSans_300Light,
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 
-export const outfitFonts = {
-  Outfit_100Thin,
-  Outfit_200ExtraLight,
-  Outfit_300Light,
-  Outfit_400Regular,
-  Outfit_500Medium,
-  Outfit_600SemiBold,
-  Outfit_700Bold,
-  Outfit_800ExtraBold,
-  Outfit_900Black,
+export const plusJakartaSansFonts = {
+  PlusJakartaSans_200ExtraLight,
+  PlusJakartaSans_300Light,
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
 };
 
 export const FONT_WEIGHTS = {
-  thin: 'Outfit_100Thin',
-  extraLight: 'Outfit_200ExtraLight',
-  light: 'Outfit_300Light',
-  regular: 'Outfit_400Regular',
-  medium: 'Outfit_500Medium',
-  semiBold: 'Outfit_600SemiBold',
-  bold: 'Outfit_700Bold',
-  extraBold: 'Outfit_800ExtraBold',
-  black: 'Outfit_900Black',
+  extraLight: 'PlusJakartaSans_200ExtraLight',
+  light: 'PlusJakartaSans_300Light',
+  regular: 'PlusJakartaSans_400Regular',
+  medium: 'PlusJakartaSans_500Medium',
+  semiBold: 'PlusJakartaSans_600SemiBold',
+  bold: 'PlusJakartaSans_700Bold',
+  extraBold: 'PlusJakartaSans_800ExtraBold',
 } as const;
 
 export const FONT_SIZES = {
@@ -52,84 +46,84 @@ export const FONT_SIZES = {
 export const TYPOGRAPHY = {
   // Headers
   h1: {
-    fontFamily: FONT_WEIGHTS.bold,
+    fontFamily: 'PlusJakartaSans_700Bold',
     fontSize: FONT_SIZES['4xl'],
-    lineHeight: 40, // was 38, now +2
+    lineHeight: 44, // Increased to prevent descender cutoff
   },
   h2: {
-    fontFamily: FONT_WEIGHTS.bold,
+    fontFamily: 'PlusJakartaSans_700Bold',
     fontSize: FONT_SIZES['3xl'],
-    lineHeight: 36, // was 34, now +2
+    lineHeight: 38, // Increased to prevent descender cutoff
   },
   h3: {
-    fontFamily: FONT_WEIGHTS.semiBold,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
     fontSize: FONT_SIZES['2xl'],
-    lineHeight: 32, // was 30, now +2
+    lineHeight: 34, // Increased to prevent descender cutoff
   },
   h4: {
-    fontFamily: FONT_WEIGHTS.semiBold,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
     fontSize: FONT_SIZES.xl,
-    lineHeight: 28, // was 26, now +2
+    lineHeight: 30, // Increased to prevent descender cutoff
   },
   h5: {
-    fontFamily: FONT_WEIGHTS.medium,
+    fontFamily: 'PlusJakartaSans_500Medium',
     fontSize: FONT_SIZES.lg,
-    lineHeight: 26, // was 24, now +2
+    lineHeight: 28, // Increased to prevent descender cutoff
   },
   h6: {
-    fontFamily: FONT_WEIGHTS.medium,
+    fontFamily: 'PlusJakartaSans_500Medium',
     fontSize: FONT_SIZES.md,
-    lineHeight: 24, // was 22, now +2
+    lineHeight: 26, // Increased to prevent descender cutoff
   },
   
   // Body text
   bodyLarge: {
-    fontFamily: FONT_WEIGHTS.regular,
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: FONT_SIZES.md,
-    lineHeight: 24, // was 22, now +2
+    lineHeight: 26, // Increased to prevent descender cutoff
   },
   body: {
-    fontFamily: FONT_WEIGHTS.regular,
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: FONT_SIZES.base,
-    lineHeight: 22, // was 20, now +2
+    lineHeight: 24, // Increased to prevent descender cutoff
   },
   bodySmall: {
-    fontFamily: FONT_WEIGHTS.regular,
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: FONT_SIZES.sm,
-    lineHeight: 20, // was 18, now +2
+    lineHeight: 22, // Increased to prevent descender cutoff
   },
   
   // Labels and captions
   label: {
-    fontFamily: FONT_WEIGHTS.medium,
+    fontFamily: 'PlusJakartaSans_500Medium',
     fontSize: FONT_SIZES.base,
-    lineHeight: 22, // was 20, now +2
+    lineHeight: 24, // Increased to prevent descender cutoff
   },
   labelSmall: {
-    fontFamily: FONT_WEIGHTS.medium,
+    fontFamily: 'PlusJakartaSans_500Medium',
     fontSize: FONT_SIZES.sm,
-    lineHeight: 20, // was 18, now +2
+    lineHeight: 22, // Increased to prevent descender cutoff
   },
   caption: {
-    fontFamily: FONT_WEIGHTS.regular,
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: FONT_SIZES.xs,
-    lineHeight: 18, // was 16, now +2
+    lineHeight: 20, // Increased to prevent descender cutoff
   },
   
   // Buttons
   button: {
-    fontFamily: FONT_WEIGHTS.semiBold,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
     fontSize: FONT_SIZES.base,
-    lineHeight: 22, // was 20, now +2
+    lineHeight: 24, // Increased to prevent descender cutoff
   },
   buttonLarge: {
-    fontFamily: FONT_WEIGHTS.semiBold,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
     fontSize: FONT_SIZES.md,
-    lineHeight: 24, // was 22, now +2
+    lineHeight: 26, // Increased to prevent descender cutoff
   },
   buttonSmall: {
-    fontFamily: FONT_WEIGHTS.medium,
+    fontFamily: 'PlusJakartaSans_500Medium',
     fontSize: FONT_SIZES.sm,
-    lineHeight: 20, // was 18, now +2
+    lineHeight: 22, // Increased to prevent descender cutoff
   },
 };

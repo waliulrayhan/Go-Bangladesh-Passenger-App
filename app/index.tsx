@@ -1,3 +1,4 @@
+import { useFonts } from 'expo-font';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, View } from 'react-native';
@@ -9,11 +10,13 @@ import { GradientBackground } from '../components/ui/GradientBackground';
 import { Text } from '../components/ui/Text';
 import { useAuthStore } from '../stores/authStore';
 import { COLORS, SPACING } from '../utils/constants';
+import { plusJakartaSansFonts } from '../utils/fonts';
 
 export default function WelcomeScreen() {
   const { isAuthenticated, loadUserFromStorage } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [fontsLoaded] = useFonts(plusJakartaSansFonts);
 
   useEffect(() => {
     initializeApp();
@@ -26,6 +29,13 @@ export default function WelcomeScreen() {
       router.replace('/(tabs)');
     }
   }, [isInitialized, isAuthenticated]);
+
+  // Log font loading status
+  useEffect(() => {
+    if (fontsLoaded) {
+      console.log('🎨 [WELCOME] Plus Jakarta Sans fonts are ready');
+    }
+  }, [fontsLoaded]);
 
   const initializeApp = async () => {
     setIsLoading(true);
@@ -46,7 +56,7 @@ export default function WelcomeScreen() {
     router.push('/(auth)/passenger-login');
   };
 
-  if (isLoading || !isInitialized) {
+  if (isLoading || !isInitialized || !fontsLoaded) {
     return (
       <GradientBackground variant="subtle">
         <SafeAreaView style={styles.container}>
@@ -57,7 +67,7 @@ export default function WelcomeScreen() {
             </Animated.View>
             <Animated.View entering={FadeInDown.duration(800).delay(200)}>
               <Text variant="body" color={COLORS.gray[600]} style={styles.loadingText}>
-                Loading...
+                {!fontsLoaded ? 'Loading fonts...' : 'Loading...'}
               </Text>
             </Animated.View>
           </View>
@@ -77,10 +87,22 @@ export default function WelcomeScreen() {
             <View style={styles.logoContainer}>
               <GoBangladeshLogo size={120} />
             </View>
-            <Text variant="h1" color={COLORS.white} style={styles.title}>
+            <Text 
+              variant="h1" 
+              color={COLORS.white} 
+              style={[
+                styles.title, 
+                { 
+                  fontFamily: 'PlusJakartaSans_700Bold',
+                  fontWeight: undefined,  // Clear any fontWeight conflicts
+                  lineHeight: 42,  // Increased from default to prevent cutoff
+                  paddingVertical: 4,  // Add padding to ensure descenders show
+                }
+              ]}
+            >
               Go Bangladesh
             </Text>
-            <Text variant="h6" color={COLORS.white} style={styles.subtitle}>
+            <Text variant="h6" color={COLORS.white} style={[styles.subtitle, { fontFamily: 'PlusJakartaSans_500Medium' }]}>
               One step toward a better future
             </Text>
             <Text variant="body" color={COLORS.gray[600]} style={styles.description}>
@@ -158,7 +180,6 @@ const styles = StyleSheet.create({
   title: {
     textAlign: 'center',
     marginBottom: SPACING.xs,
-    fontWeight: 'bold',
     textShadowColor: COLORS.white + '40',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
@@ -166,7 +187,6 @@ const styles = StyleSheet.create({
   subtitle: {
     textAlign: 'center',
     marginBottom: SPACING.sm,
-    fontWeight: '600',
     textShadowColor: COLORS.white + '30',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
@@ -186,7 +206,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: SPACING.md,
     fontStyle: 'italic',
-    fontWeight: '500',
     padding: SPACING.sm,
     borderRadius: 20,
     alignSelf: 'center',

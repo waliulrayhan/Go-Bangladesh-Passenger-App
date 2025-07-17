@@ -1,23 +1,34 @@
-# PowerShell script to update all remaining auth files with Outfit font
+# PowerShell script to verify Plus Jakarta Sans font implementation
 
-$files = @(
-    "app\(auth)\agent-selection.tsx",
-    "app\(auth)\agent-organization-selection.tsx", 
-    "app\(auth)\driver-helper-otp.tsx",
-    "app\(auth)\organization-selection.tsx",
-    "app\(auth)\passenger-registration.tsx",
-    "app\(auth)\staff-options.tsx"
-)
+Write-Host "Checking Plus Jakarta Sans font implementation..."
 
-foreach ($file in $files) {
-    if (Test-Path $file) {
-        Write-Host "Updating $file..."
-        
-        $content = Get-Content $file -Raw
-        
-        # Remove Text from react-native import and add custom Text import
-        $content = $content -replace "import { (.*), Text, (.*) } from 'react-native';", "import { `$1, `$2 } from 'react-native';"
-        $content = $content -replace "import { (.*), Text } from 'react-native';", "import { `$1 } from 'react-native';"
+# Check if the font package is installed
+$packageJson = Get-Content "package.json" | ConvertFrom-Json
+if ($packageJson.dependencies."@expo-google-fonts/plus-jakarta-sans") {
+    Write-Host "✅ Plus Jakarta Sans package is installed"
+} else {
+    Write-Host "❌ Plus Jakarta Sans package is not installed"
+}
+
+# Check if old Outfit fonts are removed
+if ($packageJson.dependencies."@expo-google-fonts/outfit") {
+    Write-Host "⚠️  Old Outfit font package is still installed"
+} else {
+    Write-Host "✅ Old Outfit font package has been removed"
+}
+
+# Check fonts.ts file
+$fontsFile = "utils\fonts.ts"
+if (Test-Path $fontsFile) {
+    $content = Get-Content $fontsFile -Raw
+    if ($content -match "PlusJakartaSans") {
+        Write-Host "✅ fonts.ts has been updated to use Plus Jakarta Sans"
+    } else {
+        Write-Host "❌ fonts.ts still uses old font references"
+    }
+} else {
+    Write-Host "❌ fonts.ts file not found"
+}
         $content = $content -replace "import { Text, (.*) } from 'react-native';", "import { `$1 } from 'react-native';"
         
         # Add Text import after existing imports

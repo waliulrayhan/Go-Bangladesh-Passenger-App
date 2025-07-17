@@ -3,7 +3,7 @@ import { Slot, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import { outfitFonts } from '../utils/fonts';
+import { plusJakartaSansFonts } from '../utils/fonts';
 
 // Polyfill for buffer in React Native
 import { Buffer } from 'buffer';
@@ -13,10 +13,21 @@ global.Buffer = Buffer;
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts(outfitFonts);
+  const [loaded, error] = useFonts(plusJakartaSansFonts);
   const { isAuthenticated, loadUserFromStorage } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
+
+  // Enhanced font loading logging
+  useEffect(() => {
+    if (loaded) {
+      console.log('✅ [FONTS] Plus Jakarta Sans loaded successfully');
+      console.log('📱 [FONTS] Available fonts:', Object.keys(plusJakartaSansFonts));
+    }
+    if (error) {
+      console.error('❌ [FONTS] Font loading error:', error);
+    }
+  }, [loaded, error]);
 
   // Load user from storage with token-based refresh
   useEffect(() => {
@@ -37,7 +48,11 @@ export default function RootLayout() {
 
   // Hide splash screen when fonts are loaded
   useEffect(() => {
-    if (loaded || error) {
+    if (loaded) {
+      console.log('✅ [FONTS] Plus Jakarta Sans fonts loaded successfully');
+      SplashScreen.hideAsync();
+    } else if (error) {
+      console.error('❌ [FONTS] Error loading fonts:', error);
       SplashScreen.hideAsync();
     }
   }, [loaded, error]);
