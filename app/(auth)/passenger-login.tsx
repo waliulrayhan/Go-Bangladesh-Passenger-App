@@ -84,7 +84,7 @@ export default function PassengerLogin() {
               <GoBangladeshLogo size={60} />
             </View>
             
-            <Text style={styles.title}>Welcome Back!</Text>
+            <Text variant="h3" style={styles.title}>Welcome Back!</Text>
             <Text style={styles.subtitle}>
               Sign in to your account
             </Text>
@@ -206,8 +206,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   title: {
-    fontSize: 26,
-    fontWeight: 'bold',
     textAlign: 'center',
     color: COLORS.gray[900],
     marginBottom: SPACING.xs,

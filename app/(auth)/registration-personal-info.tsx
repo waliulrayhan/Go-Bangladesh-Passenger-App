@@ -283,7 +283,7 @@ export default function RegistrationPersonalInfo() {
               <Ionicons name="person-add" size={32} color={COLORS.primary} />
             </View>
             
-            <Text style={styles.title}>Personal Information</Text>
+            <Text variant="h3" style={styles.title}>Personal Information</Text>
             <Text style={styles.subtitle}>
               Complete your profile to finish registration
             </Text>
@@ -486,8 +486,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
     textAlign: 'center',
     color: COLORS.gray[900],
     marginBottom: SPACING.xs,

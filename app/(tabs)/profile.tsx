@@ -156,7 +156,7 @@ export default function Profile() {
               <Text style={styles.balanceLabel}>Current Balance</Text>
               <Text style={[
                 styles.balanceAmount,
-                !hasBalance && { color: COLORS.gray[500], fontSize: 18, fontWeight: '600' }
+                !hasBalance && { color: COLORS.gray[500] }
               ]}>
                 {hasBalance ? `৳${displayBalance}` : displayBalance}
               </Text>

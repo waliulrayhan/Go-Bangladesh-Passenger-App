@@ -115,7 +115,7 @@ export default function ChangePassword() {
               <GoBangladeshLogo size={60} />
             </View>
             
-            <Text style={styles.title}>Change Password</Text>
+            <Text variant="h3" style={styles.title}>Change Password</Text>
             <Text style={styles.subtitle}>
               Update your account password for better security
             </Text>
@@ -252,8 +252,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   title: {
-    fontSize: 26,
-    fontWeight: 'bold',
     textAlign: 'center',
     color: COLORS.gray[900],
     marginBottom: SPACING.xs,

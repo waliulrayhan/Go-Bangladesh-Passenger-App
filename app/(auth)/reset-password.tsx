@@ -94,7 +94,7 @@ export default function ResetPassword() {
             <View style={styles.iconContainer}>
               <Ionicons name="lock-closed" size={40} color={COLORS.primary} />
             </View>
-            <Text style={styles.title}>Reset Password</Text>
+            <Text variant="h3" style={styles.title}>Reset Password</Text>
             <Text style={styles.subtitle}>
               Create a new password for your account: {mobile}
             </Text>
@@ -227,8 +227,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   title: {
-    fontSize: 24,
-    fontFamily: FONT_WEIGHTS.bold,
     color: COLORS.gray[900],
     marginBottom: SPACING.sm,
     textAlign: 'center',
@@ -239,7 +237,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     paddingHorizontal: SPACING.md,
-    fontFamily: FONT_WEIGHTS.regular,
   },
   formCard: {
     marginBottom: SPACING.md,

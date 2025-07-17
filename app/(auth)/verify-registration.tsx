@@ -267,7 +267,7 @@ export default function VerifyRegistration() {
               <Ionicons name="shield-checkmark" size={32} color={COLORS.primary} />
             </View>
             
-            <Text variant="h1" color={COLORS.white} style={styles.title}>Verify Your Mobile Number</Text>
+            <Text variant="h3" color={COLORS.white} style={styles.title}>Verify Your Mobile Number</Text>
             <Text style={styles.subtitle}>
               Enter the 6-digit code sent to{'\n'}
               <Text style={styles.phoneNumber}>{params.phone}</Text>
@@ -376,8 +376,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
     color: COLORS.gray[900],
     marginBottom: SPACING.xs,
     textAlign: 'center',

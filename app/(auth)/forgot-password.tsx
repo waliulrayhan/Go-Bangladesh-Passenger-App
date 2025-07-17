@@ -221,7 +221,7 @@ export default function ForgotPassword() {
                 <GoBangladeshLogo size={60} />
               </View>
               
-              <Text style={styles.title}>Enter Verification Code</Text>
+              <Text variant="h3" style={styles.title}>Enter Verification Code</Text>
               <Text style={styles.subtitle}>
                 We've sent a 6-digit verification code to {formatMobile(mobile)}
               </Text>
@@ -333,7 +333,7 @@ export default function ForgotPassword() {
               <GoBangladeshLogo size={60} />
             </View>
             
-            <Text variant="h1" color={COLORS.white} style={styles.title}>Forgot Password?</Text>
+            <Text variant="h3" color={COLORS.white} style={styles.title}>Forgot Password?</Text>
             <Text style={styles.subtitle}>
               Enter your mobile number and we'll send you a verification code to reset your password.
             </Text>
@@ -426,8 +426,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   title: {
-    fontSize: 26,
-    fontWeight: 'bold',
     textAlign: 'center',
     color: COLORS.gray[900],
     marginBottom: SPACING.lg,

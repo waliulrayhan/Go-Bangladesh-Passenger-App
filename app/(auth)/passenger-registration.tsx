@@ -123,7 +123,7 @@ export default function PassengerRegistration() {
               <GoBangladeshLogo size={60} />
             </View>
             
-            <Text variant="h1" color={COLORS.white} style={styles.title}>User Registration</Text>
+            <Text variant="h3" color={COLORS.white} style={styles.title}>User Registration</Text>
             <Text style={styles.subtitle}>
               Enter your card number to get started
             </Text>
@@ -220,8 +220,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   title: {
-    fontSize: 26,
-    fontWeight: 'bold',
     textAlign: 'center',
     color: COLORS.gray[900],
     marginBottom: SPACING.xs,

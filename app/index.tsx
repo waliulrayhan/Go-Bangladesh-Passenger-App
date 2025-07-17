@@ -77,13 +77,13 @@ export default function WelcomeScreen() {
             <View style={styles.logoContainer}>
               <GoBangladeshLogo size={120} />
             </View>
-            <Text variant="h1" color={COLORS.white} style={styles.title}>
+            <Text variant="h2" color={COLORS.white} style={styles.title}>
               Go Bangladesh
             </Text>
             <Text variant="h6" color={COLORS.white} style={styles.subtitle}>
               One step toward a better future
             </Text>
-            <Text variant="body" color={COLORS.gray[600]} style={styles.description}>
+            <Text variant="body" color={COLORS.white} style={styles.description}>
               Your convenient way to pay for transport with RFID card technology
             </Text>
           </Animated.View>
@@ -100,7 +100,7 @@ export default function WelcomeScreen() {
           </Animated.View>
           
           <Animated.View entering={FadeInUp.duration(800).delay(600)}>
-            <Text variant="caption" color={COLORS.gray[500]} style={styles.note}>
+            <Text variant="caption" color={COLORS.white} style={styles.note}>
               Safe • Secure • Friendly
             </Text>
           </Animated.View>
