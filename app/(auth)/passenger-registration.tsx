@@ -102,19 +102,25 @@ export default function PassengerRegistration() {
 
   return (
     <>
-      <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
+      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
       <SafeAreaView style={styles.container}>
-        {/* Orange Soft Glow Background */}
+        {/* Dreamy Sky Pink + Cool Blue Dual Glow */}
         <LinearGradient
-          colors={['#FF7112', 'transparent']}
-          locations={[0, 1]}
-          style={[styles.glowBackground, { opacity: 0.3, mixBlendMode: 'multiply' }]}
-          start={{ x: 0.5, y: 0.5 }}
-          end={{ x: 1, y: 1 }}
+          colors={[
+            'rgba(173, 216, 230, 0.35)',  // Light Blue at top
+            'rgba(173, 216, 230, 0.2)', 
+            'transparent',
+            'rgba(255, 182, 193, 0.2)',   // Light Pink transition  
+            'rgba(255, 182, 193, 0.4)'    // Light Pink at bottom
+          ]}
+          locations={[0, 0.2, 0.5, 0.8, 1]}
+          style={styles.glowBackground}
+          start={{ x: 0.3, y: 0 }}
+          end={{ x: 0.7, y: 1 }}
         />
         
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
       
         <View style={styles.content}>
@@ -212,7 +218,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: SPACING.md,
-    top: 48,
+    top: 60, // Increased for translucent status bar
     padding: SPACING.sm,
     zIndex: 2,
   },

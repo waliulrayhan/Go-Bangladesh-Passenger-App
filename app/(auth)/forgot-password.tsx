@@ -200,19 +200,25 @@ export default function ForgotPassword() {
   if (isOtpSent) {
     return (
       <>
-        <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
+        <StatusBar style="light" backgroundColor="transparent" translucent={true} />
         <SafeAreaView style={styles.container}>
-          {/* Teal Glow Right Background */}
+          {/* Teal Left + Warm Orange Bottom Dual Glow */}
           <LinearGradient
-            colors={['rgba(56, 193, 182, 0.5)', 'rgba(56, 193, 182, 0.1)', 'transparent']}
-            locations={[0, 0.4, 0.7]}
+            colors={[
+              'rgba(56, 193, 182, 0.5)',   // Teal at top
+              'rgba(56, 193, 182, 0.2)', 
+              'transparent',
+              'rgba(255, 140, 60, 0.2)',   // Warm Orange transition
+              'rgba(255, 140, 60, 0.4)'    // Warm Orange at bottom
+            ]}
+            locations={[0, 0.2, 0.5, 0.8, 1]}
             style={styles.glowBackgroundRight}
-            start={{ x: 1, y: 0 }}
-            end={{ x: 0, y: 1 }}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
           />
           
           <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+            <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
           </TouchableOpacity>
           
           <View style={styles.content}>
@@ -312,19 +318,25 @@ export default function ForgotPassword() {
   // Initial phone number input state
   return (
     <>
-      <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
+      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
       <SafeAreaView style={styles.container}>
-        {/* Teal Glow Right Background */}
+        {/* Teal Left + Warm Orange Bottom Dual Glow */}
         <LinearGradient
-          colors={['rgba(56, 193, 182, 0.5)', 'rgba(56, 193, 182, 0.1)', 'transparent']}
-          locations={[0, 0.4, 0.7]}
+          colors={[
+            'rgba(56, 193, 182, 0.5)',   // Teal at top
+            'rgba(56, 193, 182, 0.2)', 
+            'transparent',
+            'rgba(255, 140, 60, 0.2)',   // Warm Orange transition
+            'rgba(255, 140, 60, 0.4)'    // Warm Orange at bottom
+          ]}
+          locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackgroundRight}
-          start={{ x: 1, y: 0 }}
-          end={{ x: 0, y: 1 }}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
         />
         
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
         
         <View style={styles.content}>
@@ -418,7 +430,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: SPACING.md,
-    top: 48,
+    top: 60, // Increased for translucent status bar
     padding: SPACING.sm,
     zIndex: 2,
   },

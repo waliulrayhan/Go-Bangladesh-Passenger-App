@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Alert, Dimensions, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -95,18 +96,25 @@ export default function ChangePassword() {
 
   return (
     <>
+      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
       <SafeAreaView style={styles.container}>
-        {/* Purple Glow Background */}
+        {/* Purple Top + Cool Blue Bottom Dual Glow */}
         <LinearGradient
-          colors={['rgba(173, 109, 244, 0.5)', 'rgba(173, 109, 244, 0.1)', 'transparent']}
-          locations={[0, 0.4, 0.7]}
+          colors={[
+            'rgba(173, 109, 244, 0.5)',   // Purple at top
+            'rgba(173, 109, 244, 0.2)', 
+            'transparent',
+            'rgba(70, 130, 180, 0.2)',   // Cool Blue transition
+            'rgba(70, 130, 180, 0.4)'    // Cool Blue at bottom
+          ]}
+          locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
         />
         
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
         
         <View style={styles.content}>
@@ -244,7 +252,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: SPACING.md,
-    top: 48,
+    top: 60, // Increased for translucent status bar
     padding: SPACING.sm,
     zIndex: 2,
   },

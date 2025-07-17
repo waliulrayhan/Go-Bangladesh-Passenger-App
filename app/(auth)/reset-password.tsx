@@ -74,12 +74,18 @@ export default function ResetPassword() {
 
   return (
     <>
-      <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
+      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
       <SafeAreaView style={styles.container}>
-        {/* Teal Glow Background */}
+        {/* Teal Top + Orange Soft Bottom Dual Glow */}
         <LinearGradient
-          colors={['rgba(56, 193, 182, 0.5)', 'rgba(56, 193, 182, 0.1)', 'transparent']}
-          locations={[0, 0.4, 0.7]}
+          colors={[
+            'rgba(56, 193, 182, 0.5)',   // Teal at top
+            'rgba(56, 193, 182, 0.2)', 
+            'transparent',
+            'rgba(255, 113, 18, 0.2)',   // Orange Soft transition
+            'rgba(255, 113, 18, 0.3)'    // Orange Soft at bottom
+          ]}
+          locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
@@ -195,7 +201,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 50,
+    top: 62, // Increased for translucent status bar
     left: SPACING.md,
     zIndex: 2,
     paddingHorizontal: SPACING.sm,

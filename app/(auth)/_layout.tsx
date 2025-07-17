@@ -52,6 +52,13 @@ export default function AuthLayout() {
           title: "Reset Password"
         }} 
       />
+      <Stack.Screen 
+        name="change-password" 
+        options={{ 
+          headerShown: false,
+          title: "Change Password"
+        }} 
+      />
     </Stack>
   );
 }

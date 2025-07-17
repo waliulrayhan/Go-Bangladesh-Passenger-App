@@ -63,19 +63,25 @@ export default function PassengerLogin() {
 
   return (
     <>
-      <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
+      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
       <SafeAreaView style={styles.container}>
-        {/* Teal Glow Background */}
+        {/* Dual Color Glow Background - Teal Top, Orange Bottom */}
         <LinearGradient
-          colors={['rgba(56, 193, 182, 0.5)', 'rgba(56, 193, 182, 0.1)', 'transparent']}
-          locations={[0, 0.4, 0.7]}
+          colors={[
+            'rgba(56, 193, 182, 0.5)',   // Teal at top
+            'rgba(56, 193, 182, 0.2)', 
+            'transparent',
+            'rgba(255, 140, 60, 0.2)',   // Orange transition
+            'rgba(255, 140, 60, 0.4)'    // Orange at bottom
+          ]}
+          locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
         />
         
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
       
         <View style={styles.content}>
@@ -198,7 +204,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: SPACING.md,
-    top: 48,
+    top: 60, // Increased to account for translucent status bar
     padding: SPACING.sm,
     zIndex: 2,
   },

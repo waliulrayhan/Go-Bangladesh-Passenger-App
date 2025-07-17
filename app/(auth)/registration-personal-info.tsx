@@ -257,19 +257,25 @@ export default function RegistrationPersonalInfo() {
 
   return (
     <>
-      <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
+      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
       <SafeAreaView style={styles.container}>
-        {/* Purple Glow Background */}
+        {/* Warm Orange + Cool Blue Dual Glow */}
         <LinearGradient
-          colors={['rgba(173, 109, 244, 0.5)', 'rgba(173, 109, 244, 0.1)', 'transparent']}
-          locations={[0, 0.4, 0.7]}
+          colors={[
+            'rgba(255, 140, 60, 0.5)',   // Warm Orange at top
+            'rgba(255, 140, 60, 0.2)', 
+            'transparent',
+            'rgba(70, 130, 180, 0.2)',   // Cool Blue transition
+            'rgba(70, 130, 180, 0.4)'    // Cool Blue at bottom
+          ]}
+          locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
         />
         
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
       
         <ScrollView 
@@ -472,7 +478,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: SPACING.md,
-    top: 48,
+    top: 60, // Increased for translucent status bar
     padding: SPACING.sm,
     zIndex: 2,
   },

@@ -246,19 +246,25 @@ export default function VerifyRegistration() {
 
   return (
     <>
-      <StatusBar style="dark" backgroundColor={COLORS.brand.background} translucent={false} />
+      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
       <SafeAreaView style={styles.container}>
-        {/* Orange Soft Glow Background */}
+        {/* Orange Soft + Purple Bottom Dual Glow */}
         <LinearGradient
-          colors={['#FF7112', 'transparent']}
-          locations={[0, 1]}
-          style={[styles.glowBackground, { opacity: 0.3, mixBlendMode: 'multiply' }]}
+          colors={[
+            'rgba(255, 113, 18, 0.3)',   // Orange Soft at top
+            'rgba(255, 113, 18, 0.2)', 
+            'transparent',
+            'rgba(173, 109, 244, 0.2)',  // Purple transition
+            'rgba(173, 109, 244, 0.4)'   // Purple at bottom
+          ]}
+          locations={[0, 0.2, 0.5, 0.8, 1]}
+          style={styles.glowBackground}
           start={{ x: 0.5, y: 0.5 }}
           end={{ x: 1, y: 1 }}
         />
         
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
         
         <View style={styles.content}>
@@ -362,7 +368,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: SPACING.md,
-    top: 48,
+    top: 60, // Increased for translucent status bar
     padding: SPACING.sm,
     zIndex: 2,
   },
