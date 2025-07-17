@@ -77,7 +77,7 @@ export const WelcomePopup: React.FC<WelcomePopupProps> = ({
           style={styles.skipButton}
           onPress={onClose}
         >
-          <Text style={styles.skipText}>Skip</Text>
+          <Text variant="body" style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
 
         <View style={styles.centerContainer}>
@@ -87,22 +87,22 @@ export const WelcomePopup: React.FC<WelcomePopupProps> = ({
           >
             {/* Logo */}
             <View style={styles.logoContainer}>
-              <Text style={styles.logoText}>Go Bangladesh</Text>
+              <Text variant="h6" style={styles.logoText}>Go Bangladesh</Text>
             </View>
 
             {/* Main Card */}
             <View style={styles.card}>
               <LemonCharacter />
               
-              <Text style={styles.title}>Welcome Back!</Text>
-              <Text style={styles.subtitle}>Hello {userName}, ready for your journey?</Text>
+              <Text variant="h2" style={styles.title}>Welcome Back!</Text>
+              <Text variant="body" style={styles.subtitle}>Hello {userName}, ready for your journey?</Text>
               
               <DotsIndicator />
             </View>
 
             {/* Get Started Button */}
             <TouchableOpacity style={styles.button} onPress={onClose}>
-              <Text style={styles.buttonText}>Get Started</Text>
+              <Text variant="button" style={styles.buttonText}>Get Started</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -126,7 +126,6 @@ const styles = StyleSheet.create({
   skipText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '500',
     opacity: 0.9,
   },
   centerContainer: {
@@ -146,7 +145,6 @@ const styles = StyleSheet.create({
   logoText: {
     color: '#FFFFFF',
     fontSize: 20,
-    fontWeight: '700',
     letterSpacing: 2,
     opacity: 0.95,
   },
@@ -302,7 +300,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontWeight: '800',
     color: '#7C3AED',
     marginBottom: 8,
     textAlign: 'center',
@@ -311,7 +308,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#6B7280',
     textAlign: 'center',
-    fontWeight: '500',
   },
   button: {
     backgroundColor: '#7C3AED',
@@ -331,7 +327,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 20,
-    fontWeight: '700',
     letterSpacing: 0.5,
   },
 });

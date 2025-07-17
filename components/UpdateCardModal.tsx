@@ -169,8 +169,8 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
       <View style={styles.content}>
         {currentCardNumber && (
           <View style={styles.currentCardContainer}>
-            <Text style={styles.currentCardLabel}>Current Card Number</Text>
-            <Text style={styles.currentCardNumber}>{currentCardNumber}</Text>
+            <Text variant="caption" style={styles.currentCardLabel}>Current Card Number</Text>
+            <Text variant="body" style={styles.currentCardNumber}>{currentCardNumber}</Text>
           </View>
         )}
 
@@ -186,7 +186,7 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
           error={error}
         />
 
-        <Text style={styles.helperText}>
+        <Text variant="caption" style={styles.helperText}>
           Enter the new card number printed on your Go Bangladesh transport card
         </Text>
       </View>
@@ -194,7 +194,7 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
       {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
-          <Text style={styles.cancelText}>Cancel</Text>
+          <Text variant="button" style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
         
         <View style={styles.updateButtonContainer}>
@@ -216,11 +216,11 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.otpInfoContainer}>
-          <Text style={styles.otpInfoText}>
+          <Text variant="body" style={styles.otpInfoText}>
             We've sent a verification code to your mobile number
           </Text>
-          <Text style={styles.mobileNumber}>{userMobile}</Text>
-          <Text style={styles.otpSubText}>
+          <Text variant="body" style={styles.mobileNumber}>{userMobile}</Text>
+          <Text variant="caption" style={styles.otpSubText}>
             Enter the 6-digit code to update your card number
           </Text>
         </View>
@@ -238,10 +238,10 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
 
         <View style={styles.otpTimer}>
           {otpTimer > 0 ? (
-            <Text style={styles.timerText}>Resend OTP in {otpTimer}s</Text>
+            <Text variant="caption" style={styles.timerText}>Resend OTP in {otpTimer}s</Text>
           ) : (
             <TouchableOpacity onPress={handleResendOTP} disabled={isLoading}>
-              <Text style={styles.resendText}>Resend OTP</Text>
+              <Text variant="button" style={styles.resendText}>Resend OTP</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -250,7 +250,7 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
       {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.cancelButton} onPress={handleBack}>
-          <Text style={styles.cancelText}>Back</Text>
+          <Text variant="button" style={styles.cancelText}>Back</Text>
         </TouchableOpacity>
         
         <View style={styles.updateButtonContainer}>
@@ -282,7 +282,7 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
               <View style={styles.iconContainer}>
                 <Ionicons name="card" size={20} color={COLORS.primary} />
               </View>
-              <Text style={styles.title}>
+              <Text variant="h5" style={styles.title}>
                 {step === 'card-input' ? 'Update Card Number' : 'Verify OTP'}
               </Text>
             </View>
@@ -336,7 +336,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
     color: COLORS.gray[900],
   },
   closeButton: {
@@ -356,11 +355,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.gray[600],
     marginBottom: 4,
-    fontWeight: '500',
   },
   currentCardNumber: {
     fontSize: 16,
-    fontWeight: '600',
     color: COLORS.gray[800],
     letterSpacing: 1,
   },
@@ -386,7 +383,6 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 16,
-    fontWeight: '600',
     color: COLORS.gray[700],
   },
   updateButtonContainer: {
@@ -407,7 +403,6 @@ const styles = StyleSheet.create({
   },
   mobileNumber: {
     fontSize: 16,
-    fontWeight: '600',
     color: COLORS.primary,
     marginBottom: 4,
   },
@@ -427,6 +422,5 @@ const styles = StyleSheet.create({
   resendText: {
     fontSize: 14,
     color: COLORS.primary,
-    fontWeight: '600',
   },
 });

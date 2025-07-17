@@ -18,17 +18,6 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
 
-  // Enhanced font loading logging
-  useEffect(() => {
-    if (loaded) {
-      console.log('✅ [FONTS] Plus Jakarta Sans loaded successfully');
-      console.log('📱 [FONTS] Available fonts:', Object.keys(plusJakartaSansFonts));
-    }
-    if (error) {
-      console.error('❌ [FONTS] Font loading error:', error);
-    }
-  }, [loaded, error]);
-
   // Load user from storage with token-based refresh
   useEffect(() => {
     const initializeSession = async () => {
@@ -48,11 +37,7 @@ export default function RootLayout() {
 
   // Hide splash screen when fonts are loaded
   useEffect(() => {
-    if (loaded) {
-      console.log('✅ [FONTS] Plus Jakarta Sans fonts loaded successfully');
-      SplashScreen.hideAsync();
-    } else if (error) {
-      console.error('❌ [FONTS] Error loading fonts:', error);
+    if (loaded || error) {
       SplashScreen.hideAsync();
     }
   }, [loaded, error]);

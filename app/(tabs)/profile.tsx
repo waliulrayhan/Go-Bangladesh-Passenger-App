@@ -443,7 +443,6 @@ export default function Profile() {
       >
         {renderProfileHeader()}
         {renderBalanceCard()}
-        {/* <TokenInfoDemo /> */}
         {renderAccountInfo()}
         {renderActions()}
       </ScrollView>

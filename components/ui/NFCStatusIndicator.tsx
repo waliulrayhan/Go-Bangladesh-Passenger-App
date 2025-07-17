@@ -44,7 +44,7 @@ export function NFCStatusIndicator({
           color={COLORS.white} 
         />
       </View>
-      <Text style={[styles.text, { color: getStatusColor() }]}>
+      <Text variant="caption" style={[styles.text, { color: getStatusColor() }]}>
         {getStatusText()}
       </Text>
     </View>
@@ -70,6 +70,5 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 12,
-    fontWeight: '600',
   },
 });
