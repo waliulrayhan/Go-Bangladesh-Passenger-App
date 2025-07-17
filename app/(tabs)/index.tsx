@@ -91,33 +91,6 @@ export default function Dashboard() {
     setShowProfileMenu(!showProfileMenu);
   };
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              // Use router.dismissAll() and then navigate to ensure clean navigation stack
-              router.dismissAll();
-              router.replace('/');
-            } catch (error) {
-              console.error('Logout error:', error);
-              // Force navigation even if logout fails
-              router.dismissAll();
-              router.replace('/');
-            }
-          }
-        }
-      ]
-    );
-  };
-
   const formatDate = (date: Date) => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const day = date.getDate();
@@ -132,58 +105,52 @@ export default function Dashboard() {
   const renderHeader = () => (
     <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
       <View style={styles.headerContent}>
-        <View style={styles.brandSection}>
-          <GoBangladeshLogo size={28} color1={COLORS.white} color2={COLORS.brand.orange_light} />
-          <View style={styles.brandTextContainer}>
-            <Text variant="h6" color={COLORS.white} style={styles.brandName}>
-              Go Bangladesh
-            </Text>
-            <Text variant="caption" color={COLORS.white} style={styles.brandSlogan}>
-              One step towards better future
-            </Text>
-          </View>
+      <View style={styles.brandSection}>
+        <GoBangladeshLogo size={28} />
+        <View style={styles.brandTextContainer}>
+        <Text variant="h6" color={COLORS.white} style={styles.brandName}>
+          Go Bangladesh
+        </Text>
+        <Text variant="caption" color={COLORS.white} style={styles.brandSlogan}>
+          One step towards better future
+        </Text>
         </View>
+      </View>
 
-        <TouchableOpacity style={styles.profileSection} onPress={handleProfilePress}>
-          <View style={styles.profileInfo}>
-            <Text variant="caption" color={COLORS.white} style={styles.greeting} numberOfLines={1}>
-              Hello, {user?.name?.split(' ')[0] || 'User'}
-            </Text>
-          </View>
-          <View style={styles.avatar}>
-            {user?.imageUrl ? (
-              <Image source={{ uri: `${API_BASE_URL}/${user.imageUrl}` }} style={styles.avatarImage} />
-            ) : user?.profileImage ? (
-              <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
-            ) : (
-              <Ionicons name="person" size={18} color={COLORS.brand.blue} />
-            )}
-          </View>
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.profileSection} onPress={handleProfilePress}>
+        <View style={styles.profileInfo}>
+        <Text variant="caption" color={COLORS.white} style={styles.greeting} numberOfLines={1}>
+          Hello, {user?.name?.split(' ')[0] || 'User'}
+        </Text>
+        </View>
+        <View style={styles.avatar}>
+        {user?.imageUrl ? (
+          <Image source={{ uri: `${API_BASE_URL}/${user.imageUrl}` }} style={styles.avatarImage} />
+        ) : user?.profileImage ? (
+          <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
+        ) : (
+          <Ionicons name="person" size={18} color={COLORS.brand.blue} />
+        )}
+        </View>
+      </TouchableOpacity>
       </View>
 
       {/* Profile Menu */}
       {showProfileMenu && (
-        <Animated.View entering={FadeInDown.duration(300)} style={styles.profileMenu}>
-          <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={16} color={COLORS.error} />
-            <Text variant="bodySmall" color={COLORS.error} style={styles.menuText}>
-              Logout
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
+      <Animated.View entering={FadeInDown.duration(300)} style={styles.profileMenu}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(tabs)/profile')}>
+        <Ionicons name="person-outline" size={16} color={COLORS.primary} />
+        <Text variant="bodySmall" color={COLORS.primary} style={styles.menuText}>
+          Profile
+        </Text>
+        </TouchableOpacity>
+      </Animated.View>
       )}
     </Animated.View>
   );
   const renderRFIDCard = () => (
     <Animated.View entering={FadeInDown.duration(800).delay(300)} style={styles.cardContainer}>
       <View style={styles.card}>
-        <View style={styles.cardTop}>
-          <GoBangladeshLogo size={24} color1={COLORS.white} color2={COLORS.brand.orange_light} />
-          <View style={styles.contactless}>
-            <Ionicons name="wifi" size={18} color={COLORS.white} />
-          </View>
-        </View>
         
         <View style={styles.cardContent}>
           <Text variant="h5" color={COLORS.white} style={styles.cardNumber}>
@@ -335,7 +302,7 @@ export default function Dashboard() {
   
   const renderRecentActivity = () => {
     // Get the most recent 3 transactions
-    const recentTransactions = transactions.slice(0, 3);
+    const recentTransactions = transactions.slice(0, 5);
 
     const getActivityIcon = (transactionType: string) => {
       if (transactionType === 'BusFare') {
@@ -473,12 +440,11 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
-    paddingTop: 50,
+    paddingTop: 24,
     paddingBottom: 24,
     marginBottom: 16,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -543,7 +509,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 12,
     minWidth: 130,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
@@ -569,7 +534,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     minHeight: 200,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -663,7 +627,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.primary + '20',
     gap: 8,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -680,7 +643,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: COLORS.white,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
     shadowRadius: 15,
@@ -866,7 +828,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 16,
     paddingVertical: 8,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -941,7 +902,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,

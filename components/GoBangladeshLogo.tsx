@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 
 interface GoBangladeshLogoProps {
   size?: number;
@@ -15,8 +15,48 @@ export const GoBangladeshLogo: React.FC<GoBangladeshLogoProps> = ({
   color1 = '#FF8A00', // Updated to brand orange
   color2 = '#4A90E2'  // Updated to brand blue
 }) => {
+  const circleSize = size * 1.4; // Make circle slightly larger than logo
+  
   return (
-    <View style={[{ width: size, height: size }, style]}>
+    <View style={[
+      { 
+        width: circleSize, 
+        height: circleSize,
+        borderRadius: circleSize / 2,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        alignItems: 'center',
+        justifyContent: 'center'
+      }, 
+      style
+    ]}>
+      {/* Subtle gradient background circle */}
+      <View style={[
+        StyleSheet.absoluteFillObject,
+        {
+          borderRadius: circleSize / 2,
+          backgroundColor: 'transparent',
+        }
+      ]}>
+        <Svg width={circleSize} height={circleSize}>
+          <Defs>
+            <RadialGradient id="circleGradient" cx="50%" cy="30%" r="70%">
+              <Stop offset="0%" stopColor="rgba(255, 255, 255, 0.2)" />
+              <Stop offset="100%" stopColor="rgba(255, 255, 255, 0.05)" />
+            </RadialGradient>
+          </Defs>
+          <Path 
+            d={`M 0,${circleSize/2} A ${circleSize/2},${circleSize/2} 0 1,1 ${circleSize},${circleSize/2} A ${circleSize/2},${circleSize/2} 0 1,1 0,${circleSize/2}`}
+            fill="url(#circleGradient)"
+          />
+        </Svg>
+      </View>
+      
+      {/* Logo centered in circle */}
       <Svg width={size} height={size} viewBox="0 0 960 960">
         <Path 
           d="M687.72,655.46l-36.1,33.11c-7.73,7.09-18.1,10.77-28.55,9.72-2.52-.25-5.07-.37-7.67-.33-36.77.46-66.64,30.89-66.44,67.66,0,.05,0,.11,0,.16.08,10.58-4.14,20.72-11.93,27.87l-18.74,17.19c-26.36,24.18-67.2,22.91-92.01-2.85l-95.41-99.05c-2.75-2.86-5.28-5.9-7.56-9.08-8.88-12.4-9.38-28.95-1.39-41.95l.11-.18c4.04-6.55,8.39-13.08,13.08-19.6,7.44-11.43,19.16-25.82,37.46-43.57,8.06-7.98,16.79-15.91,26.29-23.8,31.68-27,61.71-47.44,67.94-51.61l1.41-.69,1.26-1.2,5.54-4.2,209.31,114.47c10.4,5.69,12.13,19.92,3.39,27.93Z" 
