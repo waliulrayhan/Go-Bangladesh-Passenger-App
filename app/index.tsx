@@ -1,11 +1,12 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { GoBangladeshLogo } from '../components/GoBangladeshLogo';
 import { BubbleAnimation } from '../components/ui/BubbleAnimation';
 import { Button } from '../components/ui/Button';
-import { GradientBackground } from '../components/ui/GradientBackground';
 import { Text } from '../components/ui/Text';
 import { useAuthStore } from '../stores/authStore';
 import { COLORS, SPACING } from '../utils/constants';
@@ -29,7 +30,7 @@ export default function WelcomeScreen() {
 
   const initializeApp = async () => {
     setIsLoading(true);
-    console.log('� [WELCOME] Initializing app and checking authentication...');
+    console.log('🚀 [WELCOME] Initializing app and checking authentication...');
     
     try {
       await loadUserFromStorage();
@@ -48,65 +49,83 @@ export default function WelcomeScreen() {
 
   if (isLoading || !isInitialized) {
     return (
-      <GradientBackground variant="subtle">
-        <SafeAreaView style={styles.container}>
-          <BubbleAnimation bubbleCount={10} />
-          <View style={styles.loadingContainer}>
-            <Animated.View entering={FadeInUp.duration(800)}>
-              <GoBangladeshLogo size={80} />
-            </Animated.View>
-            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-              <Text variant="body" color={COLORS.gray[600]} style={styles.loadingText}>
-                Loading...
-              </Text>
-            </Animated.View>
-          </View>
-        </SafeAreaView>
-      </GradientBackground>
+      <>
+        <StatusBar style="light" backgroundColor="transparent" translucent={true} />
+        <LinearGradient
+          colors={['#4A90E2', '#7BB3F0', '#FF8A00']}
+          locations={[0, 0.7, 1]}
+          style={styles.container}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <SafeAreaView style={styles.container}>
+            <BubbleAnimation bubbleCount={10} />
+            <View style={styles.loadingContainer}>
+              <Animated.View entering={FadeInUp.duration(800)}>
+                <GoBangladeshLogo size={80} />
+              </Animated.View>
+              <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+                <Text variant="body" color={COLORS.white} style={styles.loadingText}>
+                  Loading...
+                </Text>
+              </Animated.View>
+            </View>
+          </SafeAreaView>
+        </LinearGradient>
+      </>
     );
   }
 
   // Only show welcome screen if user is definitely not authenticated
   if (isInitialized && !isAuthenticated) {
     return (
-      <GradientBackground variant="primary">
-        <SafeAreaView style={styles.container}>
-          <BubbleAnimation bubbleCount={15} />
-          <View style={styles.content}>
-          <Animated.View entering={FadeInUp.duration(800).delay(200)} style={styles.header}>
-            <View style={styles.logoContainer}>
-              <GoBangladeshLogo size={120} />
-            </View>
-            <Text variant="h2" color={COLORS.white} style={styles.title}>
-              Go Bangladesh
-            </Text>
-            <Text variant="h6" color={COLORS.white} style={styles.subtitle}>
-              One step toward a better future
-            </Text>
-            <Text variant="body" color={COLORS.white} style={styles.description}>
-              Your convenient way to pay for transport with RFID card technology
-            </Text>
-          </Animated.View>
+      <>
+        <StatusBar style="light" backgroundColor="transparent" translucent={true} />
+        <LinearGradient
+          colors={['#4A90E2', '#7BB3F0', '#FF8A00']}
+          locations={[0, 0.65, 1]}
+          style={styles.container}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <SafeAreaView style={styles.container}>
+            <BubbleAnimation bubbleCount={15} />
+            <View style={styles.content}>
+            <Animated.View entering={FadeInUp.duration(800).delay(200)} style={styles.header}>
+              <View style={styles.logoContainer}>
+                <GoBangladeshLogo size={120} />
+              </View>
+              <Text variant="h2" color={COLORS.white} style={styles.title}>
+                Go Bangladesh
+              </Text>
+              <Text variant="h6" color={COLORS.white} style={styles.subtitle}>
+                One step toward a better future
+              </Text>
+              <Text variant="body" color={COLORS.white} style={styles.description}>
+                Your convenient way to pay for transport with RFID card technology
+              </Text>
+            </Animated.View>
 
-          <Animated.View entering={FadeInDown.duration(800).delay(400)} style={styles.buttonContainer}>
-            <Button
-              title="Get Started"
-              onPress={handleGetStarted}
-              variant="primary"
-              size="large"
-              icon="arrow-forward"
-              fullWidth
-            />
-          </Animated.View>
-          
-          <Animated.View entering={FadeInUp.duration(800).delay(600)}>
-            <Text variant="caption" color={COLORS.white} style={styles.note}>
-              Safe • Secure • Friendly
-            </Text>
-          </Animated.View>
-        </View>
-      </SafeAreaView>
-      </GradientBackground>
+            <Animated.View entering={FadeInDown.duration(800).delay(400)} style={styles.buttonContainer}>
+              <Button
+                title="Get Started"
+                onPress={handleGetStarted}
+                variant="primary"
+                size="large"
+                icon="arrow-forward"
+                fullWidth
+              />
+            </Animated.View>
+            
+            <Animated.View entering={FadeInUp.duration(800).delay(600)}>
+              <Text variant="caption" color={COLORS.white} style={styles.note}>
+                Safe • Secure • Friendly
+              </Text>
+            </Animated.View>
+          </View>
+          </SafeAreaView>
+        </LinearGradient>
+      </>
     );
   }
 
