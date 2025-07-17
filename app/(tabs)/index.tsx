@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Image, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, interpolate, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
-import { GoBangladeshLogo } from '../../components/GoBangladeshLogo';
 import { Text } from '../../components/ui/Text';
 import { useTokenRefresh, useUserContext } from '../../hooks/useTokenRefresh';
 import { useAuthStore } from '../../stores/authStore';
@@ -110,9 +109,15 @@ export default function Dashboard() {
       {/* Main Header Content */}
       <View style={styles.headerContent}>
         <View style={styles.brandSection}>
-          <View style={styles.logoContainer}>
-            <GoBangladeshLogo size={28} />
-          </View>
+            <View style={styles.logoContainer}>
+              <View style={styles.logoBackground}>
+                <Image 
+                  source={require('../../assets/images/icon-full-01.png')} 
+                  style={styles.logoImage} 
+                  resizeMode="contain"
+                />
+              </View>
+            </View>
           <View style={styles.brandTextContainer}>
             <Text variant="h4" color={COLORS.white} style={styles.brandName}>
               Go Bangladesh
@@ -503,6 +508,22 @@ const styles = StyleSheet.create({
   logoContainer: {
     marginRight: 12,
   },
+  logoBackground: {
+    width: 38,
+    height: 38,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  logoImage: {
+    width: 28,
+    height: 28,
+  },
   brandTextContainer: {
     flex: 1,
   },
@@ -514,7 +535,6 @@ const styles = StyleSheet.create({
   brandSlogan: {
     fontSize: 12,
     opacity: 0.85,
-    marginTop: 2,
     fontWeight: '500',
     letterSpacing: 0.2,
   },
