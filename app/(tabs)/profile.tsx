@@ -340,34 +340,6 @@ export default function Profile() {
           <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionItem}>
-          <View style={styles.actionLeft}>
-            <View style={[styles.actionIconContainer, { backgroundColor: COLORS.purple + '15' }]}>
-              <Ionicons name="phone-portrait" size={18} color={COLORS.purple} />
-            </View>
-            <Text style={styles.actionText}>App Version 1.2.0</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionItem}>
-          <View style={styles.actionLeft}>
-            <View style={[styles.actionIconContainer, { backgroundColor: COLORS.info + '15' }]}>
-              <Ionicons name="server" size={18} color={COLORS.info} />
-            </View>
-            <Text style={styles.actionText}>Server Status</Text>
-          </View>
-          <Text style={[styles.serverStatus, { color: COLORS.success }]}>Online</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.actionItem, { borderBottomWidth: 0 }]}>
-          <View style={styles.actionLeft}>
-            <View style={[styles.actionIconContainer, { backgroundColor: COLORS.warning + '15' }]}>
-              <Ionicons name="shield-checkmark" size={18} color={COLORS.warning} />
-            </View>
-            <Text style={styles.actionText}>Data Sync</Text>
-          </View>
-          <Text style={[styles.serverStatus, { color: COLORS.success }]}>Synced</Text>
-        </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

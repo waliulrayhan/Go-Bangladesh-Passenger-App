@@ -366,14 +366,14 @@ export default function History() {
         </View>
 
         <View style={styles.rechargeDetails}>
-          {organization && (
+          {/* {organization && (
             <View style={styles.detailRow}>
               <Ionicons name="business" size={14} color={COLORS.gray[500]} />
               <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
                 {organization.name} - {organization.organizationType}
               </Text>
             </View>
-          )}
+          )} */}
           {agent?.address && (
             <View style={styles.detailRow}>
               <Ionicons name="location-outline" size={14} color={COLORS.gray[500]} />
