@@ -22,6 +22,10 @@ export default function VerifyRegistration() {
     gender: 'male' | 'female';
     address: string;
     dateOfBirth: string;
+    passengerId?: string;
+    organizationType: string;
+    organizationId: string;
+    organizationName?: string;
   }>();
 
   const { login } = useAuthStore();

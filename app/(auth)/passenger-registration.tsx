@@ -57,33 +57,41 @@ export default function PassengerRegistration() {
         return;
       }
       
-      // Check if the card is available (not already in use)
-      if (validationResponse.message.includes('already in use')) {
+      // Check if card content exists
+      if (!validationResponse.content) {
         Alert.alert(
-          'Card Already In Use', 
-          'This card is already registered to another user. Please contact support if this is your card.'
+          'Card Not Found', 
+          'Card not found. Please check your card number and try again.'
         );
         setIsLoading(false);
         return;
       }
       
-      if (validationResponse.message.includes('not available')) {
+      // Check if card is available based on the message
+      if (validationResponse.message !== 'This card is available!') {
         Alert.alert(
           'Card Not Available', 
-          'This card is not available for registration. Please check your card number or contact support.'
+          'This card is not available for registration. Please contact support if this is your card.'
         );
         setIsLoading(false);
         return;
       }
       
       // If card is available, proceed to personal info page
-      if (validationResponse.message.includes('available')) {
-        console.log('✅ Card is available for registration');
-        router.push({
-          pathname: '/(auth)/registration-personal-info',
-          params: { cardNumber: cardNumber.trim() }
-        });
-      }
+      console.log('✅ Card is available for registration');
+      console.log('🏢 Organization Type:', validationResponse.content.organization.organizationType);
+      console.log('📋 Card Status:', validationResponse.content.status);
+      console.log('💬 Message:', validationResponse.message);
+      
+      router.push({
+        pathname: '/(auth)/registration-personal-info',
+        params: { 
+          cardNumber: cardNumber.trim(),
+          organizationType: validationResponse.content.organization.organizationType,
+          organizationId: validationResponse.content.organizationId,
+          organizationName: validationResponse.content.organization.name
+        }
+      });
       
     } catch (error: any) {
       console.error('❌ Card validation error:', error);

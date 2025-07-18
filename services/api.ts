@@ -20,7 +20,33 @@ export interface ApiResponse<T> {
 
 export interface CardValidationResponse {
   isSuccess: boolean;
-  content: null;
+  content: {
+    cardNumber: string;
+    status: string;
+    balance: number;
+    organizationId: string;
+    organization: {
+      name: string;
+      code: string;
+      focalPerson: string;
+      designation: string;
+      email: string;
+      mobileNumber: string;
+      organizationType: string;
+      id: string;
+      createTime: string;
+      lastModifiedTime: string;
+      createdBy: string;
+      lastModifiedBy: string;
+      isDeleted: boolean;
+    };
+    id: string;
+    createTime: string;
+    lastModifiedTime: string;
+    createdBy: string;
+    lastModifiedBy: string;
+    isDeleted: boolean;
+  } | null;
   timeStamp: string;
   payloadType: string;
   message: string;
@@ -37,6 +63,7 @@ export interface RegistrationData {
   UserType?: string; // Made optional
   OrganizationId?: string; // Made optional
   CardNumber: string;
+  PassengerId?: string; // For private organizations (educational institutes)
 }
 
 export interface UserResponse {
@@ -711,6 +738,9 @@ class ApiService {
         formData.append('OrganizationId', registrationData.OrganizationId);
       }
       formData.append('CardNumber', registrationData.CardNumber);
+      if (registrationData.PassengerId) {
+        formData.append('PassengerId', registrationData.PassengerId);
+      }
       
       console.log('📤 [REGISTRATION] Sending as FormData...');
       

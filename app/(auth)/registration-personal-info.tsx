@@ -25,6 +25,7 @@ interface PersonalForm {
   dateOfBirth: string;
   password: string;
   confirmPassword: string;
+  passengerId: string; // Added for private organizations
 }
 
 interface FormErrors {
@@ -32,7 +33,12 @@ interface FormErrors {
 }
 
 export default function RegistrationPersonalInfo() {
-  const params = useLocalSearchParams<{ cardNumber: string }>();
+  const params = useLocalSearchParams<{ 
+    cardNumber: string; 
+    organizationType: string; 
+    organizationId: string; 
+    organizationName?: string;
+  }>();
   
   const [form, setForm] = useState<PersonalForm>({
     name: '',
@@ -42,7 +48,8 @@ export default function RegistrationPersonalInfo() {
     address: '',
     dateOfBirth: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    passengerId: ''
   });
   
   const [errors, setErrors] = useState<FormErrors>({});
@@ -80,6 +87,11 @@ export default function RegistrationPersonalInfo() {
       if (!emailRegex.test(form.email.trim())) {
         newErrors.email = 'Please enter a valid email address';
       }
+    }
+
+    // Student ID validation (required for private organizations)
+    if (params.organizationType === 'Private' && !form.passengerId.trim()) {
+      newErrors.passengerId = 'Student ID is required for educational institutes';
     }
 
     // Password validation
@@ -133,7 +145,7 @@ export default function RegistrationPersonalInfo() {
         formattedDate = `${year}-${month}-${day} 00:00:00.0000000`;
       }
 
-      // Prepare registration data for API - UserType is required as "Public" for passenger registration
+      // Prepare registration data for API
       const registrationData: RegistrationData = {
         Name: form.name.trim(),
         MobileNumber: form.phone.trim(),
@@ -142,9 +154,10 @@ export default function RegistrationPersonalInfo() {
         Address: form.address.trim() || undefined,
         DateOfBirth: formattedDate || undefined,
         Password: form.password,
-        // UserType: "Public", // Required field for passenger registration
-        // OrganizationId: "1",
-        CardNumber: params.cardNumber || ''
+        UserType: params.organizationType === 'Private' ? 'Private' : 'Public',
+        OrganizationId: params.organizationId,
+        CardNumber: params.cardNumber || '',
+        PassengerId: params.organizationType === 'Private' ? form.passengerId.trim() : undefined
       };
 
       console.log('🚀 Starting registration process...');
@@ -153,7 +166,9 @@ export default function RegistrationPersonalInfo() {
         mobile: registrationData.MobileNumber,
         email: registrationData.EmailAddress,
         cardNumber: registrationData.CardNumber,
-        userType: registrationData.UserType
+        userType: registrationData.UserType,
+        organizationId: registrationData.OrganizationId,
+        passengerId: registrationData.PassengerId
       });
 
       // Store registration data temporarily for use after OTP verification
@@ -166,6 +181,10 @@ export default function RegistrationPersonalInfo() {
         address: form.address.trim(),
         dateOfBirth: form.dateOfBirth.trim(),
         password: form.password, // Store securely for post-OTP login
+        passengerId: form.passengerId.trim(),
+        organizationType: params.organizationType,
+        organizationId: params.organizationId,
+        organizationName: params.organizationName,
         registrationData: registrationData // Store full registration data for API call after OTP
       });
       
@@ -186,7 +205,11 @@ export default function RegistrationPersonalInfo() {
           email: form.email.trim(),
           gender: form.gender,
           address: form.address.trim(),
-          dateOfBirth: form.dateOfBirth.trim()
+          dateOfBirth: form.dateOfBirth.trim(),
+          passengerId: form.passengerId.trim(),
+          organizationType: params.organizationType,
+          organizationId: params.organizationId,
+          organizationName: params.organizationName
         }
       });
       
@@ -287,13 +310,23 @@ export default function RegistrationPersonalInfo() {
             
             <Text variant="h3" style={styles.title}>Personal Information</Text>
             <Text style={styles.subtitle}>
-              Complete your profile to finish registration
+              {params.organizationType === 'Private' 
+                ? 'Complete your profile for educational institute registration'
+                : 'Complete your profile to finish registration'
+              }
             </Text>
             
             <View style={styles.cardInfo}>
               <Text style={styles.cardLabel}>Card Number:</Text>
               <Text style={styles.cardNumber}>{params.cardNumber}</Text>
             </View>
+            
+            {params.organizationType === 'Private' && (
+              <View style={styles.orgInfo}>
+                <Text style={styles.orgLabel}>Organization:</Text>
+                <Text style={styles.orgType}>{params.organizationName || 'Educational Institute'}</Text>
+              </View>
+            )}
           </Animated.View>
 
           <Animated.View entering={FadeInDown.duration(800).delay(200)}>
@@ -328,6 +361,17 @@ export default function RegistrationPersonalInfo() {
                   icon="mail"
                   error={errors.email}
                 />
+
+                {params.organizationType === 'Private' && (
+                  <Input
+                    label="Student ID *"
+                    value={form.passengerId}
+                    onChangeText={(value) => updateForm('passengerId', value)}
+                    placeholder="Enter your student ID"
+                    icon="school"
+                    error={errors.passengerId}
+                  />
+                )}
 
                 <View style={styles.genderSection}>
                   <Text style={styles.genderLabel}>Gender</Text>
@@ -517,6 +561,26 @@ const styles = StyleSheet.create({
   cardNumber: {
     fontSize: 14,
     color: COLORS.secondary,
+    fontWeight: '600',
+  },
+  orgInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.brand.blue_subtle,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 8,
+    gap: SPACING.xs,
+    marginTop: SPACING.xs,
+  },
+  orgLabel: {
+    fontSize: 14,
+    color: COLORS.gray[700],
+    fontWeight: '500',
+  },
+  orgType: {
+    fontSize: 14,
+    color: COLORS.primary,
     fontWeight: '600',
   },
   formCard: {
