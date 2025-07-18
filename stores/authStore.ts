@@ -80,6 +80,12 @@ const extractUserFromJWT = (token: string, identifier: string): User | null => {
   
   if (!payload) return null;
   
+  // Validate user type - only allow Public or Private users
+  if (payload.UserType !== 'Public' && payload.UserType !== 'Private') {
+    console.warn('❌ [JWT] User type validation failed:', payload.UserType);
+    return null;
+  }
+  
   // Determine if identifier is mobile or email
   const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
   const isMobile = phoneRegex.test(identifier);
@@ -90,7 +96,8 @@ const extractUserFromJWT = (token: string, identifier: string): User | null => {
     mobile: isMobile ? identifier : '', // Use identifier if it's mobile
     email: !isMobile ? identifier : undefined, // Use identifier if it's email
     sex: 'male' as const, // Default since JWT doesn't contain this
-    userType: 'passenger' as const,
+    userType: (payload.UserType?.toLowerCase() === 'public' ? 'public' : 
+              payload.UserType?.toLowerCase() === 'private' ? 'private' : 'passenger') as 'passenger' | 'public' | 'private',
     isActive: true,
     createdAt: new Date().toISOString(),
     profileImage: undefined
@@ -191,7 +198,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               console.warn('❌ [LOGIN] User type validation failed:', userResponse.userType);
               set({
                 isLoading: false,
-                error: 'Access denied. This app is only for Public or Private users. Please contact your organization if you believe this is an error.'
+                error: 'Access denied. This app is only for Passengers.'
               });
               return false;
             }
@@ -254,7 +261,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         
         if (jwtUser) {
           await storageService.setItem(STORAGE_KEYS.USER_DATA, jwtUser);
-          await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+          await storageService.setItem(STORAGE_KEYS.USER_TYPE, jwtUser.userType);
 
           set({
             user: jwtUser,
@@ -267,6 +274,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           console.log('✅ [LOGIN] Fresh login completed with JWT fallback');
           return true;
         } else {
+          // Check if JWT extraction failed due to invalid user type
+          const { decodeJWT } = require('../utils/jwt');
+          const payload = decodeJWT(authResponse.token);
+          
+          if (payload && payload.UserType && payload.UserType !== 'Public' && payload.UserType !== 'Private') {
+            console.warn('❌ [LOGIN] JWT user type validation failed:', payload.UserType);
+            set({
+              isLoading: false,
+              error: 'Access denied. This app is only for Passengers.'
+            });
+            return false;
+          }
+          
           // STEP 9: Basic fallback (last resort)
           const basicUser: User = {
             id: userId,
@@ -299,7 +319,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         
         if (jwtUser) {
           await storageService.setItem(STORAGE_KEYS.USER_DATA, jwtUser);
-          await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+          await storageService.setItem(STORAGE_KEYS.USER_TYPE, jwtUser.userType);
 
           set({
             user: jwtUser,
@@ -311,6 +331,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
           return true;
         } else {
+          // Check if JWT extraction failed due to invalid user type
+          const { decodeJWT } = require('../utils/jwt');
+          const payload = decodeJWT(authResponse.token);
+          
+          if (payload && payload.UserType && payload.UserType !== 'Public' && payload.UserType !== 'Private') {
+            console.warn('❌ [LOGIN] JWT user type validation failed:', payload.UserType);
+            set({
+              isLoading: false,
+              error: 'Access denied. This app is only for Passengers.'
+            });
+            return false;
+          }
+          
           // Final fallback
           const basicUser: User = {
             id: Date.now(),
@@ -383,7 +416,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               console.warn('❌ [LOGIN] User type validation failed:', userResponse.userType);
               set({
                 isLoading: false,
-                error: 'Access denied. This app is only for Public or Private users. Please contact your organization if you believe this is an error.'
+                error: 'Access denied. This app is only for Passengers.'
               });
               return false;
             }
@@ -473,7 +506,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         
         // Store fresh auth data
         await storageService.setItem(STORAGE_KEYS.USER_DATA, jwtUser);
-        await storageService.setItem(STORAGE_KEYS.USER_TYPE, 'passenger');
+        await storageService.setItem(STORAGE_KEYS.USER_TYPE, jwtUser.userType);
 
         set({
           user: jwtUser,
@@ -485,6 +518,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         return true;
       } else {
+        // Check if JWT extraction failed due to invalid user type
+        const { decodeJWT } = require('../utils/jwt');
+        const payload = decodeJWT(authResponse.token);
+        
+        if (payload && payload.UserType && payload.UserType !== 'Public' && payload.UserType !== 'Private') {
+          console.warn('❌ [LOGIN] JWT user type validation failed:', payload.UserType);
+          set({
+            isLoading: false,
+            error: 'Access denied. This app is only for Passengers.'
+          });
+          return false;
+        }
+        
         // STEP 9: Basic fallback (last resort)
         const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
         const mobileNumber = phoneRegex.test(identifier) ? identifier : '';
@@ -605,7 +651,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (token && userData) {
         try {
           // Check if token is expired
-          const { isTokenExpired } = await import('../utils/jwt');
+          const { isTokenExpired, extractUserInfoFromJWT } = await import('../utils/jwt');
           if (isTokenExpired(token)) {
             console.warn('⚠️ [LOAD-USER] Token is expired, clearing auth data');
             // Token is expired, clear auth data
@@ -615,6 +661,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               user: null,
               isAuthenticated: false,
               isLoading: false
+            });
+            return;
+          }
+          
+          // Validate user type from JWT token
+          const userInfo = extractUserInfoFromJWT(token);
+          if (userInfo && userInfo.userType !== 'public' && userInfo.userType !== 'private') {
+            console.warn('❌ [LOAD-USER] User type validation failed:', userInfo.userType);
+            await storageService.clearAuthData();
+            await storageService.removeItem(STORAGE_KEYS.REGISTRATION_COMPLETE);
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: 'Access denied. This app is only for Public or Private users.'
             });
             return;
           }
@@ -1069,6 +1130,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return false;
       }
 
+      // Validate user type - only allow Public or Private users
+      if (userInfo.userType !== 'public' && userInfo.userType !== 'private') {
+        console.warn('❌ [REFRESH] User type validation failed:', userInfo.userType);
+        await get().handleUnauthorized();
+        return false;
+      }
+
       const { user: currentUser } = get();
       
       // If we have a user ID, try to get fresh data from API
@@ -1077,6 +1145,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           const userResponse = await apiService.getUserById(userInfo.userId);
           
           if (userResponse) {
+            // Validate user type - only allow Public or Private users
+            if (userResponse.userType !== 'Public' && userResponse.userType !== 'Private') {
+              console.warn('❌ [REFRESH] API user type validation failed:', userResponse.userType);
+              await get().handleUnauthorized();
+              return false;
+            }
+            
             // Create updated user object with fresh API data
             const updatedUser: User = {
               id: userResponse.id,
