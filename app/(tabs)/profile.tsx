@@ -203,7 +203,7 @@ export default function Profile() {
     return (
       <Animated.View entering={FadeInUp.duration(600).delay(400)} style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Account Information</Text>
+          <Text variant="h5" color={COLORS.secondary} style={styles.sectionTitle}> Account Information</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.editButton}>
               <Ionicons name="create-outline" size={16} color={COLORS.primary} />
@@ -305,7 +305,7 @@ export default function Profile() {
 
   const renderActions = () => (
     <Animated.View entering={FadeInDown.duration(600).delay(700)} style={styles.section}>
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
+      <Text variant="h5" color={COLORS.secondary} style={styles.sectionTitle}> Quick Actions</Text>
       <View style={styles.actionsList}>
         <TouchableOpacity style={styles.actionItem}>
           <View style={styles.actionLeft}>
@@ -663,10 +663,7 @@ const styles = StyleSheet.create({
 
   // Section Styles
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.gray[800],
-    marginBottom: 8,
+    fontWeight: '600',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -704,8 +701,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[50],
+    borderBottomWidth: 1.5,
+    borderBottomColor: COLORS.gray[100],
   },
   infoIcon: {
     width: 28,
@@ -778,8 +775,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[50],
+    borderBottomWidth: 1.5,
+    borderBottomColor: COLORS.gray[100],
   },
   actionLeft: {
     flexDirection: 'row',

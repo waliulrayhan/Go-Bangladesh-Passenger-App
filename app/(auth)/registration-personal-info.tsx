@@ -156,11 +156,6 @@ export default function RegistrationPersonalInfo() {
         userType: registrationData.UserType
       });
 
-      // Register the passenger
-      await apiService.registerPassenger(registrationData);
-      
-      console.log('✅ Registration successful, sending OTP...');
-      
       // Store registration data temporarily for use after OTP verification
       await storageService.setItem('temp_registration_data', {
         cardNumber: params.cardNumber,
@@ -170,13 +165,14 @@ export default function RegistrationPersonalInfo() {
         gender: form.gender,
         address: form.address.trim(),
         dateOfBirth: form.dateOfBirth.trim(),
-        password: form.password // Store securely for post-OTP login
+        password: form.password, // Store securely for post-OTP login
+        registrationData: registrationData // Store full registration data for API call after OTP
       });
       
-      // Send OTP to mobile number
+      // Send OTP to mobile number (do not register yet - wait for OTP verification)
       await apiService.sendOTP(form.phone.trim());
       
-      console.log('✅ OTP sent successfully');
+      console.log('✅ OTP sent successfully, registration will complete after OTP verification');
       
       setIsLoading(false);
       

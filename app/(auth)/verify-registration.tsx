@@ -106,9 +106,6 @@ export default function VerifyRegistration() {
       if (verificationResult) {
         console.log('✅ OTP verification successful');
         
-        // After successful OTP verification, login using the user's actual password
-        console.log('🔑 Logging in user with stored credentials...');
-        
         // Retrieve stored registration data
         const tempData = await storageService.getItem<any>('temp_registration_data');
         console.log('🔍 Retrieved temp data:', tempData);
@@ -118,13 +115,13 @@ export default function VerifyRegistration() {
           setIsLoading(false);
           
           Alert.alert(
-            'Registration Complete',
-            'Your account has been created successfully. Please log in with your credentials.',
+            'Registration Error',
+            'Registration data not found. Please start the registration process again.',
             [
               {
-                text: 'Go to Login',
+                text: 'Go to Registration',
                 onPress: () => {
-                  router.replace('/(auth)/passenger-login');
+                  router.replace('/(auth)/passenger-registration');
                 }
               }
             ]
@@ -132,51 +129,84 @@ export default function VerifyRegistration() {
           return;
         }
         
-        // Clean up temporary storage immediately
-        await storageService.removeItem('temp_registration_data');
+        // Now call the registration API after successful OTP verification
+        console.log('🔑 Calling registration API after OTP verification...');
         
-        // Use loginWithPassword with the stored password
-        const { loginWithPassword } = useAuthStore.getState();
-        const loginSuccess = await loginWithPassword(tempData.phone, tempData.password);
-        
-        if (loginSuccess) {
-          // Load card data using the store's loadCardDetails method
-          try {
-            await useCardStore.getState().loadCardDetails();
-          } catch (cardError) {
-            console.log('ℹ️ Card data loading failed:', cardError);
+        try {
+          // Register the passenger using the stored registration data
+          await apiService.registerPassenger(tempData.registrationData);
+          
+          console.log('✅ Registration API call successful');
+          
+          // Clean up temporary storage after successful registration
+          await storageService.removeItem('temp_registration_data');
+          
+          // Use loginWithPassword with the stored password
+          const { loginWithPassword } = useAuthStore.getState();
+          const loginSuccess = await loginWithPassword(tempData.phone, tempData.password);
+          
+          if (loginSuccess) {
+            // Load card data using the store's loadCardDetails method
+            try {
+              await useCardStore.getState().loadCardDetails();
+            } catch (cardError) {
+              console.log('ℹ️ Card data loading failed:', cardError);
+            }
+            
+            setIsLoading(false);
+            
+            Alert.alert(
+              'Registration Successful!',
+              'Your account has been created successfully. Welcome to Go Bangladesh!',
+              [
+                {
+                  text: 'Continue',
+                  onPress: () => {
+                    router.replace('/(tabs)');
+                  }
+                }
+              ]
+            );
+          } else {
+            // If login fails, still show success message but redirect to login
+            setIsLoading(false);
+            
+            Alert.alert(
+              'Registration Complete',
+              'Your account has been created successfully. Please log in to continue.',
+              [
+                {
+                  text: 'Go to Login',
+                  onPress: () => {
+                    router.replace('/(auth)/passenger-login');
+                  }
+                }
+              ]
+            );
+          }
+        } catch (registrationError: any) {
+          console.error('❌ Registration API error:', registrationError);
+          setIsLoading(false);
+          
+          // Clean up temporary storage even on failure
+          await storageService.removeItem('temp_registration_data');
+          
+          let errorMessage = 'Registration failed after OTP verification. Please try again.';
+          
+          if (registrationError.message) {
+            errorMessage = registrationError.message;
+          } else if (registrationError.response?.data?.data?.message) {
+            errorMessage = registrationError.response.data.data.message;
           }
           
-          setIsLoading(false);
-          
-          Alert.alert(
-            'Registration Successful!',
-            'Your account has been created successfully. Welcome to Go Bangladesh!',
-            [
-              {
-                text: 'Continue',
-                onPress: () => {
-                  router.replace('/(tabs)');
-                }
+          Alert.alert('Registration Error', errorMessage, [
+            {
+              text: 'Try Again',
+              onPress: () => {
+                router.replace('/(auth)/passenger-registration');
               }
-            ]
-          );
-        } else {
-          // If login fails, still show success message but redirect to login
-          setIsLoading(false);
-          
-          Alert.alert(
-            'Registration Complete',
-            'Your account has been created successfully. Please log in to continue.',
-            [
-              {
-                text: 'Go to Login',
-                onPress: () => {
-                  router.replace('/(auth)/passenger-login');
-                }
-              }
-            ]
-          );
+            }
+          ]);
         }
       }
     } catch (error: any) {
