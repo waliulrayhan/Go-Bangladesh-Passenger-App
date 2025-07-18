@@ -125,10 +125,6 @@ export default function Profile() {
           <View style={styles.profileInfo}>
             <Text style={styles.name}>{user?.name || 'Not Provided'}</Text>
             <Text style={styles.userType}>{getUserTypeText()}</Text>
-            <View style={styles.statusChip}>
-              <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
-              <Text style={[styles.statusText, { color: COLORS.success }]}>Active</Text>
-            </View>
           </View>
         </View>
       </Animated.View>
@@ -400,16 +396,16 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Dual Color Glow Background - Teal Top, Orange Bottom */}
+      {/* Refined Gradient Background - Brand Colors */}
       <LinearGradient
         colors={[
-          'rgba(56, 193, 182, 0.5)',   // Teal at top
-          'rgba(56, 193, 182, 0.2)', 
+          'rgba(74, 144, 226, 0.08)',   // Brand blue at top
+          'rgba(74, 144, 226, 0.04)', 
           'transparent',
-          'rgba(255, 140, 60, 0.2)',   // Orange transition
-          'rgba(255, 140, 60, 0.4)'    // Orange at bottom
+          'rgba(255, 138, 0, 0.03)',   // Brand orange transition
+          'rgba(255, 138, 0, 0.08)'    // Brand orange at bottom
         ]}
-        locations={[0, 0.2, 0.5, 0.8, 1]}
+        locations={[0, 0.25, 0.5, 0.75, 1]}
         style={styles.glowBackground}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -480,37 +476,45 @@ const styles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   profileCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     elevation: 8,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(74, 144, 226, 0.1)',
   },
   avatarSection: {
     position: 'relative',
-    marginRight: 16,
+    marginRight: 12,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(74, 144, 226, 0.2)',
   },
   profileImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: 'rgba(74, 144, 226, 0.2)',
   },
   avatarText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.white,
   },
@@ -525,6 +529,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: COLORS.white,
+    elevation: 4,
   },
   statusDot: {
     width: 6,
@@ -536,25 +541,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
     color: COLORS.gray[900],
     marginBottom: 2,
+    letterSpacing: 0.2,
   },
   userType: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.gray[600],
-    marginBottom: 8,
+    marginBottom: 6,
     fontWeight: '500',
   },
   statusChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: 'rgba(0, 200, 81, 0.1)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 200, 81, 0.2)',
   },
   statusText: {
     fontSize: 12,
@@ -564,26 +572,32 @@ const styles = StyleSheet.create({
 
   // Balance Card Styles
   balanceCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
     borderRadius: 16,
     padding: 16,
     elevation: 8,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(74, 144, 226, 0.1)',
   },
   balanceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   balanceIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: COLORS.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '20',
   },
   balanceInfo: {
     flex: 1,
@@ -595,18 +609,21 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   balanceAmount: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '800',
     color: COLORS.primary,
+    letterSpacing: 0.3,
   },
   updateCardButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary + '10',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    backgroundColor: COLORS.primary + '12',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
     gap: 4,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '20',
   },
   updateCardText: {
     fontSize: 12,
@@ -614,9 +631,12 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   cardNumberContainer: {
-    backgroundColor: COLORS.gray[50],
-    borderRadius: 8,
+    backgroundColor: 'rgba(74, 144, 226, 0.05)',
+    borderRadius: 10,
     padding: 12,
+    marginTop: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(74, 144, 226, 0.1)',
   },
   cardNumberLabel: {
     fontSize: 10,
@@ -662,19 +682,23 @@ const styles = StyleSheet.create({
 
   // Info List Styles
   infoList: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderRadius: 14,
     elevation: 6,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(74, 144, 226, 0.08)',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1.5,
-    borderBottomColor: COLORS.gray[100],
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(74, 144, 226, 0.08)',
   },
   infoIcon: {
     width: 28,
@@ -697,6 +721,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.gray[800],
+    letterSpacing: 0.1,
   },
 
   // Stats Grid Styles
@@ -734,12 +759,17 @@ const styles = StyleSheet.create({
 
   // Actions Styles
   actionsList: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderRadius: 14,
+    marginTop: 8,
+    marginBottom: 50,
     elevation: 6,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(74, 144, 226, 0.08)',
   },
   actionItem: {
     flexDirection: 'row',
@@ -747,8 +777,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1.5,
-    borderBottomColor: COLORS.gray[100],
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(74, 144, 226, 0.08)',
   },
   actionLeft: {
     flexDirection: 'row',
@@ -767,6 +797,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.gray[800],
+    letterSpacing: 0.1,
   },
   serverStatus: {
     fontSize: 12,
@@ -777,13 +808,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.error,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 14,
+    borderRadius: 14,
+    elevation: 4,
+    shadowColor: COLORS.error,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
   },
   logoutText: {
     fontSize: 14,
     fontWeight: '700',
     color: COLORS.white,
     marginLeft: 6,
+    letterSpacing: 0.2,
   },
 });
