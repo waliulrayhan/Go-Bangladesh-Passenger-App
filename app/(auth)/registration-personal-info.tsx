@@ -364,7 +364,7 @@ export default function RegistrationPersonalInfo() {
 
                 {params.organizationType === 'Private' && (
                   <Input
-                    label="Student ID *"
+                    label="ID *"
                     value={form.passengerId}
                     onChangeText={(value) => updateForm('passengerId', value)}
                     placeholder="Enter your student ID"

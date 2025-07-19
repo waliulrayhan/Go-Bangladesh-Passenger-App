@@ -1,0 +1,416 @@
+import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { Alert, Modal, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { COLORS, SPACING } from '../utils/constants';
+import { AboutModal } from './AboutModal';
+import { NotificationPreferencesModal } from './NotificationPreferencesModal';
+import { Text } from './ui/Text';
+
+interface SettingsModalProps {
+  visible: boolean;
+  onClose: () => void;
+}
+
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+  visible,
+  onClose
+}) => {
+  const [notifications, setNotifications] = useState(true);
+  const [biometricAuth, setBiometricAuth] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+  const [soundEffects, setSoundEffects] = useState(true);
+  const [autoTopUp, setAutoTopUp] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+
+  const handleClearCache = () => {
+    Alert.alert(
+      'Clear Cache',
+      'Are you sure you want to clear the app cache? This will remove temporarily stored data.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => {
+            // Add cache clearing logic here
+            Alert.alert('Success', 'Cache cleared successfully');
+          }
+        }
+      ]
+    );
+  };
+
+  const handleExportData = () => {
+    Alert.alert(
+      'Export Data',
+      'This will export your transaction history and profile data. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Export',
+          onPress: () => {
+            // Add data export logic here
+            Alert.alert('Success', 'Data exported successfully');
+          }
+        }
+      ]
+    );
+  };
+
+  const handleResetSettings = () => {
+    Alert.alert(
+      'Reset Settings',
+      'Are you sure you want to reset all settings to default values?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: () => {
+            setNotifications(true);
+            setBiometricAuth(false);
+            setAutoRefresh(true);
+            setDarkMode(false);
+            setSoundEffects(true);
+            setAutoTopUp(false);
+            Alert.alert('Success', 'Settings reset to default values');
+          }
+        }
+      ]
+    );
+  };
+
+  const SettingSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <View style={styles.section}>
+      <Text variant="h6" style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionContent}>
+        {children}
+      </View>
+    </View>
+  );
+
+  const SettingItem = ({ 
+    icon, 
+    title, 
+    subtitle, 
+    value, 
+    onValueChange,
+    type = 'switch'
+  }: {
+    icon: string;
+    title: string;
+    subtitle?: string;
+    value?: boolean;
+    onValueChange?: (value: boolean) => void;
+    type?: 'switch' | 'action';
+  }) => (
+    <View style={styles.settingItem}>
+      <View style={styles.settingLeft}>
+        <View style={styles.settingIcon}>
+          <Ionicons name={icon as any} size={20} color={COLORS.primary} />
+        </View>
+        <View style={styles.settingInfo}>
+          <Text variant="body" style={styles.settingTitle}>{title}</Text>
+          {subtitle && (
+            <Text variant="caption" style={styles.settingSubtitle}>{subtitle}</Text>
+          )}
+        </View>
+      </View>
+      {type === 'switch' && value !== undefined && onValueChange && (
+        <Switch
+          value={value}
+          onValueChange={onValueChange}
+          trackColor={{ false: COLORS.gray[300], true: COLORS.primary + '40' }}
+          thumbColor={value ? COLORS.primary : COLORS.gray[400]}
+        />
+      )}
+      {type === 'action' && (
+        <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
+      )}
+    </View>
+  );
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.headerIcon}>
+              <Ionicons name="settings" size={20} color={COLORS.primary} />
+            </View>
+            <Text variant="h5" style={styles.headerTitle}>Settings</Text>
+          </View>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Ionicons name="close" size={24} color={COLORS.gray[600]} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Notifications */}
+          <SettingSection title="Notifications">
+            <SettingItem
+              icon="notifications"
+              title="Push Notifications"
+              subtitle="Get alerts for transactions and updates"
+              value={notifications}
+              onValueChange={setNotifications}
+            />
+            <TouchableOpacity onPress={() => setShowNotificationModal(true)}>
+              <SettingItem
+                icon="settings"
+                title="Notification Preferences"
+                subtitle="Customize your notification settings"
+                type="action"
+              />
+            </TouchableOpacity>
+            <SettingItem
+              icon="volume-high"
+              title="Sound Effects"
+              subtitle="Play sounds for actions and notifications"
+              value={soundEffects}
+              onValueChange={setSoundEffects}
+            />
+          </SettingSection>
+
+          {/* Security */}
+          <SettingSection title="Security">
+            <SettingItem
+              icon="finger-print"
+              title="Biometric Authentication"
+              subtitle="Use fingerprint or face recognition"
+              value={biometricAuth}
+              onValueChange={setBiometricAuth}
+            />
+            <SettingItem
+              icon="refresh"
+              title="Auto Refresh Data"
+              subtitle="Automatically refresh balance and transactions"
+              value={autoRefresh}
+              onValueChange={setAutoRefresh}
+            />
+          </SettingSection>
+
+          {/* Card Management */}
+          <SettingSection title="Card Management">
+            <SettingItem
+              icon="wallet"
+              title="Auto Top-up"
+              subtitle="Automatically add funds when balance is low (৳20)"
+              value={autoTopUp}
+              onValueChange={setAutoTopUp}
+            />
+            <SettingItem
+              icon="card"
+              title="Quick Balance Check"
+              subtitle="Show balance on app icon (if supported)"
+              value={false}
+              onValueChange={() => {}}
+            />
+          </SettingSection>
+
+          {/* Appearance */}
+          <SettingSection title="Appearance">
+            <SettingItem
+              icon="moon"
+              title="Dark Mode"
+              subtitle="Switch to dark theme (coming soon)"
+              value={darkMode}
+              onValueChange={setDarkMode}
+            />
+            <SettingItem
+              icon="contrast"
+              title="High Contrast"
+              subtitle="Improve readability with high contrast colors"
+              value={false}
+              onValueChange={() => {}}
+            />
+          </SettingSection>
+
+          {/* Privacy */}
+          <SettingSection title="Privacy">
+            <SettingItem
+              icon="eye-off"
+              title="Private Mode"
+              subtitle="Hide balance and transaction amounts"
+              value={false}
+              onValueChange={() => {}}
+            />
+            <SettingItem
+              icon="analytics"
+              title="Usage Analytics"
+              subtitle="Help improve the app by sharing usage data"
+              value={true}
+              onValueChange={() => {}}
+            />
+          </SettingSection>
+
+          {/* Data Management */}
+          <SettingSection title="Data Management">
+            <TouchableOpacity onPress={handleExportData}>
+              <SettingItem
+                icon="download"
+                title="Export Data"
+                subtitle="Download your transaction history"
+                type="action"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleClearCache}>
+              <SettingItem
+                icon="trash"
+                title="Clear Cache"
+                subtitle="Remove temporary files to free up space"
+                type="action"
+              />
+            </TouchableOpacity>
+          </SettingSection>
+
+          {/* App Information */}
+          <SettingSection title="App Information">
+            <TouchableOpacity onPress={() => setShowAboutModal(true)}>
+              <SettingItem
+                icon="information-circle"
+                title="About Go Bangladesh"
+                subtitle="App info, version, and developer details"
+                type="action"
+              />
+            </TouchableOpacity>
+            <SettingItem
+              icon="code-slash"
+              title="App Version"
+              subtitle="v1.0.0 (Build 100)"
+              type="action"
+            />
+            <TouchableOpacity onPress={handleResetSettings}>
+              <SettingItem
+                icon="refresh-circle"
+                title="Reset Settings"
+                subtitle="Restore default settings"
+                type="action"
+              />
+            </TouchableOpacity>
+          </SettingSection>
+
+          {/* Bottom padding for better scrolling */}
+          <View style={styles.bottomPadding} />
+        </ScrollView>
+      </View>
+
+      {/* About Modal */}
+      <AboutModal
+        visible={showAboutModal}
+        onClose={() => setShowAboutModal(false)}
+      />
+
+      {/* Notification Preferences Modal */}
+      <NotificationPreferencesModal
+        visible={showNotificationModal}
+        onClose={() => setShowNotificationModal(false)}
+      />
+    </Modal>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.gray[50],
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[200],
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.sm,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.gray[900],
+  },
+  closeButton: {
+    padding: SPACING.xs,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: SPACING.md,
+  },
+  section: {
+    marginTop: SPACING.lg,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray[700],
+    marginBottom: SPACING.sm,
+    paddingHorizontal: SPACING.xs,
+  },
+  sectionContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[100],
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  settingIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary + '10',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.sm,
+  },
+  settingInfo: {
+    flex: 1,
+  },
+  settingTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.gray[900],
+  },
+  settingSubtitle: {
+    fontSize: 12,
+    color: COLORS.gray[600],
+    marginTop: 1,
+  },
+  bottomPadding: {
+    height: 40,
+  },
+});

@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Alert, Dimensions, Image, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
+import { HelpSupportModal } from '../../components/HelpSupportModal';
+import { SettingsModal } from '../../components/SettingsModal';
 import { Text } from '../../components/ui/Text';
 import { UpdateCardModal } from '../../components/UpdateCardModal';
 import { useTokenRefresh } from '../../hooks/useTokenRefresh';
@@ -23,6 +25,8 @@ export default function Profile() {
   
   const [refreshing, setRefreshing] = React.useState(false);
   const [showUpdateCardModal, setShowUpdateCardModal] = React.useState(false);
+  const [showSettingsModal, setShowSettingsModal] = React.useState(false);
+  const [showHelpSupportModal, setShowHelpSupportModal] = React.useState(false);
 
   // Check if user is public type
   const isPublicUser = user?.userType === 'public';
@@ -154,7 +158,7 @@ export default function Profile() {
                 styles.balanceAmount,
                 !hasBalance && { color: COLORS.gray[500] }
               ]}>
-                {hasBalance ? `৳${displayBalance}` : displayBalance}
+                {hasBalance ? `৳${displayBalance+" BDT"}` : displayBalance}
               </Text>
             </View>
             {isPublicUser && hasBalance && (
@@ -303,7 +307,10 @@ export default function Profile() {
     <Animated.View entering={FadeInDown.duration(600).delay(700)} style={styles.section}>
       <Text variant="h5" color={COLORS.secondary} style={styles.sectionTitle}> Quick Actions</Text>
       <View style={styles.actionsList}>
-        <TouchableOpacity style={styles.actionItem}>
+        <TouchableOpacity 
+          style={styles.actionItem}
+          onPress={() => setShowSettingsModal(true)}
+        >
           <View style={styles.actionLeft}>
             <View style={[styles.actionIconContainer, { backgroundColor: COLORS.info + '15' }]}>
               <Ionicons name="settings-outline" size={18} color={COLORS.info} />
@@ -326,7 +333,10 @@ export default function Profile() {
           <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionItem}>
+        <TouchableOpacity 
+          style={styles.actionItem}
+          onPress={() => setShowHelpSupportModal(true)}
+        >
           <View style={styles.actionLeft}>
             <View style={[styles.actionIconContainer, { backgroundColor: COLORS.purple + '15' }]}>
               <Ionicons name="help-circle-outline" size={18} color={COLORS.purple} />
@@ -438,6 +448,18 @@ export default function Profile() {
         onClose={() => setShowUpdateCardModal(false)}
         onUpdate={handleUpdateCard}
         onSendOTP={handleSendOTPForCardUpdate}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        visible={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
+
+      {/* Help & Support Modal */}
+      <HelpSupportModal
+        visible={showHelpSupportModal}
+        onClose={() => setShowHelpSupportModal(false)}
       />
     </SafeAreaView>
   );
