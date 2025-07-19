@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Alert, Dimensions, Image, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
+import { EditProfileModal } from '../../components/EditProfileModal';
 import { HelpSupportModal } from '../../components/HelpSupportModal';
 import { SettingsModal } from '../../components/SettingsModal';
 import { Text } from '../../components/ui/Text';
@@ -27,6 +28,7 @@ export default function Profile() {
   const [showUpdateCardModal, setShowUpdateCardModal] = React.useState(false);
   const [showSettingsModal, setShowSettingsModal] = React.useState(false);
   const [showHelpSupportModal, setShowHelpSupportModal] = React.useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = React.useState(false);
 
   // Check if user is public type
   const isPublicUser = user?.userType === 'public';
@@ -205,7 +207,15 @@ export default function Profile() {
         <View style={styles.sectionHeader}>
           <Text variant="h5" color={COLORS.secondary} style={styles.sectionTitle}> Account Information</Text>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.editButton}>
+            <TouchableOpacity 
+              style={styles.editButton}
+              onPress={() => {
+                console.log('🔘 Edit button pressed');
+                console.log('👤 User data:', user);
+                setShowEditProfileModal(true);
+                console.log('🔄 Modal state set to true');
+              }}
+            >
               <Ionicons name="create-outline" size={16} color={COLORS.primary} />
               <Text style={styles.editText}>Edit</Text>
             </TouchableOpacity>
@@ -404,6 +414,28 @@ export default function Profile() {
     }
   };
 
+  const handleUpdateProfile = async (updateData: any) => {
+    if (!user?.id) {
+      throw new Error('User ID not found');
+    }
+
+    try {
+      console.log('🔄 Updating profile for user:', user.id);
+      const response = await apiService.updatePassengerProfile(updateData);
+      
+      if (response.isSuccess) {
+        Alert.alert('Success', response.message || 'Profile updated successfully!');
+        // Refresh user data to get the updated information
+        await refreshAllData();
+      } else {
+        throw new Error(response.message || 'Failed to update profile');
+      }
+    } catch (error: any) {
+      console.error('❌ Update profile error:', error);
+      throw error;
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Refined Gradient Background - Brand Colors */}
@@ -461,6 +493,44 @@ export default function Profile() {
         visible={showHelpSupportModal}
         onClose={() => setShowHelpSupportModal(false)}
       />
+
+      {/* Edit Profile Modal */}
+      {user && (
+        <EditProfileModal
+          visible={showEditProfileModal}
+          onClose={() => {
+            console.log('🔘 Modal close requested');
+            setShowEditProfileModal(false);
+          }}
+          onUpdate={handleUpdateProfile}
+          userData={{
+            id: user.id.toString(),
+            name: user.name,
+            mobileNumber: user.mobileNumber || user.mobile || '',
+            emailAddress: user.emailAddress || user.email || '',
+            gender: user.gender || user.sex || '',
+            address: user.address || '',
+            dateOfBirth: user.dateOfBirth || '',
+            userType: user.userType || 'public',
+            imageUrl: user.imageUrl || '',
+            passengerId: user.passengerId || '',
+            studentId: user.studentId || '',
+            organizationId: user.organizationId || '',
+            organization: typeof user.organization === 'object' && user.organization?.name 
+              ? { name: user.organization.name }
+              : undefined,
+          }}
+        />
+      )}
+      
+      {/* Debug Info */}
+      {__DEV__ && (
+        <View style={{ position: 'absolute', top: 100, right: 10, backgroundColor: 'rgba(0,0,0,0.7)', padding: 8, borderRadius: 4 }}>
+          <Text style={{ color: 'white', fontSize: 10 }}>
+            Modal: {showEditProfileModal ? 'OPEN' : 'CLOSED'}
+          </Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

@@ -667,7 +667,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           
           // Validate user type from JWT token
           const userInfo = extractUserInfoFromJWT(token);
-          if (userInfo && userInfo.userType !== 'public' && userInfo.userType !== 'private') {
+          if (userInfo && userInfo.userType !== 'Public' && userInfo.userType !== 'Private') {
             console.warn('❌ [LOAD-USER] User type validation failed:', userInfo.userType);
             await storageService.clearAuthData();
             await storageService.removeItem(STORAGE_KEYS.REGISTRATION_COMPLETE);
@@ -1131,7 +1131,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       // Validate user type - only allow Public or Private users
-      if (userInfo.userType !== 'public' && userInfo.userType !== 'private') {
+      if (userInfo.userType !== 'Public' && userInfo.userType !== 'Private') {
         console.warn('❌ [REFRESH] User type validation failed:', userInfo.userType);
         await get().handleUnauthorized();
         return false;

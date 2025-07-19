@@ -106,9 +106,9 @@ export function extractUserInfoFromJWT(token: string) {
   }
 
   // Determine user type and organization info
-  const userType = payload.UserType?.toLowerCase() || 'passenger';
-  const isPrivateUser = userType === 'private';
-  const isPublicUser = userType === 'public';
+  const userType = payload.UserType || 'passenger';
+  const isPrivateUser = userType?.toLowerCase() === 'private';
+  const isPublicUser = userType?.toLowerCase() === 'public';
   const isSuperAdmin = payload.IsSuperAdmin === 'True';
 
   // Extract organization information

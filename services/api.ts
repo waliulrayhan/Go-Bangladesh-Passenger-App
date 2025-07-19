@@ -903,6 +903,116 @@ class ApiService {
     }
   }
 
+  /**
+   * Update passenger profile information
+   */
+  async updatePassengerProfile(updateData: FormData | {
+    Id: string;
+    Name?: string;
+    MobileNumber?: string;
+    EmailAddress?: string;
+    Gender?: string;
+    Address?: string;
+    DateOfBirth?: string;
+    UserType?: string;
+    OrganizationId?: string;
+    PassengerId?: string;
+    ProfilePicture?: File;
+  }): Promise<{ isSuccess: boolean; message: string }> {
+    console.log('🔄 [UPDATE PROFILE] Updating passenger profile...');
+    
+    try {
+      let formData: FormData;
+      
+      // If already FormData, use it directly. Otherwise, create FormData from object
+      if (updateData instanceof FormData) {
+        formData = updateData;
+        console.log('📤 [UPDATE PROFILE] Using provided FormData directly');
+      } else {
+        console.log('🔄 [UPDATE PROFILE] Creating FormData from object for user:', updateData.Id);
+        
+        // Create FormData to match the API's multipart/form-data requirement
+        formData = new FormData();
+        
+        // Add all fields to FormData
+        formData.append('Id', updateData.Id);
+        
+        if (updateData.Name) {
+          formData.append('Name', updateData.Name);
+        }
+        if (updateData.MobileNumber) {
+          formData.append('MobileNumber', updateData.MobileNumber);
+        }
+        if (updateData.EmailAddress) {
+          formData.append('EmailAddress', updateData.EmailAddress);
+        }
+        if (updateData.Gender) {
+          formData.append('Gender', updateData.Gender);
+        }
+        if (updateData.Address) {
+          formData.append('Address', updateData.Address);
+        }
+        if (updateData.DateOfBirth) {
+          formData.append('DateOfBirth', updateData.DateOfBirth);
+        }
+        if (updateData.UserType) {
+          formData.append('UserType', updateData.UserType);
+        }
+        if (updateData.OrganizationId) {
+          formData.append('OrganizationId', updateData.OrganizationId);
+        }
+        if (updateData.PassengerId) {
+          formData.append('PassengerId', updateData.PassengerId);
+        }
+        if (updateData.ProfilePicture) {
+          formData.append('ProfilePicture', updateData.ProfilePicture);
+        }
+      }
+      
+      console.log('📤 [UPDATE PROFILE] Sending as FormData...');
+      
+      const response = await this.api.put<ApiResponse<null>>(
+        '/api/passenger/update',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      
+      console.log('📥 [UPDATE PROFILE] Response:', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message,
+        fullResponse: response.data
+      });
+      
+      return {
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message || 'Profile updated successfully!'
+      };
+    } catch (error: any) {
+      console.error('💥 [UPDATE PROFILE] Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // Handle specific error cases
+      if (error.response?.data?.data?.message) {
+        throw new Error(error.response.data.data.message);
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error('Failed to update profile. Please try again.');
+      }
+    }
+  }
+
   // Generic HTTP methods
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.api.get<T>(url, config);
