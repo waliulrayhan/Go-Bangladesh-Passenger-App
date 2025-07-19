@@ -1,0 +1,16 @@
+# EAS Ignore
+node_modules/
+android/build/
+android/app/build/
+.expo/
+.git/
+*.log
+.DS_Store
+coverage/
+dist/
+build/
+temp/
+tmp/
+*.tmp
+.vscode/
+.idea/
