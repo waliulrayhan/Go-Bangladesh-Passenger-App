@@ -223,7 +223,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               address: userResponse.address,
               passengerId: userResponse.passengerId,
               organizationId: userResponse.organizationId,
-              organization: typeof userResponse.organization === 'object' ? userResponse.organization?.name : userResponse.organization,
+              organization: userResponse.organization || undefined,
               balance: userResponse.balance,
               gender: userResponse.gender
             };
@@ -1172,7 +1172,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               address: userResponse.address,
               passengerId: userResponse.passengerId,
               organizationId: userResponse.organizationId,
-              organization: typeof userResponse.organization === 'object' ? userResponse.organization?.name : userResponse.organization,
+              organization: userResponse.organization || undefined,
               balance: userResponse.balance,
               gender: userResponse.gender
             };

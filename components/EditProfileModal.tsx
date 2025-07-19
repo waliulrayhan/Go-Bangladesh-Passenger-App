@@ -45,8 +45,6 @@ export function EditProfileModal({
   onUpdate,
   userData,
 }: EditProfileModalProps) {
-  console.log('📋 EditProfileModal opened with userData:', userData);
-
   const [formData, setFormData] = useState({
     name: userData.name,
     address: userData.address,
@@ -57,12 +55,6 @@ export function EditProfileModal({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Check if user is private (cannot edit name)
-  const isPrivateUser = userData.userType === 'Private';
-
-  console.log('📋 Form data initialized:', formData);
-  console.log('📋 Modal visible state:', visible);
 
   useEffect(() => {
     if (visible) {
@@ -96,7 +88,6 @@ export function EditProfileModal({
         setSelectedImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   };
@@ -169,19 +160,6 @@ export function EditProfileModal({
           name: filename,
         } as any);
       }
-
-      console.log('📤 Sending FormData with fields:');
-      console.log('- Id:', userData.id);
-      console.log('- Name:', formData.name);
-      console.log('- DateOfBirth:', formData.dateOfBirth);
-      console.log('- MobileNumber:', userData.mobileNumber);
-      console.log('- EmailAddress:', userData.emailAddress);
-      console.log('- Address:', formData.address);
-      console.log('- Gender:', formData.gender);
-      console.log('- UserType:', normalizedUserType);
-      console.log('- PassengerId:', userData.passengerId);
-      console.log('- OrganizationId:', userData.organizationId);
-      console.log('- ProfilePicture:', selectedImage ? 'File attached' : 'No file');
 
       await onUpdate(updateFormData);
       onClose();
@@ -300,24 +278,28 @@ export function EditProfileModal({
               </View>
             </View>
 
-            {/* Student ID / Passenger ID for Private users */}
-            {userData.userType === 'Private' && userData.passengerId && (
+            {/* Student ID / Passenger ID - Show for both Public and Private users if available */}
+            {(userData.passengerId || userData.studentId) && (
               <View style={styles.fieldContainer}>
                 <Text style={styles.fieldLabel}>
-                  {userData.organization?.name?.toLowerCase().includes('university') ? 'Student ID' : 'Passenger ID'}
+                  {userData.userType === 'Private' && userData.organization?.name?.toLowerCase().includes('university') 
+                    ? 'Student ID' 
+                    : 'Passenger ID'}
                 </Text>
                 <View style={styles.readOnlyField}>
-                  <Text style={styles.readOnlyText}>{userData.passengerId}</Text>
+                  <Text style={styles.readOnlyText}>{userData.passengerId || userData.studentId}</Text>
                 </View>
               </View>
             )}
 
             {/* Organization - Show for both Public and Private users if available */}
-            {userData.organization && (
+            {(userData.organization || userData.organizationId) && (
               <View style={styles.fieldContainer}>
                 <Text style={styles.fieldLabel}>Organization</Text>
                 <View style={styles.readOnlyField}>
-                  <Text style={styles.readOnlyText}>{userData.organization.name}</Text>
+                  <Text style={styles.readOnlyText}>
+                    {userData.organization?.name || 'Organization ID: ' + userData.organizationId}
+                  </Text>
                 </View>
               </View>
             )}
@@ -439,19 +421,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#f1f5f9',
   },
-  cameraButton: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#ffffff',
-  },
   formSection: {
     paddingHorizontal: 20,
     paddingVertical: 24,
@@ -468,14 +437,14 @@ const styles = StyleSheet.create({
   readOnlyField: {
     paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#f3f4f6',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#d1d5db',
   },
   readOnlyText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#4b5563',
   },
   genderContainer: {
     flexDirection: 'row',

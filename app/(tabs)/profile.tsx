@@ -111,12 +111,6 @@ export default function Profile() {
                 key={imageKey} // Force re-render when URL changes
                 source={{ uri: profileImageUrl }} 
                 style={styles.profileImage}
-                onError={(error) => {
-                  console.log('Profile image load error:', error);
-                }}
-                onLoad={() => {
-                  console.log('Profile image loaded successfully');
-                }}
               />
             ) : (
               <View style={styles.avatar}>
@@ -209,12 +203,7 @@ export default function Profile() {
           <View style={styles.headerActions}>
             <TouchableOpacity 
               style={styles.editButton}
-              onPress={() => {
-                console.log('🔘 Edit button pressed');
-                console.log('👤 User data:', user);
-                setShowEditProfileModal(true);
-                console.log('🔄 Modal state set to true');
-              }}
+              onPress={() => setShowEditProfileModal(true)}
             >
               <Ionicons name="create-outline" size={16} color={COLORS.primary} />
               <Text style={styles.editText}>Edit</Text>
@@ -372,11 +361,8 @@ export default function Profile() {
     }
 
     try {
-      console.log('📱 Sending OTP for card update to:', mobileNumber);
       await apiService.sendOTP(mobileNumber);
-      console.log('✅ OTP sent successfully for card update');
     } catch (error: any) {
-      console.error('❌ Send OTP error:', error);
       throw error;
     }
   };
@@ -393,12 +379,9 @@ export default function Profile() {
 
     try {
       // First verify OTP
-      console.log('🔐 Verifying OTP for card update');
       await apiService.verifyOTP(mobileNumber, otp);
-      console.log('✅ OTP verified successfully');
       
       // Then update card number
-      console.log('🔄 Updating card number for user:', user.id);
       const response = await apiService.updateCardNumber(user.id.toString(), newCardNumber);
       
       if (response.isSuccess) {
@@ -409,7 +392,6 @@ export default function Profile() {
         throw new Error(response.message || 'Failed to update card number');
       }
     } catch (error: any) {
-      console.error('❌ Update card error:', error);
       throw error;
     }
   };
@@ -420,7 +402,6 @@ export default function Profile() {
     }
 
     try {
-      console.log('🔄 Updating profile for user:', user.id);
       const response = await apiService.updatePassengerProfile(updateData);
       
       if (response.isSuccess) {
@@ -431,7 +412,6 @@ export default function Profile() {
         throw new Error(response.message || 'Failed to update profile');
       }
     } catch (error: any) {
-      console.error('❌ Update profile error:', error);
       throw error;
     }
   };
@@ -498,10 +478,7 @@ export default function Profile() {
       {user && (
         <EditProfileModal
           visible={showEditProfileModal}
-          onClose={() => {
-            console.log('🔘 Modal close requested');
-            setShowEditProfileModal(false);
-          }}
+          onClose={() => setShowEditProfileModal(false)}
           onUpdate={handleUpdateProfile}
           userData={{
             id: user.id.toString(),
@@ -516,20 +493,15 @@ export default function Profile() {
             passengerId: user.passengerId || '',
             studentId: user.studentId || '',
             organizationId: user.organizationId || '',
-            organization: typeof user.organization === 'object' && user.organization?.name 
-              ? { name: user.organization.name }
+            organization: user.organization ? 
+              (typeof user.organization === 'object' && user.organization.name 
+                ? { name: user.organization.name }
+                : typeof user.organization === 'string' 
+                  ? { name: user.organization }
+                  : undefined)
               : undefined,
           }}
         />
-      )}
-      
-      {/* Debug Info */}
-      {__DEV__ && (
-        <View style={{ position: 'absolute', top: 100, right: 10, backgroundColor: 'rgba(0,0,0,0.7)', padding: 8, borderRadius: 4 }}>
-          <Text style={{ color: 'white', fontSize: 10 }}>
-            Modal: {showEditProfileModal ? 'OPEN' : 'CLOSED'}
-          </Text>
-        </View>
       )}
     </SafeAreaView>
   );
