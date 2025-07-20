@@ -157,7 +157,6 @@ export default function Profile() {
                 {hasBalance ? `৳${displayBalance+" BDT"}` : displayBalance}
               </Text>
             </View>
-            {isPublicUser && hasBalance && (
               <TouchableOpacity 
                 style={styles.updateCardButton}
                 onPress={() => setShowUpdateCardModal(true)}
@@ -165,7 +164,6 @@ export default function Profile() {
                 <Ionicons name="card" size={16} color={COLORS.primary} />
                 <Text style={styles.updateCardText}>Update Card</Text>
               </TouchableOpacity>
-            )}
           </View>
           
           <View style={styles.cardNumberContainer}>

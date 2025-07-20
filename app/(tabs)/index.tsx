@@ -206,7 +206,7 @@ export default function Dashboard() {
         </View>
         
         {/* Bottom Section - Brand name with logo on the left */}
-        <View style={styles.cardBottomSection}>
+        {/* <View style={styles.cardBottomSection}>
           <View style={styles.brandContainer}>
             <View style={styles.brandLogo}>
               <Image 
@@ -219,7 +219,7 @@ export default function Dashboard() {
               GO BANGLADESH RFID CARD
             </Text>
           </View>
-        </View>
+        </View> */}
       </LinearGradient>
     </Animated.View>
   );
@@ -296,7 +296,7 @@ export default function Dashboard() {
                   <Text variant="caption" style={styles.bottomDetailLabel}>ROUTE</Text>
                   <Text variant="bodySmall" style={styles.bottomDetailValue} numberOfLines={2}>
                     {currentTrip?.tripStartPlace || 'N/A'} 
-                    <Text style={styles.routeArrowSmall}> → </Text>
+                    <Text style={styles.routeArrowSmall}> ⇄ </Text>
                     {currentTrip?.tripEndPlace || 'N/A'}
                   </Text>
                 </View>

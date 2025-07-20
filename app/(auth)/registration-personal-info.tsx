@@ -89,10 +89,10 @@ export default function RegistrationPersonalInfo() {
       }
     }
 
-    // Student ID validation (required for private organizations)
-    if (params.organizationType === 'Private' && !form.passengerId.trim()) {
-      newErrors.passengerId = 'Student ID is required for educational institutes';
-    }
+    // // Student ID validation (required for private organizations)
+    // if (params.organizationType === 'Private' && !form.passengerId.trim()) {
+    //   newErrors.passengerId = 'Student ID is required for educational institutes';
+    // }
 
     // Password validation
     if (!form.password) {
@@ -364,7 +364,7 @@ export default function RegistrationPersonalInfo() {
 
                 {params.organizationType === 'Private' && (
                   <Input
-                    label="ID *"
+                    label="Identity Number"
                     value={form.passengerId}
                     onChangeText={(value) => updateForm('passengerId', value)}
                     placeholder="Enter your student ID"
