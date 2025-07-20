@@ -127,7 +127,7 @@ export default function Dashboard() {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.profileSection} onPress={handleProfilePress}>
+        <TouchableOpacity style={styles.profileSection} onPress={() => router.push('/(tabs)/profile')}>
           <View style={styles.avatar}>
             {user?.imageUrl ? (
               <Image source={{ uri: `${API_BASE_URL}/${user.imageUrl}` }} style={styles.avatarImage} />
@@ -135,9 +135,9 @@ export default function Dashboard() {
               <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
             ) : (
               <View style={styles.avatarFallback}>
-                <Text variant="bodyLarge" color={COLORS.primary} style={styles.avatarText}>
-                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                </Text>
+          <Text variant="bodyLarge" color={COLORS.primary} style={styles.avatarText}>
+            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+          </Text>
               </View>
             )}
           </View>
