@@ -3,15 +3,18 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
+import { BORDER_RADIUS, COLORS, SPACING } from '../utils/constants';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Text } from './ui/Text';
@@ -47,9 +50,12 @@ export function EditProfileModal({
 }: EditProfileModalProps) {
   const [formData, setFormData] = useState({
     name: userData.name,
+    mobileNumber: userData.mobileNumber,
+    emailAddress: userData.emailAddress,
     address: userData.address,
     gender: userData.gender,
     dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
+    passengerId: userData.passengerId || userData.studentId || '',
   });
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -60,9 +66,12 @@ export function EditProfileModal({
     if (visible) {
       setFormData({
         name: userData.name,
+        mobileNumber: userData.mobileNumber,
+        emailAddress: userData.emailAddress,
         address: userData.address,
         gender: userData.gender,
         dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
+        passengerId: userData.passengerId || userData.studentId || '',
       });
       setSelectedImage(null);
     }
@@ -105,6 +114,14 @@ export function EditProfileModal({
       Alert.alert('Validation Error', 'Name is required');
       return false;
     }
+    if (!formData.mobileNumber.trim()) {
+      Alert.alert('Validation Error', 'Mobile number is required');
+      return false;
+    }
+    if (!formData.emailAddress.trim()) {
+      Alert.alert('Validation Error', 'Email address is required');
+      return false;
+    }
     if (!formData.address.trim()) {
       Alert.alert('Validation Error', 'Address is required');
       return false;
@@ -131,8 +148,8 @@ export function EditProfileModal({
       updateFormData.append('Id', userData.id);
       updateFormData.append('Name', formData.name);
       updateFormData.append('DateOfBirth', formData.dateOfBirth);
-      updateFormData.append('MobileNumber', userData.mobileNumber);
-      updateFormData.append('EmailAddress', userData.emailAddress);
+      updateFormData.append('MobileNumber', formData.mobileNumber);
+      updateFormData.append('EmailAddress', formData.emailAddress);
       updateFormData.append('Address', formData.address);
       updateFormData.append('Gender', formData.gender);
       
@@ -142,7 +159,7 @@ export function EditProfileModal({
                                  userData.userType;
       updateFormData.append('UserType', normalizedUserType);
       
-      updateFormData.append('PassengerId', userData.passengerId || '');
+      updateFormData.append('PassengerId', formData.passengerId);
       
       // Add OrganizationId if available
       if (userData.organizationId) {
@@ -191,159 +208,185 @@ export function EditProfileModal({
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#6b7280" />
+          <View style={styles.headerLeft}>
+            <View style={styles.headerIcon}>
+              <Ionicons name="person" size={20} color={COLORS.primary} />
+            </View>
+            <Text variant="h5" style={styles.headerTitle}>Edit Profile</Text>
+          </View>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Ionicons name="close" size={24} color={COLORS.gray[600]} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Profile</Text>
-          <View style={styles.placeholder} />
         </View>
 
         {/* Content */}
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Profile Image Section */}
-          <View style={styles.imageSection}>
-            <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
-              {getProfileImageSource() ? (
-                <Image
-                  source={getProfileImageSource()!}
-                  style={styles.profileImage}
-                />
-              ) : (
-                <View style={styles.imagePlaceholder}>
-                  <Ionicons name="person" size={28} color="#9ca3af" />
+          {/* Profile Picture Section */}
+          <Animated.View entering={FadeInUp.duration(600)} style={styles.section}>
+            <View style={styles.sectionContent}>
+              <View style={styles.profilePictureSection}>
+                <View style={styles.profilePictureContainer}>
+                  <TouchableOpacity onPress={pickImage} style={styles.imageButton}>
+                    {getProfileImageSource() ? (
+                      <Image
+                        source={getProfileImageSource()!}
+                        style={styles.profileImage}
+                      />
+                    ) : (
+                      <View style={styles.imagePlaceholder}>
+                        <Ionicons name="person" size={32} color={COLORS.gray[400]} />
+                      </View>
+                    )}
+                    <View style={styles.uploadOverlay}>
+                      <Ionicons name="camera" size={16} color={COLORS.white} />
+                    </View>
+                  </TouchableOpacity>
                 </View>
-              )}
-              <View style={styles.uploadOverlay}>
-                <Ionicons name="camera" size={12} color="#ffffff" />
+                <View style={styles.profileInfo}>
+                  <Text variant="h6" style={styles.profileName}>{userData.name}</Text>
+                  {userData.organization?.name && (
+                  <Text variant="caption" style={styles.profileType}>
+                    {userData.organization.name}
+                  </Text>
+                  )}
+                  <Text variant="caption" style={styles.profileType}>
+                  {userData.userType} User
+                  </Text>
+                  <TouchableOpacity onPress={pickImage} style={styles.changePhotoButton}>
+                  <Text variant="caption" style={styles.changePhotoText}>Change Photo</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </TouchableOpacity>
-            <Text style={styles.uploadText}>Tap to change photo</Text>
-          </View>
+            </View>
+          </Animated.View>
 
-          {/* Form Fields */}
-          <View style={styles.formSection}>
-            {/* Full Name */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Full Name</Text>
-              {userData.userType === 'Public' ? (
+          {/* Personal Information Section */}
+          <Animated.View entering={FadeInDown.duration(600).delay(200)} style={styles.section}>
+            <Text variant="h6" style={styles.sectionTitle}>Personal Information</Text>
+            <View style={styles.sectionContent}>
+              <View style={styles.fieldGroup}>
                 <Input
+                  label="Full Name"
                   value={formData.name}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
                   placeholder="Enter your full name"
+                  icon="person"
                 />
-              ) : (
-                <View style={styles.readOnlyField}>
-                  <Text style={styles.readOnlyText}>{userData.name}</Text>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Input
+                  label="Mobile Number"
+                  value={formData.mobileNumber}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
+                  placeholder="Enter your mobile number"
+                  keyboardType="phone-pad"
+                  icon="call"
+                />
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Input
+                  label="Email Address"
+                  value={formData.emailAddress}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, emailAddress: text }))}
+                  placeholder="Enter your email address"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  icon="mail"
+                />
+              </View>
+
+              {/* ID Field - Editable for all users */}
+              <View style={styles.fieldGroup}>
+                <Input
+                  label={userData.userType === 'Private' 
+                    ? 'Identity Number' 
+                    : 'Identity Number'}
+                  value={formData.passengerId}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, passengerId: text }))}
+                  placeholder={userData.userType === 'Private'
+                    ? 'Enter your Identity Number' 
+                    : 'Enter your Identity Number'}
+                  icon="id-card"
+                />
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text variant="label" style={styles.fieldLabel}>Gender</Text>
+                <View style={styles.genderContainer}>
+                  {['Male', 'Female'].map((gender) => (
+                    <TouchableOpacity
+                      key={gender}
+                      style={[
+                        styles.genderOption,
+                        formData.gender === gender && styles.genderOptionSelected
+                      ]}
+                      onPress={() => setFormData(prev => ({ ...prev, gender }))}
+                    >
+                      <Ionicons 
+                        name={gender === 'Male' ? 'male' : 'female'} 
+                        size={18} 
+                        color={formData.gender === gender ? COLORS.white : COLORS.primary} 
+                      />
+                      <Text style={[
+                        styles.genderText,
+                        formData.gender === gender && styles.genderTextSelected
+                      ]}>
+                        {gender}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
-              )}
-            </View>
-
-            {/* Phone */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Phone Number</Text>
-              <View style={styles.readOnlyField}>
-                <Text style={styles.readOnlyText}>{userData.mobileNumber}</Text>
               </View>
-            </View>
 
-            {/* Email */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Email</Text>
-              <View style={styles.readOnlyField}>
-                <Text style={styles.readOnlyText}>{userData.emailAddress}</Text>
-              </View>
-            </View>
-
-            {/* Gender */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Gender</Text>
-              <View style={styles.genderContainer}>
-                {['Male', 'Female'].map((gender) => (
-                  <TouchableOpacity
-                    key={gender}
-                    style={[
-                      styles.genderOption,
-                      formData.gender === gender && styles.genderOptionSelected
-                    ]}
-                    onPress={() => setFormData(prev => ({ ...prev, gender }))}
-                  >
+              <View style={styles.fieldGroup}>
+                <Text variant="label" style={styles.fieldLabel}>Date of Birth</Text>
+                <TouchableOpacity
+                  style={styles.dateButton}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <View style={styles.dateButtonContent}>
+                    <Ionicons name="calendar" size={18} color={COLORS.primary} />
                     <Text style={[
-                      styles.genderText,
-                      formData.gender === gender && styles.genderTextSelected
+                      styles.dateText,
+                      !formData.dateOfBirth && styles.dateTextPlaceholder
                     ]}>
-                      {gender}
+                      {formData.dateOfBirth || 'Select date of birth'}
                     </Text>
-                  </TouchableOpacity>
-                ))}
+                  </View>
+                  <Ionicons name="chevron-down" size={18} color={COLORS.gray[400]} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Input
+                  label="Address"
+                  value={formData.address}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, address: text }))}
+                  placeholder="Enter your address"
+                  icon="location"
+                />
               </View>
             </View>
-
-            {/* Student ID / Passenger ID - Show for both Public and Private users if available */}
-            {(userData.passengerId || userData.studentId) && (
-              <View style={styles.fieldContainer}>
-                <Text style={styles.fieldLabel}>
-                  {userData.userType === 'Private' && userData.organization?.name?.toLowerCase().includes('university') 
-                    ? 'Student ID' 
-                    : 'Passenger ID'}
-                </Text>
-                <View style={styles.readOnlyField}>
-                  <Text style={styles.readOnlyText}>{userData.passengerId || userData.studentId}</Text>
-                </View>
-              </View>
-            )}
-
-            {/* Organization - Show for both Public and Private users if available */}
-            {(userData.organization || userData.organizationId) && (
-              <View style={styles.fieldContainer}>
-                <Text style={styles.fieldLabel}>Organization</Text>
-                <View style={styles.readOnlyField}>
-                  <Text style={styles.readOnlyText}>
-                    {userData.organization?.name || 'Organization ID: ' + userData.organizationId}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* Date of Birth */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Date of Birth</Text>
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Text style={styles.dateText}>
-                  {formData.dateOfBirth || 'Select date of birth'}
-                </Text>
-                <Ionicons name="calendar-outline" size={16} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Address */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Address</Text>
-              <Input
-                value={formData.address}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, address: text }))}
-                placeholder="Enter your address"
-                multiline
-                numberOfLines={2}
-              />
-            </View>
-          </View>
+          </Animated.View>
         </ScrollView>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Button
-            title="Cancel"
-            variant="outline"
-            onPress={onClose}
-          />
-          <Button
-            title="Save Changes"
-            onPress={handleSubmit}
-            loading={isLoading}
-          />
+          <View style={styles.footerButtons}>
+            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+              <Text variant="button" style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <View style={styles.saveButtonContainer}>
+              <Button
+                title="Save Changes"
+                onPress={handleSubmit}
+                loading={isLoading}
+                size="medium"
+              />
+            </View>
+          </View>
         </View>
 
         {/* Date Picker */}
@@ -351,7 +394,7 @@ export function EditProfileModal({
           <DateTimePicker
             value={formData.dateOfBirth ? new Date(formData.dateOfBirth) : new Date()}
             mode="date"
-            display="default"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={handleDateChange}
             maximumDate={new Date()}
           />
@@ -364,150 +407,260 @@ export function EditProfileModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.gray[50],
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: COLORS.gray[200],
   },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f8fafc',
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: SPACING.sm,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1e293b',
+    color: COLORS.gray[900],
   },
-  placeholder: {
-    width: 36,
+  closeButton: {
+    padding: SPACING.xs,
   },
   content: {
     flex: 1,
-    backgroundColor: '#fafafa',
+    paddingHorizontal: SPACING.md,
   },
-  imageSection: {
+  section: {
+    marginTop: SPACING.lg,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray[700],
+    marginBottom: SPACING.sm,
+    paddingHorizontal: SPACING.xs,
+  },
+  sectionContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.lg,
+  },
+  
+  // Profile Picture Section
+  profilePictureSection: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 32,
-    paddingBottom: 24,
-    backgroundColor: '#ffffff',
   },
-  imageContainer: {
+  profilePictureContainer: {
+    marginRight: SPACING.lg,
+  },
+  imageButton: {
     position: 'relative',
+  },
+  profileImage: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    overflow: 'hidden',
-    backgroundColor: '#f1f5f9',
-  },
-  profileImage: {
-    width: '100%',
-    height: '100%',
   },
   imagePlaceholder: {
-    width: '100%',
-    height: '100%',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.gray[100],
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f1f5f9',
+    borderWidth: 2,
+    borderColor: COLORS.gray[200],
+    borderStyle: 'dashed',
   },
-  formSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+  uploadOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    padding: 6,
+    borderWidth: 2,
+    borderColor: COLORS.white,
   },
-  fieldContainer: {
-    marginBottom: 20,
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.gray[900],
+    marginBottom: 2,
+  },
+  profileType: {
+    fontSize: 12,
+    color: COLORS.gray[500],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: SPACING.xs,
+  },
+  changePhotoButton: {
+    paddingVertical: SPACING.xs,
+  },
+  changePhotoText: {
+    fontSize: 13,
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
+  
+  // Form Fields
+  fieldGroup: {
+    marginBottom: SPACING.lg,
   },
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+    color: COLORS.gray[700],
+    marginBottom: SPACING.sm,
   },
-  readOnlyField: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-  },
-  readOnlyText: {
-    fontSize: 16,
-    color: '#4b5563',
-  },
+  
+  // Gender Selection
   genderContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: SPACING.sm,
+    marginTop: SPACING.xs,
   },
   genderOption: {
     flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.gray[300],
+    backgroundColor: COLORS.white,
+    gap: SPACING.xs,
   },
   genderOptionSelected: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   genderText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: COLORS.gray[700],
   },
   genderTextSelected: {
-    color: '#ffffff',
+    color: COLORS.white,
   },
+  
+  // Date Button
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: COLORS.gray[300],
+    marginTop: SPACING.xs,
+  },
+  dateButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
   },
   dateText: {
-    fontSize: 16,
-    color: '#374151',
+    fontSize: 14,
+    color: COLORS.gray[900],
   },
-  footer: {
+  dateTextPlaceholder: {
+    color: COLORS.gray[500],
+  },
+  
+  // Info Items (read-only fields)
+  infoItem: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    gap: 12,
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[100],
   },
-  uploadOverlay: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 12,
-    padding: 4,
+  infoLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
-  uploadText: {
+  infoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.sm,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: COLORS.gray[600],
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 14,
     fontWeight: '500',
-    marginTop: 8,
+    color: COLORS.gray[900],
+  },
+  
+  // Footer
+  footer: {
+    backgroundColor: COLORS.white,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray[200],
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  footerButtons: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.gray[300],
+    backgroundColor: COLORS.white,
+  },
+  cancelText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray[700],
+  },
+  saveButtonContainer: {
+    flex: 2,
+  },
+  
+  // Bottom padding
+  bottomPadding: {
+    height: SPACING['3xl'],
   },
 });
