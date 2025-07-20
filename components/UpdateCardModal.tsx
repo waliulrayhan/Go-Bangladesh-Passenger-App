@@ -165,20 +165,31 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
 
   const renderCardInputStep = () => (
     <>
-      {/* Content */}
-      <View style={styles.content}>
+      {/* Card Information Section */}
+      <View style={styles.sectionContainer}>
+        
         {currentCardNumber && (
           <View style={styles.currentCardContainer}>
             <Text variant="caption" style={styles.currentCardLabel}>Current Card Number</Text>
             <Text variant="body" style={styles.currentCardNumber}>{currentCardNumber}</Text>
           </View>
         )}
+      </View>
+
+      {/* Update Section */}
+      <View style={styles.sectionContainer}>
+        {/* <View style={styles.sectionHeader}>
+          <View style={styles.sectionIconContainer}>
+            <Ionicons name="card-outline" size={18} color={COLORS.primary} />
+          </View>
+          <Text variant="body" style={styles.sectionTitle}>New Card Details</Text>
+        </View> */}
 
         <Input
           label="New Card Number"
           value={cardNumber}
           onChangeText={handleCardNumberChange}
-          placeholder="Enter new card number (e.g. ABC123456)"
+          placeholder="(e.g. ABCD1234)"
           keyboardType="default"
           icon="card"
           maxLength={16}
@@ -186,9 +197,12 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
           error={error}
         />
 
-        <Text variant="caption" style={styles.helperText}>
-          Enter the new card number printed on your Go Bangladesh transport card
-        </Text>
+        <View style={styles.helperContainer}>
+          <Ionicons name="help-circle-outline" size={16} color={COLORS.gray[500]} />
+          <Text variant="caption" style={styles.helperText}>
+            Enter the new card number printed on your Go Bangladesh transport card
+          </Text>
+        </View>
       </View>
 
       {/* Actions */}
@@ -213,8 +227,15 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
 
   const renderOTPVerificationStep = () => (
     <>
-      {/* Content */}
-      <View style={styles.content}>
+      {/* Verification Information Section */}
+      <View style={styles.sectionContainer}>
+        {/* <View style={styles.sectionHeader}>
+          <View style={styles.sectionIconContainer}>
+            <Ionicons name="shield-checkmark" size={18} color={COLORS.primary} />
+          </View>
+          <Text variant="body" style={styles.sectionTitle}>Verification Required</Text>
+        </View> */}
+        
         <View style={styles.otpInfoContainer}>
           <Text variant="body" style={styles.otpInfoText}>
             We've sent a verification code to your mobile number
@@ -224,6 +245,16 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
             Enter the 6-digit code to update your card number
           </Text>
         </View>
+      </View>
+
+      {/* OTP Input Section */}
+      <View style={styles.sectionContainer}>
+        {/* <View style={styles.sectionHeader}>
+          <View style={styles.sectionIconContainer}>
+            <Ionicons name="keypad" size={18} color={COLORS.primary} />
+          </View>
+          <Text variant="body" style={styles.sectionTitle}>Enter Code</Text>
+        </View> */}
 
         <Input
           label="Verification Code"
@@ -271,7 +302,7 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
@@ -280,14 +311,14 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.iconContainer}>
-                <Ionicons name="card" size={20} color={COLORS.primary} />
+                <Ionicons name="card" size={22} color={COLORS.primary} />
               </View>
               <Text variant="h5" style={styles.title}>
                 {step === 'card-input' ? 'Update Card Number' : 'Verify OTP'}
               </Text>
             </View>
             <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-              <Ionicons name="close" size={24} color={COLORS.gray[600]} />
+              <Ionicons name="close" size={26} color={COLORS.gray[600]} />
             </TouchableOpacity>
           </View>
 
@@ -301,24 +332,35 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
   },
   modalContainer: {
     backgroundColor: COLORS.white,
-    borderRadius: 16,
+    borderRadius: 20,
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 420,
     paddingVertical: SPACING.lg,
+    shadowColor: COLORS.gray[900],
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[100],
+    paddingBottom: SPACING.md,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -326,51 +368,83 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.sm,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
+    fontWeight: '600',
     color: COLORS.gray[900],
   },
   closeButton: {
     padding: SPACING.xs,
   },
-  content: {
+  sectionContainer: {
     paddingHorizontal: SPACING.lg,
     marginBottom: SPACING.lg,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  sectionIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary + '10',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.xs,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray[800],
+  },
   currentCardContainer: {
     backgroundColor: COLORS.gray[50],
-    borderRadius: 8,
+    borderRadius: 12,
     padding: SPACING.md,
-    marginBottom: SPACING.md,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
   },
   currentCardLabel: {
     fontSize: 12,
     color: COLORS.gray[600],
     marginBottom: 4,
+    fontWeight: '500',
   },
   currentCardNumber: {
     fontSize: 16,
     color: COLORS.gray[800],
-    letterSpacing: 1,
+    letterSpacing: 1.5,
+    fontWeight: '600',
+  },
+  helperContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: SPACING.sm,
+    paddingHorizontal: SPACING.xl,
   },
   helperText: {
     fontSize: 14,
     color: COLORS.gray[600],
-    textAlign: 'center',
-    marginTop: SPACING.sm,
-    lineHeight: 18,
+    marginLeft: SPACING.xs,
+    lineHeight: 20,
+    flex: 1,
   },
   actions: {
     flexDirection: 'row',
     paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray[100],
     gap: SPACING.sm,
   },
   cancelButton: {
@@ -378,11 +452,14 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: COLORS.gray[100],
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
   },
   cancelText: {
     fontSize: 16,
+    fontWeight: '500',
     color: COLORS.gray[700],
   },
   updateButtonContainer: {
@@ -390,21 +467,23 @@ const styles = StyleSheet.create({
   },
   otpInfoContainer: {
     backgroundColor: COLORS.gray[50],
-    borderRadius: 8,
+    borderRadius: 12,
     padding: SPACING.md,
-    marginBottom: SPACING.md,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.primary + '20',
   },
   otpInfoText: {
     fontSize: 14,
     color: COLORS.gray[700],
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   mobileNumber: {
     fontSize: 16,
     color: COLORS.primary,
-    marginBottom: 4,
+    fontWeight: '600',
+    marginBottom: 6,
   },
   otpSubText: {
     fontSize: 12,
@@ -413,14 +492,24 @@ const styles = StyleSheet.create({
   },
   otpTimer: {
     alignItems: 'center',
-    marginTop: SPACING.sm,
+    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.sm,
   },
   timerText: {
     fontSize: 14,
     color: COLORS.gray[600],
+    backgroundColor: COLORS.gray[50],
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   resendText: {
     fontSize: 14,
     color: COLORS.primary,
+    fontWeight: '600',
+    backgroundColor: COLORS.primary + '10',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: 8,
   },
 });
