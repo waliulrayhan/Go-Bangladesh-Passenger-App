@@ -122,18 +122,18 @@ export function EditProfileModal({
       Alert.alert('Validation Error', 'Email address is required');
       return false;
     }
-    if (!formData.address.trim()) {
-      Alert.alert('Validation Error', 'Address is required');
-      return false;
-    }
-    if (!formData.gender) {
-      Alert.alert('Validation Error', 'Gender is required');
-      return false;
-    }
-    if (!formData.dateOfBirth) {
-      Alert.alert('Validation Error', 'Date of birth is required');
-      return false;
-    }
+    // if (!formData.address.trim()) {
+    //   Alert.alert('Validation Error', 'Address is required');
+    //   return false;
+    // }
+    // if (!formData.gender) {
+    //   Alert.alert('Validation Error', 'Gender is required');
+    //   return false;
+    // }
+    // if (!formData.dateOfBirth) {
+    //   Alert.alert('Validation Error', 'Date of birth is required');
+    //   return false;
+    // }
     return true;
   };
 

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useCardStore } from '../stores/cardStore';
 import { STORAGE_KEYS } from '../utils/constants';
-import { SessionManager } from '../utils/sessionManager';
 import { storageService } from '../utils/storage';
 
 /**
@@ -28,13 +27,19 @@ export const useTokenRefresh = () => {
     setIsRefreshing(true);
     
     try {
-      const success = await SessionManager.refreshAllDataFromToken();
+      // Refresh auth data
+      const authStore = useAuthStore.getState();
+      const authSuccess = await authStore.refreshUserFromToken();
       
-      if (success) {
+      // Refresh card data
+      const cardStore = useCardStore.getState();
+      await cardStore.refreshCardData();
+      
+      if (authSuccess) {
         setLastRefreshTime(new Date());
       }
       
-      return success;
+      return authSuccess;
     } catch (error) {
       console.error('❌ [TOKEN-REFRESH] Error during manual refresh:', error);
       return false;

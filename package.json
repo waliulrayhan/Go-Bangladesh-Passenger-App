@@ -48,7 +48,8 @@
     "doctor": {
       "reactNativeDirectoryCheck": {
         "exclude": [
-          "react-native-nfc-manager"
+          "react-native-nfc-manager",
+          "buffer"
         ]
       }
     }
