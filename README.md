@@ -160,3 +160,11 @@ expo build:ios
 ## Support
 
 For support and questions, please contact [your contact information].
+
+## Get Realease Apk
+npm install -g eas-cli
+eas login
+eas build:configure
+npx expo-doctor
+npx expo install --check
+eas build --platform android --profile preview

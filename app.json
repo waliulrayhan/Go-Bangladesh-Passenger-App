@@ -4,10 +4,10 @@
     "slug": "go-bangladesh",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/go-bd-icon.png",
+    "icon": "./assets/images/icon-full-01.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/images/go-bd-icon.png",
+      "image": "./assets/images/icon-full-01.png",
       "resizeMode": "contain",
       "backgroundColor": "#FAFAFA"
     },
@@ -23,11 +23,6 @@
         "backgroundColor": "#4A90E2"
       },
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "NFC",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "NFC",
@@ -49,6 +44,12 @@
         }
       ]
     ],
-    "scheme": "go-bangladesh"
+    "scheme": "go-bangladesh",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "51d8d954-675f-4cf9-a013-3b6e6b38620a"
+      }
+    }
   }
 }
