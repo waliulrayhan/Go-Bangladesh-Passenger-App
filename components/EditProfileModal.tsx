@@ -14,7 +14,9 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
+import { apiService } from '../services/api';
 import { BORDER_RADIUS, COLORS, SPACING } from '../utils/constants';
+import { ProfileOTPVerificationModal } from './ProfileOTPVerificationModal';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Text } from './ui/Text';
@@ -39,6 +41,7 @@ interface EditProfileModalProps {
     studentId?: string;
     organizationId?: string;
     organization?: { name: string };
+    cardNumber?: string;
   };
 }
 
@@ -61,6 +64,8 @@ export function EditProfileModal({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [pendingUpdateData, setPendingUpdateData] = useState<FormData | null>(null);
 
   useEffect(() => {
     if (visible) {
@@ -74,6 +79,8 @@ export function EditProfileModal({
         passengerId: userData.passengerId || userData.studentId || '',
       });
       setSelectedImage(null);
+      setShowOTPModal(false);
+      setPendingUpdateData(null);
     }
   }, [visible, userData]);
 
@@ -178,13 +185,45 @@ export function EditProfileModal({
         } as any);
       }
 
-      await onUpdate(updateFormData);
+      // Store the update data and show OTP modal
+      setPendingUpdateData(updateFormData);
+      setIsLoading(false);
+      setShowOTPModal(true);
+    } catch (error: any) {
+      console.error('Error preparing profile update:', error);
+      Alert.alert('Error', error.message || 'Failed to prepare profile update');
+      setIsLoading(false);
+    }
+  };
+
+  const handleOTPVerificationSuccess = async () => {
+    if (!pendingUpdateData) {
+      throw new Error('No pending update data found');
+    }
+
+    try {
+      console.log('🔄 [PROFILE UPDATE] Calling update API after OTP verification...');
+      
+      // Call the update API using the apiService
+      const result = await apiService.updatePassengerProfile(pendingUpdateData);
+      
+      if (!result.isSuccess) {
+        throw new Error(result.message || 'Failed to update profile');
+      }
+      
+      console.log('✅ [PROFILE UPDATE] Profile updated successfully');
+      
+      // Clear pending data
+      setPendingUpdateData(null);
+      
+      // Call the original onUpdate callback to refresh UI
+      await onUpdate(pendingUpdateData);
+      
+      // Close the main edit profile modal
       onClose();
     } catch (error: any) {
-      console.error('Error updating profile:', error);
-      Alert.alert('Error', error.message || 'Failed to update profile');
-    } finally {
-      setIsLoading(false);
+      console.error('❌ [PROFILE UPDATE] Error updating profile:', error);
+      throw error; // Re-throw to be handled by OTP modal
     }
   };
 
@@ -399,6 +438,21 @@ export function EditProfileModal({
             maximumDate={new Date()}
           />
         )}
+
+        {/* OTP Verification Modal */}
+        <ProfileOTPVerificationModal
+          visible={showOTPModal}
+          onClose={() => {
+            setShowOTPModal(false);
+            setPendingUpdateData(null);
+          }}
+          onVerificationSuccess={handleOTPVerificationSuccess}
+          mobileNumber={formData.mobileNumber}
+          userData={{
+            name: formData.name,
+            cardNumber: userData.cardNumber
+          }}
+        />
       </View>
     </Modal>
   );
