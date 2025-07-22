@@ -305,7 +305,7 @@ export default function ForgotPassword() {
                   Need help with your account?
                 </Text>
                 <Text style={styles.organizationEmail}>
-                  info.gobangladesh@gmail.com
+                  info@thegobd.com
                 </Text>
               </TouchableOpacity>
             </Animated.View>
@@ -402,7 +402,7 @@ export default function ForgotPassword() {
                 Need help with your account?
               </Text>
               <Text style={styles.organizationEmail}>
-                info.gobangladesh@gmail.com
+                info@thegobd.com
               </Text>
             </TouchableOpacity>
           </Animated.View>

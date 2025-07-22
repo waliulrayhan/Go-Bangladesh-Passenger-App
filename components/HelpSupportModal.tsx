@@ -16,7 +16,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
 
   const contactInfo = {
-    email: 'info.gobangladesh@gmail.com',
+    email: 'info@thegobd.com',
     phone: '+880 1700 000000',
     website: 'https://gobangladesh.com',
     address: 'Dhaka, Bangladesh'

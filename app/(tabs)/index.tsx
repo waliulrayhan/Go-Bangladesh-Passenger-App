@@ -506,7 +506,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingBottom: 20,
-    paddingTop: 35
   },
   statusBarArea: {
     height: 20, // iOS status bar height

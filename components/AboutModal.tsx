@@ -18,7 +18,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
     buildNumber: '100',
     lastUpdate: 'January 2025',
     developer: 'Go Bangladesh Team',
-    email: 'info.gobangladesh@gmail.com',
+    email: 'info@thegobd.com',
     website: 'https://gobangladesh.com',
     privacyPolicy: 'https://gobangladesh.com/privacy',
     termsOfService: 'https://gobangladesh.com/terms'

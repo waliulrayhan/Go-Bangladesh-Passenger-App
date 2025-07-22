@@ -176,7 +176,7 @@ export default function PassengerLogin() {
                 Need help with your account?
               </Text>
               <Text style={styles.organizationEmail}>
-                info.gobangladesh@gmail.com
+                info@thegobd.com
               </Text>
             </View>
           </Animated.View>

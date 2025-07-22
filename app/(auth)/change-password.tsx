@@ -226,7 +226,7 @@ export default function ChangePassword() {
                 Need help with your password?
               </Text>
               <Text style={styles.helpEmail}>
-                info.gobangladesh@gmail.com
+                info@thegobd.com
               </Text>
             </View>
           </Animated.View>
