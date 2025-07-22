@@ -216,7 +216,7 @@ export default function History() {
     if (!trip) return null;
 
     // Safety checks for required data
-    const busName = trip.session?.bus?.busName || 'Bus Service';
+    const busName = trip.session?.bus?.busName || 'Bus Name Not Available';
     const busNumber = trip.session?.bus?.busNumber || 'N/A';
     const organization = trip.session?.bus?.organization;
     const sessionCode = trip.session?.sessionCode || 'N/A';
@@ -262,7 +262,7 @@ export default function History() {
                 Tap In
               </Text>
               <TouchableOpacity
-                style={styles.timeButton}
+                style={styles.tapInButton}
                 onPress={() => {
                   if (trip.startingLatitude && trip.startingLongitude) {
                     openMapLocation(
@@ -274,11 +274,11 @@ export default function History() {
                 }}
                 disabled={!trip.startingLatitude || !trip.startingLongitude}
               >
-                <Ionicons name="time" size={14} color={COLORS.primary} />
-                <Text variant="bodySmall" color={COLORS.gray[700]} style={styles.timeText}>
+                <Ionicons name="time" size={14} color={COLORS.success} />
+                <Text variant="bodySmall" color={COLORS.white} style={styles.timeText}>
                   {tripStartTime ? new Date(new Date(tripStartTime).getTime() + 6 * 60 * 60 * 1000).toLocaleTimeString() : 'N/A'}
                 </Text>
-                <Ionicons name="location" size={14} color={COLORS.primary} />
+                <Ionicons name="location" size={14} color={COLORS.success} />
               </TouchableOpacity>
             </View>
 
@@ -288,7 +288,7 @@ export default function History() {
                   Tap Out
                 </Text>
                 <TouchableOpacity
-                  style={styles.timeButton}
+                  style={styles.tapOutButton}
                   onPress={() => {
                     if (trip.endingLatitude && trip.endingLongitude) {
                       openMapLocation(
@@ -300,18 +300,17 @@ export default function History() {
                   }}
                   disabled={!trip.endingLatitude || !trip.endingLongitude}
                 >
-                  <Ionicons name="time" size={14} color={COLORS.primary} />
-                  <Text variant="bodySmall" color={COLORS.gray[700]} style={styles.timeText}>
+                  <Ionicons name="time" size={14} color={COLORS.error} />
+                  <Text variant="bodySmall" color={COLORS.white} style={styles.timeText}>
                     {tripEndTime ? new Date(new Date(tripEndTime).getTime() + 6 * 60 * 60 * 1000).toLocaleTimeString() : 'N/A'}
                   </Text>
-                  <Ionicons name="location" size={14} color={COLORS.primary} />
+                  <Ionicons name="location" size={14} color={COLORS.error} />
                 </TouchableOpacity>
               </View>
             )}
           </View>
-          
-          
-          <TouchableOpacity
+
+                    <TouchableOpacity
             style={styles.distanceButton}
             onPress={() => {
               if (distance > 0 && trip.startingLatitude && trip.startingLongitude && trip.endingLatitude && trip.endingLongitude) {
@@ -330,6 +329,30 @@ export default function History() {
               Distance: {distance.toFixed(2)}km {distance > 0 && trip.startingLatitude && trip.startingLongitude && trip.endingLatitude && trip.endingLongitude ? '(View Route)' : ''}
             </Text>
           </TouchableOpacity>
+
+          {/* Tap Out By Section */}
+          {tripEndTime && (
+            <View style={styles.tapOutBySection}>
+              <Text variant="caption" color={COLORS.gray[600]} style={styles.sectionLabel}>
+                Tap Out By
+              </Text>
+              <View style={styles.tapOutByContainer}>
+                <View style={styles.tapOutByItemPassenger}>
+                  <Ionicons name="person" size={14} color={COLORS.primary} />
+                  <Text variant="bodySmall" color={COLORS.gray[700]} style={styles.tapOutByText}>
+                    Passenger
+                  </Text>
+                </View>
+                <View style={styles.tapOutByItemManual}>
+                  <Ionicons name="checkmark-circle" size={14} color={COLORS.success} />
+                  <Text variant="bodySmall" color={COLORS.success} style={styles.tapOutByText}>
+                    Manual
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+          
         </View>
       </Card>
     );
@@ -928,6 +951,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: SPACING.sm,
+    gap: SPACING.md,
+    alignItems: 'center',
   },
   timeItem: {
     flex: 1,
@@ -935,17 +960,90 @@ const styles = StyleSheet.create({
   timeLabel: {
     marginBottom: 4,
     // Font properties handled by Text component
-  },
-  timeButton: {
+    },
+    timeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     padding: SPACING.xs,
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: COLORS.gray[100],
+    borderRadius: 6,
+    },
+    tapInButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    padding: SPACING.xs,
+    backgroundColor: '#E8F5E8',
+    borderRadius: 6,
+    },
+    tapOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    padding: SPACING.xs,
+    backgroundColor: '#FFE8E8',
+    borderRadius: 6,
+    },
+    timeText: {
+    color: COLORS.gray[700],
+    // Font properties handled by Text component
+  },
+  tapOutBySection: {
+    marginTop: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    backgroundColor: '#FAFAFA',
     borderRadius: 6,
   },
-  timeText: {
-    // Font properties handled by Text component
+  sectionLabel: {
+    marginBottom: SPACING.xs,
+    fontWeight: '500',
+    fontSize: 12,
+  },
+  tapOutByContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  tapOutByItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.white,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
+  },
+  tapOutByItemPassenger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 6,
+    backgroundColor: '#E3F2FD', // Light blue background
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+    flex: 1,
+  },
+  tapOutByItemManual: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 6,
+    backgroundColor: '#E8F5E8', // Light green background
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+    flex: 1,
+  },
+  tapOutByText: {
+    fontWeight: '500',
+    fontSize: 12,
   },
   distanceButton: {
     flexDirection: 'row',
@@ -957,6 +1055,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   distanceText: {
+    color: COLORS.gray[700],
     // Font properties handled by Text component
   },
   rechargeDetails: {
