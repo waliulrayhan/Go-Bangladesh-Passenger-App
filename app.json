@@ -4,10 +4,10 @@
     "slug": "go-bangladesh",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon-full-01.png",
+    "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/images/icon-full-01.png",
+      "image": "./assets/images/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#FAFAFA"
     },
@@ -19,7 +19,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon-full-01.png",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#4A90E2"
       },
       "permissions": [
@@ -32,7 +32,7 @@
       "package": "com.anonymous.gobangladesh"
     },
     "web": {
-      "favicon": "./assets/images/icon-full-01.png",
+      "favicon": "./assets/images/icon.png",
       "bundler": "metro"
     },
     "plugins": [
