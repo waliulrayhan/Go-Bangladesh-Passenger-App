@@ -168,3 +168,7 @@ eas build:configure
 npx expo-doctor
 npx expo install --check
 eas build --platform android --profile preview
+
+
+local.properties
+sdk.dir=C:/Users/Rayhan/AppData/Local/Android/Sdk
