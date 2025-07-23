@@ -169,6 +169,15 @@ npx expo-doctor
 npx expo install --check
 eas build --platform android --profile preview
 
+npx expo prebuild --clean
 
 local.properties
 sdk.dir=C:/Users/Rayhan/AppData/Local/Android/Sdk
+
+eas build --platform all
+
+eas build --platform all --profile preview
+
+eas build:list
+
+ $env:ANDROID_HOME="C:\Users\Rayhan\AppData\Local\Android\Sdk"; cd "c:\Users\Rayhan\Desktop\Go-Bangladesh-Passenger-App"; npx expo run:android

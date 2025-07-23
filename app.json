@@ -4,7 +4,7 @@
     "slug": "go-bangladesh",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/appIconPng.png",
+    "icon": "./assets/images/appIconPng1024_lg.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/images/splashScreenTransparent1024_updated.png",
@@ -15,11 +15,15 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.gobangladesh",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/appIconPng.png",
+        "foregroundImage": "./assets/images/appIconPng1024_lg.png",
         "backgroundColor": "#FFFFFF"
       },
       "permissions": [
@@ -32,7 +36,7 @@
       "package": "com.anonymous.gobangladesh"
     },
     "web": {
-      "favicon": "./assets/images/appIconPng.png",
+      "favicon": "./assets/images/appIconPng1024_lg.png",
       "bundler": "metro"
     },
     "plugins": [
