@@ -51,27 +51,32 @@ export default function WelcomeScreen() {
     return (
       <>
         <StatusBar style="light" backgroundColor="transparent" translucent={true} />
-        <LinearGradient
-          colors={['#4A90E2', '#7BB3F0', '#FF8A00']}
-          locations={[0, 0.7, 1]}
-          style={styles.container}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <SafeAreaView style={styles.container}>
-            <BubbleAnimation bubbleCount={10} />
-            <View style={styles.loadingContainer}>
-              <Animated.View entering={FadeInUp.duration(800)}>
-                <GoBangladeshLogo size={80} />
-              </Animated.View>
-              <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-                <Text variant="body" color={COLORS.white} style={styles.loadingText}>
-                  Loading...
-                </Text>
-              </Animated.View>
-            </View>
-          </SafeAreaView>
-        </LinearGradient>
+        <SafeAreaView style={styles.container}>
+          <LinearGradient
+            colors={[
+              'rgba(74, 144, 226, 0.5)',   // Blue at top
+              'rgba(74, 144, 226, 0.2)', 
+              'transparent',
+              'rgba(255, 138, 0, 0.2)',   // Orange transition
+              'rgba(255, 138, 0, 0.4)'    // Orange at bottom
+            ]}
+            locations={[0, 0.2, 0.5, 0.8, 1]}
+            style={styles.glowBackground}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+          />
+          <BubbleAnimation bubbleCount={10} />
+          <View style={styles.loadingContainer}>
+            <Animated.View entering={FadeInUp.duration(800)}>
+              <GoBangladeshLogo size={80} />
+            </Animated.View>
+            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+              <Text variant="body" color={COLORS.gray[600]} style={styles.loadingText}>
+                Loading...
+              </Text>
+            </Animated.View>
+          </View>
+        </SafeAreaView>
       </>
     );
   }
@@ -81,27 +86,33 @@ export default function WelcomeScreen() {
     return (
       <>
         <StatusBar style="light" backgroundColor="transparent" translucent={true} />
-        <LinearGradient
-          colors={['#4A90E2', '#7BB3F0', '#FF8A00']}
-          locations={[0, 0.65, 1]}
-          style={styles.container}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <SafeAreaView style={styles.container}>
-            <BubbleAnimation bubbleCount={15} />
-            <View style={styles.content}>
+        <SafeAreaView style={styles.container}>
+          <LinearGradient
+            colors={[
+              'rgba(74, 144, 226, 0.5)',   // Blue at top
+              'rgba(74, 144, 226, 0.2)', 
+              'transparent',
+              'rgba(255, 138, 0, 0.2)',   // Orange transition
+              'rgba(255, 138, 0, 0.4)'    // Orange at bottom
+            ]}
+            locations={[0, 0.2, 0.5, 0.8, 1]}
+            style={styles.glowBackground}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+          />
+          <BubbleAnimation bubbleCount={15} />
+          <View style={styles.content}>
             <Animated.View entering={FadeInUp.duration(800).delay(200)} style={styles.header}>
               <View style={styles.logoContainer}>
                 <GoBangladeshLogo size={120} />
               </View>
-              <Text variant="h2" color={COLORS.white} style={styles.title}>
+              <Text variant="h2" color={COLORS.primary} style={styles.title}>
                 Go Bangladesh
               </Text>
-              <Text variant="h6" color={COLORS.white} style={styles.subtitle}>
+              <Text variant="h6" color={COLORS.secondary} style={styles.subtitle}>
                 One step toward a better future
               </Text>
-              <Text variant="body" color={COLORS.white} style={styles.description}>
+              <Text variant="body" color={COLORS.gray[600]} style={styles.description}>
                 Your convenient way to pay for transport with RFID card technology
               </Text>
             </Animated.View>
@@ -118,13 +129,12 @@ export default function WelcomeScreen() {
             </Animated.View>
             
             <Animated.View entering={FadeInUp.duration(800).delay(600)}>
-              <Text variant="caption" color={COLORS.white} style={styles.note}>
+              <Text variant="caption" color={COLORS.gray[600]} style={styles.note}>
                 Safe • Secure • Friendly
               </Text>
             </Animated.View>
           </View>
-          </SafeAreaView>
-        </LinearGradient>
+        </SafeAreaView>
       </>
     );
   }
@@ -136,7 +146,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: COLORS.brand.background,
   },
   loadingContainer: {
     flex: 1,
@@ -163,30 +173,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: SPACING.lg,
     padding: SPACING.sm,
-    backgroundColor: COLORS.white + '99',
-    borderRadius: 60,
-    shadowColor: COLORS.primary,
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 6,
   },
   title: {
     textAlign: 'center',
     marginBottom: SPACING.xs,
-    textShadowColor: COLORS.white + '40',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   subtitle: {
     textAlign: 'center',
     marginBottom: SPACING.sm,
-    textShadowColor: COLORS.white + '30',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
   },
   description: {
     textAlign: 'center',
@@ -206,5 +200,14 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     borderRadius: 20,
     alignSelf: 'center',
+  },
+  glowBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#ffffff',
+    zIndex: 0,
   },
 });
