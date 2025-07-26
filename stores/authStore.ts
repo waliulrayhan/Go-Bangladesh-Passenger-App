@@ -1105,11 +1105,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   refreshUserFromToken: async () => {
+    const { user } = get();
+    
+    // Skip if no existing user or if refreshed recently (within 60 seconds)
+    if (!user) {
+      console.log('🔒 [REFRESH] No user data to refresh');
+      return false;
+    }
+    
     try {
       // Get stored auth token
       const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
       
       if (!token) {
+        console.log('🔒 [REFRESH] No auth token found');
         return false;
       }
 
@@ -1127,6 +1136,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const displayContext = getUserDisplayContext(token);
       
       if (!userInfo || !displayContext) {
+        console.log('🔒 [REFRESH] Invalid token data');
         return false;
       }
 

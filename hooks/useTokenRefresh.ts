@@ -17,11 +17,21 @@ export const useTokenRefresh = () => {
 
   /**
    * Manually trigger a refresh of all user data based on token
+   * Only refreshes if data is older than minRefreshInterval
    */
-  const refreshAllData = async (): Promise<boolean> => {
+  const refreshAllData = async (force: boolean = false): Promise<boolean> => {
     if (!isAuthenticated) {
       console.warn('⚠️ [TOKEN-REFRESH] User not authenticated, skipping refresh');
       return false;
+    }
+
+    // Prevent excessive refreshes (minimum 30 seconds between refreshes)
+    const minRefreshInterval = 30000; // 30 seconds
+    const now = new Date();
+    
+    if (!force && lastRefreshTime && (now.getTime() - lastRefreshTime.getTime()) < minRefreshInterval) {
+      console.log('🔒 [TOKEN-REFRESH] Skipping refresh - too recent:', (now.getTime() - lastRefreshTime.getTime()) / 1000, 'seconds ago');
+      return true; // Return true since we have recent data
     }
 
     setIsRefreshing(true);
@@ -87,23 +97,24 @@ export const useTokenRefresh = () => {
   };
 
   /**
-   * Auto-refresh data when component mounts or user changes
+   * Auto-refresh data when component mounts or user changes - DISABLED
+   * Only refresh data when explicitly requested (pull-to-refresh, button click, etc.)
    */
-  useEffect(() => {
-    const autoRefresh = async () => {
-      if (!isAuthenticated || !user) {
-        return;
-      }
+  // useEffect(() => {
+  //   const autoRefresh = async () => {
+  //     if (!isAuthenticated || !user) {
+  //       return;
+  //     }
 
-      const shouldRefresh = await shouldRefreshData();
+  //     const shouldRefresh = await shouldRefreshData();
       
-      if (shouldRefresh) {
-        await refreshAllData();
-      }
-    };
+  //     if (shouldRefresh) {
+  //       await refreshAllData();
+  //     }
+  //   };
 
-    autoRefresh();
-  }, [isAuthenticated, user?.id]); // Trigger when auth state or user ID changes
+  //   autoRefresh();
+  // }, [isAuthenticated, user?.id]); // Trigger when auth state or user ID changes
 
   return {
     isRefreshing,

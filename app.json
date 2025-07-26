@@ -45,7 +45,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "This app needs access to location for trip tracking."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "scheme": "go-bangladesh",
     "extra": {

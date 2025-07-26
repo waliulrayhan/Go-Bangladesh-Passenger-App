@@ -1,12 +1,12 @@
-import { useFonts } from 'expo-font';
-import { Slot, useRouter, useSegments } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import { useAuthStore } from '../stores/authStore';
-import { plusJakartaSansFonts } from '../utils/fonts';
+import { useFonts } from "expo-font";
+import { Slot, useRouter, useSegments } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { useAuthStore } from "../stores/authStore";
+import { plusJakartaSansFonts } from "../utils/fonts";
 
 // Polyfill for buffer in React Native
-import { Buffer } from 'buffer';
+import { Buffer } from "buffer";
 global.Buffer = Buffer;
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -24,10 +24,10 @@ export default function RootLayout() {
       try {
         // First load user from storage
         await loadUserFromStorage();
-        
-        console.log('✅ [APP] Session initialization completed');
+
+        console.log("✅ [APP] Session initialization completed");
       } catch (error) {
-        console.error('❌ [APP] Error during session initialization:', error);
+        console.error("❌ [APP] Error during session initialization:", error);
         // Continue with normal app flow even if session init fails
       }
     };
@@ -47,14 +47,14 @@ export default function RootLayout() {
     // Only proceed with navigation if fonts are loaded
     if (!loaded && !error) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const inTabsGroup = segments[0] === '(tabs)';
+    const inAuthGroup = segments[0] === "(auth)";
+    const inTabsGroup = segments[0] === "(tabs)";
 
     if (!isAuthenticated && inTabsGroup) {
-      router.replace('/');
+      router.replace("/");
     } else if (isAuthenticated && !inTabsGroup && !inAuthGroup) {
       // Default to passenger tabs for authenticated users
-      router.replace('/(tabs)');
+      router.replace("/(tabs)");
     }
   }, [isAuthenticated, segments, loaded, error]);
 

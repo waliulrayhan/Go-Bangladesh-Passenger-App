@@ -33,10 +33,11 @@ export default function Profile() {
   // Check if user is public type
   const isPublicUser = user?.userType === 'public';
 
+  // Only refresh when user explicitly pulls to refresh
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      await refreshAllData();
+      await refreshAllData(true); // Force refresh
     } catch (error) {
       console.log('Refresh error:', error);
     } finally {
@@ -606,8 +607,8 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.gray[900],
+    fontWeight: '600',
+    color: COLORS.secondary,
     marginBottom: 2,
     letterSpacing: 0.2,
   },

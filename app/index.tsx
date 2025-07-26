@@ -1,15 +1,15 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { GoBangladeshLogo } from '../components/GoBangladeshLogo';
-import { BubbleAnimation } from '../components/ui/BubbleAnimation';
-import { Button } from '../components/ui/Button';
-import { Text } from '../components/ui/Text';
-import { useAuthStore } from '../stores/authStore';
-import { COLORS, SPACING } from '../utils/constants';
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect, useState } from "react";
+import { SafeAreaView, StyleSheet, View } from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import { GoBangladeshLogo } from "../components/GoBangladeshLogo";
+import { BubbleAnimation } from "../components/ui/BubbleAnimation";
+import { Button } from "../components/ui/Button";
+import { Text } from "../components/ui/Text";
+import { useAuthStore } from "../stores/authStore";
+import { COLORS, SPACING } from "../utils/constants";
 
 export default function WelcomeScreen() {
   const { isAuthenticated, loadUserFromStorage } = useAuthStore();
@@ -23,20 +23,20 @@ export default function WelcomeScreen() {
   // Only redirect after initialization is complete
   useEffect(() => {
     if (isInitialized && isAuthenticated) {
-      console.log('🔄 [WELCOME] User is authenticated, redirecting to tabs...');
-      router.replace('/(tabs)');
+      console.log("🔄 [WELCOME] User is authenticated, redirecting to tabs...");
+      router.replace("/(tabs)");
     }
   }, [isInitialized, isAuthenticated]);
 
   const initializeApp = async () => {
     setIsLoading(true);
-    console.log('🚀 [WELCOME] Initializing app and checking authentication...');
-    
+    console.log("🚀 [WELCOME] Initializing app and checking authentication...");
+
     try {
       await loadUserFromStorage();
-      console.log('✅ [WELCOME] Authentication check completed');
+      console.log("✅ [WELCOME] Authentication check completed");
     } catch (error) {
-      console.error('❌ [WELCOME] Error during app initialization:', error);
+      console.error("❌ [WELCOME] Error during app initialization:", error);
     } finally {
       setIsLoading(false);
       setIsInitialized(true);
@@ -44,21 +44,25 @@ export default function WelcomeScreen() {
   };
 
   const handleGetStarted = () => {
-    router.push('/(auth)/passenger-login');
+    router.push("/(auth)/passenger-login");
   };
 
   if (isLoading || !isInitialized) {
     return (
       <>
-        <StatusBar style="light" backgroundColor="transparent" translucent={true} />
+        <StatusBar
+          style="light"
+          backgroundColor="transparent"
+          translucent={true}
+        />
         <SafeAreaView style={styles.container}>
           <LinearGradient
             colors={[
-              'rgba(74, 144, 226, 0.5)',   // Blue at top
-              'rgba(74, 144, 226, 0.2)', 
-              'transparent',
-              'rgba(255, 138, 0, 0.2)',   // Orange transition
-              'rgba(255, 138, 0, 0.4)'    // Orange at bottom
+              "rgba(74, 144, 226, 0.5)", // Blue at top
+              "rgba(74, 144, 226, 0.2)",
+              "transparent",
+              "rgba(255, 138, 0, 0.2)", // Orange transition
+              "rgba(255, 138, 0, 0.4)", // Orange at bottom
             ]}
             locations={[0, 0.2, 0.5, 0.8, 1]}
             style={styles.glowBackground}
@@ -73,7 +77,11 @@ export default function WelcomeScreen() {
               <GoBangladeshLogo size={80} />
             </Animated.View>
             <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-              <Text variant="body" color={COLORS.gray[600]} style={styles.loadingText}>
+              <Text
+                variant="body"
+                color={COLORS.gray[600]}
+                style={styles.loadingText}
+              >
                 Loading...
               </Text>
             </Animated.View>
@@ -87,15 +95,19 @@ export default function WelcomeScreen() {
   if (isInitialized && !isAuthenticated) {
     return (
       <>
-        <StatusBar style="light" backgroundColor="transparent" translucent={true} />
+        <StatusBar
+          style="light"
+          backgroundColor="transparent"
+          translucent={true}
+        />
         <SafeAreaView style={styles.container}>
           <LinearGradient
             colors={[
-              'rgba(74, 144, 226, 0.5)',   // Blue at top
-              'rgba(74, 144, 226, 0.2)', 
-              'transparent',
-              'rgba(255, 138, 0, 0.2)',   // Orange transition
-              'rgba(255, 138, 0, 0.4)'    // Orange at bottom
+              "rgba(74, 144, 226, 0.5)", // Blue at top
+              "rgba(74, 144, 226, 0.2)",
+              "transparent",
+              "rgba(255, 138, 0, 0.2)", // Orange transition
+              "rgba(255, 138, 0, 0.4)", // Orange at bottom
             ]}
             locations={[0, 0.2, 0.5, 0.8, 1]}
             style={styles.glowBackground}
@@ -106,22 +118,37 @@ export default function WelcomeScreen() {
             <BubbleAnimation bubbleCount={25} />
           </View>
           <View style={styles.content}>
-            <Animated.View entering={FadeInUp.duration(800).delay(200)} style={styles.header}>
+            <Animated.View
+              entering={FadeInUp.duration(800).delay(200)}
+              style={styles.header}
+            >
               <View style={styles.logoContainer}>
                 <GoBangladeshLogo size={120} />
               </View>
               <Text variant="h2" color={COLORS.primary} style={styles.title}>
                 Go Bangladesh
               </Text>
-              <Text variant="h6" color={COLORS.secondary} style={styles.subtitle}>
+              <Text
+                variant="h6"
+                color={COLORS.secondary}
+                style={styles.subtitle}
+              >
                 One step toward a better future
               </Text>
-              <Text variant="body" color={COLORS.gray[600]} style={styles.description}>
-                Your convenient way to pay for transport with RFID card technology
+              <Text
+                variant="body"
+                color={COLORS.gray[600]}
+                style={styles.description}
+              >
+                Your convenient way to pay for transport with RFID card
+                technology
               </Text>
             </Animated.View>
 
-            <Animated.View entering={FadeInDown.duration(800).delay(400)} style={styles.buttonContainer}>
+            <Animated.View
+              entering={FadeInDown.duration(800).delay(400)}
+              style={styles.buttonContainer}
+            >
               <Button
                 title="Get Started"
                 onPress={handleGetStarted}
@@ -131,9 +158,13 @@ export default function WelcomeScreen() {
                 fullWidth
               />
             </Animated.View>
-            
+
             <Animated.View entering={FadeInUp.duration(800).delay(600)}>
-              <Text variant="caption" color={COLORS.gray[600]} style={styles.note}>
+              <Text
+                variant="caption"
+                color={COLORS.gray[600]}
+                style={styles.note}
+              >
                 Safe • Secure • Friendly
               </Text>
             </Animated.View>
@@ -154,40 +185,40 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 2,
   },
   loadingText: {
     marginTop: SPACING.md,
-    textAlign: 'center',
+    textAlign: "center",
   },
   content: {
     flex: 1,
     padding: SPACING.lg,
-    justifyContent: 'center',
+    justifyContent: "center",
     zIndex: 2,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: SPACING.xl * 2,
   },
   logoContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: SPACING.xs,
     padding: SPACING.sm,
   },
   title: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: SPACING.xs,
   },
   subtitle: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: SPACING.sm,
   },
   description: {
-    textAlign: 'center',
+    textAlign: "center",
     paddingHorizontal: SPACING.sm,
     lineHeight: 24,
     padding: SPACING.md,
@@ -195,27 +226,27 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   buttonContainer: {
-    marginBottom: SPACING['5xl'],
+    marginBottom: SPACING["5xl"],
   },
   note: {
-    textAlign: 'center',
+    textAlign: "center",
     paddingHorizontal: SPACING.md,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     padding: SPACING.sm,
     borderRadius: 20,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   glowBackground: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     zIndex: 0,
   },
   bubbleContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,

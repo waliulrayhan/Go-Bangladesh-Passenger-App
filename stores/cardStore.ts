@@ -13,6 +13,7 @@ interface CardState {
   tripStatus: 'idle' | 'active' | 'completed';
   currentTrip: Trip | null;
   historyPagination: PaginationState;
+  lastDataLoadTime: Date | null;
   
   loadCardDetails: () => Promise<void>;
   loadHistory: (pageNo?: number, reset?: boolean) => Promise<void>;
@@ -27,6 +28,7 @@ interface CardState {
   checkOngoingTrip: () => Promise<void>;
   clearAllCardData: () => Promise<void>;
   refreshCardData: () => Promise<void>;
+  forceRefreshData: () => Promise<void>;
 }
 
 export const useCardStore = create<CardState>((set, get) => ({
@@ -38,6 +40,7 @@ export const useCardStore = create<CardState>((set, get) => ({
   error: null,
   tripStatus: 'idle',
   currentTrip: null,
+  lastDataLoadTime: null,
   historyPagination: {
     currentPage: 1,
     pageSize: 20,
@@ -47,6 +50,14 @@ export const useCardStore = create<CardState>((set, get) => ({
   },
 
   loadCardDetails: async () => {
+    const { lastDataLoadTime } = get();
+    
+    // Prevent excessive API calls - only reload if it's been more than 30 seconds
+    if (lastDataLoadTime && (Date.now() - lastDataLoadTime.getTime()) < 30000) {
+      console.log('🔒 [CARD] Skipping card details reload - recent data available');
+      return;
+    }
+    
     set({ isLoading: true, error: null });
     
     try {
@@ -68,7 +79,11 @@ export const useCardStore = create<CardState>((set, get) => ({
         createdAt: new Date().toISOString()
       };
       
-      set({ card, isLoading: false });
+      set({ 
+        card, 
+        isLoading: false, 
+        lastDataLoadTime: new Date() 
+      });
       
       // Check for ongoing trip after loading fresh card details
       get().checkOngoingTrip();
@@ -83,7 +98,13 @@ export const useCardStore = create<CardState>((set, get) => ({
   },
 
   loadHistory: async (pageNo: number = 1, reset: boolean = false) => {
-    const { historyPagination } = get();
+    const { historyPagination, transactions } = get();
+    
+    // Skip loading if we already have recent data and it's not a forced reset
+    if (!reset && transactions.length > 0 && pageNo === 1) {
+      console.log('🔒 [HISTORY] Skipping history reload - recent data available');
+      return;
+    }
     
     if (reset) {
       set({ 
@@ -451,6 +472,24 @@ export const useCardStore = create<CardState>((set, get) => ({
       console.log('✅ [CARD] All card data refreshed successfully');
     } catch (error) {
       console.error('❌ [CARD] Error refreshing card data:', error);
+    }
+  },
+
+  forceRefreshData: async () => {
+    try {
+      // Reset lastDataLoadTime to force fresh API calls
+      set({ lastDataLoadTime: null });
+      
+      // Force reload all data
+      await Promise.all([
+        get().loadCardDetails(),
+        get().loadHistory(1, true),
+        get().checkOngoingTrip()
+      ]);
+      
+      console.log('✅ [CARD] Force refresh completed successfully');
+    } catch (error) {
+      console.error('❌ [CARD] Error during force refresh:', error);
     }
   }
 }));

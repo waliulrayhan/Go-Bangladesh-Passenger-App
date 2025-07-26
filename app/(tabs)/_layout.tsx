@@ -1,10 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Tabs, useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
-import { useAuthStore } from '../../stores/authStore';
-import { COLORS } from '../../utils/constants';
-import { FONT_SIZES, FONT_WEIGHTS } from '../../utils/fonts';
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { Tabs, useRouter } from "expo-router";
+import { StyleSheet, View } from "react-native";
+import { useAuthStore } from "../../stores/authStore";
+import { COLORS } from "../../utils/constants";
+import { FONT_SIZES, FONT_WEIGHTS } from "../../utils/fonts";
 
 export default function TabsLayout() {
   const { logout, user } = useAuthStore();
@@ -14,12 +14,12 @@ export default function TabsLayout() {
     try {
       await logout();
       router.dismissAll();
-      router.replace('/');
+      router.replace("/");
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       // Force navigation even if logout fails
       router.dismissAll();
-      router.replace('/');
+      router.replace("/");
     }
   };
 
@@ -38,7 +38,7 @@ export default function TabsLayout() {
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       />
-      
+
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: COLORS.brand.blue,
@@ -74,7 +74,7 @@ export default function TabsLayout() {
           name="index"
           options={{
             headerShown: false,
-            tabBarLabel: 'Home',
+            tabBarLabel: "Home",
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="home" size={size} color={color} />
             ),
@@ -83,8 +83,8 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="history"
           options={{
-            title: 'History',
-            tabBarLabel: 'History',
+            title: "History",
+            tabBarLabel: "History",
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="time" size={size} color={color} />
             ),
@@ -93,8 +93,8 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Profile',
-            tabBarLabel: 'Profile',
+            title: "Profile",
+            tabBarLabel: "Profile",
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="person" size={size} color={color} />
             ),
@@ -108,13 +108,13 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
-    position: 'relative',
+    backgroundColor: "transparent",
+    position: "relative",
   },
-  
+
   // Background Gradient Styles
   glowBackground: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
