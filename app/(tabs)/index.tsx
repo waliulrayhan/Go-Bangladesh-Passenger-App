@@ -442,14 +442,14 @@ export default function Dashboard() {
         translucent={false}
       />
       <SafeAreaView style={styles.container}>
-        {/* Dual Color Glow Background - Teal Top, Orange Bottom */}
+        {/* Dual Color Glow Background - Blue Top, Orange Bottom */}
         <LinearGradient
           colors={[
-            'rgba(56, 193, 182, 0.5)',   // Teal at top
-            'rgba(56, 193, 182, 0.2)', 
-            'transparent',
-            'rgba(255, 140, 60, 0.2)',   // Orange transition
-            'rgba(255, 140, 60, 0.4)'    // Orange at bottom
+            "rgba(74, 144, 226, 0.5)", // Blue at top
+            "rgba(74, 144, 226, 0.2)",
+            "transparent",
+            "rgba(255, 138, 0, 0.2)", // Orange transition
+            "rgba(255, 138, 0, 0.4)", // Orange at bottom
           ]}
           locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}

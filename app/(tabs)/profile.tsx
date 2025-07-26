@@ -421,13 +421,13 @@ export default function Profile() {
       {/* Refined Gradient Background - Brand Colors */}
       <LinearGradient
         colors={[
-          'rgba(74, 144, 226, 0.08)',   // Brand blue at top
-          'rgba(74, 144, 226, 0.04)', 
-          'transparent',
-          'rgba(255, 138, 0, 0.03)',   // Brand orange transition
-          'rgba(255, 138, 0, 0.08)'    // Brand orange at bottom
+          "rgba(74, 144, 226, 0.5)", // Blue at top
+          "rgba(74, 144, 226, 0.2)",
+          "transparent",
+          "rgba(255, 138, 0, 0.2)", // Orange transition
+          "rgba(255, 138, 0, 0.4)", // Orange at bottom
         ]}
-        locations={[0, 0.25, 0.5, 0.75, 1]}
+        locations={[0, 0.2, 0.5, 0.8, 1]}
         style={styles.glowBackground}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
