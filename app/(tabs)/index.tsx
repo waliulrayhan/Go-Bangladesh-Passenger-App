@@ -509,8 +509,8 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   statusBarArea: {
-    height: 20, // iOS status bar height
-    backgroundColor: COLORS.primary, // Same color as header
+    height: 15, // iOS status bar height
+    // backgroundColor: COLORS.primary, // Same color as header
   },
   headerContent: {
     flexDirection: 'row',
@@ -553,17 +553,6 @@ const styles = StyleSheet.create({
   profileSection: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  profileInfo: {
-    alignItems: 'flex-end',
-    marginRight: 12,
-    flex: 1,
-  },
-  greeting: {
-    fontSize: 11,
-    opacity: 0.8,
-    fontWeight: '500',
-    marginBottom: 2,
   },
   avatar: {
     width: 40,
@@ -680,7 +669,7 @@ const styles = StyleSheet.create({
   },
   balanceSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 10,
   },
   balanceLabel: {
     fontSize: 14,
@@ -697,74 +686,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     textAlign: 'center',
   },
-  cardBottomSection: {
-    alignItems: 'flex-start',
-    borderTopWidth: 1,
-    borderTopColor: COLORS.white + '15',
-    paddingTop: 12,
-  },
-  brandContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  brandLogo: {
-    width: 24,
-    height: 24,
-    backgroundColor: COLORS.white + '90',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  brandLogoImage: {
-    width: 18,
-    height: 18,
-  },
-  brandLogoText: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  cardBrandName: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.8,
-    opacity: 0.9,
-  },
-  
-  // Header styles updates
-  userName: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  // Simulate Button Styles
-  simulateContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  simulateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.white,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.primary + '20',
-    gap: 8,
-  },
-  simulateText: {
-    fontWeight: '600',
-  },
   
   // Trip Status Styles - Compact Design
   tripContainer: {
     marginHorizontal: 16,
     marginBottom: 5,
     marginTop: 15,
-    borderRadius: 20,
+    borderRadius: 15,
     overflow: 'hidden',
     backgroundColor: 'rgba(255, 255, 255, 0.92)',
     elevation: 10,
@@ -945,7 +873,7 @@ const styles = StyleSheet.create({
   },
   activityList: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
+    borderRadius: 12,
     paddingVertical: 8,
     elevation: 3,
     borderWidth: 1,
