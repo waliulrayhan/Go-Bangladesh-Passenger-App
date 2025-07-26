@@ -65,14 +65,13 @@ export default function PassengerLogin() {
     <>
       <StatusBar style="light" backgroundColor="transparent" translucent={true} />
       <SafeAreaView style={styles.container}>
-        {/* Dual Color Glow Background - Teal Top, Orange Bottom */}
         <LinearGradient
           colors={[
-            'rgba(56, 193, 182, 0.5)',   // Teal at top
-            'rgba(56, 193, 182, 0.2)', 
-            'transparent',
-            'rgba(255, 140, 60, 0.2)',   // Orange transition
-            'rgba(255, 140, 60, 0.4)'    // Orange at bottom
+        'rgba(74, 144, 226, 0.5)',   // Blue at top
+        'rgba(74, 144, 226, 0.2)', 
+        'transparent',
+        'rgba(255, 138, 0, 0.2)',   // Orange transition
+        'rgba(255, 138, 0, 0.4)'    // Orange at bottom
           ]}
           locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}
@@ -86,99 +85,93 @@ export default function PassengerLogin() {
       
         <View style={styles.content}>
           <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
-            <View style={styles.logoContainer}>
-              <GoBangladeshLogo size={60} />
-            </View>
-            
-            <Text variant="h3" style={styles.title}>Welcome Back!</Text>
-            <Text style={styles.subtitle}>
-              Sign in to your account
-            </Text>
+        <View style={styles.logoContainer}>
+          <GoBangladeshLogo size={60} />
+        </View>
+        
+        <Text variant="h3" style={styles.title}>Welcome Back!</Text>
+        <Text style={styles.subtitle}>
+          Sign in to your account
+        </Text>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-            <Card variant="elevated" style={styles.loginCard}>
-              <View style={styles.loginContent}>
-                <Input
-                  label="Email or Mobile Number"
-                  value={identifier}
-                  onChangeText={setIdentifier}
-                  placeholder="Enter your email or mobile number"
-                  keyboardType="email-address"
-                  icon="person"
-                  autoCapitalize="none"
-                />
-                
-                <Input
-                  label="Password"
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Enter your password"
-                  secureTextEntry={!showPassword}
-                  icon="lock-closed"
-                  rightIcon={showPassword ? "eye-off" : "eye"}
-                  onRightIconPress={() => setShowPassword(!showPassword)}
-                />
+        <Card variant="elevated" style={styles.loginCard}>
+          <View style={styles.loginContent}>
+            <Input
+          label="Email or Mobile Number"
+          value={identifier}
+          onChangeText={setIdentifier}
+          placeholder="Enter your email or mobile number"
+          keyboardType="email-address"
+          icon="person"
+          autoCapitalize="none"
+            />
+            
+            <Input
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Enter your password"
+          secureTextEntry={!showPassword}
+          icon="lock-closed"
+          rightIcon={showPassword ? "eye-off" : "eye"}
+          onRightIconPress={() => setShowPassword(!showPassword)}
+            />
 
-                <Button
-                  title="Sign In"
-                  onPress={handleLogin}
-                  loading={isLoading}
-                  disabled={!identifier.trim() || !password.trim()}
-                  icon="arrow-forward"
-                  size="medium"
-                  fullWidth
-                />
+            <Button
+          title="Sign In"
+          onPress={handleLogin}
+          loading={isLoading}
+          disabled={!identifier.trim() || !password.trim()}
+          icon="arrow-forward"
+          size="medium"
+          fullWidth
+            />
 
-                {error && (
-                  <View style={styles.errorContainer}>
-                    <Ionicons name="alert-circle" size={16} color={COLORS.error} />
-                    <Text style={styles.errorText}>{error}</Text>
-                  </View>
-                )}
-              </View>
-            </Card>
+            {error && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle" size={16} color={COLORS.error} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+            )}
+          </View>
+        </Card>
           </Animated.View>
 
           <Animated.View 
-            entering={FadeInDown.duration(800).delay(400)} 
-            style={styles.bottomSection}
+        entering={FadeInDown.duration(800).delay(400)} 
+        style={styles.bottomSection}
           >
-            <TouchableOpacity 
-              style={styles.forgotPasswordButton}
-              onPress={handleForgotPassword}
-            >
-              <Text style={styles.forgotPasswordText}>
-                Forgot Password?
-              </Text>
-            </TouchableOpacity>
-            
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.createAccountButton}
-              onPress={() => router.push('/(auth)/passenger-registration')}
-            >
-              <Text style={styles.createAccountText}>
-                Don't have an account?
-              </Text>
-              <Text style={styles.createAccountLink}>
-                Register Now
-              </Text>
-            </TouchableOpacity>
-            
-            <View style={styles.organizationButton}>
-              <Text style={styles.organizationText}>
-                Need help with your account?
-              </Text>
-              <Text style={styles.organizationEmail}>
-                info@thegobd.com
-              </Text>
-            </View>
+        <TouchableOpacity 
+          style={styles.forgotPasswordButton}
+          onPress={handleForgotPassword}
+        >
+          <Text style={styles.forgotPasswordText}>
+            Forgot Password?
+          </Text>
+        </TouchableOpacity>
+        
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.dividerLine} />
+        </View>
+        
+        <TouchableOpacity 
+          style={styles.createAccountButton}
+          onPress={() => router.push('/(auth)/passenger-registration')}
+        >
+          <Text style={styles.createAccountText}>
+            Don't have an account? <Text style={styles.createAccountLink}>Register Now</Text>
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.organizationButton}>
+          <Text style={styles.organizationText}>
+            Need help? <Text style={styles.organizationEmail}>info@thegobd.com</Text>
+          </Text>
+        </TouchableOpacity>
           </Animated.View>
         </View>
       </SafeAreaView>
@@ -213,7 +206,7 @@ const styles = StyleSheet.create({
   },
   title: {
     textAlign: 'center',
-    color: COLORS.gray[900],
+    color: COLORS.secondary,
     marginBottom: SPACING.xs,
   },
   subtitle: {
@@ -224,7 +217,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   loginCard: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   loginContent: {
     padding: SPACING.md,
@@ -249,9 +242,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   forgotPasswordButton: {
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.xs,
   },
   forgotPasswordText: {
+    paddingTop: SPACING.lg,
     color: COLORS.primary,
     fontSize: 16,
     fontWeight: '600',
@@ -259,7 +253,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: SPACING.md,
+    marginVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
   },
   dividerLine: {
@@ -268,46 +262,43 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gray[300],
   },
   dividerText: {
-    marginHorizontal: SPACING.md,
+    marginHorizontal: SPACING.sm,
     fontSize: 14,
     color: COLORS.gray[500],
     fontWeight: '500',
   },
   createAccountButton: {
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
     alignItems: 'center',
   },
   createAccountText: {
-    fontSize: 16,
+    fontSize: 15,
     textAlign: 'center',
     color: COLORS.gray[600],
-    marginBottom: 4,
   },
   createAccountLink: {
-    fontSize: 16,
-    textAlign: 'center',
+    fontSize: 15,
     color: COLORS.primary,
     fontWeight: '600',
   },
   organizationButton: {
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
     alignItems: 'center',
     marginTop: SPACING.xs,
   },
   organizationText: {
-    fontSize: 14,
+    paddingTop: SPACING.xl,
+    fontSize: 13,
     textAlign: 'center',
     color: COLORS.gray[500],
-    lineHeight: 18,
+    lineHeight: 16,
   },
   organizationEmail: {
-    fontSize: 16,
-    textAlign: 'center',
+    fontSize: 13,
     color: COLORS.primary,
-    fontWeight: '600',
-    marginTop: 4,
+    fontWeight: '700',
   },
   glowBackground: {
     position: 'absolute',
