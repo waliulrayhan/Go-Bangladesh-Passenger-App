@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'https://mhmahi-001-site1.qtempurl.com';
+export const API_BASE_URL = 'https://thegobd.com';
 
 export const USER_TYPES = {
   PASSENGER: 'passenger'

@@ -21,7 +21,7 @@ import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Text } from './ui/Text';
 
-const API_BASE_URL = 'https://mhmahi-001-site1.qtempurl.com';
+const API_BASE_URL = 'https://thegobd.com';
 
 interface EditProfileModalProps {
   visible: boolean;
