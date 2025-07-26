@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { ReactNode, useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { BORDER_RADIUS, COLORS, SIZES, SPACING } from '../../utils/constants';
@@ -7,7 +7,7 @@ import { TYPOGRAPHY } from '../../utils/fonts';
 import { Text } from './Text';
 
 interface InputProps {
-  label?: string;
+  label?: string | ReactNode;
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
@@ -71,7 +71,13 @@ export const Input: React.FC<InputProps> = ({
 
   return (
     <View style={styles.container}>
-      {label && <Text variant="label" color={COLORS.gray[700]}>{label}</Text>}
+      {label && (
+        typeof label === 'string' ? (
+          <Text variant="label" color={COLORS.gray[700]}>{label}</Text>
+        ) : (
+          <View style={styles.labelContainer}>{label}</View>
+        )
+      )}
       <Animated.View style={[styles.inputContainer, animatedStyle]}>
         {icon && (
           <Ionicons 
@@ -121,6 +127,9 @@ export const Input: React.FC<InputProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginBottom: SPACING.lg,
+  },
+  labelContainer: {
+    marginBottom: SPACING.xs,
   },
   inputContainer: {
     flexDirection: 'row',

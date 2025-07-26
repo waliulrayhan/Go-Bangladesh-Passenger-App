@@ -24,27 +24,27 @@ interface Bubble {
 }
 
 const BUBBLE_COLORS = [
-  colors.primary.blueSubtle + '80', // 50% opacity
-  colors.primary.orangeSubtle + '70', // 44% opacity
-  colors.primary.blueLight + '40', // 25% opacity
-  colors.primary.orangeLight + '30', // 19% opacity
-  colors.neutral.white + '60', // 38% opacity
-  colors.primary.blue + '20', // 13% opacity
-  colors.primary.orange + '15', // 8% opacity
-  '#FFFFFF40', // Pure white with 25% opacity
-  '#E8F2FF60', // Light blue with 38% opacity
+  'rgba(74, 144, 226, 0.15)', // Blue matching gradient - light
+  'rgba(74, 144, 226, 0.25)', // Blue matching gradient - medium
+  'rgba(255, 138, 0, 0.15)',  // Orange matching gradient - light
+  'rgba(255, 138, 0, 0.25)',  // Orange matching gradient - medium
+  'rgba(74, 144, 226, 0.1)',  // Blue matching gradient - very light
+  'rgba(255, 138, 0, 0.1)',   // Orange matching gradient - very light
+  'rgba(255, 255, 255, 0.3)', // Pure white - subtle
+  'rgba(74, 144, 226, 0.08)', // Blue matching gradient - ultra light
+  'rgba(255, 138, 0, 0.08)',  // Orange matching gradient - ultra light
 ];
 
 const generateBubbles = (count: number): Bubble[] => {
   return Array.from({ length: count }, (_, index) => ({
     id: index,
-    size: Math.random() * 120 + 30, // 30-150px
+    size: Math.random() * 40 + 15, // 15-55px (much smaller)
     startX: Math.random() * SCREEN_WIDTH,
     startY: SCREEN_HEIGHT + 100, // Start below screen
     color: BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)],
-    opacity: Math.random() * 0.4 + 0.2, // 0.2-0.6
-    duration: Math.random() * 20000 + 15000, // 15-35 seconds
-    delay: Math.random() * 8000, // 0-8 seconds
+    opacity: Math.random() * 0.3 + 0.15, // 0.15-0.45 (more subtle)
+    duration: Math.random() * 25000 + 20000, // 20-45 seconds (slower)
+    delay: Math.random() * 10000, // 0-10 seconds
   }));
 };
 

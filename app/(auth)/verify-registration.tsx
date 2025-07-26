@@ -1,17 +1,25 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, BackHandler, SafeAreaView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { Card } from '../../components/ui/Card';
-import { Text } from '../../components/ui/Text';
-import { apiService } from '../../services/api';
-import { useAuthStore } from '../../stores/authStore';
-import { useCardStore } from '../../stores/cardStore';
-import { COLORS, SPACING } from '../../utils/constants';
-import { storageService } from '../../utils/storage';
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { router, useLocalSearchParams } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  BackHandler,
+  SafeAreaView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import { Card } from "../../components/ui/Card";
+import { Text } from "../../components/ui/Text";
+import { apiService } from "../../services/api";
+import { useAuthStore } from "../../stores/authStore";
+import { useCardStore } from "../../stores/cardStore";
+import { COLORS, SPACING } from "../../utils/constants";
+import { storageService } from "../../utils/storage";
 
 export default function VerifyRegistration() {
   const params = useLocalSearchParams<{
@@ -19,7 +27,7 @@ export default function VerifyRegistration() {
     name: string;
     phone: string;
     email?: string;
-    gender: 'male' | 'female';
+    gender: "male" | "female";
     address: string;
     dateOfBirth: string;
     passengerId?: string;
@@ -29,12 +37,12 @@ export default function VerifyRegistration() {
   }>();
 
   const { login } = useAuthStore();
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
@@ -59,7 +67,10 @@ export default function VerifyRegistration() {
       return true;
     };
 
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
     return () => backHandler.remove();
   }, []);
 
@@ -77,269 +88,295 @@ export default function VerifyRegistration() {
     }
 
     // Auto-verify when all 6 digits are entered
-    if (newOtp.every(digit => digit !== '') && newOtp.length === 6) {
+    if (newOtp.every((digit) => digit !== "") && newOtp.length === 6) {
       // Small delay to ensure UI updates first
       setTimeout(() => {
-        handleVerify(newOtp.join(''));
+        handleVerify(newOtp.join(""));
       }, 100);
     }
   };
 
   const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
+    if (e.nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
   const handleVerify = async (otpCode?: string) => {
-    const otpString = otpCode || otp.join('');
-    
+    const otpString = otpCode || otp.join("");
+
     if (otpString.length !== 6) {
-      Alert.alert('Invalid OTP', 'Please enter the complete 6-digit OTP.');
+      Alert.alert("Invalid OTP", "Please enter the complete 6-digit OTP.");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      console.log('🔐 Verifying OTP for:', params.phone);
-      
+      console.log("🔐 Verifying OTP for:", params.phone);
+
       // Verify OTP with API
-      const verificationResult = await apiService.verifyOTP(params.phone, otpString);
-      
+      const verificationResult = await apiService.verifyOTP(
+        params.phone,
+        otpString
+      );
+
       if (verificationResult) {
-        console.log('✅ OTP verification successful');
-        
+        console.log("✅ OTP verification successful");
+
         // Retrieve stored registration data
-        const tempData = await storageService.getItem<any>('temp_registration_data');
-        console.log('🔍 Retrieved temp data:', tempData);
-        
+        const tempData = await storageService.getItem<any>(
+          "temp_registration_data"
+        );
+        console.log("🔍 Retrieved temp data:", tempData);
+
         if (!tempData) {
-          console.error('❌ No stored registration data found');
+          console.error("❌ No stored registration data found");
           setIsLoading(false);
-          
+
           Alert.alert(
-            'Registration Error',
-            'Registration data not found. Please start the registration process again.',
+            "Registration Error",
+            "Registration data not found. Please start the registration process again.",
             [
               {
-                text: 'Go to Registration',
+                text: "Go to Registration",
                 onPress: () => {
-                  router.replace('/(auth)/passenger-registration');
-                }
-              }
+                  router.replace("/(auth)/passenger-registration");
+                },
+              },
             ]
           );
           return;
         }
-        
+
         // Now call the registration API after successful OTP verification
-        console.log('🔑 Calling registration API after OTP verification...');
-        
+        console.log("🔑 Calling registration API after OTP verification...");
+
         try {
           // Register the passenger using the stored registration data
           await apiService.registerPassenger(tempData.registrationData);
-          
-          console.log('✅ Registration API call successful');
-          
+
+          console.log("✅ Registration API call successful");
+
           // Clean up temporary storage after successful registration
-          await storageService.removeItem('temp_registration_data');
-          
+          await storageService.removeItem("temp_registration_data");
+
           // Use loginWithPassword with the stored password
           const { loginWithPassword } = useAuthStore.getState();
-          const loginSuccess = await loginWithPassword(tempData.phone, tempData.password);
-          
+          const loginSuccess = await loginWithPassword(
+            tempData.phone,
+            tempData.password
+          );
+
           if (loginSuccess) {
             // Load card data using the store's loadCardDetails method
             try {
               await useCardStore.getState().loadCardDetails();
             } catch (cardError) {
-              console.log('ℹ️ Card data loading failed:', cardError);
+              console.log("ℹ️ Card data loading failed:", cardError);
             }
-            
+
             setIsLoading(false);
-            
+
             Alert.alert(
-              'Registration Successful!',
-              'Your account has been created successfully. Welcome to Go Bangladesh!',
+              "Registration Successful!",
+              "Your account has been created successfully. Welcome to Go Bangladesh!",
               [
                 {
-                  text: 'Continue',
+                  text: "Continue",
                   onPress: () => {
-                    router.replace('/(tabs)');
-                  }
-                }
+                    router.replace("/(tabs)");
+                  },
+                },
               ]
             );
           } else {
             // If login fails, still show success message but redirect to login
             setIsLoading(false);
-            
+
             Alert.alert(
-              'Registration Complete',
-              'Your account has been created successfully. Please log in to continue.',
+              "Registration Complete",
+              "Your account has been created successfully. Please log in to continue.",
               [
                 {
-                  text: 'Go to Login',
+                  text: "Go to Login",
                   onPress: () => {
-                    router.replace('/(auth)/passenger-login');
-                  }
-                }
+                    router.replace("/(auth)/passenger-login");
+                  },
+                },
               ]
             );
           }
         } catch (registrationError: any) {
-          console.error('❌ Registration API error:', registrationError);
+          console.error("❌ Registration API error:", registrationError);
           setIsLoading(false);
-          
+
           // Clean up temporary storage even on failure
-          await storageService.removeItem('temp_registration_data');
-          
-          let errorMessage = 'Registration failed after OTP verification. Please try again.';
-          
+          await storageService.removeItem("temp_registration_data");
+
+          let errorMessage =
+            "Registration failed after OTP verification. Please try again.";
+
           if (registrationError.message) {
             errorMessage = registrationError.message;
           } else if (registrationError.response?.data?.data?.message) {
             errorMessage = registrationError.response.data.data.message;
           }
-          
-          Alert.alert('Registration Error', errorMessage, [
+
+          Alert.alert("Registration Error", errorMessage, [
             {
-              text: 'Try Again',
+              text: "Try Again",
               onPress: () => {
-                router.replace('/(auth)/passenger-registration');
-              }
-            }
+                router.replace("/(auth)/passenger-registration");
+              },
+            },
           ]);
         }
       }
     } catch (error: any) {
       setIsLoading(false);
-      console.error('❌ OTP verification error:', error);
-      
+      console.error("❌ OTP verification error:", error);
+
       // Clear OTP form on error
-      setOtp(['', '', '', '', '', '']);
+      setOtp(["", "", "", "", "", ""]);
       if (inputRefs.current[0]) {
         inputRefs.current[0].focus();
       }
-      
-      let errorMessage = 'Invalid OTP. Please try again.';
-      
+
+      let errorMessage = "Invalid OTP. Please try again.";
+
       if (error.message) {
         errorMessage = error.message;
       } else if (error.response?.data?.data?.message) {
         errorMessage = error.response.data.data.message;
       }
-      
-      Alert.alert('Verification Failed', errorMessage);
+
+      Alert.alert("Verification Failed", errorMessage);
     }
   };
 
   const handleResendOTP = async () => {
     setIsResending(true);
-    
+
     try {
-      console.log('🔄 Resending OTP to:', params.phone);
-      
+      console.log("🔄 Resending OTP to:", params.phone);
+
       // Resend OTP using API
       await apiService.sendOTP(params.phone);
-      
-      console.log('✅ OTP resent successfully');
-      
+
+      console.log("✅ OTP resent successfully");
+
       setIsResending(false);
-      setOtp(['', '', '', '', '', '']);
+      setOtp(["", "", "", "", "", ""]);
       setCountdown(60);
       setCanResend(false);
       inputRefs.current[0]?.focus();
-      
-      Alert.alert('OTP Sent', 'A new OTP has been sent to your mobile number.');
+
+      Alert.alert("OTP Sent", "A new OTP has been sent to your mobile number.");
     } catch (error: any) {
       setIsResending(false);
-      console.error('❌ Resend OTP error:', error);
-      
+      console.error("❌ Resend OTP error:", error);
+
       // Clear OTP form when resending
-      setOtp(['', '', '', '', '', '']);
-      
-      let errorMessage = 'Failed to resend OTP. Please try again.';
-      
+      setOtp(["", "", "", "", "", ""]);
+
+      let errorMessage = "Failed to resend OTP. Please try again.";
+
       if (error.message) {
         errorMessage = error.message;
       } else if (error.response?.data?.data?.message) {
         errorMessage = error.response.data.data.message;
       }
-      
-      Alert.alert('Error', errorMessage);
+
+      Alert.alert("Error", errorMessage);
     }
   };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
     <>
-      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
+      <StatusBar
+        style="light"
+        backgroundColor="transparent"
+        translucent={true}
+      />
       <SafeAreaView style={styles.container}>
-        {/* Orange Soft + Purple Bottom Dual Glow */}
         <LinearGradient
           colors={[
-            'rgba(255, 113, 18, 0.3)',   // Orange Soft at top
-            'rgba(255, 113, 18, 0.2)', 
-            'transparent',
-            'rgba(173, 109, 244, 0.2)',  // Purple transition
-            'rgba(173, 109, 244, 0.4)'   // Purple at bottom
+            "rgba(74, 144, 226, 0.5)", // Blue at top
+            "rgba(74, 144, 226, 0.2)",
+            "transparent",
+            "rgba(255, 138, 0, 0.2)", // Orange transition
+            "rgba(255, 138, 0, 0.4)", // Orange at bottom
           ]}
           locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}
-          start={{ x: 0.5, y: 0.5 }}
-          end={{ x: 1, y: 1 }}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
         />
-        
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
-        
+
         <View style={styles.content}>
-          <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
+          <Animated.View
+            entering={FadeInUp.duration(800)}
+            style={styles.header}
+          >
             <View style={styles.iconContainer}>
-              <Ionicons name="shield-checkmark" size={32} color={COLORS.primary} />
+              <Ionicons
+                name="shield-checkmark"
+                size={32}
+                color={COLORS.primary}
+              />
             </View>
-            
-            <Text variant="h3" color={COLORS.white} style={styles.title}>Verify Your Mobile Number</Text>
+
+            <Text variant="h3" color={COLORS.secondary} style={styles.title}>
+              Verify Your Mobile Number
+            </Text>
             <Text style={styles.subtitle}>
-              Enter the 6-digit code sent to{'\n'}
+              Enter the 6-digit code sent to{"\n"}
               <Text style={styles.phoneNumber}>{params.phone}</Text>
             </Text>
 
-            <View style={styles.userInfo}>
+            {/* <View style={styles.userInfo}>
               <Text style={styles.infoLabel}>Registering:</Text>
               <Text style={styles.infoValue}>{params.name}</Text>
               <Text style={styles.cardInfo}>Card: {params.cardNumber}</Text>
-            </View>
+            </View> */}
           </Animated.View>
 
           <Animated.View entering={FadeInDown.duration(800).delay(200)}>
             <Card variant="elevated">
               <View style={styles.otpContainer}>
                 <Text style={styles.otpLabel}>Enter OTP</Text>
-                
+
                 {isLoading && (
                   <View style={styles.loadingContainer}>
                     <Text style={styles.loadingText}>Verifying...</Text>
                   </View>
                 )}
-                
+
                 <View style={styles.otpInputContainer}>
                   {otp.map((digit, index) => (
                     <TextInput
                       key={index}
-                      ref={(ref) => { inputRefs.current[index] = ref; }}
+                      ref={(ref) => {
+                        inputRefs.current[index] = ref;
+                      }}
                       style={[
                         styles.otpInput,
                         digit && styles.otpInputFilled,
-                        isLoading && styles.otpInputDisabled
+                        isLoading && styles.otpInputDisabled,
                       ]}
                       value={digit}
                       onChangeText={(value) => handleOtpChange(value, index)}
@@ -361,7 +398,7 @@ export default function VerifyRegistration() {
                       disabled={isResending}
                     >
                       <Text style={styles.resendText}>
-                        {isResending ? 'Sending...' : 'Resend OTP'}
+                        {isResending ? "Sending..." : "Resend OTP"}
                       </Text>
                     </TouchableOpacity>
                   ) : (
@@ -372,7 +409,7 @@ export default function VerifyRegistration() {
                 </View>
 
                 <Text style={styles.helpText}>
-                  Enter all 6 digits for automatic verification.{'\n'}
+                  Enter all 6 digits for automatic verification.{"\n"}
                   Didn't receive the code? Check your SMS or try resending.
                 </Text>
               </View>
@@ -392,15 +429,15 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: SPACING.md,
-    justifyContent: 'center',
+    justifyContent: "center",
     zIndex: 1,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: SPACING.lg,
   },
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     left: SPACING.md,
     top: 60, // Increased for translucent status bar
     padding: SPACING.sm,
@@ -411,24 +448,23 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     backgroundColor: COLORS.brand.blue_subtle,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: SPACING.sm,
   },
   title: {
-    color: COLORS.gray[900],
     marginBottom: SPACING.xs,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 15,
     color: COLORS.gray[600],
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
     marginBottom: SPACING.sm,
   },
   phoneNumber: {
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.primary,
   },
   userInfo: {
@@ -436,37 +472,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 2,
   },
   infoLabel: {
     fontSize: 12,
     color: COLORS.gray[600],
-    fontWeight: '500',
+    fontWeight: "500",
   },
   infoValue: {
     fontSize: 16,
     color: COLORS.gray[900],
-    fontWeight: '600',
+    fontWeight: "600",
   },
   cardInfo: {
     fontSize: 12,
     color: COLORS.secondary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   otpContainer: {
     padding: SPACING.md,
   },
   otpLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.gray[900],
     marginBottom: SPACING.sm,
-    textAlign: 'center',
+    textAlign: "center",
   },
   otpInputContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.sm,
   },
@@ -476,9 +512,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.gray[300],
     borderRadius: 8,
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.gray[900],
     backgroundColor: COLORS.white,
   },
@@ -490,16 +526,16 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   loadingContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: SPACING.sm,
   },
   loadingText: {
     fontSize: 14,
     color: COLORS.primary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   resendContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: SPACING.md,
   },
   resendButton: {
@@ -509,26 +545,26 @@ const styles = StyleSheet.create({
   resendText: {
     color: COLORS.primary,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   countdownText: {
     color: COLORS.gray[600],
     fontSize: 14,
   },
   helpText: {
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.gray[600],
     fontSize: 12,
     marginTop: SPACING.sm,
     lineHeight: 16,
   },
   glowBackground: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     zIndex: 0,
   },
 });

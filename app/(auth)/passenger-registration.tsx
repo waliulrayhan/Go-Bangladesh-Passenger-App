@@ -1,22 +1,29 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { Alert, Dimensions, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { GoBangladeshLogo } from '../../components/GoBangladeshLogo';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { Text } from '../../components/ui/Text';
-import { apiService } from '../../services/api';
-import { COLORS, SPACING } from '../../utils/constants';
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
+import {
+  Alert,
+  Dimensions,
+  SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import { GoBangladeshLogo } from "../../components/GoBangladeshLogo";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { Input } from "../../components/ui/Input";
+import { Text } from "../../components/ui/Text";
+import { apiService } from "../../services/api";
+import { COLORS, SPACING } from "../../utils/constants";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 export default function PassengerRegistration() {
-  const [cardNumber, setCardNumber] = useState('');
+  const [cardNumber, setCardNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoBack = () => {
@@ -31,73 +38,82 @@ export default function PassengerRegistration() {
 
   const handleCardNumberChange = (text: string) => {
     // Convert to uppercase and filter only letters and numbers
-    const filteredText = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const filteredText = text.toUpperCase().replace(/[^A-Z0-9]/g, "");
     setCardNumber(filteredText);
   };
 
   const handleProceed = async () => {
     if (!validateCardNumber(cardNumber)) {
-      Alert.alert('Invalid Card Number', 'Please enter a valid card number (at least 8 characters, letters and numbers only)');
+      Alert.alert(
+        "Invalid Card Number",
+        "Please enter a valid card number (at least 8 characters, letters and numbers only)"
+      );
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
       // Check card validity using API
-      console.log('🔍 Checking card validity for:', cardNumber);
-      const validationResponse = await apiService.checkCardValidity(cardNumber.trim());
-      
+      console.log("🔍 Checking card validity for:", cardNumber);
+      const validationResponse = await apiService.checkCardValidity(
+        cardNumber.trim()
+      );
+
       if (!validationResponse.isSuccess) {
         Alert.alert(
-          'Card Issue', 
-          validationResponse.message || 'This card is not available for registration'
+          "Card Issue",
+          validationResponse.message ||
+            "This card is not available for registration"
         );
         setIsLoading(false);
         return;
       }
-      
+
       // Check if card content exists
       if (!validationResponse.content) {
         Alert.alert(
-          'Card Not Found', 
-          'Card not found. Please check your card number and try again.'
+          "Card Not Found",
+          "Card not found. Please check your card number and try again."
         );
         setIsLoading(false);
         return;
       }
-      
+
       // Check if card is available based on the message
-      if (validationResponse.message !== 'This card is available!') {
+      if (validationResponse.message !== "This card is available!") {
         Alert.alert(
-          'Card Not Available', 
-          'This card is not available for registration. Please contact support if this is your card.'
+          "Card Not Available",
+          "This card is not available for registration. Please contact support if this is your card."
         );
         setIsLoading(false);
         return;
       }
-      
+
       // If card is available, proceed to personal info page
-      console.log('✅ Card is available for registration');
-      console.log('🏢 Organization Type:', validationResponse.content.organization.organizationType);
-      console.log('📋 Card Status:', validationResponse.content.status);
-      console.log('💬 Message:', validationResponse.message);
-      
+      console.log("✅ Card is available for registration");
+      console.log(
+        "🏢 Organization Type:",
+        validationResponse.content.organization.organizationType
+      );
+      console.log("📋 Card Status:", validationResponse.content.status);
+      console.log("💬 Message:", validationResponse.message);
+
       router.push({
-        pathname: '/(auth)/registration-personal-info',
-        params: { 
+        pathname: "/(auth)/registration-personal-info",
+        params: {
           cardNumber: cardNumber.trim(),
-          organizationType: validationResponse.content.organization.organizationType,
+          organizationType:
+            validationResponse.content.organization.organizationType,
           organizationId: validationResponse.content.organizationId,
-          organizationName: validationResponse.content.organization.name
-        }
+          organizationName: validationResponse.content.organization.name,
+        },
       });
-      
     } catch (error: any) {
-      console.error('❌ Card validation error:', error);
+      console.error("❌ Card validation error:", error);
       Alert.alert(
-        'Connection Error', 
-        'Unable to verify card. Please check your internet connection and try again.'
+        "Connection Error",
+        "Unable to verify card. Please check your internet connection and try again."
       );
     } finally {
       setIsLoading(false);
@@ -105,39 +121,47 @@ export default function PassengerRegistration() {
   };
 
   const handleLogin = () => {
-    router.push('/(auth)/passenger-login');
+    router.push("/(auth)/passenger-login");
   };
 
   return (
     <>
-      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
+      <StatusBar
+        style="light"
+        backgroundColor="transparent"
+        translucent={true}
+      />
       <SafeAreaView style={styles.container}>
-        {/* Dreamy Sky Pink + Cool Blue Dual Glow */}
         <LinearGradient
           colors={[
-            'rgba(173, 216, 230, 0.35)',  // Light Blue at top
-            'rgba(173, 216, 230, 0.2)', 
-            'transparent',
-            'rgba(255, 182, 193, 0.2)',   // Light Pink transition  
-            'rgba(255, 182, 193, 0.4)'    // Light Pink at bottom
+            "rgba(74, 144, 226, 0.5)", // Blue at top
+            "rgba(74, 144, 226, 0.2)",
+            "transparent",
+            "rgba(255, 138, 0, 0.2)", // Orange transition
+            "rgba(255, 138, 0, 0.4)", // Orange at bottom
           ]}
           locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}
-          start={{ x: 0.3, y: 0 }}
-          end={{ x: 0.7, y: 1 }}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
         />
-        
+
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
-      
+
         <View style={styles.content}>
-          <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
+          <Animated.View
+            entering={FadeInUp.duration(800)}
+            style={styles.header}
+          >
             <View style={styles.logoContainer}>
               <GoBangladeshLogo size={60} />
             </View>
-            
-            <Text variant="h3" color={COLORS.white} style={styles.title}>User Registration</Text>
+
+            <Text variant="h3" color={COLORS.secondary} style={styles.title}>
+              User Registration
+            </Text>
             <Text style={styles.subtitle}>
               Enter your card number to get started
             </Text>
@@ -149,7 +173,7 @@ export default function PassengerRegistration() {
                 <View style={styles.iconContainer}>
                   <Ionicons name="card" size={32} color={COLORS.primary} />
                 </View>
-                
+
                 <View style={styles.inputContainer}>
                   <Input
                     label="Card Number"
@@ -164,7 +188,8 @@ export default function PassengerRegistration() {
                 </View>
 
                 <Text style={styles.helperText}>
-                  Enter the card number printed on your Go Bangladesh transport card
+                  Enter the card number printed on your Go Bangladesh transport
+                  card
                 </Text>
 
                 <Button
@@ -180,8 +205,8 @@ export default function PassengerRegistration() {
             </Card>
           </Animated.View>
 
-          <Animated.View 
-            entering={FadeInDown.duration(800).delay(400)} 
+          <Animated.View
+            entering={FadeInDown.duration(800).delay(400)}
             style={styles.bottomSection}
           >
             <View style={styles.divider}>
@@ -189,16 +214,11 @@ export default function PassengerRegistration() {
               <Text style={styles.dividerText}>OR</Text>
               <View style={styles.dividerLine} />
             </View>
-            
-            <TouchableOpacity 
-              style={styles.loginButton}
-              onPress={handleLogin}
-            >
+
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
               <Text style={styles.loginText}>
-                Already have an account?
-              </Text>
-              <Text style={styles.loginLink}>
-                Sign In
+                Already have an account?{" "}
+                <Text style={styles.loginLink}>Sign In</Text>
               </Text>
             </TouchableOpacity>
           </Animated.View>
@@ -216,15 +236,15 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: SPACING.md,
-    justifyContent: 'center',
+    justifyContent: "center",
     zIndex: 1,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: SPACING.lg,
   },
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     left: SPACING.md,
     top: 60, // Increased for translucent status bar
     padding: SPACING.sm,
@@ -234,13 +254,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   title: {
-    textAlign: 'center',
-    color: COLORS.gray[900],
+    textAlign: "center",
     marginBottom: SPACING.xs,
   },
   subtitle: {
     fontSize: 15,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.gray[600],
     paddingHorizontal: SPACING.md,
     lineHeight: 20,
@@ -250,7 +269,7 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     padding: SPACING.lg,
-    alignItems: 'center',
+    alignItems: "center",
     gap: SPACING.md,
   },
   iconContainer: {
@@ -258,27 +277,27 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     backgroundColor: COLORS.brand.blue_subtle,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: SPACING.sm,
   },
   inputContainer: {
-    width: '100%',
-    alignSelf: 'stretch',
+    width: "100%",
+    alignSelf: "stretch",
   },
   helperText: {
     fontSize: 14,
     color: COLORS.gray[600],
-    textAlign: 'center',
+    textAlign: "center",
     marginVertical: SPACING.xs,
     lineHeight: 18,
   },
   bottomSection: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: SPACING.md,
     paddingHorizontal: SPACING.md,
   },
@@ -291,32 +310,32 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.md,
     fontSize: 14,
     color: COLORS.gray[500],
-    fontWeight: '500',
+    fontWeight: "500",
   },
   loginButton: {
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   loginText: {
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.gray[600],
     marginBottom: 4,
   },
   loginLink: {
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   glowBackground: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     zIndex: 0,
   },
 });

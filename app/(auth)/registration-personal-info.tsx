@@ -1,26 +1,35 @@
-import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { Alert, Dimensions, Platform, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { Text } from '../../components/ui/Text';
-import { apiService, RegistrationData } from '../../services/api';
-import { COLORS, SPACING } from '../../utils/constants';
-import { storageService } from '../../utils/storage';
+import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { LinearGradient } from "expo-linear-gradient";
+import { router, useLocalSearchParams } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
+import {
+  Alert,
+  Dimensions,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { Input } from "../../components/ui/Input";
+import { Text } from "../../components/ui/Text";
+import { apiService, RegistrationData } from "../../services/api";
+import { COLORS, SPACING } from "../../utils/constants";
+import { storageService } from "../../utils/storage";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 interface PersonalForm {
   name: string;
   phone: string;
   email: string;
-  gender: 'male' | 'female' | '';
+  gender: "male" | "female" | "";
   address: string;
   dateOfBirth: string;
   password: string;
@@ -33,25 +42,25 @@ interface FormErrors {
 }
 
 export default function RegistrationPersonalInfo() {
-  const params = useLocalSearchParams<{ 
-    cardNumber: string; 
-    organizationType: string; 
-    organizationId: string; 
+  const params = useLocalSearchParams<{
+    cardNumber: string;
+    organizationType: string;
+    organizationId: string;
     organizationName?: string;
   }>();
-  
+
   const [form, setForm] = useState<PersonalForm>({
-    name: '',
-    phone: '',
-    email: '',
-    gender: '',
-    address: '',
-    dateOfBirth: '',
-    password: '',
-    confirmPassword: '',
-    passengerId: ''
+    name: "",
+    phone: "",
+    email: "",
+    gender: "",
+    address: "",
+    dateOfBirth: "",
+    password: "",
+    confirmPassword: "",
+    passengerId: "",
   });
-  
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -68,24 +77,24 @@ export default function RegistrationPersonalInfo() {
 
     // Name validation
     if (!form.name.trim()) {
-      newErrors.name = 'Full name is required';
+      newErrors.name = "Full name is required";
     } else if (form.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+      newErrors.name = "Name must be at least 2 characters";
     }
 
     // Phone validation
     const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
     if (!form.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
+      newErrors.phone = "Phone number is required";
     } else if (!phoneRegex.test(form.phone.trim())) {
-      newErrors.phone = 'Please enter a valid Bangladeshi mobile number';
+      newErrors.phone = "Please enter a valid Bangladeshi mobile number";
     }
 
     // Email validation (optional)
     if (form.email.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(form.email.trim())) {
-        newErrors.email = 'Please enter a valid email address';
+        newErrors.email = "Please enter a valid email address";
       }
     }
 
@@ -96,16 +105,16 @@ export default function RegistrationPersonalInfo() {
 
     // Password validation
     if (!form.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (form.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     // Confirm password validation
     if (!form.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = "Please confirm your password";
     } else if (form.password !== form.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
     setErrors(newErrors);
@@ -114,7 +123,10 @@ export default function RegistrationPersonalInfo() {
 
   const handleNext = async () => {
     if (!validateForm()) {
-      Alert.alert('Please Fix Errors', 'Please correct all the errors before proceeding.');
+      Alert.alert(
+        "Please Fix Errors",
+        "Please correct all the errors before proceeding."
+      );
       return;
     }
 
@@ -124,24 +136,30 @@ export default function RegistrationPersonalInfo() {
       const birthDate = new Date(selectedDate);
       const age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
-      
+
       // Check if the user is less than 5 years old
-      if (age < 5 || (age === 5 && monthDiff < 0) || 
-          (age === 5 && monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        Alert.alert('Age Requirement', 'You must be at least 5 years old to register.');
+      if (
+        age < 5 ||
+        (age === 5 && monthDiff < 0) ||
+        (age === 5 && monthDiff === 0 && today.getDate() < birthDate.getDate())
+      ) {
+        Alert.alert(
+          "Age Requirement",
+          "You must be at least 5 years old to register."
+        );
         return;
       }
     }
 
     setIsLoading(true);
-    
+
     try {
       // Format date for API (YYYY-MM-DD HH:mm:ss.fffffff format)
-      let formattedDate = '';
+      let formattedDate = "";
       if (form.dateOfBirth && selectedDate) {
         const year = selectedDate.getFullYear();
-        const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
-        const day = selectedDate.getDate().toString().padStart(2, '0');
+        const month = (selectedDate.getMonth() + 1).toString().padStart(2, "0");
+        const day = selectedDate.getDate().toString().padStart(2, "0");
         formattedDate = `${year}-${month}-${day} 00:00:00.0000000`;
       }
 
@@ -154,25 +172,28 @@ export default function RegistrationPersonalInfo() {
         Address: form.address.trim() || undefined,
         DateOfBirth: formattedDate || undefined,
         Password: form.password,
-        UserType: params.organizationType === 'Private' ? 'Private' : 'Public',
+        UserType: params.organizationType === "Private" ? "Private" : "Public",
         OrganizationId: params.organizationId,
-        CardNumber: params.cardNumber || '',
-        PassengerId: params.organizationType === 'Private' ? form.passengerId.trim() : undefined
+        CardNumber: params.cardNumber || "",
+        PassengerId:
+          params.organizationType === "Private"
+            ? form.passengerId.trim()
+            : undefined,
       };
 
-      console.log('🚀 Starting registration process...');
-      console.log('📋 Registration data:', {
+      console.log("🚀 Starting registration process...");
+      console.log("📋 Registration data:", {
         name: registrationData.Name,
         mobile: registrationData.MobileNumber,
         email: registrationData.EmailAddress,
         cardNumber: registrationData.CardNumber,
         userType: registrationData.UserType,
         organizationId: registrationData.OrganizationId,
-        passengerId: registrationData.PassengerId
+        passengerId: registrationData.PassengerId,
       });
 
       // Store registration data temporarily for use after OTP verification
-      await storageService.setItem('temp_registration_data', {
+      await storageService.setItem("temp_registration_data", {
         cardNumber: params.cardNumber,
         name: form.name.trim(),
         phone: form.phone.trim(),
@@ -185,19 +206,21 @@ export default function RegistrationPersonalInfo() {
         organizationType: params.organizationType,
         organizationId: params.organizationId,
         organizationName: params.organizationName,
-        registrationData: registrationData // Store full registration data for API call after OTP
+        registrationData: registrationData, // Store full registration data for API call after OTP
       });
-      
+
       // Send OTP to mobile number (do not register yet - wait for OTP verification)
       await apiService.sendOTP(form.phone.trim());
-      
-      console.log('✅ OTP sent successfully, registration will complete after OTP verification');
-      
+
+      console.log(
+        "✅ OTP sent successfully, registration will complete after OTP verification"
+      );
+
       setIsLoading(false);
-      
+
       // Navigate to OTP verification page
       router.push({
-        pathname: '/(auth)/verify-registration',
+        pathname: "/(auth)/verify-registration",
         params: {
           cardNumber: params.cardNumber,
           name: form.name.trim(),
@@ -209,64 +232,70 @@ export default function RegistrationPersonalInfo() {
           passengerId: form.passengerId.trim(),
           organizationType: params.organizationType,
           organizationId: params.organizationId,
-          organizationName: params.organizationName
-        }
+          organizationName: params.organizationName,
+        },
       });
-      
     } catch (error: any) {
-      console.error('❌ Registration error:', error);
+      console.error("❌ Registration error:", error);
       setIsLoading(false);
-      
-      let errorMessage = 'Registration failed. Please try again.';
-      
+
+      let errorMessage = "Registration failed. Please try again.";
+
       // Handle specific error messages
       if (error.message) {
         errorMessage = error.message;
-        
+
         // Handle specific duplicate user cases
-        if (error.message.toLowerCase().includes('duplicate') || 
-            error.message.toLowerCase().includes('already exists') ||
-            error.message.toLowerCase().includes('already registered')) {
-          
-          if (error.message.toLowerCase().includes('mobile') || 
-              error.message.toLowerCase().includes('phone')) {
-            errorMessage = 'This mobile number is already registered. Please use a different mobile number or try logging in.';
-          } else if (error.message.toLowerCase().includes('email')) {
-            errorMessage = 'This email address is already registered. Please use a different email address.';
-          } else if (error.message.toLowerCase().includes('card')) {
-            errorMessage = 'This card is already registered to another user. Please contact support if this is your card.';
+        if (
+          error.message.toLowerCase().includes("duplicate") ||
+          error.message.toLowerCase().includes("already exists") ||
+          error.message.toLowerCase().includes("already registered")
+        ) {
+          if (
+            error.message.toLowerCase().includes("mobile") ||
+            error.message.toLowerCase().includes("phone")
+          ) {
+            errorMessage =
+              "This mobile number is already registered. Please use a different mobile number or try logging in.";
+          } else if (error.message.toLowerCase().includes("email")) {
+            errorMessage =
+              "This email address is already registered. Please use a different email address.";
+          } else if (error.message.toLowerCase().includes("card")) {
+            errorMessage =
+              "This card is already registered to another user. Please contact support if this is your card.";
           } else {
-            errorMessage = 'User already exists. Please check your details or try logging in instead.';
+            errorMessage =
+              "User already exists. Please check your details or try logging in instead.";
           }
         }
       } else if (error.response?.data?.data?.message) {
         errorMessage = error.response.data.data.message;
       }
-      
-      Alert.alert('Registration Error', errorMessage);
+
+      Alert.alert("Registration Error", errorMessage);
     }
   };
 
   const updateForm = (field: keyof PersonalForm, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
+    setForm((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
   const formatDate = (date: Date) => {
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   };
 
   const handleDateChange = (event: any, date?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
+    setShowDatePicker(Platform.OS === "ios");
     if (date) {
       setSelectedDate(date);
-      updateForm('dateOfBirth', formatDate(date));
+      updateForm("dateOfBirth", formatDate(date));
     }
   };
 
@@ -276,55 +305,64 @@ export default function RegistrationPersonalInfo() {
 
   return (
     <>
-      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
+      <StatusBar
+        style="light"
+        backgroundColor="transparent"
+        translucent={true}
+      />
       <SafeAreaView style={styles.container}>
-        {/* Warm Orange + Cool Blue Dual Glow */}
         <LinearGradient
           colors={[
-            'rgba(255, 140, 60, 0.5)',   // Warm Orange at top
-            'rgba(255, 140, 60, 0.2)', 
-            'transparent',
-            'rgba(70, 130, 180, 0.2)',   // Cool Blue transition
-            'rgba(70, 130, 180, 0.4)'    // Cool Blue at bottom
+            "rgba(74, 144, 226, 0.5)", // Blue at top
+            "rgba(74, 144, 226, 0.2)",
+            "transparent",
+            "rgba(255, 138, 0, 0.2)", // Orange transition
+            "rgba(255, 138, 0, 0.4)", // Orange at bottom
           ]}
           locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
         />
-        
+
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
-      
-        <ScrollView 
-          style={styles.content} 
+
+        <ScrollView
+          style={styles.content}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
+          <Animated.View
+            entering={FadeInUp.duration(800)}
+            style={styles.header}
+          >
             <View style={styles.iconContainer}>
               <Ionicons name="person-add" size={32} color={COLORS.primary} />
             </View>
-            
-            <Text variant="h3" style={styles.title}>Personal Information</Text>
-            <Text style={styles.subtitle}>
-              {params.organizationType === 'Private' 
-                ? 'Complete your profile for educational institute registration'
-                : 'Complete your profile to finish registration'
-              }
+
+            <Text variant="h3" style={styles.title}>
+              Personal Information
             </Text>
-            
+            <Text style={styles.subtitle}>
+              {params.organizationType === "Private"
+                ? "Complete your profile for educational institute registration"
+                : "Complete your profile to finish registration"}
+            </Text>
+
             <View style={styles.cardInfo}>
               <Text style={styles.cardLabel}>Card Number:</Text>
               <Text style={styles.cardNumber}>{params.cardNumber}</Text>
             </View>
-            
-            {params.organizationType === 'Private' && (
+
+            {params.organizationType === "Private" && (
               <View style={styles.orgInfo}>
                 <Text style={styles.orgLabel}>Organization:</Text>
-                <Text style={styles.orgType}>{params.organizationName || 'Educational Institute'}</Text>
+                <Text style={styles.orgType}>
+                  {params.organizationName || "Educational Institute"}
+                </Text>
               </View>
             )}
           </Animated.View>
@@ -333,18 +371,27 @@ export default function RegistrationPersonalInfo() {
             <Card variant="elevated" style={styles.formCard}>
               <View style={styles.formContent}>
                 <Input
-                  label="Full Name *"
+                  label={
+                    <Text>
+                      Full Name <Text style={{ color: COLORS.error }}>*</Text>
+                    </Text>
+                  }
                   value={form.name}
-                  onChangeText={(value) => updateForm('name', value)}
+                  onChangeText={(value) => updateForm("name", value)}
                   placeholder="Enter your full name"
                   icon="person"
                   error={errors.name}
                 />
 
                 <Input
-                  label="Phone Number *"
+                  label={
+                    <Text>
+                      Phone Number{" "}
+                      <Text style={{ color: COLORS.error }}>*</Text>
+                    </Text>
+                  }
                   value={form.phone}
-                  onChangeText={(value) => updateForm('phone', value)}
+                  onChangeText={(value) => updateForm("phone", value)}
                   placeholder="(e.g. 01XXXXXXXXXX)"
                   keyboardType="phone-pad"
                   icon="call"
@@ -354,7 +401,7 @@ export default function RegistrationPersonalInfo() {
                 <Input
                   label="Email"
                   value={form.email}
-                  onChangeText={(value) => updateForm('email', value)}
+                  onChangeText={(value) => updateForm("email", value)}
                   placeholder="your.email@example.com"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -362,11 +409,11 @@ export default function RegistrationPersonalInfo() {
                   error={errors.email}
                 />
 
-                {params.organizationType === 'Private' && (
+                {params.organizationType === "Private" && (
                   <Input
                     label="Identity Number"
                     value={form.passengerId}
-                    onChangeText={(value) => updateForm('passengerId', value)}
+                    onChangeText={(value) => updateForm("passengerId", value)}
                     placeholder="Enter your student ID"
                     icon="school"
                     error={errors.passengerId}
@@ -379,50 +426,64 @@ export default function RegistrationPersonalInfo() {
                     <TouchableOpacity
                       style={[
                         styles.genderButton,
-                        form.gender === 'male' && styles.genderButtonActive
+                        form.gender === "male" && styles.genderButtonActive,
                       ]}
-                      onPress={() => updateForm('gender', 'male')}
+                      onPress={() => updateForm("gender", "male")}
                     >
-                      <Ionicons 
-                        name="male" 
-                        size={20} 
-                        color={form.gender === 'male' ? COLORS.white : COLORS.primary} 
+                      <Ionicons
+                        name="male"
+                        size={20}
+                        color={
+                          form.gender === "male" ? COLORS.white : COLORS.primary
+                        }
                       />
-                      <Text style={[
-                        styles.genderButtonText,
-                        form.gender === 'male' && styles.genderButtonTextActive
-                      ]}>
+                      <Text
+                        style={[
+                          styles.genderButtonText,
+                          form.gender === "male" &&
+                            styles.genderButtonTextActive,
+                        ]}
+                      >
                         Male
                       </Text>
                     </TouchableOpacity>
-                    
+
                     <TouchableOpacity
                       style={[
                         styles.genderButton,
-                        form.gender === 'female' && styles.genderButtonActive
+                        form.gender === "female" && styles.genderButtonActive,
                       ]}
-                      onPress={() => updateForm('gender', 'female')}
+                      onPress={() => updateForm("gender", "female")}
                     >
-                      <Ionicons 
-                        name="female" 
-                        size={20} 
-                        color={form.gender === 'female' ? COLORS.white : COLORS.primary} 
+                      <Ionicons
+                        name="female"
+                        size={20}
+                        color={
+                          form.gender === "female"
+                            ? COLORS.white
+                            : COLORS.primary
+                        }
                       />
-                      <Text style={[
-                        styles.genderButtonText,
-                        form.gender === 'female' && styles.genderButtonTextActive
-                      ]}>
+                      <Text
+                        style={[
+                          styles.genderButtonText,
+                          form.gender === "female" &&
+                            styles.genderButtonTextActive,
+                        ]}
+                      >
                         Female
                       </Text>
                     </TouchableOpacity>
                   </View>
-                  {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
+                  {errors.gender && (
+                    <Text style={styles.errorText}>{errors.gender}</Text>
+                  )}
                 </View>
 
                 <Input
                   label="Address"
                   value={form.address}
-                  onChangeText={(value) => updateForm('address', value)}
+                  onChangeText={(value) => updateForm("address", value)}
                   placeholder="Enter your address"
                   icon="location"
                   error={errors.address}
@@ -430,21 +491,40 @@ export default function RegistrationPersonalInfo() {
 
                 <View style={styles.dateSection}>
                   <Text style={styles.dateLabel}>Date of Birth</Text>
-                  <TouchableOpacity style={styles.dateInput} onPress={showDatepicker}>
-                    <Ionicons name="calendar" size={20} color={COLORS.primary} style={styles.dateIcon} />
-                    <Text style={[styles.dateText, !form.dateOfBirth && styles.placeholderText]}>
-                      {form.dateOfBirth || 'Select your date of birth'}
+                  <TouchableOpacity
+                    style={styles.dateInput}
+                    onPress={showDatepicker}
+                  >
+                    <Ionicons
+                      name="calendar"
+                      size={20}
+                      color={COLORS.primary}
+                      style={styles.dateIcon}
+                    />
+                    <Text
+                      style={[
+                        styles.dateText,
+                        !form.dateOfBirth && styles.placeholderText,
+                      ]}
+                    >
+                      {form.dateOfBirth || "Select your date of birth"}
                     </Text>
-                    <Ionicons name="chevron-down" size={20} color={COLORS.gray[500]} />
+                    <Ionicons
+                      name="chevron-down"
+                      size={20}
+                      color={COLORS.gray[500]}
+                    />
                   </TouchableOpacity>
-                  {errors.dateOfBirth && <Text style={styles.errorText}>{errors.dateOfBirth}</Text>}
+                  {errors.dateOfBirth && (
+                    <Text style={styles.errorText}>{errors.dateOfBirth}</Text>
+                  )}
                 </View>
 
                 {showDatePicker && (
                   <DateTimePicker
                     value={selectedDate || new Date()}
                     mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    display={Platform.OS === "ios" ? "spinner" : "default"}
                     onChange={handleDateChange}
                     maximumDate={(() => {
                       const fiveYearsAgo = new Date();
@@ -456,9 +536,13 @@ export default function RegistrationPersonalInfo() {
                 )}
 
                 <Input
-                  label="Password *"
+                  label={
+                    <Text>
+                      Password <Text style={{ color: COLORS.error }}>*</Text>
+                    </Text>
+                  }
                   value={form.password}
-                  onChangeText={(value) => updateForm('password', value)}
+                  onChangeText={(value) => updateForm("password", value)}
                   placeholder="Create a password"
                   secureTextEntry={!showPassword}
                   icon="lock-closed"
@@ -468,14 +552,21 @@ export default function RegistrationPersonalInfo() {
                 />
 
                 <Input
-                  label="Confirm Password *"
+                  label={
+                    <Text>
+                      Confirm Password{" "}
+                      <Text style={{ color: COLORS.error }}>*</Text>
+                    </Text>
+                  }
                   value={form.confirmPassword}
-                  onChangeText={(value) => updateForm('confirmPassword', value)}
+                  onChangeText={(value) => updateForm("confirmPassword", value)}
                   placeholder="Confirm your password"
                   secureTextEntry={!showConfirmPassword}
                   icon="lock-closed"
                   rightIcon={showConfirmPassword ? "eye-off" : "eye"}
-                  onRightIconPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onRightIconPress={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
                   error={errors.confirmPassword}
                 />
 
@@ -511,12 +602,12 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.xl + 20, // Extra padding for status bar
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: SPACING.lg,
     paddingTop: SPACING.md,
   },
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     left: SPACING.md,
     top: 60, // Increased for translucent status bar
     padding: SPACING.sm,
@@ -527,26 +618,26 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     backgroundColor: COLORS.brand.blue_subtle,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: SPACING.sm,
   },
   title: {
-    textAlign: 'center',
-    color: COLORS.gray[900],
+    textAlign: "center",
+    color: COLORS.secondary,
     marginBottom: SPACING.xs,
   },
   subtitle: {
     fontSize: 15,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.gray[600],
     paddingHorizontal: SPACING.md,
     lineHeight: 20,
     marginBottom: SPACING.sm,
   },
   cardInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.brand.orange_subtle,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
@@ -556,16 +647,16 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: 14,
     color: COLORS.gray[700],
-    fontWeight: '500',
+    fontWeight: "500",
   },
   cardNumber: {
     fontSize: 14,
     color: COLORS.secondary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   orgInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.brand.blue_subtle,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
@@ -576,12 +667,12 @@ const styles = StyleSheet.create({
   orgLabel: {
     fontSize: 14,
     color: COLORS.gray[700],
-    fontWeight: '500',
+    fontWeight: "500",
   },
   orgType: {
     fontSize: 14,
     color: COLORS.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   formCard: {
     marginBottom: SPACING.md,
@@ -595,19 +686,19 @@ const styles = StyleSheet.create({
   },
   genderLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.gray[700],
     marginBottom: SPACING.sm,
   },
   genderButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: SPACING.sm,
   },
   genderButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.sm,
     borderWidth: 2,
@@ -621,7 +712,7 @@ const styles = StyleSheet.create({
   },
   genderButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.primary,
   },
   genderButtonTextActive: {
@@ -637,13 +728,13 @@ const styles = StyleSheet.create({
   },
   dateLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.gray[700],
     marginBottom: SPACING.sm,
   },
   dateInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.md,
     backgroundColor: COLORS.white,
@@ -664,12 +755,12 @@ const styles = StyleSheet.create({
     color: COLORS.gray[500],
   },
   glowBackground: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     zIndex: 0,
   },
 });

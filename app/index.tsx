@@ -65,7 +65,9 @@ export default function WelcomeScreen() {
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
           />
-          <BubbleAnimation bubbleCount={10} />
+          <View style={styles.bubbleContainer}>
+            <BubbleAnimation bubbleCount={20} />
+          </View>
           <View style={styles.loadingContainer}>
             <Animated.View entering={FadeInUp.duration(800)}>
               <GoBangladeshLogo size={80} />
@@ -100,7 +102,9 @@ export default function WelcomeScreen() {
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
           />
-          <BubbleAnimation bubbleCount={15} />
+          <View style={styles.bubbleContainer}>
+            <BubbleAnimation bubbleCount={25} />
+          </View>
           <View style={styles.content}>
             <Animated.View entering={FadeInUp.duration(800).delay(200)} style={styles.header}>
               <View style={styles.logoContainer}>
@@ -152,7 +156,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1,
+    zIndex: 2,
   },
   loadingText: {
     marginTop: SPACING.md,
@@ -162,7 +166,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: SPACING.lg,
     justifyContent: 'center',
-    zIndex: 1,
+    zIndex: 2,
   },
   header: {
     alignItems: 'center',
@@ -171,7 +175,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xs,
     padding: SPACING.sm,
   },
   title: {
@@ -209,5 +213,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: '#ffffff',
     zIndex: 0,
+  },
+  bubbleContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
   },
 });

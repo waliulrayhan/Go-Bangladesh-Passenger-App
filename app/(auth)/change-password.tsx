@@ -1,28 +1,35 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { Alert, Dimensions, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { GoBangladeshLogo } from '../../components/GoBangladeshLogo';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { Text } from '../../components/ui/Text';
-import { useAuthStore } from '../../stores/authStore';
-import { COLORS, SPACING } from '../../utils/constants';
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
+import {
+  Alert,
+  Dimensions,
+  SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import { GoBangladeshLogo } from "../../components/GoBangladeshLogo";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { Input } from "../../components/ui/Input";
+import { Text } from "../../components/ui/Text";
+import { useAuthStore } from "../../stores/authStore";
+import { COLORS, SPACING } from "../../utils/constants";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 export default function ChangePassword() {
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   const { changePassword, isLoading, error, clearError } = useAuthStore();
 
   const handleGoBack = () => {
@@ -31,99 +38,114 @@ export default function ChangePassword() {
 
   const validatePassword = (password: string) => {
     if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
+      return "Password must be at least 8 characters long";
     }
     return null;
   };
 
   const handleChangePassword = async () => {
     clearError();
-    
+
     // Validate inputs
     if (!oldPassword.trim()) {
-      Alert.alert('Error', 'Please enter your current password');
-      return;
-    }
-    
-    if (!newPassword.trim()) {
-      Alert.alert('Error', 'Please enter a new password');
-      return;
-    }
-    
-    if (!confirmNewPassword.trim()) {
-      Alert.alert('Error', 'Please confirm your new password');
-      return;
-    }
-    
-    // Validate new password
-    const passwordError = validatePassword(newPassword);
-    if (passwordError) {
-      Alert.alert('Error', passwordError);
-      return;
-    }
-    
-    // Check if passwords match
-    if (newPassword !== confirmNewPassword) {
-      Alert.alert('Error', 'New passwords do not match');
-      return;
-    }
-    
-    // Check if old and new password are the same
-    if (oldPassword === newPassword) {
-      Alert.alert('Error', 'New password must be different from your current password');
+      Alert.alert("Error", "Please enter your current password");
       return;
     }
 
-    const result = await changePassword(oldPassword, newPassword, confirmNewPassword);
-    
+    if (!newPassword.trim()) {
+      Alert.alert("Error", "Please enter a new password");
+      return;
+    }
+
+    if (!confirmNewPassword.trim()) {
+      Alert.alert("Error", "Please confirm your new password");
+      return;
+    }
+
+    // Validate new password
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      Alert.alert("Error", passwordError);
+      return;
+    }
+
+    // Check if passwords match
+    if (newPassword !== confirmNewPassword) {
+      Alert.alert("Error", "New passwords do not match");
+      return;
+    }
+
+    // Check if old and new password are the same
+    if (oldPassword === newPassword) {
+      Alert.alert(
+        "Error",
+        "New password must be different from your current password"
+      );
+      return;
+    }
+
+    const result = await changePassword(
+      oldPassword,
+      newPassword,
+      confirmNewPassword
+    );
+
     if (result.success) {
       Alert.alert(
-        'Password Changed Successfully',
-        'Your password has been updated successfully.',
+        "Password Changed Successfully",
+        "Your password has been updated successfully.",
         [
           {
-            text: 'OK',
+            text: "OK",
             onPress: () => {
               router.back();
-            }
-          }
+            },
+          },
         ]
       );
     } else {
-      Alert.alert('Error', result.message);
+      Alert.alert("Error", result.message);
     }
   };
 
   return (
     <>
-      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
+      <StatusBar
+        style="light"
+        backgroundColor="transparent"
+        translucent={true}
+      />
       <SafeAreaView style={styles.container}>
-        {/* Purple Top + Cool Blue Bottom Dual Glow */}
         <LinearGradient
           colors={[
-            'rgba(173, 109, 244, 0.5)',   // Purple at top
-            'rgba(173, 109, 244, 0.2)', 
-            'transparent',
-            'rgba(70, 130, 180, 0.2)',   // Cool Blue transition
-            'rgba(70, 130, 180, 0.4)'    // Cool Blue at bottom
+            "rgba(74, 144, 226, 0.5)", // Blue at top
+            "rgba(74, 144, 226, 0.2)",
+            "transparent",
+            "rgba(255, 138, 0, 0.2)", // Orange transition
+            "rgba(255, 138, 0, 0.4)", // Orange at bottom
           ]}
           locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
         />
-        
+
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
-        
+
         <View style={styles.content}>
-          <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
+          <Animated.View
+            entering={FadeInUp.duration(800)}
+            style={styles.header}
+          >
             <View style={styles.logoContainer}>
               <GoBangladeshLogo size={50} />
             </View>
-            
-            <Text variant="h3" style={styles.title}>Change Password</Text>
+
+            <Text variant="h3" style={styles.title}>
+              Change Password
+            </Text>
             <Text style={styles.subtitle}>
               Update your account password for better security
             </Text>
@@ -162,35 +184,69 @@ export default function ChangePassword() {
                   secureTextEntry={!showConfirmPassword}
                   icon="lock-closed"
                   rightIcon={showConfirmPassword ? "eye-off" : "eye"}
-                  onRightIconPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onRightIconPress={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
                 />
 
                 <View style={styles.passwordRequirements}>
-                  <Text style={styles.requirementsTitle}>Password Requirements:</Text>
+                  <Text style={styles.requirementsTitle}>
+                    Password Requirements:
+                  </Text>
                   <View style={styles.requirementsRow}>
                     <View style={styles.requirement}>
-                      <Ionicons 
-                        name={newPassword.length >= 6 ? "checkmark-circle" : "ellipse-outline"} 
-                        size={14} 
-                        color={newPassword.length >= 6 ? COLORS.success : COLORS.gray[400]} 
+                      <Ionicons
+                        name={
+                          newPassword.length >= 6
+                            ? "checkmark-circle"
+                            : "ellipse-outline"
+                        }
+                        size={14}
+                        color={
+                          newPassword.length >= 6
+                            ? COLORS.success
+                            : COLORS.gray[400]
+                        }
                       />
-                      <Text style={[
-                        styles.requirementText,
-                        { color: newPassword.length >= 8 ? COLORS.success : COLORS.gray[600] }
-                      ]}>
+                      <Text
+                        style={[
+                          styles.requirementText,
+                          {
+                            color:
+                              newPassword.length >= 8
+                                ? COLORS.success
+                                : COLORS.gray[600],
+                          },
+                        ]}
+                      >
                         8+ characters
                       </Text>
                     </View>
                     <View style={styles.requirement}>
-                      <Ionicons 
-                        name={newPassword === confirmNewPassword && newPassword ? "checkmark-circle" : "ellipse-outline"} 
-                        size={14} 
-                        color={newPassword === confirmNewPassword && newPassword ? COLORS.success : COLORS.gray[400]} 
+                      <Ionicons
+                        name={
+                          newPassword === confirmNewPassword && newPassword
+                            ? "checkmark-circle"
+                            : "ellipse-outline"
+                        }
+                        size={14}
+                        color={
+                          newPassword === confirmNewPassword && newPassword
+                            ? COLORS.success
+                            : COLORS.gray[400]
+                        }
                       />
-                      <Text style={[
-                        styles.requirementText,
-                        { color: newPassword === confirmNewPassword && newPassword ? COLORS.success : COLORS.gray[600] }
-                      ]}>
+                      <Text
+                        style={[
+                          styles.requirementText,
+                          {
+                            color:
+                              newPassword === confirmNewPassword && newPassword
+                                ? COLORS.success
+                                : COLORS.gray[600],
+                          },
+                        ]}
+                      >
                         Passwords match
                       </Text>
                     </View>
@@ -201,7 +257,13 @@ export default function ChangePassword() {
                   title="Change Password"
                   onPress={handleChangePassword}
                   loading={isLoading}
-                  disabled={!oldPassword || !newPassword || !confirmNewPassword || newPassword !== confirmNewPassword || newPassword.length < 6}
+                  disabled={
+                    !oldPassword ||
+                    !newPassword ||
+                    !confirmNewPassword ||
+                    newPassword !== confirmNewPassword ||
+                    newPassword.length < 6
+                  }
                   icon="checkmark"
                   size="medium"
                   fullWidth
@@ -209,7 +271,11 @@ export default function ChangePassword() {
 
                 {error && (
                   <View style={styles.errorContainer}>
-                    <Ionicons name="alert-circle" size={16} color={COLORS.error} />
+                    <Ionicons
+                      name="alert-circle"
+                      size={16}
+                      color={COLORS.error}
+                    />
                     <Text style={styles.errorText}>{error}</Text>
                   </View>
                 )}
@@ -244,15 +310,15 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: SPACING.md,
-    justifyContent: 'center',
+    justifyContent: "center",
     zIndex: 1,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: SPACING.md,
   },
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     left: SPACING.md,
     top: 60, // Increased for translucent status bar
     padding: SPACING.sm,
@@ -262,13 +328,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   title: {
-    textAlign: 'center',
-    color: COLORS.gray[900],
-    marginBottom: SPACING.xs,
+    textAlign: "center",
+    color: COLORS.secondary,
+    marginBottom: SPACING.md,
   },
   subtitle: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.gray[600],
     paddingHorizontal: SPACING.md,
     lineHeight: 18,
@@ -281,13 +347,13 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: SPACING.sm,
-    backgroundColor: COLORS.error + '10',
+    backgroundColor: COLORS.error + "10",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: COLORS.error + '30',
+    borderColor: COLORS.error + "30",
   },
   errorText: {
     color: COLORS.error,
@@ -303,56 +369,56 @@ const styles = StyleSheet.create({
   },
   requirementsTitle: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.gray[900],
     marginBottom: SPACING.xs,
   },
   requirementsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
     gap: SPACING.xs,
   },
   requirement: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
-    minWidth: '45%',
+    minWidth: "45%",
   },
   requirementText: {
     fontSize: 12,
     marginLeft: SPACING.xs,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   bottomSection: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   helpSection: {
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: SPACING.xs,
   },
   helpText: {
     fontSize: 13,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.gray[500],
     lineHeight: 16,
   },
   helpEmail: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.primary,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 2,
   },
   glowBackground: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     zIndex: 0,
   },
 });
