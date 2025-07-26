@@ -99,7 +99,8 @@ export default function Profile() {
       const gender = user?.gender || user?.sex;
       const genderText = gender ? (gender.charAt(0).toUpperCase() + gender.slice(1)) : '';
       const userTypeText = user?.userType ? (user.userType.charAt(0).toUpperCase() + user.userType.slice(1)) : 'Passenger';
-      return genderText ? `${genderText} • ${userTypeText+" User"}` : userTypeText;
+      // return genderText ? `${genderText} • ${userTypeText+" User"}` : userTypeText;
+      return genderText ? `${userTypeText+" User"}` : userTypeText;
     };
 
     return (
@@ -154,7 +155,8 @@ export default function Profile() {
                 styles.balanceAmount,
                 !hasBalance && { color: COLORS.gray[500] }
               ]}>
-                {hasBalance ? `৳${displayBalance+" BDT"}` : displayBalance}
+                {/* {hasBalance ? `৳${displayBalance+" BDT"}` : displayBalance} */}
+                {hasBalance ? `${displayBalance+" BDT"}` : displayBalance}
               </Text>
             </View>
               <TouchableOpacity 

@@ -201,7 +201,8 @@ export default function Dashboard() {
             Available Balance
           </Text>
           <Text variant="h2" color={COLORS.white} style={styles.balance}>
-            ৳{typeof user?.balance === 'number' ? user.balance.toFixed(2)+" BDT" : (card?.balance?.toFixed(2)+" BDT" || 'N/A')}
+            {typeof user?.balance === 'number' ? user.balance.toFixed(2)+" BDT" : (card?.balance?.toFixed(2)+" BDT" || 'N/A')}
+            {/* ৳ */}
           </Text>
         </View>
         

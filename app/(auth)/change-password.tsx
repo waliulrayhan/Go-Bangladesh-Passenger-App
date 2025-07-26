@@ -30,8 +30,8 @@ export default function ChangePassword() {
   };
 
   const validatePassword = (password: string) => {
-    if (password.length < 6) {
-      return 'Password must be at least 6 characters long';
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters long';
     }
     return null;
   };
@@ -176,9 +176,9 @@ export default function ChangePassword() {
                       />
                       <Text style={[
                         styles.requirementText,
-                        { color: newPassword.length >= 6 ? COLORS.success : COLORS.gray[600] }
+                        { color: newPassword.length >= 8 ? COLORS.success : COLORS.gray[600] }
                       ]}>
-                        6+ characters
+                        8+ characters
                       </Text>
                     </View>
                     <View style={styles.requirement}>
@@ -217,7 +217,7 @@ export default function ChangePassword() {
             </Card>
           </Animated.View>
 
-          <Animated.View 
+          {/* <Animated.View 
             entering={FadeInDown.duration(800).delay(400)} 
             style={styles.bottomSection}
           >
@@ -229,7 +229,7 @@ export default function ChangePassword() {
                 info@thegobd.com
               </Text>
             </View>
-          </Animated.View>
+          </Animated.View> */}
         </View>
       </SafeAreaView>
     </>

@@ -17,8 +17,8 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
 
   const contactInfo = {
     email: 'info@thegobd.com',
-    phone: '+880 1700 000000',
-    website: 'https://gobangladesh.com',
+    phone: '+8801521306506',
+    website: 'https://thegobd.com',
     address: 'Dhaka, Bangladesh'
   };
 
@@ -252,7 +252,7 @@ Best regards,
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Quick Actions */}
-          <View style={styles.section}>
+          {/* <View style={styles.section}>
             <SectionTitle title="Quick Actions" />
             <View style={styles.sectionContent}>
               <ActionItem
@@ -270,7 +270,7 @@ Best regards,
                 color={COLORS.success}
               />
             </View>
-          </View>
+          </View> */}
 
           {/* Contact Information */}
           <View style={styles.section}>
@@ -325,7 +325,7 @@ Best regards,
           </View>
 
           {/* App Information */}
-          <View style={styles.section}>
+          {/* <View style={styles.section}>
             <SectionTitle title="App Information" />
             <View style={styles.sectionContent}>
               <View style={styles.infoItem}>
@@ -341,7 +341,7 @@ Best regards,
                 <Text variant="body" style={styles.infoValue}>Go Bangladesh Team</Text>
               </View>
             </View>
-          </View>
+          </View> */}
 
           {/* Bottom padding for better scrolling */}
           <View style={styles.bottomPadding} />

@@ -155,7 +155,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Notifications */}
-          <SettingSection title="Notifications">
+          {/* <SettingSection title="Notifications">
             <SettingItem
               icon="notifications"
               title="Push Notifications"
@@ -178,10 +178,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               value={soundEffects}
               onValueChange={setSoundEffects}
             />
-          </SettingSection>
+          </SettingSection> */}
 
           {/* Security */}
-          <SettingSection title="Security">
+          {/* <SettingSection title="Security">
             <SettingItem
               icon="finger-print"
               title="Biometric Authentication"
@@ -196,10 +196,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               value={autoRefresh}
               onValueChange={setAutoRefresh}
             />
-          </SettingSection>
+          </SettingSection> */}
 
           {/* Card Management */}
-          <SettingSection title="Card Management">
+          {/* <SettingSection title="Card Management">
             <SettingItem
               icon="wallet"
               title="Auto Top-up"
@@ -214,10 +214,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               value={false}
               onValueChange={() => {}}
             />
-          </SettingSection>
+          </SettingSection> */}
 
           {/* Appearance */}
-          <SettingSection title="Appearance">
+          {/* <SettingSection title="Appearance">
             <SettingItem
               icon="moon"
               title="Dark Mode"
@@ -232,10 +232,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               value={false}
               onValueChange={() => {}}
             />
-          </SettingSection>
+          </SettingSection> */}
 
           {/* Privacy */}
-          <SettingSection title="Privacy">
+          {/* <SettingSection title="Privacy">
             <SettingItem
               icon="eye-off"
               title="Private Mode"
@@ -250,10 +250,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               value={true}
               onValueChange={() => {}}
             />
-          </SettingSection>
+          </SettingSection> */}
 
           {/* Data Management */}
-          <SettingSection title="Data Management">
+          {/* <SettingSection title="Data Management">
             <TouchableOpacity onPress={handleExportData}>
               <SettingItem
                 icon="download"
@@ -270,7 +270,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 type="action"
               />
             </TouchableOpacity>
-          </SettingSection>
+          </SettingSection> */}
 
           {/* App Information */}
           <SettingSection title="App Information">
@@ -285,7 +285,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <SettingItem
               icon="code-slash"
               title="App Version"
-              subtitle="v1.0.0 (Build 100)"
+              subtitle="v1.0.0"
               type="action"
             />
             <TouchableOpacity onPress={handleResetSettings}>
