@@ -37,8 +37,10 @@ export default function Dashboard() {
     isLoading,
     tripStatus,
     currentTrip,
-    transactions,
-    loadHistory,
+    tripTransactions,
+    rechargeTransactions,
+    loadTripHistory,
+    loadRechargeHistory,
     checkOngoingTrip,
     forceTapOut,
     forceRefreshData,
@@ -60,7 +62,8 @@ export default function Dashboard() {
     // Only load data if we have a user and haven't loaded data yet
     if (user && !hasLoadedData) {
       loadCardDetails();
-      loadHistory(1, true); // Load recent transactions
+      loadTripHistory(1, true); // Load recent transactions
+      loadRechargeHistory(1, true);
       checkOngoingTrip();
       setHasLoadedData(true);
     }
@@ -461,8 +464,18 @@ export default function Dashboard() {
   };
 
   const renderRecentActivity = () => {
-    // Get the most recent 3 transactions
-    const recentTransactions = transactions.slice(0, 3);
+    // Combine and sort both transaction types by date, then get the most recent 3
+    const allTransactions = [...tripTransactions, ...rechargeTransactions]
+      .sort((a, b) => {
+        const aDate = new Date(
+          a.createTime || (a as any).trip?.tripStartTime || 0
+        );
+        const bDate = new Date(
+          b.createTime || (b as any).trip?.tripStartTime || 0
+        );
+        return bDate.getTime() - aDate.getTime();
+      })
+      .slice(0, 3);
 
     const getActivityIcon = (transactionType: string) => {
       if (transactionType === "BusFare") {
@@ -539,8 +552,8 @@ export default function Dashboard() {
                 Fetching your latest transactions
               </Text>
             </View>
-          ) : recentTransactions.length > 0 ? (
-            recentTransactions.map((transaction, index) => {
+          ) : allTransactions.length > 0 ? (
+            allTransactions.map((transaction: any, index: number) => {
               const iconInfo = getActivityIcon(transaction.transactionType);
               return (
                 <View key={transaction.id} style={styles.activityItem}>

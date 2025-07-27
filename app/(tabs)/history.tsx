@@ -17,6 +17,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { Card } from "../../components/ui/Card";
 import { Text } from "../../components/ui/Text";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
+import { RechargeTransaction, TripTransaction } from "../../services/api";
 import { useCardStore } from "../../stores/cardStore";
 import { COLORS, SPACING } from "../../utils/constants";
 
@@ -36,13 +37,16 @@ interface FilterOptions {
 
 export default function History() {
   const {
-    transactions,
-    trips,
-    loadHistory,
-    loadMoreHistory,
+    tripTransactions,
+    rechargeTransactions,
+    loadTripHistory,
+    loadRechargeHistory,
+    loadMoreTripHistory,
+    loadMoreRechargeHistory,
     isLoading,
     error,
-    historyPagination,
+    tripPagination,
+    rechargePagination,
   } = useCardStore();
 
   // Use token refresh hook to get fresh data
@@ -55,24 +59,25 @@ export default function History() {
     dateFilter: "all",
     sortOrder: "newest",
   });
-  const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [filteredData, setFilteredData] = useState<
+    (TripTransaction | RechargeTransaction)[]
+  >([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
   // Only load data once when component mounts
   useEffect(() => {
     if (!hasInitialLoad) {
-      loadHistory(1, true);
+      loadTripHistory(1, true);
+      loadRechargeHistory(1, true);
       setHasInitialLoad(true);
     }
   }, [hasInitialLoad]);
 
   // Filter and sort data based on current filters
   useEffect(() => {
-    let data =
-      activeTab === "trips"
-        ? transactions.filter((t) => t.transactionType === "BusFare" && t.trip)
-        : transactions.filter((t) => t.transactionType === "Recharge");
+    let data: (TripTransaction | RechargeTransaction)[] =
+      activeTab === "trips" ? tripTransactions : rechargeTransactions;
 
     // Apply date filter
     if (filters.dateFilter !== "all") {
@@ -80,7 +85,10 @@ export default function History() {
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
       data = data.filter((item) => {
-        const dateString = item.createTime || item.trip?.tripStartTime;
+        const dateString =
+          activeTab === "trips"
+            ? (item as TripTransaction).trip?.tripStartTime
+            : item.createTime;
         if (!dateString) return false;
         const itemDate = new Date(dateString);
 
@@ -112,7 +120,7 @@ export default function History() {
     // Apply amount filter
     if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
       data = data.filter((item) => {
-        const amount = item.amount || item.trip?.amount || 0;
+        const amount = item.amount || 0;
         const minCheck =
           filters.minAmount === undefined || amount >= filters.minAmount;
         const maxCheck =
@@ -125,31 +133,50 @@ export default function History() {
     if (searchQuery.trim()) {
       data = data.filter((item) => {
         const searchLower = searchQuery.toLowerCase();
-        const tripId = item.trip?.id?.toString() || "";
-        const agentName = item.agent?.name || "";
-        const orgName =
-          (item.agent as any)?.organization?.name || item.agent?.address || "";
-        const amount = (item.amount || item.trip?.amount || 0).toString();
+        const amount = item.amount.toString();
 
-        return (
-          tripId.toLowerCase().includes(searchLower) ||
-          agentName.toLowerCase().includes(searchLower) ||
-          orgName.toLowerCase().includes(searchLower) ||
-          amount.includes(searchQuery)
-        );
+        if (activeTab === "trips") {
+          const tripItem = item as TripTransaction;
+          const busName = tripItem.trip?.session?.bus?.busName || "";
+          const busNumber = tripItem.trip?.session?.bus?.busNumber || "";
+          const sessionCode = tripItem.trip?.session?.sessionCode || "";
+
+          return (
+            busName.toLowerCase().includes(searchLower) ||
+            busNumber.toLowerCase().includes(searchLower) ||
+            sessionCode.toLowerCase().includes(searchLower) ||
+            amount.includes(searchQuery)
+          );
+        } else {
+          const rechargeItem = item as RechargeTransaction;
+          const agentName = rechargeItem.agent?.name || "";
+          const orgName = rechargeItem.agent?.organization?.name || "";
+
+          return (
+            agentName.toLowerCase().includes(searchLower) ||
+            orgName.toLowerCase().includes(searchLower) ||
+            amount.includes(searchQuery)
+          );
+        }
       });
     }
 
     // Apply sorting
     data.sort((a, b) => {
-      const aDateString = a.createTime || a.trip?.tripStartTime;
-      const bDateString = b.createTime || b.trip?.tripStartTime;
+      const aDateString =
+        activeTab === "trips"
+          ? (a as TripTransaction).trip?.tripStartTime
+          : a.createTime;
+      const bDateString =
+        activeTab === "trips"
+          ? (b as TripTransaction).trip?.tripStartTime
+          : b.createTime;
       if (!aDateString || !bDateString) return 0;
 
       const aDate = new Date(aDateString);
       const bDate = new Date(bDateString);
-      const aAmount = a.amount || a.trip?.amount || 0;
-      const bAmount = b.amount || b.trip?.amount || 0;
+      const aAmount = a.amount || 0;
+      const bAmount = b.amount || 0;
 
       switch (filters.sortOrder) {
         case "oldest":
@@ -166,7 +193,7 @@ export default function History() {
 
     setFilteredData(data);
     console.log("📊 [HISTORY COMPONENT] Filtered data:", data.length);
-  }, [transactions, activeTab, filters, searchQuery]);
+  }, [tripTransactions, rechargeTransactions, activeTab, filters, searchQuery]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -187,13 +214,22 @@ export default function History() {
   };
 
   const onLoadMore = useCallback(async () => {
-    if (historyPagination.hasMore && !historyPagination.isLoadingMore) {
-      await loadMoreHistory();
+    const currentPagination =
+      activeTab === "trips" ? tripPagination : rechargePagination;
+    const loadMoreFunction =
+      activeTab === "trips" ? loadMoreTripHistory : loadMoreRechargeHistory;
+
+    if (currentPagination.hasMore && !currentPagination.isLoadingMore) {
+      await loadMoreFunction();
     }
   }, [
-    historyPagination.hasMore,
-    historyPagination.isLoadingMore,
-    loadMoreHistory,
+    activeTab,
+    tripPagination.hasMore,
+    tripPagination.isLoadingMore,
+    rechargePagination.hasMore,
+    rechargePagination.isLoadingMore,
+    loadMoreTripHistory,
+    loadMoreRechargeHistory,
   ]);
 
   const openMapLocation = (
@@ -283,10 +319,8 @@ export default function History() {
     return `${hours}:${minutes}`;
   };
 
-  const renderTripItem = ({ item }: { item: any }) => {
-    // Handle both direct trip objects and transactions with trip data
-    const trip = item.trip || item;
-    const transaction = item.transactionType ? item : null;
+  const renderTripItem = ({ item }: { item: TripTransaction }) => {
+    const trip = item.trip;
 
     if (!trip) return null;
 
@@ -295,10 +329,12 @@ export default function History() {
     const busNumber = trip.session?.bus?.busNumber || "N/A";
     const organization = trip.session?.bus?.organization;
     const sessionCode = trip.session?.sessionCode || "N/A";
-    const tripAmount = trip.amount || 0;
+    const tripAmount = item.amount || 0;
     const tripStartTime = trip.tripStartTime;
     const tripEndTime = trip.tripEndTime;
     const distance = trip.distance || 0;
+    const tapInType = trip.tapInType;
+    const tapOutStatus = trip.tapOutStatus;
 
     return (
       <Card variant="elevated" style={styles.historyCard}>
@@ -330,7 +366,7 @@ export default function History() {
                   color={COLORS.gray[500]}
                   style={styles.cardSubtitle}
                 >
-                  {organization.name} ({organization.code})
+                  Organization Info
                 </Text>
               )}
               <Text
@@ -500,7 +536,7 @@ export default function History() {
                   color={COLORS.gray[700]}
                   style={styles.tapByText}
                 >
-                  Passenger
+                  {tapInType || "Passenger"}
                 </Text>
               </View>
             </View>
@@ -525,7 +561,7 @@ export default function History() {
                     color={COLORS.success}
                     style={styles.tapByText}
                   >
-                    Manual
+                    {tapOutStatus || "Manual"}
                   </Text>
                 </View>
               </View>
@@ -536,10 +572,7 @@ export default function History() {
     );
   };
 
-  const renderRechargeItem = ({ item }: { item: any }) => {
-    // Only show recharge transactions (incoming money)
-    if (item.transactionType !== "Recharge") return null;
-
+  const renderRechargeItem = ({ item }: { item: RechargeTransaction }) => {
     const agent = item.agent;
     const organization = agent?.organization;
 
@@ -632,10 +665,22 @@ export default function History() {
     );
   };
   const renderTabContent = () => {
+    const renderItem = ({
+      item,
+    }: {
+      item: TripTransaction | RechargeTransaction;
+    }) => {
+      if (activeTab === "trips") {
+        return renderTripItem({ item: item as TripTransaction });
+      } else {
+        return renderRechargeItem({ item: item as RechargeTransaction });
+      }
+    };
+
     return (
       <FlatList
         data={filteredData}
-        renderItem={activeTab === "trips" ? renderTripItem : renderRechargeItem}
+        renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
@@ -649,7 +694,8 @@ export default function History() {
         onEndReached={onLoadMore}
         onEndReachedThreshold={0.1}
         ListFooterComponent={
-          historyPagination.isLoadingMore ? (
+          (activeTab === "trips" ? tripPagination : rechargePagination)
+            .isLoadingMore ? (
             <View style={styles.loadingMore}>
               <ActivityIndicator size="small" color={COLORS.primary} />
               <Text
@@ -1089,7 +1135,10 @@ export default function History() {
               </Text>
               <TouchableOpacity
                 style={styles.retryButton}
-                onPress={() => loadHistory(1, true)}
+                onPress={() => {
+                  loadTripHistory(1, true);
+                  loadRechargeHistory(1, true);
+                }}
               >
                 <Text variant="labelSmall" color={COLORS.primary}>
                   Retry
@@ -1100,21 +1149,26 @@ export default function History() {
         )}
 
         {/* Loading Indicator for Initial Load */}
-        {isLoading && transactions.length === 0 && !error && (
-          <View style={styles.initialLoading}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text
-              variant="body"
-              color={COLORS.gray[600]}
-              style={styles.loadingText}
-            >
-              Loading history...
-            </Text>
-          </View>
-        )}
+        {isLoading &&
+          tripTransactions.length === 0 &&
+          rechargeTransactions.length === 0 &&
+          !error && (
+            <View style={styles.initialLoading}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text
+                variant="body"
+                color={COLORS.gray[600]}
+                style={styles.loadingText}
+              >
+                Loading history...
+              </Text>
+            </View>
+          )}
 
         {/* Tab Content */}
-        {(!isLoading || transactions.length > 0) && (
+        {(!isLoading ||
+          tripTransactions.length > 0 ||
+          rechargeTransactions.length > 0) && (
           <Animated.View
             entering={FadeInDown.duration(600)}
             style={styles.tabContent}

@@ -11,9 +11,9 @@ import { storageService } from '../utils/storage';
 export const useTokenRefresh = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
-  
+
   const { user, isAuthenticated } = useAuthStore();
-  const { card, transactions, trips } = useCardStore();
+  const { card, tripTransactions, rechargeTransactions } = useCardStore();
 
   /**
    * Manually trigger a refresh of all user data based on token
@@ -28,27 +28,27 @@ export const useTokenRefresh = () => {
     // Prevent excessive refreshes (minimum 30 seconds between refreshes)
     const minRefreshInterval = 30000; // 30 seconds
     const now = new Date();
-    
+
     if (!force && lastRefreshTime && (now.getTime() - lastRefreshTime.getTime()) < minRefreshInterval) {
       console.log('🔒 [TOKEN-REFRESH] Skipping refresh - too recent:', (now.getTime() - lastRefreshTime.getTime()) / 1000, 'seconds ago');
       return true; // Return true since we have recent data
     }
 
     setIsRefreshing(true);
-    
+
     try {
       // Refresh auth data
       const authStore = useAuthStore.getState();
       const authSuccess = await authStore.refreshUserFromToken();
-      
+
       // Refresh card data
       const cardStore = useCardStore.getState();
       await cardStore.refreshCardData();
-      
+
       if (authSuccess) {
         setLastRefreshTime(new Date());
       }
-      
+
       return authSuccess;
     } catch (error) {
       console.error('❌ [TOKEN-REFRESH] Error during manual refresh:', error);
@@ -64,7 +64,7 @@ export const useTokenRefresh = () => {
   const getUserContext = async () => {
     try {
       const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
-      
+
       if (!token) {
         return null;
       }
@@ -83,7 +83,7 @@ export const useTokenRefresh = () => {
   const shouldRefreshData = async (): Promise<boolean> => {
     try {
       const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
-      
+
       if (!token) {
         return false;
       }
@@ -107,7 +107,7 @@ export const useTokenRefresh = () => {
   //     }
 
   //     const shouldRefresh = await shouldRefreshData();
-      
+
   //     if (shouldRefresh) {
   //       await refreshAllData();
   //     }
@@ -125,8 +125,8 @@ export const useTokenRefresh = () => {
     // Expose current state for components to use
     user,
     card,
-    transactions,
-    trips,
+    tripTransactions,
+    rechargeTransactions,
     isAuthenticated
   };
 };
@@ -149,7 +149,7 @@ export const useUserContext = () => {
 
       try {
         const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
-        
+
         if (!token) {
           setUserContext(null);
           setIsLoading(false);
@@ -158,7 +158,7 @@ export const useUserContext = () => {
 
         const { getUserDisplayContext } = await import('../utils/jwt');
         const context = getUserDisplayContext(token);
-        
+
         setUserContext(context);
         setIsLoading(false);
       } catch (error) {
