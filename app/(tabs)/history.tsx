@@ -1314,6 +1314,7 @@ const styles = StyleSheet.create({
     // Font properties handled by Text component
   },
   fareAmount: {
+    paddingTop: 12,
     // Font properties handled by Text component
   },
   rechargeAmount: {
