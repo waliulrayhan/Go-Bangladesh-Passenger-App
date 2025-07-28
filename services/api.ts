@@ -587,12 +587,20 @@ class ApiService {
     console.log('🚌 [TRIP] Fetching ongoing trip...');
 
     try {
-      const response = await this.api.get<ApiResponse<Trip>>('/api/passenger/getOnGoingTrip');
+      const response = await this.api.get<ApiResponse<Trip>>('/api/passenger/getOnGoingTrip', {
+        // Add a shorter timeout for real-time checks
+        timeout: 8000,
+        // Add cache control headers to ensure fresh data
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
 
       console.log('📥 [TRIP] Response received:', {
         status: response.status,
         isSuccess: response.data.data.isSuccess,
-        message: response.data.data.message,
         hasContent: !!response.data.data.content
       });
 
@@ -611,12 +619,8 @@ class ApiService {
       const tripData = response.data.data.content;
       console.log('✅ [TRIP] Ongoing trip found:', {
         tripId: tripData.tripId,
-        isRunning: tripData.isRunning,
-        startTime: tripData.tripStartTime,
-        busNumber: tripData.busNumber,
         busName: tripData.busName,
-        route: `${tripData.tripStartPlace} → ${tripData.tripEndPlace}`,
-        penaltyAmount: tripData.penaltyAmount
+        route: `${tripData.tripStartPlace} → ${tripData.tripEndPlace}`
       });
 
       return tripData;
@@ -629,6 +633,12 @@ class ApiService {
       // Handle specific error cases silently
       if (error.response?.status === 404) {
         console.log('ℹ️ [TRIP] No ongoing trip found (404)');
+        return null;
+      }
+
+      // Handle timeout errors specifically for real-time polling
+      if (error.code === 'ECONNABORTED') {
+        console.log('⏱️ [TRIP] Request timed out');
         return null;
       }
 

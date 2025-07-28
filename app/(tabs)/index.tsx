@@ -23,6 +23,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { Text } from "../../components/ui/Text";
+import { useRealtimeTrip } from "../../hooks/useRealtimeTrip";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
@@ -48,6 +49,24 @@ export default function Dashboard() {
 
   // Use token refresh hook to get fresh data
   const { refreshAllData } = useTokenRefresh();
+
+  // Real-time trip monitoring
+  const {
+    isPolling,
+    checkNow: checkTripNow,
+    restartPolling
+  } = useRealtimeTrip({
+    interval: tripStatus === 'active' ? 15000 : 30000, // 15s active, 30s idle
+    enabled: true,
+    onlyWhenActive: true,
+    onTripStatusChange: (status, trip) => {
+      if (status === 'active' && trip) {
+        console.log('🚌 [DASHBOARD] Trip started:', trip.busName);
+      } else if (status === 'idle') {
+        console.log('🏁 [DASHBOARD] Trip ended');
+      }
+    }
+  });
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -76,6 +95,13 @@ export default function Dashboard() {
       // Use force refresh to ensure fresh data
       await forceRefreshData();
       await refreshAllData(true); // Force refresh regardless of timing
+      
+      // Force check trip status immediately after refresh
+      await checkTripNow();
+      
+      // Restart real-time polling to ensure fresh intervals
+      restartPolling();
+      
       setHasLoadedData(true); // Mark as loaded after refresh
     } catch (error) {
       console.error("Refresh error:", error);
@@ -240,6 +266,7 @@ export default function Dashboard() {
       )}
     </Animated.View>
   );
+
   const renderRFIDCard = () => (
     <Animated.View
       entering={FadeInDown.duration(800).delay(300)}

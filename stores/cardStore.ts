@@ -15,6 +15,8 @@ interface CardState {
   tripPagination: PaginationState;
   rechargePagination: PaginationState;
   lastDataLoadTime: Date | null;
+  lastTripCheckTime: Date | null;
+  tripCheckCount: number;
 
   loadCardDetails: () => Promise<void>;
   loadTripHistory: (pageNo?: number, reset?: boolean) => Promise<void>;
@@ -44,6 +46,8 @@ export const useCardStore = create<CardState>((set, get) => ({
   tripStatus: 'idle',
   currentTrip: null,
   lastDataLoadTime: null,
+  lastTripCheckTime: null,
+  tripCheckCount: 0,
   tripPagination: {
     currentPage: 1,
     pageSize: 10,
@@ -472,31 +476,61 @@ export const useCardStore = create<CardState>((set, get) => ({
   clearError: () => set({ error: null }),
 
   checkOngoingTrip: async () => {
+    const { lastTripCheckTime, tripCheckCount } = get();
+    const now = new Date();
+    
     console.log('🔄 [TRIP] Checking for ongoing trip...');
 
     try {
+      // Update check metadata
+      set({
+        lastTripCheckTime: now,
+        tripCheckCount: tripCheckCount + 1
+      });
+
       const ongoingTrip = await apiService.getOnGoingTrip();
 
       if (ongoingTrip && ongoingTrip.isRunning) {
         console.log('✅ [TRIP] Ongoing trip found, updating state');
+        
+        const previousStatus = get().tripStatus;
+        
         set({
           tripStatus: 'active',
           currentTrip: ongoingTrip as Trip
         });
+
+        // Log status changes
+        if (previousStatus !== 'active') {
+          console.log('🚨 [TRIP] Trip status changed to active');
+        }
       } else {
         console.log('ℹ️ [TRIP] No ongoing trip found');
+        
+        const previousStatus = get().tripStatus;
+        
+        set({
+          tripStatus: 'idle',  
+          currentTrip: null
+        });
+
+        // Log when trip ends
+        if (previousStatus === 'active') {
+          console.log('🏁 [TRIP] Trip ended');
+        }
+      }
+    } catch (error: any) {
+      console.error('💥 [TRIP] Error checking ongoing trip:', error.message);
+      
+      // Don't set error state for trip checks as this is a background operation
+      // But if we had an active trip and now we can't check, keep the state
+      const currentState = get();
+      if (currentState.tripStatus !== 'active') {
         set({
           tripStatus: 'idle',
           currentTrip: null
         });
       }
-    } catch (error: any) {
-      console.error('💥 [TRIP] Error checking ongoing trip:', error.message);
-      // Don't set error state for trip checks as this is a background operation
-      set({
-        tripStatus: 'idle',
-        currentTrip: null
-      });
     }
   },
 
