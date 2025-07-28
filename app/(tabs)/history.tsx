@@ -529,14 +529,50 @@ export default function History() {
               >
                 Tap In By
               </Text>
-              <View style={styles.tapInByButton}>
-                <Ionicons name="person" size={14} color={COLORS.primary} />
+              <View style={[
+                styles.tapInByButton,
+                tapInType === "Card" && styles.tapCardButton,
+                tapInType === "Time-Out" && styles.tapTimeOutButton,
+                tapInType === "Staff" && styles.tapStaffButton,
+                tapInType === "Session-Out" && styles.tapSessionOutButton,
+                tapInType === "Mobile App" && styles.tapMobileAppButton,
+                tapInType === "Penalty" && styles.tapPenaltyButton
+              ]}>
+                <Ionicons 
+                  name={
+                    tapInType === "Card" ? "card" :
+                    tapInType === "Time-Out" ? "time" :
+                    tapInType === "Staff" ? "person-circle" :
+                    tapInType === "Session-Out" ? "exit" :
+                    tapInType === "Mobile App" ? "phone-portrait" :
+                    tapInType === "Penalty" ? "warning" :
+                    "help-circle"
+                  } 
+                  size={14} 
+                  color={
+                    tapInType === "Card" ? "#1976D2" :
+                    tapInType === "Time-Out" ? "#F57C00" :
+                    tapInType === "Staff" ? "#388E3C" :
+                    tapInType === "Session-Out" ? "#D32F2F" :
+                    tapInType === "Mobile App" ? "#7B1FA2" :
+                    tapInType === "Penalty" ? "#E65100" :
+                    COLORS.gray[500]
+                  }
+                />
                 <Text
                   variant="bodySmall"
-                  color={COLORS.gray[700]}
+                  color={
+                    tapInType === "Card" ? "#1976D2" :
+                    tapInType === "Time-Out" ? "#F57C00" :
+                    tapInType === "Staff" ? "#388E3C" :
+                    tapInType === "Session-Out" ? "#D32F2F" :
+                    tapInType === "Mobile App" ? "#7B1FA2" :
+                    tapInType === "Penalty" ? "#E65100" :
+                    COLORS.gray[600]
+                  }
                   style={styles.tapByText}
                 >
-                  {tapInType || "Passenger"}
+                  {tapInType || "N/A"}
                 </Text>
               </View>
             </View>
@@ -550,18 +586,50 @@ export default function History() {
                 >
                   Tap Out By
                 </Text>
-                <View style={styles.tapOutByButton}>
+                <View style={[
+                  styles.tapOutByButton,
+                  tapOutStatus === "Card" && styles.tapCardButton,
+                  tapOutStatus === "Time-Out" && styles.tapTimeOutButton,
+                  tapOutStatus === "Staff" && styles.tapStaffButton,
+                  tapOutStatus === "Session-Out" && styles.tapSessionOutButton,
+                  tapOutStatus === "Mobile App" && styles.tapMobileAppButton,
+                  tapOutStatus === "Penalty" && styles.tapPenaltyButton
+                ]}>
                   <Ionicons
-                    name="checkmark-circle"
+                    name={
+                      tapOutStatus === "Card" ? "card" :
+                      tapOutStatus === "Time-Out" ? "time" :
+                      tapOutStatus === "Staff" ? "person-circle" :
+                      tapOutStatus === "Session-Out" ? "exit" :
+                      tapOutStatus === "Mobile App" ? "phone-portrait" :
+                      tapOutStatus === "Penalty" ? "warning" :
+                      "help-circle"
+                    }
                     size={14}
-                    color={COLORS.success}
+                    color={
+                      tapOutStatus === "Card" ? "#1976D2" :
+                      tapOutStatus === "Time-Out" ? "#F57C00" :
+                      tapOutStatus === "Staff" ? "#388E3C" :
+                      tapOutStatus === "Session-Out" ? "#D32F2F" :
+                      tapOutStatus === "Mobile App" ? "#7B1FA2" :
+                      tapOutStatus === "Penalty" ? "#E65100" :
+                      COLORS.gray[500]
+                    }
                   />
                   <Text
                     variant="bodySmall"
-                    color={COLORS.success}
+                    color={
+                      tapOutStatus === "Card" ? "#1976D2" :
+                      tapOutStatus === "Time-Out" ? "#F57C00" :
+                      tapOutStatus === "Staff" ? "#388E3C" :
+                      tapOutStatus === "Session-Out" ? "#D32F2F" :
+                      tapOutStatus === "Mobile App" ? "#7B1FA2" :
+                      tapOutStatus === "Penalty" ? "#E65100" :
+                      COLORS.gray[600]
+                    }
                     style={styles.tapByText}
                   >
-                    {tapOutStatus || "Manual"}
+                    {tapOutStatus || "N/A"}
                   </Text>
                 </View>
               </View>
@@ -1465,6 +1533,31 @@ const styles = StyleSheet.create({
   tapByText: {
     fontWeight: "500",
     fontSize: 12,
+  },
+  // Tap type specific button styles
+  tapCardButton: {
+    backgroundColor: "#E3F2FD", // Light blue
+    borderColor: "#BBDEFB",
+  },
+  tapTimeOutButton: {
+    backgroundColor: "#FFF3E0", // Light orange
+    borderColor: "#FFCC02",
+  },
+  tapStaffButton: {
+    backgroundColor: "#E8F5E8", // Light green
+    borderColor: "#C8E6C9",
+  },
+  tapSessionOutButton: {
+    backgroundColor: "#FFEBEE", // Light red
+    borderColor: "#FFCDD2",
+  },
+  tapMobileAppButton: {
+    backgroundColor: "#F3E5F5", // Light purple
+    borderColor: "#E1BEE7",
+  },
+  tapPenaltyButton: {
+    backgroundColor: "#FFF3E0", // Light orange-amber
+    borderColor: "#FFB74D",
   },
   distanceButton: {
     flexDirection: "row",
