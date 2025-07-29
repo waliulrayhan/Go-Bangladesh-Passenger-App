@@ -314,9 +314,14 @@ export default function History() {
 
   const formatTime = (dateString: string) => {
     const date = new Date(new Date(dateString).getTime() + 6 * 60 * 60 * 1000);
-    const hours = date.getHours().toString().padStart(2, "0");
+    const hours24 = date.getHours();
     const minutes = date.getMinutes().toString().padStart(2, "0");
-    return `${hours}:${minutes}`;
+    
+    // Convert to 12-hour format
+    const hours12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
+    const ampm = hours24 >= 12 ? "PM" : "AM";
+    
+    return `${hours12}:${minutes} ${ampm}`;
   };
 
   const renderTripItem = ({ item }: { item: TripTransaction }) => {
