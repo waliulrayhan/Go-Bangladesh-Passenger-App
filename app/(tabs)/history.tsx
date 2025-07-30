@@ -1535,34 +1535,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.gray[200],
   },
-  tapOutByItemPassenger: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 6,
-    backgroundColor: "#E3F2FD", // Light blue background
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#BBDEFB",
-    flex: 1,
-  },
-  tapOutByItemManual: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 6,
-    backgroundColor: "#E8F5E8", // Light green background
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#C8E6C9",
-    flex: 1,
-  },
-  tapOutByText: {
-    fontWeight: "500",
-    fontSize: 12,
-  },
   tapInByButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1658,12 +1630,14 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   dateItem: {
+    paddingLeft: 4,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     flex: 1,
   },
   TimeItem: {
+  paddingLeft: 8,
   flexDirection: "row",
   alignItems: "center",
   gap: 4,
