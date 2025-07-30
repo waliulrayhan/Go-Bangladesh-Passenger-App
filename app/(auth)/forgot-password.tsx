@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Dimensions,
+  Platform,
   SafeAreaView,
   StyleSheet,
   TextInput,
@@ -42,6 +43,13 @@ export default function ForgotPassword() {
     }
     return () => clearInterval(interval);
   }, [timer]);
+
+  // Clear OTP when entering OTP state for better auto-fill detection
+  useEffect(() => {
+    if (isOtpSent) {
+      setOtp(["", "", "", "", "", ""]);
+    }
+  }, [isOtpSent]);
 
   const handleGoBack = () => {
     router.back();
@@ -113,8 +121,39 @@ export default function ForgotPassword() {
 
   const handleOtpChange = (value: string, index: number) => {
     if (isLoading) return; // Prevent changes while loading
-    if (value.length > 1) return; // Prevent multiple characters
+    
+    // Handle pasted OTP (auto-fill from SMS)
+    if (value.length > 1) {
+      const pastedOtp = value.replace(/\D/g, '').slice(0, 6); // Extract only digits, max 6
+      if (pastedOtp.length > 0) {
+        const newOtp = [...otp];
+        
+        // Fill the OTP digits starting from current index
+        for (let i = 0; i < pastedOtp.length && (index + i) < 6; i++) {
+          newOtp[index + i] = pastedOtp[i];
+        }
+        
+        setOtp(newOtp);
+        
+        // Focus the last filled input or verify if complete
+        if (pastedOtp.length === 6) {
+          // Auto-verify when 6 digits are pasted
+          setTimeout(() => {
+            handleVerifyOTP(pastedOtp);
+          }, 100);
+        } else {
+          // Focus next empty input
+          const lastFilledIndex = Math.min(index + pastedOtp.length - 1, 5);
+          const nextEmptyIndex = newOtp.findIndex((digit, i) => i > lastFilledIndex && digit === "");
+          if (nextEmptyIndex !== -1) {
+            inputRefs.current[nextEmptyIndex]?.focus();
+          }
+        }
+        return;
+      }
+    }
 
+    // Handle single character input
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
@@ -331,10 +370,14 @@ export default function ForgotPassword() {
                         onChangeText={(value) => handleOtpChange(value, index)}
                         onKeyPress={(e) => handleKeyPress(e, index)}
                         keyboardType="numeric"
-                        maxLength={1}
+                        maxLength={index === 0 ? 6 : 1} // Allow pasting full OTP in first input
                         autoFocus={index === 0}
                         selectTextOnFocus
                         editable={!isLoading}
+                        textContentType={index === 0 ? "oneTimeCode" : "none"} // SMS auto-fill for first input
+                        autoComplete={index === 0 ? "sms-otp" : "off"} // Android SMS auto-fill
+                        importantForAutofill={index === 0 ? "yes" : "no"} // Android autofill priority
+                        blurOnSubmit={false}
                       />
                     ))}
                   </View>
@@ -376,7 +419,10 @@ export default function ForgotPassword() {
                   </View>
 
                   <Text style={styles.helpText}>
-                    Enter all 6 digits for automatic verification.
+                    {Platform.OS === 'ios' 
+                      ? 'The code will auto-fill from SMS. You can also enter all 6 digits for automatic verification.'
+                      : 'Enter all 6 digits for automatic verification. The code may auto-fill from SMS.'
+                    }
                   </Text>
                 </View>
               </Card>
