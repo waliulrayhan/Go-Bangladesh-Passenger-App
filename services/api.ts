@@ -745,7 +745,7 @@ class ApiService {
 
     try {
       const response = await this.api.get<ApiResponse<null>>(
-        `/api/otp/SendOtp?mobileNumber=${mobileNumber}`
+        `/api/otp/SendOtpForForgotPassword?mobileNumber=${mobileNumber}`
       );
 
       console.log('📥 [OTP] Send response:', {

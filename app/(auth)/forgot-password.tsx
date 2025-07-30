@@ -93,6 +93,21 @@ export default function ForgotPassword() {
         `A verification code has been sent to ${formattedMobile}`,
         [{ text: "OK" }]
       );
+    } else {
+      // Check if the error is about mobile number not found
+      if (error && error.includes('not found')) {
+        Alert.alert(
+          "Mobile Number Not Found",
+          "This mobile number is not registered with us. Please check your number or create a new account.",
+          [
+            { text: "Try Again" },
+            { 
+              text: "Register", 
+              onPress: () => router.push("/(auth)/passenger-registration")
+            }
+          ]
+        );
+      }
     }
   };
 
@@ -203,11 +218,46 @@ export default function ForgotPassword() {
         "OTP Sent",
         "A new verification code has been sent to your mobile"
       );
+    } else {
+      // Check if the error is about mobile number not found
+      if (error && error.includes('not found')) {
+        Alert.alert(
+          "Mobile Number Not Found",
+          "This mobile number is not registered with us. Please check your number or create a new account.",
+          [
+            { text: "Try Again" },
+            { 
+              text: "Register", 
+              onPress: () => router.push("/(auth)/passenger-registration")
+            }
+          ]
+        );
+      }
     }
   };
 
   const handleContactOrganization = () => {
-    router.push("/(auth)/organization-contacts");
+    Alert.alert(
+      "Need Help?",
+      "If you're having trouble with your account, please contact us:",
+      [
+        {
+          text: "Call Support",
+          onPress: () => {
+            // You can implement phone call functionality here
+            Alert.alert("Contact Support", "Please call: +88-02-XXXXXXXX");
+          }
+        },
+        {
+          text: "Email Support",
+          onPress: () => {
+            // You can implement email functionality here
+            Alert.alert("Email Support", "Please email: info@thegobd.com");
+          }
+        },
+        { text: "Cancel", style: "cancel" }
+      ]
+    );
   };
 
   // OTP input state

@@ -8,7 +8,9 @@ import { storageService } from '../utils/storage';
 // Helper function to format API error messages
 const formatApiError = (error: any, defaultMessage: string = 'Operation failed'): string => {
   // Handle specific API error messages
-  if (error.message === 'User not found!') {
+  if (error.message === 'User not found with this mobile number!') {
+    return 'Mobile number not found in our records. Please check your number or register a new account.';
+  } else if (error.message === 'User not found!') {
     return 'Account not found. Please check your email/mobile number or contact support to register.';
   } else if (error.response?.data?.data?.message) {
     return error.response.data.data.message;
