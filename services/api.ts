@@ -296,6 +296,7 @@ export interface RechargeTransaction {
   cardId: string;
   agentId: string;
   tripId: null;
+  transactionId: string;
   card: null;
   agent: {
     isSuperAdmin: boolean;

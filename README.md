@@ -68,3 +68,10 @@ Run locally:
 $env:ANDROID_HOME="C:\Users\[USERNAME]\AppData\Local\Android\Sdk"
 npx expo run:android
 ```
+
+eas build --platform ios --profile production
+
+eas submit --platform ios
+
+local.properties
+sdk.dir=C:/Users/Rayhan/AppData/Local/Android/Sdk

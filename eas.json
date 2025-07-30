@@ -19,6 +19,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "sowrav.mahdi@gmail.com",
+        "ascAppId": "6749264144",
+        "appleTeamId": "WQ98TZHCXC"
+      }
+    }
   }
 }

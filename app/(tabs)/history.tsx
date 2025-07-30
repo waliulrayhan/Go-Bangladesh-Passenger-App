@@ -316,11 +316,11 @@ export default function History() {
     const date = new Date(new Date(dateString).getTime() + 6 * 60 * 60 * 1000);
     const hours24 = date.getHours();
     const minutes = date.getMinutes().toString().padStart(2, "0");
-    
+
     // Convert to 12-hour format
     const hours12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
     const ampm = hours24 >= 12 ? "PM" : "AM";
-    
+
     return `${hours12}:${minutes} ${ampm}`;
   };
 
@@ -534,46 +534,66 @@ export default function History() {
               >
                 Tap In By
               </Text>
-              <View style={[
-                styles.tapInByButton,
-                tapInType === "Card" && styles.tapCardButton,
-                tapInType === "Time-Out" && styles.tapTimeOutButton,
-                tapInType === "Staff" && styles.tapStaffButton,
-                tapInType === "Session-Out" && styles.tapSessionOutButton,
-                tapInType === "Mobile App" && styles.tapMobileAppButton,
-                tapInType === "Penalty" && styles.tapPenaltyButton
-              ]}>
-                <Ionicons 
+              <View
+                style={[
+                  styles.tapInByButton,
+                  tapInType === "Card" && styles.tapCardButton,
+                  tapInType === "Time-Out" && styles.tapTimeOutButton,
+                  tapInType === "Staff" && styles.tapStaffButton,
+                  tapInType === "Session-Out" && styles.tapSessionOutButton,
+                  tapInType === "Mobile App" && styles.tapMobileAppButton,
+                  tapInType === "Penalty" && styles.tapPenaltyButton,
+                ]}
+              >
+                <Ionicons
                   name={
-                    tapInType === "Card" ? "card" :
-                    tapInType === "Time-Out" ? "time" :
-                    tapInType === "Staff" ? "person-circle" :
-                    tapInType === "Session-Out" ? "exit" :
-                    tapInType === "Mobile App" ? "phone-portrait" :
-                    tapInType === "Penalty" ? "warning" :
-                    "help-circle"
-                  } 
-                  size={14} 
+                    tapInType === "Card"
+                      ? "card"
+                      : tapInType === "Time-Out"
+                      ? "time"
+                      : tapInType === "Staff"
+                      ? "person-circle"
+                      : tapInType === "Session-Out"
+                      ? "exit"
+                      : tapInType === "Mobile App"
+                      ? "phone-portrait"
+                      : tapInType === "Penalty"
+                      ? "warning"
+                      : "help-circle"
+                  }
+                  size={14}
                   color={
-                    tapInType === "Card" ? "#1976D2" :
-                    tapInType === "Time-Out" ? "#F57C00" :
-                    tapInType === "Staff" ? "#388E3C" :
-                    tapInType === "Session-Out" ? "#D32F2F" :
-                    tapInType === "Mobile App" ? "#7B1FA2" :
-                    tapInType === "Penalty" ? "#E65100" :
-                    COLORS.gray[500]
+                    tapInType === "Card"
+                      ? "#1976D2"
+                      : tapInType === "Time-Out"
+                      ? "#F57C00"
+                      : tapInType === "Staff"
+                      ? "#388E3C"
+                      : tapInType === "Session-Out"
+                      ? "#D32F2F"
+                      : tapInType === "Mobile App"
+                      ? "#7B1FA2"
+                      : tapInType === "Penalty"
+                      ? "#E65100"
+                      : COLORS.gray[500]
                   }
                 />
                 <Text
                   variant="bodySmall"
                   color={
-                    tapInType === "Card" ? "#1976D2" :
-                    tapInType === "Time-Out" ? "#F57C00" :
-                    tapInType === "Staff" ? "#388E3C" :
-                    tapInType === "Session-Out" ? "#D32F2F" :
-                    tapInType === "Mobile App" ? "#7B1FA2" :
-                    tapInType === "Penalty" ? "#E65100" :
-                    COLORS.gray[600]
+                    tapInType === "Card"
+                      ? "#1976D2"
+                      : tapInType === "Time-Out"
+                      ? "#F57C00"
+                      : tapInType === "Staff"
+                      ? "#388E3C"
+                      : tapInType === "Session-Out"
+                      ? "#D32F2F"
+                      : tapInType === "Mobile App"
+                      ? "#7B1FA2"
+                      : tapInType === "Penalty"
+                      ? "#E65100"
+                      : COLORS.gray[600]
                   }
                   style={styles.tapByText}
                 >
@@ -591,46 +611,67 @@ export default function History() {
                 >
                   Tap Out By
                 </Text>
-                <View style={[
-                  styles.tapOutByButton,
-                  tapOutStatus === "Card" && styles.tapCardButton,
-                  tapOutStatus === "Time-Out" && styles.tapTimeOutButton,
-                  tapOutStatus === "Staff" && styles.tapStaffButton,
-                  tapOutStatus === "Session-Out" && styles.tapSessionOutButton,
-                  tapOutStatus === "Mobile App" && styles.tapMobileAppButton,
-                  tapOutStatus === "Penalty" && styles.tapPenaltyButton
-                ]}>
+                <View
+                  style={[
+                    styles.tapOutByButton,
+                    tapOutStatus === "Card" && styles.tapCardButton,
+                    tapOutStatus === "Time-Out" && styles.tapTimeOutButton,
+                    tapOutStatus === "Staff" && styles.tapStaffButton,
+                    tapOutStatus === "Session-Out" &&
+                      styles.tapSessionOutButton,
+                    tapOutStatus === "Mobile App" && styles.tapMobileAppButton,
+                    tapOutStatus === "Penalty" && styles.tapPenaltyButton,
+                  ]}
+                >
                   <Ionicons
                     name={
-                      tapOutStatus === "Card" ? "card" :
-                      tapOutStatus === "Time-Out" ? "time" :
-                      tapOutStatus === "Staff" ? "person-circle" :
-                      tapOutStatus === "Session-Out" ? "exit" :
-                      tapOutStatus === "Mobile App" ? "phone-portrait" :
-                      tapOutStatus === "Penalty" ? "warning" :
-                      "help-circle"
+                      tapOutStatus === "Card"
+                        ? "card"
+                        : tapOutStatus === "Time-Out"
+                        ? "time"
+                        : tapOutStatus === "Staff"
+                        ? "person-circle"
+                        : tapOutStatus === "Session-Out"
+                        ? "exit"
+                        : tapOutStatus === "Mobile App"
+                        ? "phone-portrait"
+                        : tapOutStatus === "Penalty"
+                        ? "warning"
+                        : "help-circle"
                     }
                     size={14}
                     color={
-                      tapOutStatus === "Card" ? "#1976D2" :
-                      tapOutStatus === "Time-Out" ? "#F57C00" :
-                      tapOutStatus === "Staff" ? "#388E3C" :
-                      tapOutStatus === "Session-Out" ? "#D32F2F" :
-                      tapOutStatus === "Mobile App" ? "#7B1FA2" :
-                      tapOutStatus === "Penalty" ? "#E65100" :
-                      COLORS.gray[500]
+                      tapOutStatus === "Card"
+                        ? "#1976D2"
+                        : tapOutStatus === "Time-Out"
+                        ? "#F57C00"
+                        : tapOutStatus === "Staff"
+                        ? "#388E3C"
+                        : tapOutStatus === "Session-Out"
+                        ? "#D32F2F"
+                        : tapOutStatus === "Mobile App"
+                        ? "#7B1FA2"
+                        : tapOutStatus === "Penalty"
+                        ? "#E65100"
+                        : COLORS.gray[500]
                     }
                   />
                   <Text
                     variant="bodySmall"
                     color={
-                      tapOutStatus === "Card" ? "#1976D2" :
-                      tapOutStatus === "Time-Out" ? "#F57C00" :
-                      tapOutStatus === "Staff" ? "#388E3C" :
-                      tapOutStatus === "Session-Out" ? "#D32F2F" :
-                      tapOutStatus === "Mobile App" ? "#7B1FA2" :
-                      tapOutStatus === "Penalty" ? "#E65100" :
-                      COLORS.gray[600]
+                      tapOutStatus === "Card"
+                        ? "#1976D2"
+                        : tapOutStatus === "Time-Out"
+                        ? "#F57C00"
+                        : tapOutStatus === "Staff"
+                        ? "#388E3C"
+                        : tapOutStatus === "Session-Out"
+                        ? "#D32F2F"
+                        : tapOutStatus === "Mobile App"
+                        ? "#7B1FA2"
+                        : tapOutStatus === "Penalty"
+                        ? "#E65100"
+                        : COLORS.gray[600]
                     }
                     style={styles.tapByText}
                   >
@@ -646,6 +687,7 @@ export default function History() {
   };
 
   const renderRechargeItem = ({ item }: { item: RechargeTransaction }) => {
+    const transactionId = item.transactionId;
     const agent = item.agent;
     const organization = agent?.organization;
 
@@ -685,52 +727,42 @@ export default function History() {
         </View>
 
         <View style={styles.rechargeDetails}>
-          {/* {organization && (
-            <View style={styles.detailRow}>
-              <Ionicons name="business" size={14} color={COLORS.gray[500]} />
-              <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.detailText}>
-                {organization.name} - {organization.organizationType}
-              </Text>
-            </View>
-          )} */}
-          {agent?.address && (
-            <View style={styles.detailRow}>
-              <Ionicons
-                name="location-outline"
-                size={14}
-                color={COLORS.gray[500]}
-              />
+          <View style={styles.singleRowDetails}>
+            <View style={styles.transactionIdItem}>
+              <Ionicons name="receipt" size={14} color={COLORS.gray[500]} />
               <Text
                 variant="bodySmall"
                 color={COLORS.gray[600]}
                 style={styles.detailText}
+                numberOfLines={1}
+                ellipsizeMode="middle"
               >
-                {agent.address}
+                {transactionId}
               </Text>
             </View>
-          )}
-          <View style={styles.dateTimeRow}>
-            <View style={styles.dateTimeItem}>
-              <Ionicons name="calendar" size={14} color={COLORS.gray[500]} />
-              <Text
-                variant="bodySmall"
-                color={COLORS.gray[600]}
-                style={styles.detailText}
-              >
-                {item.createTime
-                  ? formatDate(new Date(item.createTime))
-                  : "N/A"}
-              </Text>
-            </View>
-            <View style={styles.dateTimeItemRight}>
-              <Ionicons name="time" size={14} color={COLORS.gray[500]} />
-              <Text
-                variant="bodySmall"
-                color={COLORS.gray[600]}
-                style={styles.detailText}
-              >
-                {item.createTime ? formatTime(item.createTime) : "N/A"}
-              </Text>
+            <View style={styles.dateTimeContainer}>
+              <View style={styles.dateTimeItem}>
+                <Ionicons name="calendar" size={14} color={COLORS.gray[500]} />
+                <Text
+                  variant="bodySmall"
+                  color={COLORS.gray[600]}
+                  style={styles.detailText}
+                >
+                  {item.createTime
+                    ? formatDate(new Date(item.createTime))
+                    : "N/A"}
+                </Text>
+              </View>
+              <View style={styles.dateTimeItem}>
+                <Ionicons name="time" size={14} color={COLORS.gray[500]} />
+                <Text
+                  variant="bodySmall"
+                  color={COLORS.gray[600]}
+                  style={styles.detailText}
+                >
+                  {item.createTime ? formatTime(item.createTime) : "N/A"}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -1584,6 +1616,34 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     gap: 8,
   },
+  singleRowDetails: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+  transactionIdItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+    minWidth: 0, // Prevents overflow
+    maxWidth: "35%", // Limit transaction ID width
+  },
+  dateTimeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  detailItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+    minWidth: 0, // Prevents overflow
+  },
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1600,13 +1660,9 @@ const styles = StyleSheet.create({
     gap: 8,
     flex: 1,
   },
-  dateTimeItemRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
   detailText: {
     // Font properties handled by Text component
+    fontSize: 12,
   },
   emptyContainer: {
     alignItems: "center",
