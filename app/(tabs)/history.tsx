@@ -2,6 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Clipboard,
   FlatList,
   Linking,
   Modal,
@@ -249,6 +251,19 @@ export default function History() {
   ) => {
     const url = `https://www.google.com/maps/dir/${startLat},${startLng}/${endLat},${endLng}`;
     Linking.openURL(url);
+  };
+
+  const copyTransactionId = async (transactionId: string) => {
+    try {
+      await Clipboard.setString(transactionId);
+      Alert.alert("Copied!", "Transaction ID copied to clipboard", [
+        { text: "OK" }
+      ]);
+    } catch (error) {
+      Alert.alert("Error", "Failed to copy transaction ID", [
+        { text: "OK" }
+      ]);
+    }
   };
 
   const getDateFilterLabel = (filter: DateFilter) => {
@@ -728,7 +743,11 @@ export default function History() {
 
         <View style={styles.rechargeDetails}>
           <View style={styles.singleRowDetails}>
-            <View style={styles.transactionIdItem}>
+            <TouchableOpacity 
+              style={styles.transactionIdItem}
+              onPress={() => copyTransactionId(transactionId)}
+              activeOpacity={0.7}
+            >
               <Ionicons name="receipt" size={14} color={COLORS.gray[500]} />
               <Text
                 variant="bodySmall"
@@ -739,9 +758,10 @@ export default function History() {
               >
                 {transactionId}
               </Text>
-            </View>
+              <Ionicons name="copy-outline" size={12} color={COLORS.gray[400]} />
+            </TouchableOpacity>
             <View style={styles.dateTimeContainer}>
-              <View style={styles.dateTimeItem}>
+              <View style={styles.dateItem}>
                 <Ionicons name="calendar" size={14} color={COLORS.gray[500]} />
                 <Text
                   variant="bodySmall"
@@ -753,7 +773,7 @@ export default function History() {
                     : "N/A"}
                 </Text>
               </View>
-              <View style={styles.dateTimeItem}>
+              <View style={styles.TimeItem}>
                 <Ionicons name="time" size={14} color={COLORS.gray[500]} />
                 <Text
                   variant="bodySmall"
@@ -1625,9 +1645,8 @@ const styles = StyleSheet.create({
   transactionIdItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
     flex: 1,
-    minWidth: 0, // Prevents overflow
     maxWidth: "35%", // Limit transaction ID width
   },
   dateTimeContainer: {
@@ -1635,30 +1654,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     flex: 1,
+    paddingLeft: 10,
     justifyContent: "flex-end",
   },
-  detailItem: {
+  dateItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
     flex: 1,
-    minWidth: 0, // Prevents overflow
   },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  dateTimeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  dateTimeItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flex: 1,
+  TimeItem: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 4,
+  flex: 1,
   },
   detailText: {
     // Font properties handled by Text component
