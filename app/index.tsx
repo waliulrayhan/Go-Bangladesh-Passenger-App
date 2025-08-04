@@ -140,8 +140,7 @@ export default function WelcomeScreen() {
                 color={COLORS.gray[600]}
                 style={styles.description}
               >
-                Your convenient way to pay for transport with RFID card
-                technology
+                Tap • Go • Enjoy
               </Text>
             </Animated.View>
 
@@ -165,7 +164,7 @@ export default function WelcomeScreen() {
                 color={COLORS.gray[600]}
                 style={styles.note}
               >
-                Safe • Secure • Friendly
+                Trusted • Encrypted • Friendly
               </Text>
             </Animated.View>
           </View>

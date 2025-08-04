@@ -255,4 +255,5 @@ export interface PaginationState {
   hasMore: boolean;
   isLoadingMore: boolean;
   totalLoaded: number;
+  totalCount?: number;
 }

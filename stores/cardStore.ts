@@ -54,6 +54,7 @@ export const useCardStore = create<CardState>((set, get) => ({
     hasMore: true,
     isLoadingMore: false,
     totalLoaded: 0,
+    totalCount: 0,
   },
   rechargePagination: {
     currentPage: 1,
@@ -61,6 +62,7 @@ export const useCardStore = create<CardState>((set, get) => ({
     hasMore: true,
     isLoadingMore: false,
     totalLoaded: 0,
+    totalCount: 0,
   },
 
   loadCardDetails: async () => {
@@ -128,7 +130,8 @@ export const useCardStore = create<CardState>((set, get) => ({
           ...tripPagination,
           currentPage: 1,
           hasMore: true,
-          totalLoaded: 0
+          totalLoaded: 0,
+          totalCount: 0
         }
       });
     } else {
@@ -156,26 +159,27 @@ export const useCardStore = create<CardState>((set, get) => ({
       // Use the new trip history API
       const response = await apiService.getPassengerTripHistory(userId, pageNo, tripPagination.pageSize);
 
-      if (response.data.isSuccess) {
-        const newTripTransactions = response.data.content || [];
-        console.log('✅ [TRIP HISTORY] Loaded:', newTripTransactions.length, 'trip transactions');
+      const newTripTransactions = response.data || [];
+      const totalCount = response.rowCount || 0;
+      console.log('✅ [TRIP HISTORY] Loaded:', newTripTransactions.length, 'trip transactions');
+      console.log('📊 [TRIP HISTORY] Total available:', totalCount, 'trip transactions');
 
-        const hasMore = newTripTransactions.length === tripPagination.pageSize;
+      // Calculate if there are more pages available
+      const currentTotal = reset ? newTripTransactions.length : tripPagination.totalLoaded + newTripTransactions.length;
+      const hasMore = currentTotal < totalCount;
 
-        set({
-          tripTransactions: reset ? newTripTransactions : [...get().tripTransactions, ...newTripTransactions],
-          isLoading: false,
-          tripPagination: {
-            ...tripPagination,
-            currentPage: pageNo,
-            hasMore,
-            isLoadingMore: false,
-            totalLoaded: reset ? newTripTransactions.length : tripPagination.totalLoaded + newTripTransactions.length
-          }
-        });
-      } else {
-        throw new Error(response.data.message || 'Failed to load trip history');
-      }
+      set({
+        tripTransactions: reset ? newTripTransactions : [...get().tripTransactions, ...newTripTransactions],
+        isLoading: false,
+        tripPagination: {
+          ...tripPagination,
+          currentPage: pageNo,
+          hasMore,
+          isLoadingMore: false,
+          totalLoaded: currentTotal,
+          totalCount
+        }
+      });
     } catch (error: any) {
       console.error('❌ [TRIP HISTORY] Error loading trip history:', error);
       set({
@@ -206,7 +210,8 @@ export const useCardStore = create<CardState>((set, get) => ({
           ...rechargePagination,
           currentPage: 1,
           hasMore: true,
-          totalLoaded: 0
+          totalLoaded: 0,
+          totalCount: 0
         }
       });
     } else {
@@ -229,31 +234,32 @@ export const useCardStore = create<CardState>((set, get) => ({
         throw new Error('No user ID available. Please login again.');
       }
 
-      console.log('� [RECHARGE HISTORY] Loading recharge history for user:', userId);
+      console.log('💳 [RECHARGE HISTORY] Loading recharge history for user:', userId);
 
       // Use the new recharge history API
       const response = await apiService.getPassengerRechargeHistory(userId, pageNo, rechargePagination.pageSize);
 
-      if (response.data.isSuccess) {
-        const newRechargeTransactions = response.data.content || [];
-        console.log('✅ [RECHARGE HISTORY] Loaded:', newRechargeTransactions.length, 'recharge transactions');
+      const newRechargeTransactions = response.data || [];
+      const totalCount = response.rowCount || 0;
+      console.log('✅ [RECHARGE HISTORY] Loaded:', newRechargeTransactions.length, 'recharge transactions');
+      console.log('📊 [RECHARGE HISTORY] Total available:', totalCount, 'recharge transactions');
 
-        const hasMore = newRechargeTransactions.length === rechargePagination.pageSize;
+      // Calculate if there are more pages available
+      const currentTotal = reset ? newRechargeTransactions.length : rechargePagination.totalLoaded + newRechargeTransactions.length;
+      const hasMore = currentTotal < totalCount;
 
-        set({
-          rechargeTransactions: reset ? newRechargeTransactions : [...get().rechargeTransactions, ...newRechargeTransactions],
-          isLoading: false,
-          rechargePagination: {
-            ...rechargePagination,
-            currentPage: pageNo,
-            hasMore,
-            isLoadingMore: false,
-            totalLoaded: reset ? newRechargeTransactions.length : rechargePagination.totalLoaded + newRechargeTransactions.length
-          }
-        });
-      } else {
-        throw new Error(response.data.message || 'Failed to load recharge history');
-      }
+      set({
+        rechargeTransactions: reset ? newRechargeTransactions : [...get().rechargeTransactions, ...newRechargeTransactions],
+        isLoading: false,
+        rechargePagination: {
+          ...rechargePagination,
+          currentPage: pageNo,
+          hasMore,
+          isLoadingMore: false,
+          totalLoaded: currentTotal,
+          totalCount
+        }
+      });
     } catch (error: any) {
       console.error('❌ [RECHARGE HISTORY] Error loading recharge history:', error);
       set({
@@ -565,6 +571,7 @@ export const useCardStore = create<CardState>((set, get) => ({
           hasMore: true,
           isLoadingMore: false,
           totalLoaded: 0,
+          totalCount: 0,
         },
         rechargePagination: {
           currentPage: 1,
@@ -572,6 +579,7 @@ export const useCardStore = create<CardState>((set, get) => ({
           hasMore: true,
           isLoadingMore: false,
           totalLoaded: 0,
+          totalCount: 0,
         }
       });
 

@@ -18,6 +18,19 @@ export interface ApiResponse<T> {
   };
 }
 
+export interface PaginatedApiResponse<T> {
+  data: {
+    isSuccess: boolean;
+    content: {
+      data: T[];
+      rowCount: number;
+    };
+    timeStamp: string;
+    payloadType: string;
+    message: string;
+  };
+}
+
 export interface CardValidationResponse {
   isSuccess: boolean;
   content: {
@@ -222,6 +235,7 @@ export interface TripTransaction {
   cardId: string;
   agentId: null;
   tripId: string;
+  transactionId: string;
   card: null;
   agent: null;
   trip: {
@@ -229,8 +243,8 @@ export interface TripTransaction {
     sessionId: string;
     startingLatitude: string;
     startingLongitude: string;
-    endingLatitude: string;
-    endingLongitude: string;
+    endingLatitude: string | null;
+    endingLongitude: string | null;
     tripStartTime: string;
     tripEndTime: string;
     amount: number;
@@ -246,12 +260,31 @@ export interface TripTransaction {
       isRunning: boolean;
       serial: number;
       sessionCode: string;
+      startingLatitude: string | null;
+      startingLongitude: string | null;
+      endingLatitude: string | null;
+      endingLongitude: string | null;
       user: null;
       bus: {
         busNumber: string;
         busName: string;
         routeId: string;
-        route: null;
+        route: {
+          tripStartPlace: string;
+          tripEndPlace: string;
+          organizationId: string;
+          perKmFare: number;
+          baseFare: number;
+          minimumBalance: number;
+          penaltyAmount: number;
+          organization: null;
+          id: string;
+          createTime: string;
+          lastModifiedTime: string;
+          createdBy: string;
+          lastModifiedBy: string;
+          isDeleted: boolean;
+        } | null;
         organizationId: string;
         organization: null;
         presentLatitude: string;
@@ -277,7 +310,7 @@ export interface TripTransaction {
     createTime: string;
     lastModifiedTime: string;
     createdBy: string;
-    lastModifiedBy: string;
+    lastModifiedBy: string | null;
     isDeleted: boolean;
   };
   passenger: null;
@@ -285,8 +318,8 @@ export interface TripTransaction {
   id: string;
   createTime: string;
   lastModifiedTime: string;
-  createdBy: string;
-  lastModifiedBy: string;
+  createdBy: string | null;
+  lastModifiedBy: string | null;
   isDeleted: boolean;
 }
 
@@ -301,7 +334,7 @@ export interface RechargeTransaction {
   agent: {
     isSuperAdmin: boolean;
     name: string;
-    emailAddress: string;
+    emailAddress: string | null;
     passwordHash: string;
     imageUrl: string | null;
     isApproved: boolean;
@@ -936,16 +969,27 @@ class ApiService {
   /**
    * Fetch passenger trip history
    */
-  async getPassengerTripHistory(passengerId: string, pageNo: number = 1, pageSize: number = 10): Promise<ApiResponse<TripTransaction[]>> {
+  async getPassengerTripHistory(passengerId: string, pageNo: number = 1, pageSize: number = 10): Promise<{ data: TripTransaction[]; rowCount: number }> {
     try {
       console.log(`🚌 [API] Fetching trip history for: ${passengerId}`);
 
-      const response = await this.api.get<ApiResponse<TripTransaction[]>>(
+      const response = await this.api.get<PaginatedApiResponse<TripTransaction>>(
         `/api/history/passengerTrip?id=${passengerId}&pageNo=${pageNo}&pageSize=${pageSize}`
       );
 
-      console.log('✅ [API] Trip history loaded:', response.data?.data?.content?.length || 0, 'trips');
-      return response.data;
+      console.log('✅ [API] Trip history loaded:', response.data?.data?.content?.data?.length || 0, 'trips');
+      console.log('📊 [API] Total trips count:', response.data?.data?.content?.rowCount || 0);
+
+      // Check if the API response indicates success
+      if (!response.data.data.isSuccess) {
+        console.error('❌ [API] Trip history request failed:', response.data.data.message);
+        throw new Error(response.data.data.message || 'Failed to fetch trip history');
+      }
+
+      return {
+        data: response.data.data.content.data || [],
+        rowCount: response.data.data.content.rowCount || 0
+      };
     } catch (error: any) {
       console.error('❌ [API] Trip history error:', error.response?.status || error.message);
 
@@ -964,16 +1008,27 @@ class ApiService {
   /**
    * Fetch passenger recharge history
    */
-  async getPassengerRechargeHistory(passengerId: string, pageNo: number = 1, pageSize: number = 10): Promise<ApiResponse<RechargeTransaction[]>> {
+  async getPassengerRechargeHistory(passengerId: string, pageNo: number = 1, pageSize: number = 10): Promise<{ data: RechargeTransaction[]; rowCount: number }> {
     try {
       console.log(`💳 [API] Fetching recharge history for: ${passengerId}`);
 
-      const response = await this.api.get<ApiResponse<RechargeTransaction[]>>(
+      const response = await this.api.get<PaginatedApiResponse<RechargeTransaction>>(
         `/api/history/passengerRecharge?id=${passengerId}&pageNo=${pageNo}&pageSize=${pageSize}`
       );
 
-      console.log('✅ [API] Recharge history loaded:', response.data?.data?.content?.length || 0, 'recharges');
-      return response.data;
+      console.log('✅ [API] Recharge history loaded:', response.data?.data?.content?.data?.length || 0, 'recharges');
+      console.log('📊 [API] Total recharges count:', response.data?.data?.content?.rowCount || 0);
+
+      // Check if the API response indicates success
+      if (!response.data.data.isSuccess) {
+        console.error('❌ [API] Recharge history request failed:', response.data.data.message);
+        throw new Error(response.data.data.message || 'Failed to fetch recharge history');
+      }
+
+      return {
+        data: response.data.data.content.data || [],
+        rowCount: response.data.data.content.rowCount || 0
+      };
     } catch (error: any) {
       console.error('❌ [API] Recharge history error:', error.response?.status || error.message);
 

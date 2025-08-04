@@ -830,7 +830,46 @@ export default function History() {
               >
                 Loading more {activeTab === "trips" ? "trips" : "recharges"}...
               </Text>
+              {(() => {
+                const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
+                if (currentPagination.totalCount && currentPagination.totalCount > 0) {
+                  const progressPercentage = Math.round((currentPagination.totalLoaded / currentPagination.totalCount) * 100);
+                  return (
+                    <Text
+                      variant="caption"
+                      color={COLORS.gray[500]}
+                      style={styles.loadingText}
+                    >
+                      {currentPagination.totalLoaded} of {currentPagination.totalCount} ({progressPercentage}%)
+                    </Text>
+                  );
+                }
+                return null;
+              })()}
             </View>
+          ) : (activeTab === "trips" ? tripPagination : rechargePagination).hasMore ? (
+            <TouchableOpacity
+              style={styles.loadMoreButton}
+              onPress={onLoadMore}
+            >
+              <Text variant="labelSmall" color={COLORS.primary}>
+                Load More {activeTab === "trips" ? "Trips" : "Recharges"}
+              </Text>
+              {(() => {
+                const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
+                if (currentPagination.totalCount && currentPagination.totalCount > 0) {
+                  return (
+                    <Text
+                      variant="caption"
+                      color={COLORS.gray[500]}
+                    >
+                      {currentPagination.totalLoaded} of {currentPagination.totalCount}
+                    </Text>
+                  );
+                }
+                return null;
+              })()}
+            </TouchableOpacity>
           ) : null
         }
         ListEmptyComponent={
@@ -1200,6 +1239,29 @@ export default function History() {
             <Text variant="bodySmall" color={COLORS.gray[600]}>
               {filteredData.length}{" "}
               {activeTab === "trips" ? "trips" : "recharges"}
+              {/* Show total count if different from filtered count */}
+              {(() => {
+                const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
+                const totalCount = currentPagination.totalCount || 0;
+                const originalDataLength = activeTab === "trips" ? tripTransactions.length : rechargeTransactions.length;
+                
+                // Show total if we have filtering applied or if we have pagination info
+                if (searchQuery || filters.dateFilter !== "all" || 
+                    filters.minAmount !== undefined || filters.maxAmount !== undefined) {
+                  return (
+                    <Text variant="bodySmall" color={COLORS.gray[500]}>
+                      {" "}of {originalDataLength} loaded
+                    </Text>
+                  );
+                } else if (totalCount > 0 && totalCount > originalDataLength) {
+                  return (
+                    <Text variant="bodySmall" color={COLORS.gray[500]}>
+                      {" "}• {totalCount} total
+                    </Text>
+                  );
+                }
+                return null;
+              })()}
               {searchQuery && (
                 <Text variant="bodySmall" color={COLORS.primary}>
                   {" "}
@@ -1676,6 +1738,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: SPACING.md,
     gap: SPACING.xs,
+  },
+  loadMoreButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: SPACING.md,
+    margin: SPACING.md,
+    backgroundColor: COLORS.primary + "10",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.primary + "30",
+    gap: 4,
   },
   loadingText: {
     // Font properties handled by Text component
