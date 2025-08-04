@@ -113,7 +113,7 @@ export default function MapScreen() {
   const fetchRoutes = async (organizationId: string) => {
     try {
       setRoutesLoading(true);
-      const response = await apiService.get<ApiResponse<Route[]>>(`/api/route/routeDropdown?organizationId=${organizationId}`);
+      const response = await apiService.get<ApiResponse<Route[]>>(`/api/route/routeDropdownForMobile?organizationId=${organizationId}`);
       
       if (response.data.data.isSuccess) {
         setRoutes(response.data.data.content);
@@ -159,16 +159,18 @@ export default function MapScreen() {
       return;
     }
 
+    if (!routeDropdown.selectedValue) {
+      Alert.alert('Selection Required', 'Please select a route');
+      return;
+    }
+
     // Navigate to map view with selected parameters
     const params = new URLSearchParams({
       organizationId: organizationDropdown.selectedValue,
       organizationName: organizationDropdown.selectedLabel || '',
+      routeId: routeDropdown.selectedValue,
+      routeName: routeDropdown.selectedLabel || '',
     });
-
-    if (routeDropdown.selectedValue) {
-      params.append('routeId', routeDropdown.selectedValue);
-      params.append('routeName', routeDropdown.selectedLabel || '');
-    }
 
     router.push(`/(tabs)/map/view?${params.toString()}`);
   };
@@ -179,12 +181,21 @@ export default function MapScreen() {
     items: { id?: string; value?: string; name?: string; label?: string }[],
     placeholder: string,
     onSelect: (item: any) => void,
-    isLoading?: boolean
+    isLoading?: boolean,
+    zIndexValue: number = 1000
   ) => (
-    <View style={styles.dropdownContainer}>
+    <View style={[styles.dropdownContainer, { zIndex: zIndexValue }]}>
       <TouchableOpacity
         style={[styles.dropdown, dropdown.isOpen && styles.dropdownOpen]}
-        onPress={() => setDropdown(prev => ({ ...prev, isOpen: !prev.isOpen }))}
+        onPress={() => {
+          // Close other dropdowns first
+          if (dropdown === organizationDropdown) {
+            setRouteDropdown(prev => ({ ...prev, isOpen: false }));
+          } else {
+            setOrganizationDropdown(prev => ({ ...prev, isOpen: false }));
+          }
+          setDropdown(prev => ({ ...prev, isOpen: !prev.isOpen }));
+        }}
         disabled={isLoading}
       >
         <Text style={[
@@ -263,13 +274,16 @@ export default function MapScreen() {
                 organizations,
                 "Select Organization",
                 handleOrganizationSelect,
-                loading
+                loading,
+                2000
               )
             )}
           </View>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Route (Optional)</Text>
+            <Text style={styles.label}>
+              Route <Text style={styles.required}>*</Text>
+            </Text>
             {loading ? (
               <DropdownSkeleton />
             ) : (
@@ -279,7 +293,8 @@ export default function MapScreen() {
                 routes,
                 "Select Route",
                 handleRouteSelect,
-                routesLoading
+                routesLoading,
+                1000
               )
             )}
             {!organizationDropdown.selectedValue && !loading && (
@@ -292,14 +307,14 @@ export default function MapScreen() {
           <TouchableOpacity
             style={[
               styles.searchButton,
-              !organizationDropdown.selectedValue && styles.searchButtonDisabled
+              (!organizationDropdown.selectedValue || !routeDropdown.selectedValue) && styles.searchButtonDisabled
             ]}
             onPress={handleSearchBuses}
-            disabled={!organizationDropdown.selectedValue}
+            disabled={!organizationDropdown.selectedValue || !routeDropdown.selectedValue}
           >
             <LinearGradient
               colors={
-                organizationDropdown.selectedValue
+                (organizationDropdown.selectedValue && routeDropdown.selectedValue)
                   ? [COLORS.brand.blue, COLORS.brand.orange]
                   : [COLORS.gray[300], COLORS.gray[400]]
               }
@@ -315,15 +330,9 @@ export default function MapScreen() {
 
         <View style={styles.infoContainer}>
           <View style={styles.infoItem}>
-            <Ionicons name="information-circle" size={20} color={COLORS.brand.blue} />
+            <Ionicons name="information-circle" size={20} color={COLORS.brand.orange} />
             <Text style={styles.infoText}>
-              Select an organization to view available routes and buses
-            </Text>
-          </View>
-          <View style={styles.infoItem}>
-            <Ionicons name="location" size={20} color={COLORS.brand.orange} />
-            <Text style={styles.infoText}>
-              Routes are optional - leave blank to see all buses for the organization
+              Both organization and route selection are required to proceed
             </Text>
           </View>
         </View>
@@ -383,7 +392,7 @@ const styles = StyleSheet.create({
   },
   dropdownContainer: {
     position: 'relative',
-    zIndex: 1000,
+    marginBottom: 4, // Add margin to prevent overlap
   },
   dropdown: {
     flexDirection: 'row',

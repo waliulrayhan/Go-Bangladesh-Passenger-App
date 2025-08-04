@@ -345,7 +345,7 @@ export default function History() {
     if (!trip) return null;
 
     // Safety checks for required data
-    const busName = trip.session?.bus?.busName || "Bus Name Not Available";
+    const busName = trip.session?.bus?.busName || "";
     const busNumber = trip.session?.bus?.busNumber || "N/A";
     const organization = trip.session?.bus?.organization;
     const sessionCode = trip.session?.sessionCode || "N/A";
@@ -1165,152 +1165,155 @@ export default function History() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Tab Headers */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "trips" && styles.activeTab]}
-            onPress={() => handleTabChange("trips")}
-          >
-            <Ionicons
-              name="bus"
-              size={20}
-              color={activeTab === "trips" ? COLORS.white : COLORS.gray[600]}
-            />
-            <Text
-              variant="labelSmall"
-              color={activeTab === "trips" ? COLORS.white : COLORS.gray[600]}
-              style={styles.tabText}
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          {/* Tab Headers */}
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === "trips" && styles.activeTab]}
+              onPress={() => handleTabChange("trips")}
             >
-              Trip History
-            </Text>
-          </TouchableOpacity>
+              <Ionicons
+                name="bus"
+                size={20}
+                color={activeTab === "trips" ? COLORS.white : COLORS.gray[600]}
+              />
+              <Text
+                variant="labelSmall"
+                color={activeTab === "trips" ? COLORS.white : COLORS.gray[600]}
+                style={styles.tabText}
+              >
+                Trip History
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "recharge" && styles.activeTab]}
-            onPress={() => handleTabChange("recharge")}
-          >
-            <Ionicons
-              name="card"
-              size={20}
-              color={activeTab === "recharge" ? COLORS.white : COLORS.gray[600]}
-            />
-            <Text
-              variant="labelSmall"
-              color={activeTab === "recharge" ? COLORS.white : COLORS.gray[600]}
-              style={styles.tabText}
+            <TouchableOpacity
+              style={[styles.tab, activeTab === "recharge" && styles.activeTab]}
+              onPress={() => handleTabChange("recharge")}
             >
-              Recharge History
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchInputContainer}>
-            <Ionicons name="search" size={20} color={COLORS.gray[500]} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={`Search ${
-                activeTab === "trips" ? "trips" : "recharges"
-              }...`}
-              placeholderTextColor={COLORS.gray[500]}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              clearButtonMode="while-editing"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery("")}>
-                <Ionicons
-                  name="close-circle"
-                  size={20}
-                  color={COLORS.gray[500]}
-                />
-              </TouchableOpacity>
-            )}
+              <Ionicons
+                name="card"
+                size={20}
+                color={activeTab === "recharge" ? COLORS.white : COLORS.gray[600]}
+              />
+              <Text
+                variant="labelSmall"
+                color={activeTab === "recharge" ? COLORS.white : COLORS.gray[600]}
+                style={styles.tabText}
+              >
+                Recharge History
+              </Text>
+            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Filter Header */}
-        <Animated.View
-          entering={FadeInDown.delay(200)}
-          style={styles.filterHeader}
-        >
-          <View style={styles.filterInfo}>
-            <Text variant="bodySmall" color={COLORS.gray[600]}>
-              {filteredData.length}{" "}
-              {activeTab === "trips" ? "trips" : "recharges"}
-              {/* Show total count if different from filtered count */}
-              {(() => {
-                const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
-                const totalCount = currentPagination.totalCount || 0;
-                const originalDataLength = activeTab === "trips" ? tripTransactions.length : rechargeTransactions.length;
-                
-                // Show total if we have filtering applied or if we have pagination info
-                if (searchQuery || filters.dateFilter !== "all" || 
-                    filters.minAmount !== undefined || filters.maxAmount !== undefined) {
-                  return (
-                    <Text variant="bodySmall" color={COLORS.gray[500]}>
-                      {" "}of {originalDataLength} loaded
-                    </Text>
-                  );
-                } else if (totalCount > 0 && totalCount > originalDataLength) {
-                  return (
-                    <Text variant="bodySmall" color={COLORS.gray[500]}>
-                      {" "}• {totalCount} total
-                    </Text>
-                  );
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputContainer}>
+              <Ionicons name="search" size={20} color={COLORS.gray[500]} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={`Search ${
+                  activeTab === "trips" ? "trips" : "recharges"
+                }...`}
+                placeholderTextColor={COLORS.gray[500]}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                clearButtonMode="while-editing"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Ionicons
+                    name="close-circle"
+                    size={20}
+                    color={COLORS.gray[500]}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Filter Header */}
+          <Animated.View
+            entering={FadeInDown.delay(200)}
+            style={styles.filterHeader}
+          >
+            <View style={styles.filterInfo}>
+              <Text variant="bodySmall" color={COLORS.gray[600]}>
+                {filteredData.length}{" "}
+                {activeTab === "trips" ? "trips" : "recharges"}
+                {/* Show total count if different from filtered count */}
+                {(() => {
+                  const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
+                  const totalCount = currentPagination.totalCount || 0;
+                  const originalDataLength = activeTab === "trips" ? tripTransactions.length : rechargeTransactions.length;
+                  
+                  // Show total if we have filtering applied or if we have pagination info
+                  if (searchQuery || filters.dateFilter !== "all" || 
+                      filters.minAmount !== undefined || filters.maxAmount !== undefined) {
+                    return (
+                      <Text variant="bodySmall" color={COLORS.gray[500]}>
+                        {" "}of {originalDataLength} loaded
+                      </Text>
+                    );
+                  } else if (totalCount > 0 && totalCount > originalDataLength) {
+                    return (
+                      <Text variant="bodySmall" color={COLORS.gray[500]}>
+                        {" "}• {totalCount} total
+                      </Text>
+                    );
+                  }
+                  return null;
+                })()}
+                {searchQuery && (
+                  <Text variant="bodySmall" color={COLORS.primary}>
+                    {" "}
+                    • "{searchQuery}"
+                  </Text>
+                )}
+                {filters.dateFilter !== "all" && (
+                  <Text variant="bodySmall" color={COLORS.primary}>
+                    {" "}
+                    • {getDateFilterLabel(filters.dateFilter)}
+                  </Text>
+                )}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                (filters.dateFilter !== "all" ||
+                  filters.minAmount !== undefined ||
+                  filters.maxAmount !== undefined) &&
+                  styles.filterButtonActive,
+              ]}
+              onPress={() => setShowFilterModal(true)}
+            >
+              <Ionicons
+                name="funnel"
+                size={16}
+                color={
+                  filters.dateFilter !== "all" ||
+                  filters.minAmount !== undefined ||
+                  filters.maxAmount !== undefined
+                    ? COLORS.white
+                    : COLORS.gray[600]
                 }
-                return null;
-              })()}
-              {searchQuery && (
-                <Text variant="bodySmall" color={COLORS.primary}>
-                  {" "}
-                  • "{searchQuery}"
-                </Text>
-              )}
-              {filters.dateFilter !== "all" && (
-                <Text variant="bodySmall" color={COLORS.primary}>
-                  {" "}
-                  • {getDateFilterLabel(filters.dateFilter)}
-                </Text>
-              )}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              (filters.dateFilter !== "all" ||
-                filters.minAmount !== undefined ||
-                filters.maxAmount !== undefined) &&
-                styles.filterButtonActive,
-            ]}
-            onPress={() => setShowFilterModal(true)}
-          >
-            <Ionicons
-              name="funnel"
-              size={16}
-              color={
-                filters.dateFilter !== "all" ||
-                filters.minAmount !== undefined ||
-                filters.maxAmount !== undefined
-                  ? COLORS.white
-                  : COLORS.gray[600]
-              }
-            />
-            <Text
-              variant="labelSmall"
-              color={
-                filters.dateFilter !== "all" ||
-                filters.minAmount !== undefined ||
-                filters.maxAmount !== undefined
-                  ? COLORS.white
-                  : COLORS.gray[600]
-              }
-            >
-              Filter
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
+              />
+              <Text
+                variant="labelSmall"
+                color={
+                  filters.dateFilter !== "all" ||
+                  filters.minAmount !== undefined ||
+                  filters.maxAmount !== undefined
+                    ? COLORS.white
+                    : COLORS.gray[600]
+                }
+              >
+                Filter
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
 
         {/* Error Display */}
         {error && (
@@ -1378,13 +1381,21 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  headerSection: {
+    backgroundColor: COLORS.gray[50],
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[100],
+  },
   listContent: {
     paddingBottom: 20,
   },
   tabContainer: {
     flexDirection: "row",
     backgroundColor: COLORS.white,
-    margin: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
     borderRadius: 12,
     padding: 4,
     borderWidth: 1,
@@ -1501,7 +1512,7 @@ const styles = StyleSheet.create({
     // Font properties handled by Text component
   },
   fareAmount: {
-    paddingTop: 12,
+    paddingTop: 20,
     // Font properties handled by Text component
   },
   rechargeAmount: {
