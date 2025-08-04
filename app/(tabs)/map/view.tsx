@@ -3,14 +3,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { PulsingDot } from '../../../components/PulsingDot';
@@ -132,11 +132,14 @@ export default function MapViewScreen() {
             .bus-marker {
               position: relative;
               z-index: 1000;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
             }
             
             .bus-marker-inner {
-              width: 20px;
-              height: 20px;
+              width: 24px;
+              height: 24px;
               background: linear-gradient(135deg, #4A90E2 0%, #2E5C8A 100%);
               border: 3px solid white;
               border-radius: 50%;
@@ -150,8 +153,25 @@ export default function MapViewScreen() {
             
             .bus-marker-inner::before {
               content: '🚌';
-              font-size: 10px;
+              font-size: 12px;
               position: absolute;
+            }
+            
+            .bus-marker-label {
+              background: rgba(74, 144, 226, 0.95);
+              color: white;
+              padding: 4px 8px;
+              border-radius: 12px;
+              font-size: 11px;
+              font-weight: 600;
+              margin-top: 4px;
+              white-space: nowrap;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+              backdrop-filter: blur(10px);
+              border: 1px solid rgba(255,255,255,0.3);
+              max-width: 120px;
+              overflow: hidden;
+              text-overflow: ellipsis;
             }
             
             .bus-marker-shadow {
@@ -298,7 +318,8 @@ export default function MapViewScreen() {
             .leaflet-control-zoom {
               border-radius: 12px;
               overflow: hidden;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+              border: 1px solid rgba(255,255,255,0.3);
             }
             
             .leaflet-control-zoom a {
@@ -308,11 +329,46 @@ export default function MapViewScreen() {
               font-weight: bold;
               border: none;
               transition: all 0.2s ease;
+              width: 36px;
+              height: 36px;
+              line-height: 36px;
             }
             
             .leaflet-control-zoom a:hover {
               background: #4A90E2;
               color: white;
+              transform: scale(1.05);
+            }
+            
+            .leaflet-control-layers {
+              border-radius: 12px;
+              background: rgba(255,255,255,0.95);
+              backdrop-filter: blur(10px);
+              border: 1px solid rgba(255,255,255,0.3);
+              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            
+            .leaflet-control-layers-toggle {
+              background: rgba(255,255,255,0.95);
+              width: 36px;
+              height: 36px;
+            }
+            
+            /* Improve map tile rendering */
+            .leaflet-tile {
+              filter: contrast(1.05) saturate(1.1) brightness(1.02);
+            }
+            
+            /* Custom attribution styling */
+            .leaflet-control-attribution {
+              background: rgba(0,0,0,0.7);
+              color: white;
+              font-size: 10px;
+              border-radius: 8px 8px 0 0;
+            }
+            
+            .leaflet-control-attribution a {
+              color: #87CEEB;
             }
           </style>
         </head>
@@ -334,15 +390,42 @@ export default function MapViewScreen() {
                 keyboard: true,
                 dragging: true,
                 touchZoom: true,
-              }).setView([${defaultLat}, ${defaultLng}], 12);
+                zoomAnimation: true,
+                fadeAnimation: true,
+                markerZoomAnimation: true,
+                preferCanvas: false,
+                renderer: L.svg({ padding: 0.5 })
+              }).setView([${defaultLat}, ${defaultLng}], 13);
               
-              // Add tile layer with custom styling
+              // Add tile layer with custom styling - Using higher quality tiles
               L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19,
+                maxZoom: 20,
+                minZoom: 8,
                 tileSize: 256,
                 zoomOffset: 0,
+                updateWhenIdle: false,
+                updateWhenZooming: true,
+                keepBuffer: 2,
               }).addTo(map);
+              
+              // Add high-quality satellite layer as alternative
+              const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                maxZoom: 20,
+                minZoom: 8,
+              });
+              
+              // Layer control to switch between map types
+              const baseMaps = {
+                "Street Map": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                  attribution: '&copy; OpenStreetMap contributors',
+                  maxZoom: 20,
+                }),
+                "Satellite": satelliteLayer
+              };
+              
+              L.control.layers(baseMaps).addTo(map);
               
               // Initial bus markers
               updateBusMarkers(${JSON.stringify(buses)});
@@ -353,14 +436,21 @@ export default function MapViewScreen() {
               }
             }
             
-            // Enhanced custom bus icon
-            function createBusIcon() {
+            // Enhanced custom bus icon with name label
+            function createBusIcon(busName, busNumber) {
+              const displayName = busName || busNumber || 'Bus';
+              const shortName = displayName.length > 15 ? displayName.substring(0, 12) + '...' : displayName;
+              
               return L.divIcon({
-                html: '<div class="bus-marker"><div class="bus-marker-shadow"></div><div class="bus-marker-inner"></div></div>',
+                html: '<div class="bus-marker">' +
+                        '<div class="bus-marker-shadow"></div>' +
+                        '<div class="bus-marker-inner"></div>' +
+                        '<div class="bus-marker-label">' + shortName + '</div>' +
+                      '</div>',
                 className: 'custom-bus-marker',
-                iconSize: [26, 26],
-                iconAnchor: [13, 13],
-                popupAnchor: [0, -13]
+                iconSize: [120, 60],
+                iconAnchor: [60, 30],
+                popupAnchor: [0, -30]
               });
             }
             
@@ -376,7 +466,9 @@ export default function MapViewScreen() {
                 const lng = parseFloat(bus.presentLongitude);
                 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                  const marker = L.marker([lat, lng], { icon: createBusIcon() })
+                  const marker = L.marker([lat, lng], { 
+                    icon: createBusIcon(bus.busName, bus.busNumber) 
+                  })
                     .bindPopup(
                       '<div class="bus-popup">' +
                         '<div class="bus-popup-header">' +
@@ -418,11 +510,18 @@ export default function MapViewScreen() {
               setTimeout(() => {
                 if (busMarkers.length > 1) {
                   const group = new L.featureGroup(busMarkers);
-                  map.fitBounds(group.getBounds().pad(0.15));
+                  map.fitBounds(group.getBounds().pad(0.2), {
+                    maxZoom: 16,
+                    animate: true,
+                    duration: 1.0
+                  });
                 } else if (busMarkers.length === 1) {
-                  map.setView(busMarkers[0].getLatLng(), 15);
+                  map.setView(busMarkers[0].getLatLng(), 16, {
+                    animate: true,
+                    duration: 1.0
+                  });
                 }
-              }, busData.length * 100 + 200);
+              }, busData.length * 100 + 300);
             }
             
             // Handle messages from React Native
@@ -632,8 +731,8 @@ const styles = StyleSheet.create({
   },
   realTimeIndicator: {
     position: 'absolute',
-    top: 120,
-    left: 16,
+    top: 160,
+    right: 5,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
