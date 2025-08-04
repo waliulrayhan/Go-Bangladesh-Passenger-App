@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { apiService } from '../services/api';
 import { COLORS, SPACING } from '../utils/constants';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -101,11 +102,27 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
     setError('');
 
     try {
+      // First check if the card is valid and available
+      const cardValidationResponse = await apiService.checkCardValidity(cardNumber.trim());
+      
+      if (!cardValidationResponse.isSuccess) {
+        setError(cardValidationResponse.message || 'Card is not valid or not available');
+        return;
+      }
+
+      // If card is valid, proceed to send OTP
       await onSendOTP(cardNumber.trim());
       setStep('otp-verification');
       setOtpTimer(60); // 60 seconds countdown
     } catch (error: any) {
-      setError(error.message || 'Failed to send OTP');
+      // Handle specific error messages from card validation
+      if (error.response?.data?.data?.message) {
+        setError(error.response.data.data.message);
+      } else if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError(error.message || 'Failed to validate card or send OTP');
+      }
     } finally {
       setIsLoading(false);
     }
