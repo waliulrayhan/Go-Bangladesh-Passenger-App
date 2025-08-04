@@ -169,9 +169,8 @@ export default function MapViewScreen() {
               box-shadow: 0 2px 8px rgba(0,0,0,0.2);
               backdrop-filter: blur(10px);
               border: 1px solid rgba(255,255,255,0.3);
-              max-width: 120px;
-              overflow: hidden;
-              text-overflow: ellipsis;
+              min-width: 60px;
+              text-align: center;
             }
             
             .bus-marker-shadow {
@@ -436,20 +435,19 @@ export default function MapViewScreen() {
               }
             }
             
-            // Enhanced custom bus icon with name label
+            // Enhanced custom bus icon with full name label
             function createBusIcon(busName, busNumber) {
               const displayName = busName || busNumber || 'Bus';
-              const shortName = displayName.length > 15 ? displayName.substring(0, 12) + '...' : displayName;
               
               return L.divIcon({
                 html: '<div class="bus-marker">' +
                         '<div class="bus-marker-shadow"></div>' +
                         '<div class="bus-marker-inner"></div>' +
-                        '<div class="bus-marker-label">' + shortName + '</div>' +
+                        '<div class="bus-marker-label">' + displayName + '</div>' +
                       '</div>',
                 className: 'custom-bus-marker',
-                iconSize: [120, 60],
-                iconAnchor: [60, 30],
+                iconSize: [Math.max(120, displayName.length * 8), 60],
+                iconAnchor: [Math.max(60, displayName.length * 4), 30],
                 popupAnchor: [0, -30]
               });
             }
