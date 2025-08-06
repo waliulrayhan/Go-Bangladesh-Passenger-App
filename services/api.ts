@@ -772,8 +772,36 @@ class ApiService {
     }
   }
 
-  // OTP API methods
+    // OTP API methods
   async sendOTP(mobileNumber: string): Promise<boolean> {
+    console.log('📱 [OTP] Sending OTP to:', mobileNumber);
+
+    try {
+      const response = await this.api.get<ApiResponse<null>>(
+        `/api/otp/SendOtp?mobileNumber=${mobileNumber}`
+      );
+
+      console.log('📥 [OTP] Send response:', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message
+      });
+
+      if (!response.data.data.isSuccess) {
+        console.error('❌ [OTP] Send failed:', response.data.data.message);
+        throw new Error(response.data.data.message || 'Failed to send OTP');
+      }
+
+      console.log('✅ [OTP] OTP sent successfully');
+      return true;
+    } catch (error: any) {
+      console.error('💥 [OTP] Send error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  // OTP API methods
+  async sendOTPForForgotPassword(mobileNumber: string): Promise<boolean> {
     console.log('📱 [OTP] Sending OTP to:', mobileNumber);
 
     try {
@@ -868,6 +896,28 @@ class ApiService {
     try {
       const response = await this.api.get<ApiResponse<null>>(
         `/api/card/CheckCardValidity?cardNumber=${cardNumber}`
+      );
+
+      console.log('📥 [CARD] Validation response:', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message
+      });
+
+      return response.data.data;
+    } catch (error: any) {
+      console.error('💥 [CARD] Validation error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+    // Card validation API methods
+  async checkCardValidityRegistration(cardNumber: string): Promise<CardValidationResponse> {
+    console.log('🃏 [CARD] Checking card validity for:', cardNumber);
+
+    try {
+      const response = await this.api.get<ApiResponse<null>>(
+        `/api/card/CheckCardValidityForRegistration?cardNumber=${cardNumber}`
       );
 
       console.log('📥 [CARD] Validation response:', {

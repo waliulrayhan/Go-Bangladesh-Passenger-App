@@ -56,7 +56,7 @@ export default function PassengerRegistration() {
     try {
       // Check card validity using API
       console.log("🔍 Checking card validity for:", cardNumber);
-      const validationResponse = await apiService.checkCardValidity(
+      const validationResponse = await apiService.checkCardValidityRegistration(
         cardNumber.trim()
       );
 
@@ -218,8 +218,8 @@ export default function PassengerRegistration() {
             <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
               <Text style={styles.loginText}>
                 Already have an account?{" "}
-                <Text style={styles.loginLink}>Sign In</Text>
               </Text>
+              <Text style={styles.loginLink}>Sign In</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>

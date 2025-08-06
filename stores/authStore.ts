@@ -120,6 +120,7 @@ interface AuthState {
   loadUserFromStorage: () => Promise<void>;
   clearError: () => void;
   sendOTP: (mobile: string) => Promise<boolean>;
+  sendOTPForForgotPassword: (mobile: string) => Promise<boolean>;
   checkCardExists: (cardNumber: string) => Promise<boolean>;
   verifyOTP: (mobile: string, otp: string) => Promise<boolean>;
   sendPasswordReset: (identifier: string) => Promise<boolean>;
@@ -153,6 +154,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       // Use the new OTP API to send OTP
       await apiService.sendOTP(mobile);
+      
+      // Store the mobile number temporarily for the verification process
+      await storageService.setItem('temp_mobile', mobile);
+      
+      set({ isLoading: false });
+      return true;
+    } catch (error: any) {
+      const errorMessage = formatApiError(error, 'Failed to send OTP');
+      
+      set({
+        isLoading: false,
+        error: errorMessage
+      });
+      return false;
+    }
+  },
+
+    sendOTPForForgotPassword: async (mobile: string) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      // Use the new OTP API to send OTP
+      await apiService.sendOTPForForgotPassword(mobile);
       
       // Store the mobile number temporarily for the verification process
       await storageService.setItem('temp_mobile', mobile);

@@ -29,7 +29,7 @@ interface PersonalForm {
   name: string;
   phone: string;
   email: string;
-  gender: "male" | "female" | "";
+  gender: "Male" | "Female" | "";
   address: string;
   dateOfBirth: string;
   password: string;
@@ -426,21 +426,21 @@ export default function RegistrationPersonalInfo() {
                     <TouchableOpacity
                       style={[
                         styles.genderButton,
-                        form.gender === "male" && styles.genderButtonActive,
+                        form.gender === "Male" && styles.genderButtonActive,
                       ]}
-                      onPress={() => updateForm("gender", "male")}
+                      onPress={() => updateForm("gender", "Male")}
                     >
                       <Ionicons
                         name="male"
                         size={20}
                         color={
-                          form.gender === "male" ? COLORS.white : COLORS.primary
+                          form.gender === "Male" ? COLORS.white : COLORS.primary
                         }
                       />
                       <Text
                         style={[
                           styles.genderButtonText,
-                          form.gender === "male" &&
+                          form.gender === "Male" &&
                             styles.genderButtonTextActive,
                         ]}
                       >
@@ -451,15 +451,15 @@ export default function RegistrationPersonalInfo() {
                     <TouchableOpacity
                       style={[
                         styles.genderButton,
-                        form.gender === "female" && styles.genderButtonActive,
+                        form.gender === "Female" && styles.genderButtonActive,
                       ]}
-                      onPress={() => updateForm("gender", "female")}
+                      onPress={() => updateForm("gender", "Female")}
                     >
                       <Ionicons
                         name="female"
                         size={20}
                         color={
-                          form.gender === "female"
+                          form.gender === "Female"
                             ? COLORS.white
                             : COLORS.primary
                         }
@@ -467,7 +467,7 @@ export default function RegistrationPersonalInfo() {
                       <Text
                         style={[
                           styles.genderButtonText,
-                          form.gender === "female" &&
+                          form.gender === "Female" &&
                             styles.genderButtonTextActive,
                         ]}
                       >

@@ -30,7 +30,7 @@ export default function ForgotPassword() {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [timer, setTimer] = useState(0);
 
-  const { sendOTP, verifyOTP, isLoading, error, clearError } = useAuthStore();
+  const { sendOTPForForgotPassword, verifyOTP, isLoading, error, clearError } = useAuthStore();
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   // Get indicator color based on validation state for mobile
@@ -101,7 +101,7 @@ export default function ForgotPassword() {
     }
 
     const formattedMobile = formatMobile(mobile);
-    const success = await sendOTP(formattedMobile);
+    const success = await sendOTPForForgotPassword(formattedMobile);
 
     if (success) {
       setIsOtpSent(true);
@@ -259,7 +259,7 @@ export default function ForgotPassword() {
 
     clearError();
     const formattedMobile = formatMobile(mobile);
-    const success = await sendOTP(formattedMobile);
+    const success = await sendOTPForForgotPassword(formattedMobile);
 
     if (success) {
       setTimer(60);
