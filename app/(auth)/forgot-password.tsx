@@ -33,6 +33,16 @@ export default function ForgotPassword() {
   const { sendOTP, verifyOTP, isLoading, error, clearError } = useAuthStore();
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
+  // Get indicator color based on validation state for mobile
+  const getIndicatorColor = () => {
+    if (mobile.length === 11 && validateMobile(mobile)) {
+      return COLORS.success;
+    } else if (mobile.length > 11) {
+      return COLORS.error;
+    }
+    return COLORS.primary;
+  };
+
   // Timer effect for OTP resend
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -507,6 +517,27 @@ export default function ForgotPassword() {
                   autoCapitalize="none"
                 />
 
+                {mobile.trim() && (
+                  <View
+                    style={[
+                      styles.inputTypeIndicator,
+                      {
+                        borderColor: getIndicatorColor() + "50",
+                        backgroundColor: getIndicatorColor() + "10",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.inputTypeText,
+                        { color: getIndicatorColor() },
+                      ]}
+                    >
+                      Mobile
+                    </Text>
+                  </View>
+                )}
+
                 {error && (
                   <Animated.View
                     entering={FadeInDown.duration(300)}
@@ -604,6 +635,22 @@ const styles = StyleSheet.create({
   loginContent: {
     padding: SPACING.md,
     gap: SPACING.sm,
+  },
+  inputTypeIndicator: {
+    position: "absolute",
+    right: 20,
+    top: 49,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  inputTypeText: {
+    fontSize: 10,
+    fontWeight: "600",
+    marginLeft: 4,
   },
   otpCard: {
     marginBottom: SPACING.md,

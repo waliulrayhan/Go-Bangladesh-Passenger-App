@@ -371,7 +371,7 @@ export default function History() {
               >
                 {busNumber}
               </Text>
-              {busName && busName !== "" && (
+              {/* {busName && busName !== "" && (
                 <Text
                   variant="caption"
                   color={COLORS.gray[600]}
@@ -379,7 +379,7 @@ export default function History() {
                 >
                   {busName}
                 </Text>
-              )}
+              )} */}
               {organization && (
                 <Text
                   variant="caption"
@@ -1201,7 +1201,7 @@ export default function History() {
                 color={activeTab === "recharge" ? COLORS.white : COLORS.gray[600]}
                 style={styles.tabText}
               >
-                Recharge History
+                Wallet History
               </Text>
             </TouchableOpacity>
           </View>
@@ -1508,11 +1508,11 @@ const styles = StyleSheet.create({
     // Font properties handled by Text component
   },
   cardDate: {
-    marginTop: 2,
+    marginTop: 4,
     // Font properties handled by Text component
   },
   fareAmount: {
-    paddingTop: 20,
+    paddingTop: 30,
     // Font properties handled by Text component
   },
   rechargeAmount: {
@@ -1547,36 +1547,36 @@ const styles = StyleSheet.create({
   timeLabel: {
     marginBottom: 4,
     // Font properties handled by Text component
-  },
-  timeButton: {
+    },
+    timeButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     padding: SPACING.xs,
-    backgroundColor: COLORS.gray[100],
+    backgroundColor: COLORS.gray[50],
     borderRadius: 6,
-  },
-  tapInButton: {
+    },
+    tapInButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     padding: SPACING.xs,
-    backgroundColor: "#E8F5E8",
-    borderRadius: 6,
-    justifyContent: "center",
-    minHeight: 32,
-  },
-  tapOutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    padding: SPACING.xs,
-    backgroundColor: "#FFE8E8",
+    backgroundColor: "#F1F8E9",
     borderRadius: 6,
     justifyContent: "center",
     minHeight: 32,
-  },
-  timeText: {
+    },
+    tapOutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    padding: SPACING.xs,
+    backgroundColor: "#FFF3F3",
+    borderRadius: 6,
+    justifyContent: "center",
+    minHeight: 32,
+    },
+    timeText: {
     color: COLORS.gray[700],
     // Font properties handled by Text component
   },

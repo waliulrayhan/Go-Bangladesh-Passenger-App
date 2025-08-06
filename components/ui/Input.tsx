@@ -15,6 +15,7 @@ interface InputProps {
   secureTextEntry?: boolean;
   keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoCorrect?: boolean;
   editable?: boolean;
   icon?: keyof typeof Ionicons.glyphMap;
   rightIcon?: keyof typeof Ionicons.glyphMap;

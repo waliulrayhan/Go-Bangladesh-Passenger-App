@@ -11,6 +11,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import {
+  determineInputType,
+  getIconForInput,
+  getKeyboardTypeForInput,
+  getPlaceholderForInput,
+  getValidationErrorMessage,
+  validateInput,
+} from "../../utils/inputTypeDetector";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { GoBangladeshLogo } from "../../components/GoBangladeshLogo";
 import { Button } from "../../components/ui/Button";
@@ -37,23 +45,44 @@ export default function PassengerLogin() {
     router.back();
   };
 
-  const validateIdentifier = (input: string) => {
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // Validate Bangladeshi mobile number format
-    const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
+  // Real-time input type detection
+  const inputType = determineInputType(identifier);
+  const dynamicKeyboardType = getKeyboardTypeForInput(identifier);
+  const dynamicPlaceholder = getPlaceholderForInput(identifier);
+  const dynamicIcon = getIconForInput(identifier);
 
-    return emailRegex.test(input) || phoneRegex.test(input);
+  // Get indicator color based on validation state
+  const getIndicatorColor = () => {
+    if (inputType === "email") {
+      return validateInput(identifier) ? COLORS.success : COLORS.primary;
+    } else if (inputType === "mobile") {
+      if (identifier.length === 11 && validateInput(identifier)) {
+        return COLORS.success;
+      } else if (identifier.length > 11) {
+        return COLORS.error;
+      }
+      return COLORS.primary;
+    }
+    return COLORS.primary;
+  };
+
+  // Handle input change with mobile number filtering
+  const handleIdentifierChange = (text: string) => {
+    // If current input type is mobile, only allow digits
+    if (determineInputType(identifier) === "mobile" && text.length > 0) {
+      // Remove non-digit characters for mobile input
+      const numericOnly = text.replace(/\D/g, "");
+      setIdentifier(numericOnly);
+    } else {
+      setIdentifier(text);
+    }
   };
 
   const handleLogin = async () => {
     clearError();
 
-    if (!validateIdentifier(identifier)) {
-      Alert.alert(
-        "Error",
-        "Please enter a valid email address or Bangladeshi mobile number (e.g., user@example.com or 01712345678)"
-      );
+    if (!validateInput(identifier)) {
+      Alert.alert("Error", getValidationErrorMessage(identifier));
       return;
     }
 
@@ -114,14 +143,41 @@ export default function PassengerLogin() {
             <Card variant="elevated" style={styles.loginCard}>
               <View style={styles.loginContent}>
                 <Input
-                  label="Email or Mobile Number"
+                  label="Email or Phone Number"
                   value={identifier}
-                  onChangeText={setIdentifier}
-                  placeholder="Enter your email or mobile number"
-                  keyboardType="email-address"
-                  icon="person"
+                  onChangeText={handleIdentifierChange}
+                  placeholder={dynamicPlaceholder}
+                  keyboardType={dynamicKeyboardType}
                   autoCapitalize="none"
+                  autoCorrect={false}
+                  icon={dynamicIcon}
+                  maxLength={inputType === "mobile" ? 11 : undefined}
                 />
+                {identifier.trim() && (
+                  <View
+                    style={[
+                      styles.inputTypeIndicator,
+                      {
+                        borderColor: getIndicatorColor() + "50",
+                        backgroundColor: getIndicatorColor() + "10",
+                      },
+                    ]}
+                  >
+                    {/* <Ionicons
+                      name={inputType === "email" ? "mail" : "call"}
+                      size={12}
+                      color={getIndicatorColor()}
+                    /> */}
+                    <Text
+                      style={[
+                        styles.inputTypeText,
+                        { color: getIndicatorColor() },
+                      ]}
+                    >
+                      {inputType === "email" ? "Email" : `Mobile`}
+                    </Text>
+                  </View>
+                )}
 
                 <Input
                   label="Password"
@@ -241,6 +297,25 @@ const styles = StyleSheet.create({
   loginContent: {
     padding: SPACING.md,
     gap: SPACING.sm,
+  },
+  inputTypeIndicator: {
+    position: "absolute",
+    right: 20,
+    top: 49,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.primary + "10",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.primary + "30",
+  },
+  inputTypeText: {
+    fontSize: 10,
+    color: COLORS.primary,
+    fontWeight: "600",
+    marginLeft: 4,
   },
   errorContainer: {
     flexDirection: "row",
