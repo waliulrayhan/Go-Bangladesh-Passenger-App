@@ -419,7 +419,7 @@ export default function Dashboard() {
                 </Text>
               </View>
               <Text variant="h6" style={styles.busText} numberOfLines={1}>
-                {currentTrip?.busName || "N/A"}
+                {currentTrip?.busName || "Bus Name Not Available!"}
               </Text>
               <Text
                 variant="caption"

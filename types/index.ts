@@ -171,6 +171,7 @@ export interface Transaction {
 export interface Trip {
   tripId: string;
   cardId: string;
+  cardNumber: string;
   sessionId: string;
   startingLatitude: string;
   startingLongitude: string;

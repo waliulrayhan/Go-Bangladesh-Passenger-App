@@ -411,39 +411,49 @@ export const useCardStore = create<CardState>((set, get) => ({
         name: user.name
       });
 
-      // Use user.cardNumber for the new API
-      const cardNumber = user.cardNumber;
+      // Debug trip data structure
+      console.log('🔍 [FORCE TAP OUT] Trip data available:', {
+        tripId: state.currentTrip.tripId,
+        cardId: state.currentTrip.cardId,
+        cardNumber: state.currentTrip.cardNumber,
+        sessionId: state.currentTrip.sessionId,
+        busName: state.currentTrip.busName,
+        busNumber: state.currentTrip.busNumber
+      });
 
-      if (!cardNumber) {
-        console.log('❌ [FORCE TAP OUT] No card number found for user');
+      // Use cardId from the current trip for the new API
+      const cardId = state.currentTrip.cardId;
+
+      if (!cardId) {
+        console.log('❌ [FORCE TAP OUT] No card ID found in current trip');
         return {
           success: false,
-          message: 'Card number not found. Please contact support.'
+          message: 'Card ID not found in trip data. Please contact support.'
         };
       }
 
-      console.log('💡 [FORCE TAP OUT] Using cardNumber:', cardNumber);
+      console.log('💡 [FORCE TAP OUT] Using cardId:', cardId);
 
       const tripId = state.currentTrip.tripId;
       const sessionId = state.currentTrip.sessionId;
 
       console.log('📋 [FORCE TAP OUT] Trip details:', {
-        cardNumber,
+        cardId,
         tripId,
         sessionId,
         currentTripData: state.currentTrip
       });
 
       // Ensure all required IDs are available
-      if (!cardNumber || !tripId || !sessionId) {
-        console.log('❌ [FORCE TAP OUT] Missing required IDs:', { cardNumber, tripId, sessionId });
+      if (!cardId || !tripId || !sessionId) {
+        console.log('❌ [FORCE TAP OUT] Missing required IDs:', { cardId, tripId, sessionId });
         return {
           success: false,
           message: 'Missing required trip information. Please try again.'
         };
       }
 
-      const result = await apiService.forceTripStop(cardNumber, tripId, sessionId);
+      const result = await apiService.forceTripStop(cardId, tripId, sessionId);
 
       if (result.success) {
         console.log('✅ [FORCE TAP OUT] Force tap out successful, updating state');

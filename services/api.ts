@@ -111,6 +111,7 @@ export interface UserResponse {
 export interface Trip {
   tripId: string;
   cardId: string;
+  cardNumber: string;
   sessionId: string;
   startingLatitude: string;
   startingLongitude: string;
@@ -653,8 +654,12 @@ class ApiService {
       const tripData = response.data.data.content;
       console.log('✅ [TRIP] Ongoing trip found:', {
         tripId: tripData.tripId,
+        cardId: tripData.cardId,
+        cardNumber: tripData.cardNumber,
         busName: tripData.busName,
-        route: `${tripData.tripStartPlace} → ${tripData.tripEndPlace}`
+        busNumber: tripData.busNumber,
+        route: `${tripData.tripStartPlace} → ${tripData.tripEndPlace}`,
+        penaltyAmount: tripData.penaltyAmount
       });
 
       return tripData;
@@ -709,13 +714,13 @@ class ApiService {
     }
   }
 
-  async forceTripStop(cardNumber: string, tripId: string, sessionId: string): Promise<{ success: boolean; message: string }> {
+  async forceTripStop(cardId: string, tripId: string, sessionId: string): Promise<{ success: boolean; message: string }> {
     console.log('🚌 [FORCE TAP OUT] Attempting force trip stop...');
-    console.log('📋 [FORCE TAP OUT] Request payload:', { cardNumber, tripId, sessionId });
+    console.log('📋 [FORCE TAP OUT] Request payload:', { cardId, tripId, sessionId });
 
     try {
       const payload = {
-        cardNumber,
+        cardId,
         tripId,
         sessionId
       };
