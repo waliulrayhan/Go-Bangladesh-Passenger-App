@@ -116,6 +116,8 @@ export default function ResetPassword() {
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            bounces={false}
+            overScrollMode="never"
           >
             <Animated.View
               entering={FadeInUp.duration(800)}
@@ -272,8 +274,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingTop: 100, // Space for back button
     paddingBottom: SPACING.lg,
-    justifyContent: "center",
-    minHeight: "100%",
   },
   backButton: {
     position: "absolute",

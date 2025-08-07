@@ -348,6 +348,8 @@ export default function ForgotPassword() {
               contentContainerStyle={styles.scrollContent}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
+              bounces={false}
+              overScrollMode="never"
             >
               <Animated.View
                 entering={FadeInUp.duration(800)}
@@ -507,6 +509,8 @@ export default function ForgotPassword() {
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            bounces={false}
+            overScrollMode="never"
           >
             <Animated.View
               entering={FadeInUp.duration(800)}
@@ -628,7 +632,6 @@ const styles = StyleSheet.create({
     paddingTop: 80, // Space for back button
     paddingBottom: SPACING.lg,
     justifyContent: "center",
-    minHeight: "100%",
   },
   content: {
     flex: 1,

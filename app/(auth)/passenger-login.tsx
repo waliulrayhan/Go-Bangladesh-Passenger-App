@@ -168,6 +168,8 @@ export default function PassengerLogin() {
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            bounces={false}
+            overScrollMode="never"
           >
             {/* Header section with logo and title */}
             <Animated.View
@@ -324,8 +326,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingTop: 80, // Space for back button
     paddingBottom: SPACING.lg,
-    justifyContent: "center",
-    minHeight: "100%",
   },
   content: {
     flex: 1,
