@@ -182,7 +182,7 @@ export default function Dashboard() {
           <View style={styles.logoContainer}>
             <View style={styles.logoBackground}>
               <Image
-                source={require("../../assets/images/icon-full-01.png")}
+                source={require("../../assets/images/appIconPng1024_lg.png")}
                 style={styles.logoImage}
                 resizeMode="contain"
               />
@@ -331,22 +331,6 @@ export default function Dashboard() {
             {/* ৳ */}
           </Text>
         </View>
-
-        {/* Bottom Section - Brand name with logo on the left */}
-        {/* <View style={styles.cardBottomSection}>
-          <View style={styles.brandContainer}>
-            <View style={styles.brandLogo}>
-              <Image 
-                source={require('../../assets/images/icon-full-01.png')} 
-                style={styles.brandLogoImage} 
-                resizeMode="contain"
-              />
-            </View>
-            <Text variant="bodySmall" color={COLORS.white} style={styles.cardBrandName}>
-              GO BANGLADESH RFID CARD
-            </Text>
-          </View>
-        </View> */}
       </LinearGradient>
     </Animated.View>
   );
@@ -761,8 +745,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logoImage: {
-    width: 28,
-    height: 28,
+    width: 55,
+    height: 55,
   },
   brandTextContainer: {
     flex: 1,
