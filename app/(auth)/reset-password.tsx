@@ -5,7 +5,10 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -104,142 +107,152 @@ export default function ResetPassword() {
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
 
-        <View style={styles.content}>
-          <Animated.View
-            entering={FadeInUp.duration(800)}
-            style={styles.header}
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <View style={styles.iconContainer}>
-              <Ionicons name="lock-closed" size={40} color={COLORS.primary} />
-            </View>
-            <Text variant="h3" style={styles.title}>
-              Reset Password
-            </Text>
-            <Text style={styles.subtitle}>
-              Create a new password for your account: {mobile}
-            </Text>
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-            <Card variant="elevated" style={styles.formCard}>
-              <View style={styles.formContent}>
-                <Input
-                  label="New Password"
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  placeholder="Enter new password"
-                  secureTextEntry={!showPassword}
-                  icon="lock-closed"
-                  rightIcon={showPassword ? "eye-off" : "eye"}
-                  onRightIconPress={() => setShowPassword(!showPassword)}
-                  autoCapitalize="none"
-                />
-
-                <Input
-                  label="Confirm New Password"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="Confirm new password"
-                  secureTextEntry={!showConfirmPassword}
-                  icon="lock-closed"
-                  rightIcon={showConfirmPassword ? "eye-off" : "eye"}
-                  onRightIconPress={() =>
-                    setShowConfirmPassword(!showConfirmPassword)
-                  }
-                  autoCapitalize="none"
-                />
-
-                {error && (
-                  <Animated.View
-                    entering={FadeInDown.duration(300)}
-                    style={styles.errorContainer}
-                  >
-                    <Ionicons
-                      name="alert-circle"
-                      size={16}
-                      color={COLORS.error}
-                    />
-                    <Text style={styles.errorText}>{error}</Text>
-                  </Animated.View>
-                )}
-
-                <View style={styles.passwordRequirements}>
-                  <Text style={styles.requirementsTitle}>
-                    Password requirements:
-                  </Text>
-                  <View style={styles.requirement}>
-                    <Ionicons
-                      name={
-                        newPassword.length >= 8
-                          ? "checkmark-circle"
-                          : "ellipse-outline"
-                      }
-                      size={16}
-                      color={
-                        newPassword.length >= 8
-                          ? COLORS.success
-                          : COLORS.gray[400]
-                      }
-                    />
-                    <Text
-                      style={[
-                        styles.requirementText,
-                        newPassword.length >= 8 && styles.requirementMet,
-                      ]}
-                    >
-                      At least 8 characters
-                    </Text>
-                  </View>
-                  <View style={styles.requirement}>
-                    <Ionicons
-                      name={
-                        newPassword === confirmPassword && newPassword
-                          ? "checkmark-circle"
-                          : "ellipse-outline"
-                      }
-                      size={16}
-                      color={
-                        newPassword === confirmPassword && newPassword
-                          ? COLORS.success
-                          : COLORS.gray[400]
-                      }
-                    />
-                    <Text
-                      style={[
-                        styles.requirementText,
-                        newPassword === confirmPassword &&
-                          newPassword &&
-                          styles.requirementMet,
-                      ]}
-                    >
-                      Passwords match
-                    </Text>
-                  </View>
-                </View>
-
-                <Button
-                  title="Reset Password"
-                  onPress={handleResetPassword}
-                  loading={isLoading}
-                  variant="primary"
-                  size="medium"
-                  fullWidth
-                  icon="checkmark"
-                />
+            <Animated.View
+              entering={FadeInUp.duration(800)}
+              style={styles.header}
+            >
+              <View style={styles.iconContainer}>
+                <Ionicons name="lock-closed-outline" size={40} color={COLORS.primary} />
               </View>
-            </Card>
-          </Animated.View>
+              <Text variant="h3" style={styles.title}>
+                Reset Password
+              </Text>
+              <Text style={styles.subtitle}>
+                Create a new password for your account: {mobile}
+              </Text>
+            </Animated.View>
 
-          <Animated.View
-            entering={FadeInUp.duration(800).delay(400)}
-            style={styles.helpSection}
-          >
-            <Text style={styles.helpNote}>
-              Make sure to remember your new password. You'll use it to login to
-              your account.
-            </Text>
-          </Animated.View>
-        </View>
+            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+              <Card variant="elevated" style={styles.formCard}>
+                <View style={styles.formContent}>
+                  <Input
+                    label="New Password"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    placeholder="Enter new password"
+                    secureTextEntry={!showPassword}
+                    icon="lock-closed-outline"
+                    rightIcon={showPassword ? "eye-off-outline" : "eye-outline"}
+                    onRightIconPress={() => setShowPassword(!showPassword)}
+                    autoCapitalize="none"
+                  />
+
+                  <Input
+                    label="Confirm New Password"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="Confirm new password"
+                    secureTextEntry={!showConfirmPassword}
+                    icon="lock-closed-outline"
+                    rightIcon={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                    onRightIconPress={() =>
+                      setShowConfirmPassword(!showConfirmPassword)
+                    }
+                    autoCapitalize="none"
+                  />
+
+                  {error && (
+                    <Animated.View
+                      entering={FadeInDown.duration(300)}
+                      style={styles.errorContainer}
+                    >
+                      <Ionicons
+                        name="alert-circle"
+                        size={16}
+                        color={COLORS.error}
+                      />
+                      <Text style={styles.errorText}>{error}</Text>
+                    </Animated.View>
+                  )}
+
+                  <View style={styles.passwordRequirements}>
+                    <Text style={styles.requirementsTitle}>
+                      Password requirements:
+                    </Text>
+                    <View style={styles.requirement}>
+                      <Ionicons
+                        name={
+                          newPassword.length >= 8
+                            ? "checkmark-circle"
+                            : "ellipse-outline"
+                        }
+                        size={16}
+                        color={
+                          newPassword.length >= 8
+                            ? COLORS.success
+                            : COLORS.gray[400]
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.requirementText,
+                          newPassword.length >= 8 && styles.requirementMet,
+                        ]}
+                      >
+                        At least 8 characters
+                      </Text>
+                    </View>
+                    <View style={styles.requirement}>
+                      <Ionicons
+                        name={
+                          newPassword === confirmPassword && newPassword
+                            ? "checkmark-circle"
+                            : "ellipse-outline"
+                        }
+                        size={16}
+                        color={
+                          newPassword === confirmPassword && newPassword
+                            ? COLORS.success
+                            : COLORS.gray[400]
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.requirementText,
+                          newPassword === confirmPassword &&
+                            newPassword &&
+                            styles.requirementMet,
+                        ]}
+                      >
+                        Passwords match
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Button
+                    title="Reset Password"
+                    onPress={handleResetPassword}
+                    loading={isLoading}
+                    variant="primary"
+                    size="medium"
+                    fullWidth
+                    icon="checkmark-outline"
+                  />
+                </View>
+              </Card>
+            </Animated.View>
+
+            <Animated.View
+              entering={FadeInUp.duration(800).delay(400)}
+              style={styles.helpSection}
+            >
+              <Text style={styles.helpNote}>
+                Make sure to remember your new password. You'll use it to login to
+                your account.
+              </Text>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </>
   );
@@ -249,6 +262,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.brand.background,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+    zIndex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: SPACING.md,
+    paddingTop: 100, // Space for back button
+    paddingBottom: SPACING.lg,
+    justifyContent: "center",
+    minHeight: "100%",
   },
   backButton: {
     position: "absolute",
