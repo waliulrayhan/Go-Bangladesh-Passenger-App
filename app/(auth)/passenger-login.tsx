@@ -4,7 +4,6 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -21,6 +20,10 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Text } from "../../components/ui/Text";
+import { Toast } from "../../components/ui/Toast";
+
+// Hooks
+import { useToast } from "../../hooks/useToast";
 
 // Stores
 import { useAuthStore } from "../../stores/authStore";
@@ -50,6 +53,9 @@ export default function PassengerLogin() {
 
   // Auth store hook
   const { loginWithPassword, isLoading, error, clearError } = useAuthStore();
+
+  // Toast hook
+  const { toast, showError, hideToast } = useToast();
 
   /**
    * Navigation handlers
@@ -111,13 +117,13 @@ export default function PassengerLogin() {
 
     // Validate identifier input
     if (!validateInput(identifier)) {
-      Alert.alert("Error", getValidationErrorMessage(identifier));
+      showError(getValidationErrorMessage(identifier));
       return;
     }
 
     // Validate password input
     if (!password || password.length < 8) {
-      Alert.alert("Error", "Please enter a valid password (min. 8 characters)");
+      showError("Please enter a valid password (min. 8 characters)");
       return;
     }
 
@@ -302,6 +308,15 @@ export default function PassengerLogin() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
+
+        {/* Toast notification */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+          position="top"
+        />
       </SafeAreaView>
     </>
   );
