@@ -74,10 +74,6 @@ export default function WelcomeScreen() {
     transform: [{ scale: logoScale.value }],
   }));
 
-  const animatedButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: buttonScale.value }],
-  }));
-
   const animatedPulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
   }));
@@ -223,7 +219,7 @@ export default function WelcomeScreen() {
 
             <Animated.View
               entering={FadeInDown.duration(800).delay(400)}
-              style={[styles.buttonContainer, animatedButtonStyle]}
+              style={[styles.buttonContainer]}
             >
               <Button
                 title="Get Started"
