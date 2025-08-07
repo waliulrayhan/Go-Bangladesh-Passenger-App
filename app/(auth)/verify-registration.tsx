@@ -6,7 +6,10 @@ import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   BackHandler,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -327,95 +330,101 @@ export default function VerifyRegistration() {
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
 
-        <View style={styles.content}>
-          <Animated.View
-            entering={FadeInUp.duration(800)}
-            style={styles.header}
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            overScrollMode="never"
           >
-            <View style={styles.iconContainer}>
-              <Ionicons
-                name="shield-checkmark"
-                size={32}
-                color={COLORS.primary}
-              />
-            </View>
-
-            <Text variant="h3" color={COLORS.secondary} style={styles.title}>
-              Verify Your Mobile Number
-            </Text>
-            <Text style={styles.subtitle}>
-              Enter the 6-digit code sent to{"\n"}
-              <Text style={styles.phoneNumber}>{params.phone}</Text>
-            </Text>
-
-            {/* <View style={styles.userInfo}>
-              <Text style={styles.infoLabel}>Registering:</Text>
-              <Text style={styles.infoValue}>{params.name}</Text>
-              <Text style={styles.cardInfo}>Card: {params.cardNumber}</Text>
-            </View> */}
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-            <Card variant="elevated">
-              <View style={styles.otpContainer}>
-                <Text style={styles.otpLabel}>Enter OTP</Text>
-
-                {isLoading && (
-                  <View style={styles.loadingContainer}>
-                    <Text style={styles.loadingText}>Verifying...</Text>
-                  </View>
-                )}
-
-                <View style={styles.otpInputContainer}>
-                  {otp.map((digit, index) => (
-                    <TextInput
-                      key={index}
-                      ref={(ref) => {
-                        inputRefs.current[index] = ref;
-                      }}
-                      style={[
-                        styles.otpInput,
-                        digit && styles.otpInputFilled,
-                        isLoading && styles.otpInputDisabled,
-                      ]}
-                      value={digit}
-                      onChangeText={(value) => handleOtpChange(value, index)}
-                      onKeyPress={(e) => handleKeyPress(e, index)}
-                      keyboardType="numeric"
-                      maxLength={1}
-                      autoFocus={index === 0}
-                      selectTextOnFocus
-                      editable={!isLoading}
-                    />
-                  ))}
-                </View>
-
-                <View style={styles.resendContainer}>
-                  {canResend ? (
-                    <TouchableOpacity
-                      style={styles.resendButton}
-                      onPress={handleResendOTP}
-                      disabled={isResending}
-                    >
-                      <Text style={styles.resendText}>
-                        {isResending ? "Sending..." : "Resend OTP"}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <Text style={styles.countdownText}>
-                      Resend OTP in {formatTime(countdown)}
-                    </Text>
-                  )}
-                </View>
-
-                <Text style={styles.helpText}>
-                  Enter all 6 digits for automatic verification.{"\n"}
-                  Didn't receive the code? Check your SMS or try resending.
-                </Text>
+            <Animated.View
+              entering={FadeInUp.duration(800)}
+              style={styles.header}
+            >
+              <View style={styles.iconContainer}>
+                <Ionicons
+                  name="shield-checkmark"
+                  size={32}
+                  color={COLORS.primary}
+                />
               </View>
-            </Card>
-          </Animated.View>
-        </View>
+
+              <Text variant="h3" color={COLORS.secondary} style={styles.title}>
+                Verify Your Mobile Number
+              </Text>
+              <Text style={styles.subtitle}>
+                Enter the 6-digit code sent to{"\n"}
+                <Text style={styles.phoneNumber}>{params.phone}</Text>
+              </Text>
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+              <Card variant="elevated">
+                <View style={styles.otpContainer}>
+                  <Text style={styles.otpLabel}>Enter OTP</Text>
+
+                  {isLoading && (
+                    <View style={styles.loadingContainer}>
+                      <Text style={styles.loadingText}>Verifying...</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.otpInputContainer}>
+                    {otp.map((digit, index) => (
+                      <TextInput
+                        key={index}
+                        ref={(ref) => {
+                          inputRefs.current[index] = ref;
+                        }}
+                        style={[
+                          styles.otpInput,
+                          digit && styles.otpInputFilled,
+                          isLoading && styles.otpInputDisabled,
+                        ]}
+                        value={digit}
+                        onChangeText={(value) => handleOtpChange(value, index)}
+                        onKeyPress={(e) => handleKeyPress(e, index)}
+                        keyboardType="numeric"
+                        maxLength={1}
+                        autoFocus={index === 0}
+                        selectTextOnFocus
+                        editable={!isLoading}
+                      />
+                    ))}
+                  </View>
+
+                  <View style={styles.resendContainer}>
+                    {canResend ? (
+                      <TouchableOpacity
+                        style={styles.resendButton}
+                        onPress={handleResendOTP}
+                        disabled={isResending}
+                      >
+                        <Text style={styles.resendText}>
+                          {isResending ? "Sending..." : "Resend OTP"}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <Text style={styles.countdownText}>
+                        Resend OTP in {formatTime(countdown)}
+                      </Text>
+                    )}
+                  </View>
+
+                  <Text style={styles.helpText}>
+                    Enter all 6 digits for automatic verification.{"\n"}
+                    Didn't receive the code? Check your SMS or try resending.
+                  </Text>
+                </View>
+              </Card>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </>
   );
@@ -425,6 +434,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.brand.background,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: SPACING.md,
+    justifyContent: "center",
+    paddingTop: SPACING.xl + 80, // Extra padding for status bar
   },
   content: {
     flex: 1,

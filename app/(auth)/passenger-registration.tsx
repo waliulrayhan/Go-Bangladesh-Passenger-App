@@ -6,7 +6,10 @@ import { useState } from "react";
 import {
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -150,79 +153,91 @@ export default function PassengerRegistration() {
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
 
-        <View style={styles.content}>
-          <Animated.View
-            entering={FadeInUp.duration(800)}
-            style={styles.header}
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            overScrollMode="never"
           >
-            <View style={styles.logoContainer}>
-              <GoBangladeshLogo size={60} />
-            </View>
+            <Animated.View
+              entering={FadeInUp.duration(800)}
+              style={styles.header}
+            >
+              <View style={styles.logoContainer}>
+                <GoBangladeshLogo size={70} />
+              </View>
 
-            <Text variant="h3" color={COLORS.secondary} style={styles.title}>
-              User Registration
-            </Text>
-            <Text style={styles.subtitle}>
-              Enter your card number to get started
-            </Text>
-          </Animated.View>
+              <Text variant="h3" color={COLORS.secondary} style={styles.title}>
+                User Registration
+              </Text>
+              <Text style={styles.subtitle}>
+                Enter your card number to get started
+              </Text>
+            </Animated.View>
 
-          <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-            <Card variant="elevated" style={styles.cardContainer}>
-              <View style={styles.cardContent}>
-                <View style={styles.iconContainer}>
-                  <Ionicons name="card" size={32} color={COLORS.primary} />
-                </View>
+            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+              <Card variant="elevated" style={styles.cardContainer}>
+                <View style={styles.cardContent}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons name="card-outline" size={32} color={COLORS.primary} />
+                  </View>
 
-                <View style={styles.inputContainer}>
-                  <Input
-                    label="Card Number"
-                    value={cardNumber}
-                    onChangeText={handleCardNumberChange}
-                    placeholder="(e.g. ABCD1234)"
-                    keyboardType="default"
-                    icon="card"
-                    maxLength={16}
-                    autoCapitalize="characters"
+                  <View style={styles.inputContainer}>
+                    <Input
+                      label="Card Number"
+                      value={cardNumber}
+                      onChangeText={handleCardNumberChange}
+                      placeholder="(e.g. ABCD1234)"
+                      keyboardType="default"
+                      icon="card-outline"
+                      maxLength={16}
+                      autoCapitalize="characters"
+                    />
+                  </View>
+
+                  <Text style={styles.helperText}>
+                    Enter the card number printed on your Go Bangladesh transport
+                    card
+                  </Text>
+
+                  <Button
+                    title="Proceed"
+                    onPress={handleProceed}
+                    loading={isLoading}
+                    disabled={!cardNumber.trim()}
+                    icon="arrow-forward-outline"
+                    size="medium"
+                    fullWidth
                   />
                 </View>
+              </Card>
+            </Animated.View>
 
-                <Text style={styles.helperText}>
-                  Enter the card number printed on your Go Bangladesh transport
-                  card
-                </Text>
-
-                <Button
-                  title="Proceed"
-                  onPress={handleProceed}
-                  loading={isLoading}
-                  disabled={!cardNumber.trim()}
-                  icon="arrow-forward"
-                  size="medium"
-                  fullWidth
-                />
+            <Animated.View
+              entering={FadeInDown.duration(800).delay(400)}
+              style={styles.bottomSection}
+            >
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
               </View>
-            </Card>
-          </Animated.View>
 
-          <Animated.View
-            entering={FadeInDown.duration(800).delay(400)}
-            style={styles.bottomSection}
-          >
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-              <Text style={styles.loginText}>
-                Already have an account?{" "}
-              </Text>
-              <Text style={styles.loginLink}>Sign In</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
+              <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+                <Text style={styles.loginText}>
+                  Already have an account?{" "}
+                </Text>
+                <Text style={styles.loginLink}>Sign In</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </>
   );
@@ -233,6 +248,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.brand.background,
   },
+  keyboardAvoidingView: {
+    flex: 1,
+    zIndex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: SPACING.md,
+    paddingTop: 80, // Space for back button
+    paddingBottom: SPACING.lg,
+  },
   content: {
     flex: 1,
     paddingHorizontal: SPACING.md,
@@ -242,6 +267,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     marginBottom: SPACING.lg,
+    marginTop: SPACING.xl,
   },
   backButton: {
     position: "absolute",

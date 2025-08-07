@@ -7,6 +7,7 @@ import { useState } from "react";
 import {
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -329,18 +330,25 @@ export default function RegistrationPersonalInfo() {
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
 
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            overScrollMode="never"
+          >
           <Animated.View
             entering={FadeInUp.duration(800)}
             style={styles.header}
           >
             <View style={styles.iconContainer}>
-              <Ionicons name="person-add" size={32} color={COLORS.primary} />
+              <Ionicons name="person-add-outline" size={32} color={COLORS.primary} />
             </View>
 
             <Text variant="h3" style={styles.title}>
@@ -348,7 +356,7 @@ export default function RegistrationPersonalInfo() {
             </Text>
             <Text style={styles.subtitle}>
               {params.organizationType === "Private"
-                ? "Complete your profile for educational institute registration"
+                ? "Complete your profile for specific organization registration"
                 : "Complete your profile to finish registration"}
             </Text>
 
@@ -379,7 +387,7 @@ export default function RegistrationPersonalInfo() {
                   value={form.name}
                   onChangeText={(value) => updateForm("name", value)}
                   placeholder="Enter your full name"
-                  icon="person"
+                  icon="person-outline"
                   error={errors.name}
                 />
 
@@ -394,7 +402,7 @@ export default function RegistrationPersonalInfo() {
                   onChangeText={(value) => updateForm("phone", value)}
                   placeholder="(e.g. 01XXXXXXXXXX)"
                   keyboardType="phone-pad"
-                  icon="call"
+                  icon="call-outline"
                   error={errors.phone}
                 />
 
@@ -405,7 +413,7 @@ export default function RegistrationPersonalInfo() {
                   placeholder="your.email@example.com"
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  icon="mail"
+                  icon="mail-outline"
                   error={errors.email}
                 />
 
@@ -414,8 +422,8 @@ export default function RegistrationPersonalInfo() {
                     label="Identity Number"
                     value={form.passengerId}
                     onChangeText={(value) => updateForm("passengerId", value)}
-                    placeholder="Enter your student ID"
-                    icon="school"
+                    placeholder="Enter your identity number"
+                    icon="id-card-outline"
                     error={errors.passengerId}
                   />
                 )}
@@ -485,7 +493,7 @@ export default function RegistrationPersonalInfo() {
                   value={form.address}
                   onChangeText={(value) => updateForm("address", value)}
                   placeholder="Enter your address"
-                  icon="location"
+                  icon="location-outline"
                   error={errors.address}
                 />
 
@@ -545,8 +553,8 @@ export default function RegistrationPersonalInfo() {
                   onChangeText={(value) => updateForm("password", value)}
                   placeholder="Create a password"
                   secureTextEntry={!showPassword}
-                  icon="lock-closed"
-                  rightIcon={showPassword ? "eye-off" : "eye"}
+                  icon="lock-closed-outline"
+                  rightIcon={showPassword ? "eye-off-outline" : "eye-outline"}
                   onRightIconPress={() => setShowPassword(!showPassword)}
                   error={errors.password}
                 />
@@ -562,8 +570,8 @@ export default function RegistrationPersonalInfo() {
                   onChangeText={(value) => updateForm("confirmPassword", value)}
                   placeholder="Confirm your password"
                   secureTextEntry={!showConfirmPassword}
-                  icon="lock-closed"
-                  rightIcon={showConfirmPassword ? "eye-off" : "eye"}
+                  icon="lock-closed-outline"
+                  rightIcon={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
                   onRightIconPress={() =>
                     setShowConfirmPassword(!showConfirmPassword)
                   }
@@ -574,14 +582,15 @@ export default function RegistrationPersonalInfo() {
                   title="Continue"
                   onPress={handleNext}
                   loading={isLoading}
-                  icon="arrow-forward"
+                  icon="arrow-forward-outline"
                   size="medium"
                   fullWidth
                 />
               </View>
             </Card>
           </Animated.View>
-        </ScrollView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </>
   );
@@ -591,6 +600,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.brand.background,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+    zIndex: 1,
   },
   content: {
     flex: 1,
