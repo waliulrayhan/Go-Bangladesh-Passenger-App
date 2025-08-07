@@ -6,8 +6,10 @@ import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -337,122 +339,132 @@ export default function ForgotPassword() {
             <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
           </TouchableOpacity>
 
-          <View style={styles.content}>
-            <Animated.View
-              entering={FadeInUp.duration(800)}
-              style={styles.header}
+          <KeyboardAvoidingView
+            style={styles.keyboardAvoidingView}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+          >
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
-              <View style={styles.logoContainer}>
-                <GoBangladeshLogo size={60} />
-              </View>
-
-              <Text variant="h3" style={styles.title}>
-                Enter Verification Code
-              </Text>
-              <Text style={styles.subtitle}>
-                We've sent a 6-digit verification code to {formatMobile(mobile)}
-              </Text>
-            </Animated.View>
-
-            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-              <Card variant="elevated" style={styles.otpCard}>
-                <View style={styles.otpContent}>
-                  <Text style={styles.otpLabel}>Verification Code</Text>
-
-                  <View style={styles.otpInputContainer}>
-                    {isLoading && (
-                      <View style={styles.loadingContainer}>
-                        <Text style={styles.loadingText}>Verifying...</Text>
-                      </View>
-                    )}
-                    {otp.map((digit, index) => (
-                      <TextInput
-                        key={index}
-                        ref={(ref) => {
-                          inputRefs.current[index] = ref;
-                        }}
-                        style={[
-                          styles.otpInput,
-                          digit && styles.otpInputFilled,
-                          isLoading && styles.otpInputDisabled,
-                        ]}
-                        value={digit}
-                        onChangeText={(value) => handleOtpChange(value, index)}
-                        onKeyPress={(e) => handleKeyPress(e, index)}
-                        keyboardType="numeric"
-                        maxLength={index === 0 ? 6 : 1} // Allow pasting full OTP in first input
-                        autoFocus={index === 0}
-                        selectTextOnFocus
-                        editable={!isLoading}
-                        textContentType={index === 0 ? "oneTimeCode" : "none"} // SMS auto-fill for first input
-                        autoComplete={index === 0 ? "sms-otp" : "off"} // Android SMS auto-fill
-                        importantForAutofill={index === 0 ? "yes" : "no"} // Android autofill priority
-                        blurOnSubmit={false}
-                      />
-                    ))}
-                  </View>
-
-                  {error && (
-                    <Animated.View
-                      entering={FadeInDown.duration(300)}
-                      style={styles.errorContainer}
-                    >
-                      <Ionicons
-                        name="alert-circle"
-                        size={16}
-                        color={COLORS.error}
-                      />
-                      <Text style={styles.errorText}>{error}</Text>
-                    </Animated.View>
-                  )}
-
-                  <View style={styles.resendContainer}>
-                    {timer > 0 ? (
-                      <Text style={styles.timerText}>
-                        Resend code in {timer}s
-                      </Text>
-                    ) : (
-                      <TouchableOpacity
-                        onPress={handleResendOTP}
-                        disabled={isLoading}
-                      >
-                        <Text
-                          style={[
-                            styles.resendText,
-                            isLoading && styles.resendTextDisabled,
-                          ]}
-                        >
-                          Resend Code
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  <Text style={styles.helpText}>
-                    {Platform.OS === 'ios' 
-                      ? 'The code will auto-fill from SMS. You can also enter all 6 digits for automatic verification.'
-                      : 'Enter all 6 digits for automatic verification. The code may auto-fill from SMS.'
-                    }
-                  </Text>
-                </View>
-              </Card>
-            </Animated.View>
-
-            <Animated.View
-              entering={FadeInDown.duration(800).delay(400)}
-              style={styles.bottomSection}
-            >
-              <TouchableOpacity
-                onPress={handleContactOrganization}
-                style={styles.organizationButton}
+              <Animated.View
+                entering={FadeInUp.duration(800)}
+                style={styles.header}
               >
-                <Text style={styles.organizationText}>
-                  Need help with your account?
+                <View style={styles.logoContainer}>
+                  <GoBangladeshLogo size={70} />
+                </View>
+
+                <Text variant="h3" style={styles.title}>
+                  Enter Verification Code
                 </Text>
-                <Text style={styles.organizationEmail}>info@thegobd.com</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
+                <Text style={styles.subtitle}>
+                  We've sent a 6-digit verification code to {formatMobile(mobile)}
+                </Text>
+              </Animated.View>
+
+              <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+                <Card variant="elevated" style={styles.otpCard}>
+                  <View style={styles.otpContent}>
+                    <Text style={styles.otpLabel}>Verification Code</Text>
+
+                    <View style={styles.otpInputContainer}>
+                      {isLoading && (
+                        <View style={styles.loadingContainer}>
+                          <Text style={styles.loadingText}>Verifying...</Text>
+                        </View>
+                      )}
+                      {otp.map((digit, index) => (
+                        <TextInput
+                          key={index}
+                          ref={(ref) => {
+                            inputRefs.current[index] = ref;
+                          }}
+                          style={[
+                            styles.otpInput,
+                            digit && styles.otpInputFilled,
+                            isLoading && styles.otpInputDisabled,
+                          ]}
+                          value={digit}
+                          onChangeText={(value) => handleOtpChange(value, index)}
+                          onKeyPress={(e) => handleKeyPress(e, index)}
+                          keyboardType="numeric"
+                          maxLength={index === 0 ? 6 : 1} // Allow pasting full OTP in first input
+                          autoFocus={index === 0}
+                          selectTextOnFocus
+                          editable={!isLoading}
+                          textContentType={index === 0 ? "oneTimeCode" : "none"} // SMS auto-fill for first input
+                          autoComplete={index === 0 ? "sms-otp" : "off"} // Android SMS auto-fill
+                          importantForAutofill={index === 0 ? "yes" : "no"} // Android autofill priority
+                          blurOnSubmit={false}
+                        />
+                      ))}
+                    </View>
+
+                    {error && (
+                      <Animated.View
+                        entering={FadeInDown.duration(300)}
+                        style={styles.errorContainer}
+                      >
+                        <Ionicons
+                          name="alert-circle"
+                          size={16}
+                          color={COLORS.error}
+                        />
+                        <Text style={styles.errorText}>{error}</Text>
+                      </Animated.View>
+                    )}
+
+                    <View style={styles.resendContainer}>
+                      {timer > 0 ? (
+                        <Text style={styles.timerText}>
+                          Resend code in {timer}s
+                        </Text>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={handleResendOTP}
+                          disabled={isLoading}
+                        >
+                          <Text
+                            style={[
+                              styles.resendText,
+                              isLoading && styles.resendTextDisabled,
+                            ]}
+                          >
+                            Resend Code
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    <Text style={styles.helpText}>
+                      {Platform.OS === 'ios' 
+                        ? 'The code will auto-fill from SMS. You can also enter all 6 digits for automatic verification.'
+                        : 'Enter all 6 digits for automatic verification. The code may auto-fill from SMS.'
+                      }
+                    </Text>
+                  </View>
+                </Card>
+              </Animated.View>
+
+              <Animated.View
+                entering={FadeInDown.duration(800).delay(400)}
+                style={styles.bottomSection}
+              >
+                <TouchableOpacity
+                  onPress={handleContactOrganization}
+                  style={styles.organizationButton}
+                >
+                  <Text style={styles.organizationText}>
+                    Need help with your account?
+                  </Text>
+                  <Text style={styles.organizationEmail}>info@thegobd.com</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </SafeAreaView>
       </>
     );
@@ -486,106 +498,116 @@ export default function ForgotPassword() {
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
 
-        <View style={styles.content}>
-          <Animated.View
-            entering={FadeInUp.duration(800)}
-            style={styles.header}
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <View style={styles.logoContainer}>
-              <GoBangladeshLogo size={60} />
-            </View>
+            <Animated.View
+              entering={FadeInUp.duration(800)}
+              style={styles.header}
+            >
+              <View style={styles.logoContainer}>
+                <GoBangladeshLogo size={70} />
+              </View>
 
-            <Text variant="h3" color={COLORS.secondary}>
-              Forgot Password?
-            </Text>
-            <Text style={styles.subtitle}>
-              Enter your mobile number and we'll send you a verification code to
-              reset your password.
-            </Text>
-          </Animated.View>
+              <Text variant="h3" color={COLORS.secondary}>
+                Forgot Password?
+              </Text>
+              <Text style={styles.subtitle}>
+                Enter your mobile number and we'll send you a verification code to
+                reset your password.
+              </Text>
+            </Animated.View>
 
-          <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-            <Card variant="elevated" style={styles.loginCard}>
-              <View style={styles.loginContent}>
-                <Input
-                  label="Mobile Number"
-                  value={mobile}
-                  onChangeText={setMobile}
-                  placeholder="(e.g. 01XXXXXXXXXX)"
-                  keyboardType="phone-pad"
-                  icon="call"
-                  autoCapitalize="none"
-                />
+            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+              <Card variant="elevated" style={styles.loginCard}>
+                <View style={styles.loginContent}>
+                  <Input
+                    label="Mobile Number"
+                    value={mobile}
+                    onChangeText={setMobile}
+                    placeholder="(e.g. 01XXXXXXXXXX)"
+                    keyboardType="phone-pad"
+                    icon="call-outline"
+                    autoCapitalize="none"
+                  />
 
-                {mobile.trim() && (
-                  <View
-                    style={[
-                      styles.inputTypeIndicator,
-                      {
-                        borderColor: getIndicatorColor() + "50",
-                        backgroundColor: getIndicatorColor() + "10",
-                      },
-                    ]}
-                  >
-                    <Text
+                  {mobile.trim() && (
+                    <View
                       style={[
-                        styles.inputTypeText,
-                        { color: getIndicatorColor() },
+                        styles.inputTypeIndicator,
+                        {
+                          borderColor: getIndicatorColor() + "50",
+                          backgroundColor: getIndicatorColor() + "10",
+                        },
                       ]}
                     >
-                      Mobile
-                    </Text>
-                  </View>
-                )}
+                      <Text
+                        style={[
+                          styles.inputTypeText,
+                          { color: getIndicatorColor() },
+                        ]}
+                      >
+                        Mobile
+                      </Text>
+                    </View>
+                  )}
 
-                {error && (
-                  <Animated.View
-                    entering={FadeInDown.duration(300)}
-                    style={styles.errorContainer}
-                  >
-                    <Ionicons
-                      name="alert-circle"
-                      size={16}
-                      color={COLORS.error}
-                    />
-                    <Text style={styles.errorText}>{error}</Text>
-                  </Animated.View>
-                )}
+                  {error && (
+                    <Animated.View
+                      entering={FadeInDown.duration(300)}
+                      style={styles.errorContainer}
+                    >
+                      <Ionicons
+                        name="alert-circle"
+                        size={16}
+                        color={COLORS.error}
+                      />
+                      <Text style={styles.errorText}>{error}</Text>
+                    </Animated.View>
+                  )}
 
-                <Button
-                  title="Send Verification Code"
-                  onPress={handleSendOTP}
-                  loading={isLoading}
-                  disabled={!mobile.trim()}
-                  icon="paper-plane"
-                  size="medium"
-                  fullWidth
-                />
-              </View>
-            </Card>
-          </Animated.View>
+                  <Button
+                    title="Send Verification Code"
+                    onPress={handleSendOTP}
+                    loading={isLoading}
+                    disabled={!mobile.trim()}
+                    icon="paper-plane-outline"
+                    size="medium"
+                    fullWidth
+                  />
+                </View>
+              </Card>
+            </Animated.View>
 
-          <Animated.View
-            entering={FadeInDown.duration(800).delay(400)}
-            style={styles.bottomSection}
-          >
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <TouchableOpacity
-              style={styles.organizationButton}
-              onPress={handleContactOrganization}
+            <Animated.View
+              entering={FadeInDown.duration(800).delay(400)}
+              style={styles.bottomSection}
             >
-              <Text style={styles.organizationText}>
-                Need help with your account?
-              </Text>
-              <Text style={styles.organizationEmail}>info@thegobd.com</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.organizationButton}
+                onPress={handleContactOrganization}
+              >
+                <Text style={styles.organizationText}>
+                  Need help with your account?
+                </Text>
+                <Text style={styles.organizationEmail}>info@thegobd.com</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </>
   );
@@ -595,6 +617,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.brand.background,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+    zIndex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: SPACING.md,
+    paddingTop: 80, // Space for back button
+    paddingBottom: SPACING.lg,
+    justifyContent: "center",
+    minHeight: "100%",
   },
   content: {
     flex: 1,
@@ -726,7 +760,7 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     position: "absolute",
-    top: -30,
+    top: -20,
     left: 0,
     right: 0,
     alignItems: "center",
