@@ -6,7 +6,10 @@ import { useState } from "react";
 import {
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -134,169 +137,167 @@ export default function ChangePassword() {
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
 
-        <View style={styles.content}>
-          <Animated.View
-            entering={FadeInUp.duration(800)}
-            style={styles.header}
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            overScrollMode="never"
           >
-            <View style={styles.logoContainer}>
-              <GoBangladeshLogo size={50} />
-            </View>
-
-            <Text variant="h3" style={styles.title}>
-              Change Password
-            </Text>
-            <Text style={styles.subtitle}>
-              Update your account password for better security
-            </Text>
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-            <Card variant="elevated" style={styles.formCard}>
-              <View style={styles.formContent}>
-                <Input
-                  label="Current Password"
-                  value={oldPassword}
-                  onChangeText={setOldPassword}
-                  placeholder="Enter your current password"
-                  secureTextEntry={!showOldPassword}
-                  icon="lock-closed"
-                  rightIcon={showOldPassword ? "eye-off" : "eye"}
-                  onRightIconPress={() => setShowOldPassword(!showOldPassword)}
-                />
-
-                <Input
-                  label="New Password"
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  placeholder="Enter new password"
-                  secureTextEntry={!showNewPassword}
-                  icon="lock-closed"
-                  rightIcon={showNewPassword ? "eye-off" : "eye"}
-                  onRightIconPress={() => setShowNewPassword(!showNewPassword)}
-                />
-
-                <Input
-                  label="Confirm New Password"
-                  value={confirmNewPassword}
-                  onChangeText={setConfirmNewPassword}
-                  placeholder="Confirm new password"
-                  secureTextEntry={!showConfirmPassword}
-                  icon="lock-closed"
-                  rightIcon={showConfirmPassword ? "eye-off" : "eye"}
-                  onRightIconPress={() =>
-                    setShowConfirmPassword(!showConfirmPassword)
-                  }
-                />
-
-                <View style={styles.passwordRequirements}>
-                  <Text style={styles.requirementsTitle}>
-                    Password Requirements:
-                  </Text>
-                  <View style={styles.requirementsRow}>
-                    <View style={styles.requirement}>
-                      <Ionicons
-                        name={
-                          newPassword.length >= 6
-                            ? "checkmark-circle"
-                            : "ellipse-outline"
-                        }
-                        size={14}
-                        color={
-                          newPassword.length >= 6
-                            ? COLORS.success
-                            : COLORS.gray[400]
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.requirementText,
-                          {
-                            color:
-                              newPassword.length >= 8
-                                ? COLORS.success
-                                : COLORS.gray[600],
-                          },
-                        ]}
-                      >
-                        8+ characters
-                      </Text>
-                    </View>
-                    <View style={styles.requirement}>
-                      <Ionicons
-                        name={
-                          newPassword === confirmNewPassword && newPassword
-                            ? "checkmark-circle"
-                            : "ellipse-outline"
-                        }
-                        size={14}
-                        color={
-                          newPassword === confirmNewPassword && newPassword
-                            ? COLORS.success
-                            : COLORS.gray[400]
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.requirementText,
-                          {
-                            color:
-                              newPassword === confirmNewPassword && newPassword
-                                ? COLORS.success
-                                : COLORS.gray[600],
-                          },
-                        ]}
-                      >
-                        Passwords match
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                <Button
-                  title="Change Password"
-                  onPress={handleChangePassword}
-                  loading={isLoading}
-                  disabled={
-                    !oldPassword ||
-                    !newPassword ||
-                    !confirmNewPassword ||
-                    newPassword !== confirmNewPassword ||
-                    newPassword.length < 6
-                  }
-                  icon="checkmark"
-                  size="medium"
-                  fullWidth
-                />
-
-                {error && (
-                  <View style={styles.errorContainer}>
-                    <Ionicons
-                      name="alert-circle"
-                      size={16}
-                      color={COLORS.error}
-                    />
-                    <Text style={styles.errorText}>{error}</Text>
-                  </View>
-                )}
+            <Animated.View
+              entering={FadeInUp.duration(800)}
+              style={styles.header}
+            >
+              <View style={styles.logoContainer}>
+                <GoBangladeshLogo size={50} />
               </View>
-            </Card>
-          </Animated.View>
 
-          {/* <Animated.View 
-            entering={FadeInDown.duration(800).delay(400)} 
-            style={styles.bottomSection}
-          >
-            <View style={styles.helpSection}>
-              <Text style={styles.helpText}>
-                Need help with your password?
+              <Text variant="h3" style={styles.title}>
+                Change Password
               </Text>
-              <Text style={styles.helpEmail}>
-                info@thegobd.com
+              <Text style={styles.subtitle}>
+                Update your account password for better security
               </Text>
-            </View>
-          </Animated.View> */}
-        </View>
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+              <Card variant="elevated" style={styles.formCard}>
+                <View style={styles.formContent}>
+                  <Input
+                    label="Current Password"
+                    value={oldPassword}
+                    onChangeText={setOldPassword}
+                    placeholder="Enter current password"
+                    secureTextEntry={!showOldPassword}
+                    icon="lock-closed-outline"
+                    rightIcon={showOldPassword ? "eye-off-outline" : "eye-outline"}
+                    onRightIconPress={() => setShowOldPassword(!showOldPassword)}
+                  />
+
+                  <Input
+                    label="New Password"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    placeholder="Enter new password"
+                    secureTextEntry={!showNewPassword}
+                    icon="lock-closed-outline"
+                    rightIcon={showNewPassword ? "eye-off-outline" : "eye-outline"}
+                    onRightIconPress={() => setShowNewPassword(!showNewPassword)}
+                  />
+
+                  <Input
+                    label="Confirm New Password"
+                    value={confirmNewPassword}
+                    onChangeText={setConfirmNewPassword}
+                    placeholder="Confirm new password"
+                    secureTextEntry={!showConfirmPassword}
+                    icon="lock-closed-outline"
+                    rightIcon={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                    onRightIconPress={() =>
+                      setShowConfirmPassword(!showConfirmPassword)
+                    }
+                  />
+
+                  <View style={styles.passwordRequirements}>
+                    <Text style={styles.requirementsTitle}>
+                      Password Requirements:
+                    </Text>
+                    <View style={styles.requirementsRow}>
+                      <View style={styles.requirement}>
+                        <Ionicons
+                          name={
+                            newPassword.length >= 8
+                              ? "checkmark-circle"
+                              : "ellipse-outline"
+                          }
+                          size={14}
+                          color={
+                            newPassword.length >= 8
+                              ? COLORS.success
+                              : COLORS.gray[400]
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.requirementText,
+                            {
+                              color:
+                                newPassword.length >= 8
+                                  ? COLORS.success
+                                  : COLORS.gray[600],
+                            },
+                          ]}
+                        >
+                          8+ characters
+                        </Text>
+                      </View>
+                      <View style={styles.requirement}>
+                        <Ionicons
+                          name={
+                            newPassword === confirmNewPassword && newPassword
+                              ? "checkmark-circle"
+                              : "ellipse-outline"
+                          }
+                          size={14}
+                          color={
+                            newPassword === confirmNewPassword && newPassword
+                              ? COLORS.success
+                              : COLORS.gray[400]
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.requirementText,
+                            {
+                              color:
+                                newPassword === confirmNewPassword && newPassword
+                                  ? COLORS.success
+                                  : COLORS.gray[600],
+                            },
+                          ]}
+                        >
+                          Passwords match
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <Button
+                    title="Change Password"
+                    onPress={handleChangePassword}
+                    loading={isLoading}
+                    disabled={
+                      !oldPassword ||
+                      !newPassword ||
+                      !confirmNewPassword ||
+                      newPassword !== confirmNewPassword ||
+                      newPassword.length < 8
+                    }
+                    icon="checkmark-outline"
+                    size="medium"
+                    fullWidth
+                  />
+
+                  {error && (
+                    <View style={styles.errorContainer}>
+                      <Ionicons
+                        name="alert-circle"
+                        size={16}
+                        color={COLORS.error}
+                      />
+                      <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                  )}
+                </View>
+              </Card>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </>
   );
@@ -307,6 +308,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.brand.background,
   },
+  keyboardAvoidingView: {
+    flex: 1,
+    zIndex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: SPACING.md,
+    paddingTop: 80, // Space for back button
+    paddingBottom: SPACING.lg,
+  },
   content: {
     flex: 1,
     paddingHorizontal: SPACING.md,
@@ -315,7 +326,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
+    marginTop: SPACING.xl,
   },
   backButton: {
     position: "absolute",
@@ -366,6 +378,7 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     borderRadius: 8,
     marginBottom: SPACING.sm,
+    minHeight: 70, // Fixed height to prevent layout shifts
   },
   requirementsTitle: {
     fontSize: 13,
@@ -384,6 +397,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     minWidth: "45%",
+    height: 20, // Fixed height to prevent shifting
   },
   requirementText: {
     fontSize: 12,
