@@ -5,7 +5,10 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -156,139 +159,147 @@ export default function PassengerLogin() {
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
 
-        <View style={styles.content}>
-          {/* Header section with logo and title */}
-          <Animated.View
-            entering={FadeInUp.duration(800)}
-            style={styles.header}
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <View style={styles.logoContainer}>
-              <GoBangladeshLogo size={60} />
-            </View>
+            {/* Header section with logo and title */}
+            <Animated.View
+              entering={FadeInUp.duration(800)}
+              style={styles.header}
+            >
+              <View style={styles.logoContainer}>
+                <GoBangladeshLogo size={70} />
+              </View>
 
-            <Text variant="h3" style={styles.title}>
-              Welcome Back!
-            </Text>
-            <Text style={styles.subtitle}>Sign in to your account</Text>
-          </Animated.View>
+              <Text variant="h3" style={styles.title}>
+                Welcome Back!
+              </Text>
+              <Text style={styles.subtitle}>Sign in to your account</Text>
+            </Animated.View>
 
-          {/* Login form card */}
-          <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-            <Card variant="elevated" style={styles.loginCard}>
-              <View style={styles.loginContent}>
-                {/* Email/Phone input with dynamic detection */}
-                <Input
-                  label="Email or Phone Number"
-                  value={identifier}
-                  onChangeText={handleIdentifierChange}
-                  placeholder={dynamicPlaceholder}
-                  keyboardType={dynamicKeyboardType}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  icon={dynamicIcon}
-                  maxLength={inputType === "mobile" ? 11 : undefined}
-                />
+            {/* Login form card */}
+            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+              <Card variant="elevated" style={styles.loginCard}>
+                <View style={styles.loginContent}>
+                  {/* Email/Phone input with dynamic detection */}
+                  <Input
+                    label="Email or Phone Number"
+                    value={identifier}
+                    onChangeText={handleIdentifierChange}
+                    placeholder={dynamicPlaceholder}
+                    keyboardType={dynamicKeyboardType}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    icon={dynamicIcon}
+                    maxLength={inputType === "mobile" ? 11 : undefined}
+                  />
 
-                {/* Input type indicator */}
-                {identifier.trim() && (
-                  <View
-                    style={[
-                      styles.inputTypeIndicator,
-                      {
-                        borderColor: getIndicatorColor() + "50",
-                        backgroundColor: getIndicatorColor() + "10",
-                      },
-                    ]}
-                  >
-                    <Text
+                  {/* Input type indicator */}
+                  {identifier.trim() && (
+                    <View
                       style={[
-                        styles.inputTypeText,
-                        { color: getIndicatorColor() },
+                        styles.inputTypeIndicator,
+                        {
+                          borderColor: getIndicatorColor() + "50",
+                          backgroundColor: getIndicatorColor() + "10",
+                        },
                       ]}
                     >
-                      {inputType === "email" ? "Email" : "Mobile"}
-                    </Text>
-                  </View>
-                )}
+                      <Text
+                        style={[
+                          styles.inputTypeText,
+                          { color: getIndicatorColor() },
+                        ]}
+                      >
+                        {inputType === "email" ? "Email" : "Mobile"}
+                      </Text>
+                    </View>
+                  )}
 
-                {/* Password input */}
-                <Input
-                  label="Password"
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Enter your password"
-                  secureTextEntry={!showPassword}
-                  icon="lock-closed"
-                  rightIcon={showPassword ? "eye-off" : "eye"}
-                  onRightIconPress={() => setShowPassword(!showPassword)}
-                />
+                  {/* Password input */}
+                  <Input
+                    label="Password"
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Enter your password"
+                    secureTextEntry={!showPassword}
+                    icon="lock-closed"
+                    rightIcon={showPassword ? "eye-off" : "eye"}
+                    onRightIconPress={() => setShowPassword(!showPassword)}
+                  />
 
-                {/* Login button */}
-                <Button
-                  title="Sign In"
-                  onPress={handleLogin}
-                  loading={isLoading}
-                  disabled={!identifier.trim() || !password.trim()}
-                  icon="arrow-forward"
-                  size="medium"
-                  fullWidth
-                />
+                  {/* Login button */}
+                  <Button
+                    title="Sign In"
+                    onPress={handleLogin}
+                    loading={isLoading}
+                    disabled={!identifier.trim() || !password.trim()}
+                    icon="arrow-forward"
+                    size="medium"
+                    fullWidth
+                  />
 
-                {/* Error message display */}
-                {error && (
-                  <View style={styles.errorContainer}>
-                    <Ionicons
-                      name="alert-circle"
-                      size={16}
-                      color={COLORS.error}
-                    />
-                    <Text style={styles.errorText}>{error}</Text>
-                  </View>
-                )}
+                  {/* Error message display */}
+                  {error && (
+                    <View style={styles.errorContainer}>
+                      <Ionicons
+                        name="alert-circle"
+                        size={16}
+                        color={COLORS.error}
+                      />
+                      <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                  )}
+                </View>
+              </Card>
+            </Animated.View>
+
+            {/* Bottom section with additional options */}
+            <Animated.View
+              entering={FadeInDown.duration(800).delay(400)}
+              style={styles.bottomSection}
+            >
+              {/* Forgot password link */}
+              <TouchableOpacity
+                style={styles.forgotPasswordButton}
+                onPress={handleForgotPassword}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
               </View>
-            </Card>
-          </Animated.View>
 
-          {/* Bottom section with additional options */}
-          <Animated.View
-            entering={FadeInDown.duration(800).delay(400)}
-            style={styles.bottomSection}
-          >
-            {/* Forgot password link */}
-            <TouchableOpacity
-              style={styles.forgotPasswordButton}
-              onPress={handleForgotPassword}
-            >
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
+              {/* Registration link */}
+              <TouchableOpacity
+                style={styles.createAccountButton}
+                onPress={() => router.push("/(auth)/passenger-registration")}
+              >
+                <Text style={styles.createAccountText}>
+                  Don't have an account?{" "}
+                  <Text style={styles.createAccountLink}>Register Now</Text>
+                </Text>
+              </TouchableOpacity>
 
-            {/* Divider */}
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Registration link */}
-            <TouchableOpacity
-              style={styles.createAccountButton}
-              onPress={() => router.push("/(auth)/passenger-registration")}
-            >
-              <Text style={styles.createAccountText}>
-                Don't have an account?{" "}
-                <Text style={styles.createAccountLink}>Register Now</Text>
-              </Text>
-            </TouchableOpacity>
-
-            {/* Help contact information */}
-            <TouchableOpacity style={styles.organizationButton}>
-              <Text style={styles.organizationText}>
-                Need help?{" "}
+              {/* Help contact information */}
+              <TouchableOpacity style={styles.organizationButton}>
+                <Text style={styles.organizationText}>Need help?</Text>
                 <Text style={styles.organizationEmail}>info@thegobd.com</Text>
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
+              </TouchableOpacity>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </>
   );
@@ -303,6 +314,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.brand.background,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+    zIndex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: SPACING.md,
+    paddingTop: 80, // Space for back button
+    paddingBottom: SPACING.lg,
+    justifyContent: "center",
+    minHeight: "100%",
   },
   content: {
     flex: 1,
@@ -333,6 +356,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     marginBottom: SPACING.lg,
+    marginTop: SPACING.md,
   },
   logoContainer: {
     marginBottom: SPACING.sm,
@@ -442,7 +466,7 @@ const styles = StyleSheet.create({
     color: COLORS.gray[600],
   },
   createAccountLink: {
-    fontSize: 15,
+    fontSize: 16,
     color: COLORS.primary,
     fontWeight: "600",
   },
