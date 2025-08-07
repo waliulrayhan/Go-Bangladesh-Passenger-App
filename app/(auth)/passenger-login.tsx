@@ -116,8 +116,8 @@ export default function PassengerLogin() {
     }
 
     // Validate password input
-    if (!password) {
-      Alert.alert("Error", "Please enter your password");
+    if (!password || password.length < 8) {
+      Alert.alert("Error", "Please enter a valid password (min. 8 characters)");
       return;
     }
 
@@ -230,8 +230,8 @@ export default function PassengerLogin() {
                     onChangeText={setPassword}
                     placeholder="Enter your password"
                     secureTextEntry={!showPassword}
-                    icon="lock-closed"
-                    rightIcon={showPassword ? "eye-off" : "eye"}
+                    icon="lock-closed-outline"
+                    rightIcon={showPassword ? "eye-off-outline" : "eye-outline"}
                     onRightIconPress={() => setShowPassword(!showPassword)}
                   />
 

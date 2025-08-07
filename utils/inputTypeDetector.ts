@@ -70,20 +70,20 @@ export const getPlaceholderForInput = (input: string): string => {
 /**
  * Get appropriate icon based on detected input type
  */
-export const getIconForInput = (input: string): 'mail' | 'call' | 'person' => {
+export const getIconForInput = (input: string): 'mail-outline' | 'call-outline' | 'person-outline' => {
   if (!input.trim()) {
-    return 'person';
+    return 'person-outline';
   }
   
   const inputType = determineInputType(input);
   
   switch (inputType) {
     case 'email':
-      return 'mail';
+      return 'mail-outline';
     case 'mobile':
-      return 'call';
+      return 'call-outline';
     default:
-      return 'person';
+      return 'person-outline';
   }
 };
 
