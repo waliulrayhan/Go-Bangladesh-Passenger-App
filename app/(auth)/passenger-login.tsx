@@ -5,12 +5,25 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
   Alert,
-  Dimensions,
   SafeAreaView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+
+// Custom components
+import { GoBangladeshLogo } from "../../components/GoBangladeshLogo";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { Input } from "../../components/ui/Input";
+import { Text } from "../../components/ui/Text";
+
+// Stores
+import { useAuthStore } from "../../stores/authStore";
+
+// Utils
+import { COLORS, SPACING } from "../../utils/constants";
 import {
   determineInputType,
   getIconForInput,
@@ -19,24 +32,25 @@ import {
   getValidationErrorMessage,
   validateInput,
 } from "../../utils/inputTypeDetector";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
-import { GoBangladeshLogo } from "../../components/GoBangladeshLogo";
-import { Button } from "../../components/ui/Button";
-import { Card } from "../../components/ui/Card";
-import { Input } from "../../components/ui/Input";
-import { Text } from "../../components/ui/Text";
-import { useAuthStore } from "../../stores/authStore";
-import { COLORS, SPACING } from "../../utils/constants";
 
-const { width } = Dimensions.get("window");
-
+/**
+ * PassengerLogin Component
+ *
+ * Handles user authentication for passengers with dynamic input type detection
+ * Supports both email and mobile number login with real-time validation
+ */
 export default function PassengerLogin() {
-  const [identifier, setIdentifier] = useState(""); // Email or Mobile
+  // State variables
+  const [identifier, setIdentifier] = useState(""); // Email or Mobile number
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  // Auth store hook
   const { loginWithPassword, isLoading, error, clearError } = useAuthStore();
 
+  /**
+   * Navigation handlers
+   */
   const handleForgotPassword = () => {
     router.push("/(auth)/forgot-password");
   };
@@ -45,13 +59,18 @@ export default function PassengerLogin() {
     router.back();
   };
 
-  // Real-time input type detection
+  /**
+   * Dynamic input type detection for email/mobile
+   */
   const inputType = determineInputType(identifier);
   const dynamicKeyboardType = getKeyboardTypeForInput(identifier);
   const dynamicPlaceholder = getPlaceholderForInput(identifier);
   const dynamicIcon = getIconForInput(identifier);
 
-  // Get indicator color based on validation state
+  /**
+   * Get indicator color based on validation state
+   * Returns appropriate color for input type indicator
+   */
   const getIndicatorColor = () => {
     if (inputType === "email") {
       return validateInput(identifier) ? COLORS.success : COLORS.primary;
@@ -66,9 +85,11 @@ export default function PassengerLogin() {
     return COLORS.primary;
   };
 
-  // Handle input change with mobile number filtering
+  /**
+   * Handle identifier input change with mobile number filtering
+   * Ensures only numeric characters for mobile input
+   */
   const handleIdentifierChange = (text: string) => {
-    // If current input type is mobile, only allow digits
     if (determineInputType(identifier) === "mobile" && text.length > 0) {
       // Remove non-digit characters for mobile input
       const numericOnly = text.replace(/\D/g, "");
@@ -78,19 +99,26 @@ export default function PassengerLogin() {
     }
   };
 
+  /**
+   * Handle login process with validation
+   * Validates input and password before attempting login
+   */
   const handleLogin = async () => {
     clearError();
 
+    // Validate identifier input
     if (!validateInput(identifier)) {
       Alert.alert("Error", getValidationErrorMessage(identifier));
       return;
     }
 
+    // Validate password input
     if (!password) {
       Alert.alert("Error", "Please enter your password");
       return;
     }
 
+    // Attempt login
     const success = await loginWithPassword(identifier, password);
 
     if (success) {
@@ -100,12 +128,15 @@ export default function PassengerLogin() {
 
   return (
     <>
+      {/* Status bar configuration */}
       <StatusBar
         style="light"
         backgroundColor="transparent"
         translucent={true}
       />
+
       <SafeAreaView style={styles.container}>
+        {/* Background gradient */}
         <LinearGradient
           colors={[
             "rgba(74, 144, 226, 0.5)", // Blue at top
@@ -120,11 +151,13 @@ export default function PassengerLogin() {
           end={{ x: 0.5, y: 1 }}
         />
 
+        {/* Back button */}
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
 
         <View style={styles.content}>
+          {/* Header section with logo and title */}
           <Animated.View
             entering={FadeInUp.duration(800)}
             style={styles.header}
@@ -139,9 +172,11 @@ export default function PassengerLogin() {
             <Text style={styles.subtitle}>Sign in to your account</Text>
           </Animated.View>
 
+          {/* Login form card */}
           <Animated.View entering={FadeInDown.duration(800).delay(200)}>
             <Card variant="elevated" style={styles.loginCard}>
               <View style={styles.loginContent}>
+                {/* Email/Phone input with dynamic detection */}
                 <Input
                   label="Email or Phone Number"
                   value={identifier}
@@ -153,6 +188,8 @@ export default function PassengerLogin() {
                   icon={dynamicIcon}
                   maxLength={inputType === "mobile" ? 11 : undefined}
                 />
+
+                {/* Input type indicator */}
                 {identifier.trim() && (
                   <View
                     style={[
@@ -163,22 +200,18 @@ export default function PassengerLogin() {
                       },
                     ]}
                   >
-                    {/* <Ionicons
-                      name={inputType === "email" ? "mail" : "call"}
-                      size={12}
-                      color={getIndicatorColor()}
-                    /> */}
                     <Text
                       style={[
                         styles.inputTypeText,
                         { color: getIndicatorColor() },
                       ]}
                     >
-                      {inputType === "email" ? "Email" : `Mobile`}
+                      {inputType === "email" ? "Email" : "Mobile"}
                     </Text>
                   </View>
                 )}
 
+                {/* Password input */}
                 <Input
                   label="Password"
                   value={password}
@@ -190,6 +223,7 @@ export default function PassengerLogin() {
                   onRightIconPress={() => setShowPassword(!showPassword)}
                 />
 
+                {/* Login button */}
                 <Button
                   title="Sign In"
                   onPress={handleLogin}
@@ -200,6 +234,7 @@ export default function PassengerLogin() {
                   fullWidth
                 />
 
+                {/* Error message display */}
                 {error && (
                   <View style={styles.errorContainer}>
                     <Ionicons
@@ -214,10 +249,12 @@ export default function PassengerLogin() {
             </Card>
           </Animated.View>
 
+          {/* Bottom section with additional options */}
           <Animated.View
             entering={FadeInDown.duration(800).delay(400)}
             style={styles.bottomSection}
           >
+            {/* Forgot password link */}
             <TouchableOpacity
               style={styles.forgotPasswordButton}
               onPress={handleForgotPassword}
@@ -225,12 +262,14 @@ export default function PassengerLogin() {
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
 
+            {/* Divider */}
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
               <Text style={styles.dividerText}>OR</Text>
               <View style={styles.dividerLine} />
             </View>
 
+            {/* Registration link */}
             <TouchableOpacity
               style={styles.createAccountButton}
               onPress={() => router.push("/(auth)/passenger-registration")}
@@ -241,6 +280,7 @@ export default function PassengerLogin() {
               </Text>
             </TouchableOpacity>
 
+            {/* Help contact information */}
             <TouchableOpacity style={styles.organizationButton}>
               <Text style={styles.organizationText}>
                 Need help?{" "}
@@ -254,7 +294,12 @@ export default function PassengerLogin() {
   );
 }
 
+/**
+ * StyleSheet for PassengerLogin component
+ * Organized by component sections for better maintainability
+ */
 const styles = StyleSheet.create({
+  // Main container styles
   container: {
     flex: 1,
     backgroundColor: COLORS.brand.background,
@@ -265,16 +310,29 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 1,
   },
-  header: {
-    alignItems: "center",
-    marginBottom: SPACING.lg,
+  glowBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#ffffff",
+    zIndex: 0,
   },
+
+  // Navigation styles
   backButton: {
     position: "absolute",
     left: SPACING.md,
-    top: 60, // Increased to account for translucent status bar
+    top: 60, // Accounts for translucent status bar
     padding: SPACING.sm,
     zIndex: 2,
+  },
+
+  // Header section styles
+  header: {
+    alignItems: "center",
+    marginBottom: SPACING.lg,
   },
   logoContainer: {
     marginBottom: SPACING.sm,
@@ -291,6 +349,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     lineHeight: 20,
   },
+
+  // Login form styles
   loginCard: {
     marginBottom: SPACING.lg,
   },
@@ -298,6 +358,8 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     gap: SPACING.sm,
   },
+
+  // Input type indicator styles
   inputTypeIndicator: {
     position: "absolute",
     right: 20,
@@ -317,6 +379,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 4,
   },
+
+  // Error display styles
   errorContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -332,6 +396,8 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
     flex: 1,
   },
+
+  // Bottom section styles
   bottomSection: {
     alignItems: "center",
   },
@@ -344,6 +410,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+
+  // Divider styles
   divider: {
     flexDirection: "row",
     alignItems: "center",
@@ -361,6 +429,8 @@ const styles = StyleSheet.create({
     color: COLORS.gray[500],
     fontWeight: "500",
   },
+
+  // Registration and help styles
   createAccountButton: {
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
@@ -393,14 +463,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.primary,
     fontWeight: "600",
-  },
-  glowBackground: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "#ffffff",
-    zIndex: 0,
   },
 });
