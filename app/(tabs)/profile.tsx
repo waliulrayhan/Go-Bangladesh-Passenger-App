@@ -148,7 +148,7 @@ export default function Profile() {
         <View style={styles.balanceCard}>
           <View style={styles.balanceHeader}>
             <View style={styles.balanceIconContainer}>
-              <Ionicons name="wallet" size={20} color={COLORS.primary} />
+              <Ionicons name="wallet-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.balanceInfo}>
               <Text style={styles.balanceLabel}>Current Balance</Text>
