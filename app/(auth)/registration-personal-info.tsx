@@ -5,7 +5,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
@@ -20,6 +19,8 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Text } from "../../components/ui/Text";
+import { Toast } from "../../components/ui/Toast";
+import { useToast } from "../../hooks/useToast";
 import { apiService, RegistrationData } from "../../services/api";
 import { COLORS, SPACING } from "../../utils/constants";
 import { storageService } from "../../utils/storage";
@@ -68,6 +69,8 @@ export default function RegistrationPersonalInfo() {
   const [isLoading, setIsLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const { toast, showError, showSuccess, hideToast } = useToast();
 
   const handleGoBack = () => {
     router.back();
@@ -124,10 +127,7 @@ export default function RegistrationPersonalInfo() {
 
   const handleNext = async () => {
     if (!validateForm()) {
-      Alert.alert(
-        "Please Fix Errors",
-        "Please correct all the errors before proceeding."
-      );
+      showError("Please correct all the errors before proceeding.");
       return;
     }
 
@@ -144,10 +144,7 @@ export default function RegistrationPersonalInfo() {
         (age === 5 && monthDiff < 0) ||
         (age === 5 && monthDiff === 0 && today.getDate() < birthDate.getDate())
       ) {
-        Alert.alert(
-          "Age Requirement",
-          "You must be at least 5 years old to register."
-        );
+        showError("You must be at least 5 years old to register.");
         return;
       }
     }
@@ -273,7 +270,7 @@ export default function RegistrationPersonalInfo() {
         errorMessage = error.response.data.data.message;
       }
 
-      Alert.alert("Registration Error", errorMessage);
+      showError(errorMessage);
     }
   };
 
@@ -504,7 +501,7 @@ export default function RegistrationPersonalInfo() {
                     onPress={showDatepicker}
                   >
                     <Ionicons
-                      name="calendar"
+                      name="calendar-outline"
                       size={20}
                       color={COLORS.primary}
                       style={styles.dateIcon}
@@ -591,6 +588,15 @@ export default function RegistrationPersonalInfo() {
           </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
+
+        {/* Toast notification */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+          position="top"
+        />
       </SafeAreaView>
     </>
   );

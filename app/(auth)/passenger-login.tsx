@@ -55,7 +55,7 @@ export default function PassengerLogin() {
   const { loginWithPassword, isLoading, error, clearError } = useAuthStore();
 
   // Toast hook
-  const { toast, showError, hideToast } = useToast();
+  const { toast, showError, showSuccess, hideToast } = useToast();
 
   /**
    * Navigation handlers
@@ -131,7 +131,11 @@ export default function PassengerLogin() {
     const success = await loginWithPassword(identifier, password);
 
     if (success) {
-      router.replace("/(tabs)");
+      showSuccess("Your login was successful!");
+      // Navigate to Homepage a short delay to allow user to see the success message
+      setTimeout(() => {
+        router.replace("/(tabs)");
+      }, 2000);
     }
   };
 

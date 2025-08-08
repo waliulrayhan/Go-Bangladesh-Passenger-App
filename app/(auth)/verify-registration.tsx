@@ -4,7 +4,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   BackHandler,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +17,8 @@ import {
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { Card } from "../../components/ui/Card";
 import { Text } from "../../components/ui/Text";
+import { Toast } from "../../components/ui/Toast";
+import { useToast } from "../../hooks/useToast";
 import { apiService } from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
@@ -40,6 +41,7 @@ export default function VerifyRegistration() {
   }>();
 
   const { login } = useAuthStore();
+  const { toast, showError, showSuccess, hideToast } = useToast();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
@@ -109,7 +111,7 @@ export default function VerifyRegistration() {
     const otpString = otpCode || otp.join("");
 
     if (otpString.length !== 6) {
-      Alert.alert("Invalid OTP", "Please enter the complete 6-digit OTP.");
+      showError("Please enter the complete 6-digit OTP.");
       return;
     }
 
@@ -137,18 +139,13 @@ export default function VerifyRegistration() {
           console.error("❌ No stored registration data found");
           setIsLoading(false);
 
-          Alert.alert(
-            "Registration Error",
-            "Registration data not found. Please start the registration process again.",
-            [
-              {
-                text: "Go to Registration",
-                onPress: () => {
-                  router.replace("/(auth)/passenger-registration");
-                },
-              },
-            ]
-          );
+          showError("Registration data not found. Please start the registration process again.");
+          
+          // Navigate to registration after a short delay
+          setTimeout(() => {
+            router.replace("/(auth)/passenger-registration");
+          }, 2000);
+          
           return;
         }
 
@@ -181,34 +178,22 @@ export default function VerifyRegistration() {
 
             setIsLoading(false);
 
-            Alert.alert(
-              "Registration Successful!",
-              "Your account has been created successfully. Welcome to Go Bangladesh!",
-              [
-                {
-                  text: "Continue",
-                  onPress: () => {
-                    router.replace("/(tabs)");
-                  },
-                },
-              ]
-            );
+            showSuccess("Your account has been created successfully. Welcome to Go Bangladesh!");
+            
+            // Navigate to main app after a short delay
+            setTimeout(() => {
+              router.replace("/(tabs)");
+            }, 2000);
           } else {
             // If login fails, still show success message but redirect to login
             setIsLoading(false);
 
-            Alert.alert(
-              "Registration Complete",
-              "Your account has been created successfully. Please log in to continue.",
-              [
-                {
-                  text: "Go to Login",
-                  onPress: () => {
-                    router.replace("/(auth)/passenger-login");
-                  },
-                },
-              ]
-            );
+            showSuccess("Your account has been created successfully. Please log in to continue.");
+            
+            // Navigate to login after a short delay
+            setTimeout(() => {
+              router.replace("/(auth)/passenger-login");
+            }, 2000);
           }
         } catch (registrationError: any) {
           console.error("❌ Registration API error:", registrationError);
@@ -226,14 +211,12 @@ export default function VerifyRegistration() {
             errorMessage = registrationError.response.data.data.message;
           }
 
-          Alert.alert("Registration Error", errorMessage, [
-            {
-              text: "Try Again",
-              onPress: () => {
-                router.replace("/(auth)/passenger-registration");
-              },
-            },
-          ]);
+          showError(errorMessage);
+          
+          // Navigate to registration after a short delay
+          setTimeout(() => {
+            router.replace("/(auth)/passenger-registration");
+          }, 3000);
         }
       }
     } catch (error: any) {
@@ -254,7 +237,7 @@ export default function VerifyRegistration() {
         errorMessage = error.response.data.data.message;
       }
 
-      Alert.alert("Verification Failed", errorMessage);
+      showError(errorMessage);
     }
   };
 
@@ -275,7 +258,7 @@ export default function VerifyRegistration() {
       setCanResend(false);
       inputRefs.current[0]?.focus();
 
-      Alert.alert("OTP Sent", "A new OTP has been sent to your mobile number.");
+      showSuccess("A new OTP has been sent to your mobile number.");
     } catch (error: any) {
       setIsResending(false);
       console.error("❌ Resend OTP error:", error);
@@ -291,7 +274,7 @@ export default function VerifyRegistration() {
         errorMessage = error.response.data.data.message;
       }
 
-      Alert.alert("Error", errorMessage);
+      showError(errorMessage);
     }
   };
 
@@ -425,6 +408,15 @@ export default function VerifyRegistration() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
+
+        {/* Toast notification */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+          position="top"
+        />
       </SafeAreaView>
     </>
   );

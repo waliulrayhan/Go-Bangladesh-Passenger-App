@@ -4,7 +4,6 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
@@ -20,6 +19,8 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Text } from "../../components/ui/Text";
+import { Toast } from "../../components/ui/Toast";
+import { useToast } from "../../hooks/useToast";
 import { useAuthStore } from "../../stores/authStore";
 import { COLORS, SPACING } from "../../utils/constants";
 
@@ -34,6 +35,7 @@ export default function ChangePassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { changePassword, isLoading, error, clearError } = useAuthStore();
+  const { toast, showError, showSuccess, hideToast } = useToast();
 
   const handleGoBack = () => {
     router.back();
@@ -51,39 +53,36 @@ export default function ChangePassword() {
 
     // Validate inputs
     if (!oldPassword.trim()) {
-      Alert.alert("Error", "Please enter your current password");
+      showError("Please enter your current password");
       return;
     }
 
     if (!newPassword.trim()) {
-      Alert.alert("Error", "Please enter a new password");
+      showError("Please enter a new password");
       return;
     }
 
     if (!confirmNewPassword.trim()) {
-      Alert.alert("Error", "Please confirm your new password");
+      showError("Please confirm your new password");
       return;
     }
 
     // Validate new password
     const passwordError = validatePassword(newPassword);
     if (passwordError) {
-      Alert.alert("Error", passwordError);
+      showError(passwordError);
       return;
     }
 
     // Check if passwords match
     if (newPassword !== confirmNewPassword) {
-      Alert.alert("Error", "New passwords do not match");
+      showError("New passwords do not match");
       return;
     }
 
     // Check if old and new password are the same
     if (oldPassword === newPassword) {
-      Alert.alert(
-        "Error",
-        "New password must be different from your current password"
-      );
+      showError("New password must be different from your current password");
       return;
     }
 
@@ -93,21 +92,14 @@ export default function ChangePassword() {
       confirmNewPassword
     );
 
-    if (result.success) {
-      Alert.alert(
-        "Password Changed Successfully",
-        "Your password has been updated successfully.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              router.back();
-            },
-          },
-        ]
-      );
+    if (result.success) { 
+      showSuccess("Your password has been updated successfully.");
+      // Navigate back after a short delay to allow user to see the success message
+      setTimeout(() => {
+        router.back();
+      }, 2000);
     } else {
-      Alert.alert("Error", result.message);
+      showError(result.message);
     }
   };
 
@@ -298,6 +290,15 @@ export default function ChangePassword() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
+
+        {/* Toast notification */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+          position="top"
+        />
       </SafeAreaView>
     </>
   );

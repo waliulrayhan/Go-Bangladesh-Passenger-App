@@ -4,7 +4,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -18,6 +17,8 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Text } from "../../components/ui/Text";
+import { Toast } from "../../components/ui/Toast";
+import { useToast } from "../../hooks/useToast";
 import { useAuthStore } from "../../stores/authStore";
 import { COLORS, SPACING } from "../../utils/constants";
 import { FONT_WEIGHTS } from "../../utils/fonts";
@@ -30,6 +31,7 @@ export default function ResetPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { resetPassword, isLoading, error, clearError } = useAuthStore();
+  const { toast, showError, showSuccess, hideToast } = useToast();
 
   const handleGoBack = () => {
     router.back();
@@ -48,36 +50,29 @@ export default function ResetPassword() {
     // Validate new password
     const passwordError = validatePassword(newPassword);
     if (passwordError) {
-      Alert.alert("Error", passwordError);
+      showError(passwordError);
       return;
     }
 
     // Check if passwords match
     if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
+      showError("Passwords do not match");
       return;
     }
 
     if (!mobile) {
-      Alert.alert("Error", "Mobile number not found. Please start over.");
+      showError("Mobile number not found. Please start over.");
       return;
     }
 
     const success = await resetPassword(mobile, newPassword, confirmPassword);
 
     if (success) {
-      Alert.alert(
-        "Password Reset Successful",
-        "Your password has been reset successfully. You can now login with your new password.",
-        [
-          {
-            text: "Login Now",
-            onPress: () => {
-              router.replace("/(auth)/passenger-login");
-            },
-          },
-        ]
-      );
+      showSuccess("Your password has been reset successfully. You can now login with your new password.");
+      // Navigate to login after a short delay to allow user to see the success message
+      setTimeout(() => {
+        router.replace("/(auth)/passenger-login");
+      }, 2000);
     }
   };
 
@@ -255,6 +250,15 @@ export default function ResetPassword() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
+
+        {/* Toast notification */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+          position="top"
+        />
       </SafeAreaView>
     </>
   );

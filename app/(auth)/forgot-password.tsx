@@ -4,7 +4,6 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
@@ -21,6 +20,8 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Text } from "../../components/ui/Text";
+import { Toast } from "../../components/ui/Toast";
+import { useToast } from "../../hooks/useToast";
 import { useAuthStore } from "../../stores/authStore";
 import { COLORS, SPACING } from "../../utils/constants";
 
@@ -33,6 +34,7 @@ export default function ForgotPassword() {
   const [timer, setTimer] = useState(0);
 
   const { sendOTPForForgotPassword, verifyOTP, isLoading, error, clearError } = useAuthStore();
+  const { toast, showError, showSuccess, showInfo, hideToast } = useToast();
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   // Get indicator color based on validation state for mobile
@@ -95,10 +97,7 @@ export default function ForgotPassword() {
     clearError();
 
     if (!validateMobile(mobile)) {
-      Alert.alert(
-        "Error",
-        "Please enter a valid Bangladesh mobile number (01xxxxxxxxx)"
-      );
+      showError("Please enter a valid Bangladesh mobile number (01xxxxxxxxx)");
       return;
     }
 
@@ -108,25 +107,15 @@ export default function ForgotPassword() {
     if (success) {
       setIsOtpSent(true);
       setTimer(60); // 60 seconds countdown
-      Alert.alert(
-        "OTP Sent",
-        `A verification code has been sent to ${formattedMobile}`,
-        [{ text: "OK" }]
-      );
+      showSuccess(`A verification code has been sent to ${formattedMobile}`);
     } else {
       // Check if the error is about mobile number not found
       if (error && error.includes('not found')) {
-        Alert.alert(
-          "Mobile Number Not Found",
-          "This mobile number is not registered with us. Please check your number or create a new account.",
-          [
-            { text: "Try Again" },
-            { 
-              text: "Register", 
-              onPress: () => router.push("/(auth)/passenger-registration")
-            }
-          ]
-        );
+        showError("This mobile number is not registered with us. Please check your number or create a new account.");
+        // Optionally navigate to registration after a delay
+        setTimeout(() => {
+          router.push("/(auth)/passenger-registration");
+        }, 3000);
       }
     }
   };
@@ -196,7 +185,7 @@ export default function ForgotPassword() {
 
     const otpString = otpCode || otp.join("");
     if (!otpString || otpString.length !== 6) {
-      Alert.alert("Error", "Please enter a valid 6-digit OTP");
+      showError("Please enter a valid 6-digit OTP");
       return;
     }
 
@@ -215,21 +204,12 @@ export default function ForgotPassword() {
         setOtp(["", "", "", "", "", ""]);
 
         // Show error alert
-        Alert.alert(
-          "Verification Failed",
-          "The OTP you entered is incorrect. Please try again.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                // Refocus first input after alert is dismissed
-                setTimeout(() => {
-                  inputRefs.current[0]?.focus();
-                }, 100);
-              },
-            },
-          ]
-        );
+        showError("The OTP you entered is incorrect. Please try again.");
+        
+        // Refocus first input after a short delay
+        setTimeout(() => {
+          inputRefs.current[0]?.focus();
+        }, 100);
       }
     } catch (error) {
       console.error("[ForgotPassword] OTP verification failed:", error);
@@ -237,22 +217,13 @@ export default function ForgotPassword() {
       // Clear OTP inputs on error
       setOtp(["", "", "", "", "", ""]);
 
-      // Show error alert
-      Alert.alert(
-        "Verification Failed",
-        "Failed to verify OTP. Please try again.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Refocus first input after alert is dismissed
-              setTimeout(() => {
-                inputRefs.current[0]?.focus();
-              }, 100);
-            },
-          },
-        ]
-      );
+      // Show error toast
+      showError("Failed to verify OTP. Please try again.");
+      
+      // Refocus first input after a short delay
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 100);
     }
   };
 
@@ -265,50 +236,21 @@ export default function ForgotPassword() {
 
     if (success) {
       setTimer(60);
-      Alert.alert(
-        "OTP Sent",
-        "A new verification code has been sent to your mobile"
-      );
+      showSuccess("A new verification code has been sent to your mobile");
     } else {
       // Check if the error is about mobile number not found
       if (error && error.includes('not found')) {
-        Alert.alert(
-          "Mobile Number Not Found",
-          "This mobile number is not registered with us. Please check your number or create a new account.",
-          [
-            { text: "Try Again" },
-            { 
-              text: "Register", 
-              onPress: () => router.push("/(auth)/passenger-registration")
-            }
-          ]
-        );
+        showError("This mobile number is not registered with us. Please check your number or create a new account.");
+        // Optionally navigate to registration after a delay
+        setTimeout(() => {
+          router.push("/(auth)/passenger-registration");
+        }, 3000);
       }
     }
   };
 
   const handleContactOrganization = () => {
-    Alert.alert(
-      "Need Help?",
-      "If you're having trouble with your account, please contact us:",
-      [
-        {
-          text: "Call Support",
-          onPress: () => {
-            // You can implement phone call functionality here
-            Alert.alert("Contact Support", "Please call: +88-02-XXXXXXXX");
-          }
-        },
-        {
-          text: "Email Support",
-          onPress: () => {
-            // You can implement email functionality here
-            Alert.alert("Email Support", "Please email: info@thegobd.com");
-          }
-        },
-        { text: "Cancel", style: "cancel" }
-      ]
-    );
+    showInfo("If you're having trouble with your account, please contact us at info@thegobd.com");
   };
 
   // OTP input state
@@ -612,6 +554,15 @@ export default function ForgotPassword() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
+
+        {/* Toast notification */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+          position="top"
+        />
       </SafeAreaView>
     </>
   );

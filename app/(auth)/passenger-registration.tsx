@@ -4,7 +4,6 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
@@ -20,6 +19,8 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Text } from "../../components/ui/Text";
+import { Toast } from "../../components/ui/Toast";
+import { useToast } from "../../hooks/useToast";
 import { apiService } from "../../services/api";
 import { COLORS, SPACING } from "../../utils/constants";
 
@@ -28,6 +29,8 @@ const { width } = Dimensions.get("window");
 export default function PassengerRegistration() {
   const [cardNumber, setCardNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const { toast, showError, showSuccess, hideToast } = useToast();
 
   const handleGoBack = () => {
     router.back();
@@ -47,10 +50,7 @@ export default function PassengerRegistration() {
 
   const handleProceed = async () => {
     if (!validateCardNumber(cardNumber)) {
-      Alert.alert(
-        "Invalid Card Number",
-        "Please enter a valid card number (at least 8 characters, letters and numbers only)"
-      );
+      showError("Please enter a valid card number (at least 8 characters)");
       return;
     }
 
@@ -64,31 +64,21 @@ export default function PassengerRegistration() {
       );
 
       if (!validationResponse.isSuccess) {
-        Alert.alert(
-          "Card Issue",
-          validationResponse.message ||
-            "This card is not available for registration"
-        );
+        showError(validationResponse.message || "This card is not available for registration");
         setIsLoading(false);
         return;
       }
 
       // Check if card content exists
       if (!validationResponse.content) {
-        Alert.alert(
-          "Card Not Found",
-          "Card not found. Please check your card number and try again."
-        );
+        showError("Card not found. Please check your card number and try again.");
         setIsLoading(false);
         return;
       }
 
       // Check if card is available based on the message
       if (validationResponse.message !== "This card is available!") {
-        Alert.alert(
-          "Card Not Available",
-          "This card is not available for registration. Please contact support if this is your card."
-        );
+        showError("This card is not available for registration. Please contact support if this is your card.");
         setIsLoading(false);
         return;
       }
@@ -114,10 +104,7 @@ export default function PassengerRegistration() {
       });
     } catch (error: any) {
       console.error("❌ Card validation error:", error);
-      Alert.alert(
-        "Connection Error",
-        "Unable to verify card. Please check your internet connection and try again."
-      );
+      showError("Unable to verify card. Please check your internet connection and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -238,6 +225,15 @@ export default function PassengerRegistration() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
+
+        {/* Toast notification */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+          position="top"
+        />
       </SafeAreaView>
     </>
   );
