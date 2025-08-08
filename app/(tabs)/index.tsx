@@ -491,13 +491,13 @@ export default function Dashboard() {
     const getActivityIcon = (transactionType: string) => {
       if (transactionType === "BusFare") {
         return {
-          icon: "arrow-up" as const,
+          icon: "arrow-up-outline" as const,
           color: COLORS.error,
           backgroundColor: COLORS.error + "20",
         };
       } else {
         return {
-          icon: "arrow-down" as const,
+          icon: "arrow-down-outline" as const,
           color: COLORS.success,
           backgroundColor: COLORS.success + "20",
         };

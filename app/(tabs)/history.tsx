@@ -426,7 +426,7 @@ export default function History() {
                 }}
                 disabled={!trip.startingLatitude || !trip.startingLongitude}
               >
-                <Ionicons name="time" size={14} color={COLORS.success} />
+                <Ionicons name="time-outline" size={14} color={COLORS.success} />
                 <Text
                   variant="bodySmall"
                   color={COLORS.white}
@@ -434,7 +434,7 @@ export default function History() {
                 >
                   {tripStartTime ? formatTime(tripStartTime) : "N/A"}
                 </Text>
-                <Ionicons name="location" size={14} color={COLORS.success} />
+                <Ionicons name="location-outline" size={14} color={COLORS.success} />
               </TouchableOpacity>
             </View>
 
@@ -460,7 +460,7 @@ export default function History() {
                   }}
                   disabled={!trip.endingLatitude || !trip.endingLongitude}
                 >
-                  <Ionicons name="time" size={14} color={COLORS.error} />
+                  <Ionicons name="time-outline" size={14} color={COLORS.error} />
                   <Text
                     variant="bodySmall"
                     color={COLORS.white}
@@ -468,7 +468,7 @@ export default function History() {
                   >
                     {tripEndTime ? formatTime(tripEndTime) : "N/A"}
                   </Text>
-                  <Ionicons name="location" size={14} color={COLORS.error} />
+                  <Ionicons name="location-outline" size={14} color={COLORS.error} />
                 </TouchableOpacity>
               </View>
             )}
@@ -508,7 +508,7 @@ export default function History() {
                 }
               >
                 <Ionicons
-                  name="map"
+                  name="map-outline"
                   size={14}
                   color={
                     distance > 0 &&
@@ -563,18 +563,18 @@ export default function History() {
                 <Ionicons
                   name={
                     tapInType === "Card"
-                      ? "card"
+                      ? "card-outline"
                       : tapInType === "Time-Out"
-                      ? "time"
+                      ? "time-outline"
                       : tapInType === "Staff"
-                      ? "person-circle"
+                      ? "person-circle-outline"
                       : tapInType === "Session-Out"
-                      ? "exit"
+                      ? "exit-outline"
                       : tapInType === "Mobile App"
-                      ? "phone-portrait"
+                      ? "phone-portrait-outline"
                       : tapInType === "Penalty"
-                      ? "warning"
-                      : "help-circle"
+                      ? "warning-outline"
+                      : "help-circle-outline"
                   }
                   size={14}
                   color={
@@ -641,18 +641,18 @@ export default function History() {
                   <Ionicons
                     name={
                       tapOutStatus === "Card"
-                        ? "card"
+                        ? "card-outline"
                         : tapOutStatus === "Time-Out"
-                        ? "time"
+                        ? "time-outline"
                         : tapOutStatus === "Staff"
-                        ? "person-circle"
+                        ? "person-circle-outline"
                         : tapOutStatus === "Session-Out"
-                        ? "exit"
+                        ? "exit-outline"
                         : tapOutStatus === "Mobile App"
-                        ? "phone-portrait"
+                        ? "phone-portrait-outline"
                         : tapOutStatus === "Penalty"
-                        ? "warning"
-                        : "help-circle"
+                        ? "warning-outline"
+                        : "help-circle-outline"
                     }
                     size={14}
                     color={
@@ -729,7 +729,7 @@ export default function History() {
                 color={COLORS.gray[900]}
                 style={styles.cardTitle}
               >
-                {isRecharge ? "Wallet Recharge" : "Wallet Return"}
+                {isRecharge ? "Recharge" : "Return"}
               </Text>
               <Text
                 variant="caption"
@@ -767,7 +767,7 @@ export default function History() {
               onPress={() => copyTransactionId(transactionId)}
               activeOpacity={0.7}
             >
-              <Ionicons name="receipt" size={14} color={COLORS.gray[500]} />
+              <Ionicons name="receipt-outline" size={14} color={COLORS.gray[500]} />
               <Text
                 variant="bodySmall"
                 color={COLORS.gray[600]}
@@ -781,7 +781,7 @@ export default function History() {
             </TouchableOpacity>
             <View style={styles.dateTimeContainer}>
               <View style={styles.dateItem}>
-                <Ionicons name="calendar" size={14} color={COLORS.gray[500]} />
+                <Ionicons name="calendar-outline" size={14} color={COLORS.gray[500]} />
                 <Text
                   variant="bodySmall"
                   color={COLORS.gray[600]}
@@ -793,7 +793,7 @@ export default function History() {
                 </Text>
               </View>
               <View style={styles.TimeItem}>
-                <Ionicons name="time" size={14} color={COLORS.gray[500]} />
+                <Ionicons name="time-outline" size={14} color={COLORS.gray[500]} />
                 <Text
                   variant="bodySmall"
                   color={COLORS.gray[600]}
@@ -1274,14 +1274,12 @@ export default function History() {
                         {" "}of {originalDataLength} loaded
                       </Text>
                     );
-                  } else if (totalCount > 0 && totalCount > originalDataLength) {
+                  }
                     return (
                       <Text variant="bodySmall" color={COLORS.gray[500]}>
                         {" "}• {totalCount} total
                       </Text>
                     );
-                  }
-                  return null;
                 })()}
                 {searchQuery && (
                   <Text variant="bodySmall" color={COLORS.primary}>
@@ -1645,7 +1643,6 @@ const styles = StyleSheet.create({
     padding: SPACING.xs,
     backgroundColor: "#E3F2FD", // Light blue background
     borderRadius: 6,
-    borderWidth: 1,
     borderColor: "#BBDEFB",
     justifyContent: "center",
     minHeight: 32,
@@ -1657,7 +1654,6 @@ const styles = StyleSheet.create({
     padding: SPACING.xs,
     backgroundColor: "#E8F5E8", // Light green background
     borderRadius: 6,
-    borderWidth: 1,
     borderColor: "#C8E6C9",
     justifyContent: "center",
     minHeight: 32,

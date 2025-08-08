@@ -76,7 +76,7 @@ export default function TabsLayout() {
             headerShown: false,
             tabBarLabel: "Home",
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="home" size={size} color={color} />
+              <Ionicons name="home-outline" size={size} color={color} />
             ),
           }}
         />
@@ -86,7 +86,7 @@ export default function TabsLayout() {
             title: "History",
             tabBarLabel: "History",
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="time" size={size} color={color} />
+              <Ionicons name="time-outline" size={size} color={color} />
             ),
           }}
         />
@@ -96,7 +96,7 @@ export default function TabsLayout() {
             title: "Map",
             tabBarLabel: "Map",
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="map" size={size} color={color} />
+              <Ionicons name="map-outline" size={size} color={color} />
             ),
           }}
         />
@@ -106,7 +106,7 @@ export default function TabsLayout() {
             title: "Profile",
             tabBarLabel: "Profile",
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="person" size={size} color={color} />
+              <Ionicons name="person-outline" size={size} color={color} />
             ),
           }}
         />
