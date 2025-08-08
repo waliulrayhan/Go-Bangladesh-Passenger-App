@@ -253,7 +253,7 @@ export default function MapScreen() {
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Ionicons name="map" size={32} color={COLORS.brand.blue} />
+          <Ionicons name="map-outline" size={32} color={COLORS.brand.blue} />
           <Text style={styles.title}>Find Buses on Map</Text>
           <Text style={styles.subtitle}>
             Select organization and route to view real-time bus locations
@@ -330,7 +330,7 @@ export default function MapScreen() {
 
         <View style={styles.infoContainer}>
           <View style={styles.infoItem}>
-            <Ionicons name="information-circle" size={20} color={COLORS.brand.orange} />
+            <Ionicons name="information-circle-outline" size={20} color={COLORS.brand.orange} />
             <Text style={styles.infoText}>
               Both organization and route selection are required to proceed
             </Text>
