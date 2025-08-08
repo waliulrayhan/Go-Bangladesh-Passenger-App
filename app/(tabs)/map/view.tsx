@@ -576,18 +576,6 @@ export default function MapViewScreen() {
             {buses.length} bus{buses.length !== 1 ? 'es' : ''} active
           </Text>
         </View>
-        
-        <TouchableOpacity 
-          style={styles.refreshButton} 
-          onPress={handleRefresh}
-          disabled={refreshing}
-        >
-          {refreshing ? (
-            <ActivityIndicator size="small" color={COLORS.white} />
-          ) : (
-            <Ionicons name="refresh" size={24} color={COLORS.white} />
-          )}
-        </TouchableOpacity>
       </LinearGradient>
 
       {/* Map Container */}
