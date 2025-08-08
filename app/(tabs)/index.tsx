@@ -165,7 +165,7 @@ export default function Dashboard() {
     const day = date.getDate();
     const month = months[date.getMonth()];
     const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
+    return `${day} ${month} ${year}`;
   };
 
   const handleViewAllPress = () => {
