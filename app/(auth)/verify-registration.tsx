@@ -77,15 +77,38 @@ export default function VerifyRegistration() {
     // Add console log to debug autofill detection
     console.log("🔍 Setting up SMS autofill for verify-registration");
     
-    // Simple, direct focus without blur-focus cycle
-    const timer = setTimeout(() => {
+    // Multiple attempts to establish autofill context immediately
+    const timer1 = setTimeout(() => {
       if (inputRefs.current[0] && !isLoading && !isAutoVerifying) {
-        console.log("📱 Focusing first input for SMS autofill");
+        console.log("📱 First focus attempt for SMS autofill");
         inputRefs.current[0].focus();
       }
-    }, 500); // Back to 500ms delay like forgot-password
+    }, 300);
 
-    return () => clearTimeout(timer);
+    const timer2 = setTimeout(() => {
+      if (inputRefs.current[0] && !isLoading && !isAutoVerifying) {
+        console.log("📱 Second focus attempt for SMS autofill");
+        inputRefs.current[0].blur();
+        setTimeout(() => {
+          if (inputRefs.current[0]) {
+            inputRefs.current[0].focus();
+          }
+        }, 50);
+      }
+    }, 800);
+
+    const timer3 = setTimeout(() => {
+      if (inputRefs.current[0] && !isLoading && !isAutoVerifying) {
+        console.log("📱 Final focus attempt for SMS autofill");
+        inputRefs.current[0].focus();
+      }
+    }, 1500);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
   }, []); // Only run once on mount
 
   // Reset OTP when component mounts to ensure clean state for autofill
@@ -103,24 +126,6 @@ export default function VerifyRegistration() {
       autofillTimeout.current = null;
     }
   }, []);
-
-  // Periodic refresh to re-trigger autofill detection
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Only refresh if OTP is empty and not in loading state
-      if (otp.every(digit => digit === "") && !isLoading && !isAutoVerifying && inputRefs.current[0]) {
-        console.log("🔄 Refreshing autofill context");
-        inputRefs.current[0].blur();
-        setTimeout(() => {
-          if (inputRefs.current[0]) {
-            inputRefs.current[0].focus();
-          }
-        }, 100);
-      }
-    }, 10000); // Every 10 seconds
-
-    return () => clearInterval(interval);
-  }, [otp, isLoading, isAutoVerifying]);
 
   useEffect(() => {
     // Handle back button on Android
