@@ -121,24 +121,24 @@ export default function RegistrationPersonalInfo() {
       newErrors.confirmPassword = "Passwords do not match";
     }
 
-    // Date of birth validation
-    if (!form.dateOfBirth.trim()) {
-      newErrors.dateOfBirth = "Date of birth is required";
-    } else if (selectedDate) {
-      const today = new Date();
-      const birthDate = new Date(selectedDate);
-      const age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
+    // // Date of birth validation
+    // if (!form.dateOfBirth.trim()) {
+    //   newErrors.dateOfBirth = "Date of birth is required";
+    // } else if (selectedDate) {
+    //   const today = new Date();
+    //   const birthDate = new Date(selectedDate);
+    //   const age = today.getFullYear() - birthDate.getFullYear();
+    //   const monthDiff = today.getMonth() - birthDate.getMonth();
 
-      // Check if the user is less than 5 years old
-      if (
-        age < 5 ||
-        (age === 5 && monthDiff < 0) ||
-        (age === 5 && monthDiff === 0 && today.getDate() < birthDate.getDate())
-      ) {
-        newErrors.dateOfBirth = "You must be at least 5 years old to register";
-      }
-    }
+    //   // Check if the user is less than 5 years old
+    //   if (
+    //     age < 5 ||
+    //     (age === 5 && monthDiff < 0) ||
+    //     (age === 5 && monthDiff === 0 && today.getDate() < birthDate.getDate())
+    //   ) {
+    //     newErrors.dateOfBirth = "You must be at least 5 years old to register";
+    //   }
+    // }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
