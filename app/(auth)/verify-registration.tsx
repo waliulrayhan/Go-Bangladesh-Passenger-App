@@ -49,6 +49,7 @@ export default function VerifyRegistration() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAutoVerifying, setIsAutoVerifying] = useState(false);
   const [showVerifyingText, setShowVerifyingText] = useState(false); // Separate state for UI display
+  const [isOtpReady, setIsOtpReady] = useState(false); // Similar to isOtpSent in forgot-password
 
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const isHandlingAutofill = useRef(false);
@@ -72,32 +73,31 @@ export default function VerifyRegistration() {
     return () => clearInterval(timer);
   }, []);
 
-  // Force focus on first input when component mounts to trigger SMS autofill
+  // Simulate isOtpSent behavior - trigger OTP ready state for autofill
   useEffect(() => {
-    // Add console log to debug autofill detection
-    console.log("🔍 Setting up SMS autofill for verify-registration");
-    
-    // Immediate focus to trigger SMS autofill
-    const timer1 = setTimeout(() => {
-      if (inputRefs.current[0] && !isLoading && !isAutoVerifying) {
-        console.log("📱 Initial focus for SMS autofill");
-        inputRefs.current[0].focus();
-      }
-    }, 100); // Small delay to ensure component is ready
+    const timer = setTimeout(() => {
+      setIsOtpReady(true);
+    }, 100); // Small delay to trigger component remount for autofill
 
-    // Second focus attempt for better autofill reliability
-    const timer2 = setTimeout(() => {
-      if (inputRefs.current[0] && !isLoading && !isAutoVerifying) {
-        console.log("📱 Secondary focus for SMS autofill reliability");
-        inputRefs.current[0].focus();
-      }
-    }, 300); // Ensure autofill context is established
+    return () => clearTimeout(timer);
+  }, []);
 
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
-  }, []); // Only run once on mount
+  // Reset OTP when OTP becomes ready (similar to forgot-password isOtpSent effect)
+  useEffect(() => {
+    if (isOtpReady) {
+      setOtp(["", "", "", "", "", ""]);
+      setIsAutoVerifying(false);
+      setShowVerifyingText(false);
+      // Reset autofill flags when entering OTP state
+      isHandlingAutofill.current = false;
+      lastOtpInputTime.current = 0;
+      autofillDigits.current = [];
+      if (autofillTimeout.current) {
+        clearTimeout(autofillTimeout.current);
+        autofillTimeout.current = null;
+      }
+    }
+  }, [isOtpReady]);
 
   // Reset OTP when component mounts to ensure clean state for autofill
   useEffect(() => {
@@ -580,8 +580,8 @@ export default function VerifyRegistration() {
                   )}
 
                   <View 
-                    style={styles.otpInputContainer} 
-                    key={`otp-container-verify-${countdown > 50 ? 'fresh' : 'active'}`}
+                    style={styles.otpInputContainer}
+                    key={`otp-container-${isOtpReady}`}
                   >
                     {showVerifyingText && (
                       <Animated.View 
@@ -596,7 +596,7 @@ export default function VerifyRegistration() {
                     )}
                     {otp.map((digit, index) => (
                       <Animated.View
-                        key={`otp-input-wrapper-${index}-verify-${countdown > 50 ? 'fresh' : 'active'}`}
+                        key={`otp-input-wrapper-${index}-${isOtpReady}`}
                         style={styles.otpInputWrapper}
                       >
                         <TextInput
@@ -620,23 +620,8 @@ export default function VerifyRegistration() {
                           autoComplete={index === 0 ? "sms-otp" : "off"} // Android SMS auto-fill for first input only
                           importantForAutofill={index === 0 ? "yes" : "no"} // Android autofill priority
                           blurOnSubmit={false}
-                          returnKeyType="next"
-                          // Additional props for better SMS autofill
-                          autoCorrect={false}
-                          autoCapitalize="none"
-                          spellCheck={false}
-                          clearButtonMode="never"
                           // Prevent other inputs from interfering with autofill
                           contextMenuHidden={index !== 0}
-                          // Keep first input always ready for autofill
-                          onBlur={index === 0 ? () => {
-                            // Re-focus after a short delay to maintain autofill context
-                            setTimeout(() => {
-                              if (inputRefs.current[0] && !isLoading && !isAutoVerifying) {
-                                inputRefs.current[0].focus();
-                              }
-                            }, 100);
-                          } : undefined}
                         />
                       </Animated.View>
                     ))}
