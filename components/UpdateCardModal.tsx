@@ -208,7 +208,7 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
           onChangeText={handleCardNumberChange}
           placeholder="(e.g. ABCD1234)"
           keyboardType="default"
-          icon="card"
+          icon="card-outline"
           maxLength={16}
           autoCapitalize="characters"
           error={error}
@@ -328,14 +328,14 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.iconContainer}>
-                <Ionicons name="card" size={22} color={COLORS.primary} />
+                <Ionicons name="card-outline" size={22} color={COLORS.primary} />
               </View>
               <Text variant="h5" style={styles.title}>
                 {step === 'card-input' ? 'Update Card Number' : 'Verify OTP'}
               </Text>
             </View>
             <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-              <Ionicons name="close" size={26} color={COLORS.gray[600]} />
+              <Ionicons name="close-outline" size={26} color={COLORS.gray[600]} />
             </TouchableOpacity>
           </View>
 

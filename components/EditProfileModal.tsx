@@ -309,7 +309,7 @@ export function EditProfileModal({
                   value={formData.name}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
                   placeholder="Enter your full name"
-                  icon="person"
+                  icon="person-outline"
                 />
               </View>
 
@@ -320,7 +320,7 @@ export function EditProfileModal({
                   onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
                   placeholder="Enter your mobile number"
                   keyboardType="phone-pad"
-                  icon="call"
+                  icon="call-outline"
                 />
               </View>
 
@@ -332,7 +332,7 @@ export function EditProfileModal({
                   placeholder="Enter your email address"
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  icon="mail"
+                  icon="mail-outline"
                 />
               </View>
 
@@ -347,7 +347,7 @@ export function EditProfileModal({
                   placeholder={userData.userType === 'Private'
                     ? 'Enter your Identity Number' 
                     : 'Enter your Identity Number'}
-                  icon="id-card"
+                  icon="id-card-outline"
                 />
               </View>
 
@@ -386,7 +386,7 @@ export function EditProfileModal({
                   onPress={() => setShowDatePicker(true)}
                 >
                   <View style={styles.dateButtonContent}>
-                    <Ionicons name="calendar" size={18} color={COLORS.primary} />
+                    <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
                     <Text style={[
                       styles.dateText,
                       !formData.dateOfBirth && styles.dateTextPlaceholder
@@ -404,7 +404,7 @@ export function EditProfileModal({
                   value={formData.address}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, address: text }))}
                   placeholder="Enter your address"
-                  icon="location"
+                  icon="location-outline"
                 />
               </View>
             </View>
