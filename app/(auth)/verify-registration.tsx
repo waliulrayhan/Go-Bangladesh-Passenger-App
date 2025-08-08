@@ -77,37 +77,25 @@ export default function VerifyRegistration() {
     // Add console log to debug autofill detection
     console.log("🔍 Setting up SMS autofill for verify-registration");
     
-    // Multiple attempts to establish autofill context immediately
+    // Immediate focus to trigger SMS autofill
     const timer1 = setTimeout(() => {
       if (inputRefs.current[0] && !isLoading && !isAutoVerifying) {
-        console.log("📱 First focus attempt for SMS autofill");
+        console.log("📱 Initial focus for SMS autofill");
         inputRefs.current[0].focus();
       }
-    }, 300);
+    }, 100); // Small delay to ensure component is ready
 
+    // Second focus attempt for better autofill reliability
     const timer2 = setTimeout(() => {
       if (inputRefs.current[0] && !isLoading && !isAutoVerifying) {
-        console.log("📱 Second focus attempt for SMS autofill");
-        inputRefs.current[0].blur();
-        setTimeout(() => {
-          if (inputRefs.current[0]) {
-            inputRefs.current[0].focus();
-          }
-        }, 50);
-      }
-    }, 800);
-
-    const timer3 = setTimeout(() => {
-      if (inputRefs.current[0] && !isLoading && !isAutoVerifying) {
-        console.log("📱 Final focus attempt for SMS autofill");
+        console.log("📱 Secondary focus for SMS autofill reliability");
         inputRefs.current[0].focus();
       }
-    }, 1500);
+    }, 300); // Ensure autofill context is established
 
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
-      clearTimeout(timer3);
     };
   }, []); // Only run once on mount
 
@@ -244,7 +232,7 @@ export default function VerifyRegistration() {
         isHandlingAutofill.current = false;
         // Don't reset setIsAutoVerifying here to prevent flickering
         // It will be reset in handleVerify
-      }, 150); // Timeout to ensure we capture all digits
+      }, 100); // Balanced timeout for autofill capture and responsiveness
       
       return; // Don't process as manual input
     }
@@ -264,7 +252,7 @@ export default function VerifyRegistration() {
           const collectedCount = autofillDigits.current.filter((d: string) => d && d !== "").length;
           
           if (collectedCount === 1) {
-            // Only one digit collected in 50ms, treat as manual input
+            // Only one digit collected in 30ms, treat as manual input
             isHandlingAutofill.current = false;
             autofillDigits.current = [];
             
@@ -288,7 +276,7 @@ export default function VerifyRegistration() {
             // The autofill timeout will handle the rest
           }
         }
-      }, 50); // Short delay to detect rapid sequence
+      }, 30); // Balanced delay for autofill detection
       
       return;
     }
@@ -484,7 +472,7 @@ export default function VerifyRegistration() {
         if (inputRefs.current[0]) {
           inputRefs.current[0].focus();
         }
-      }, 100);
+      }, 50); // Reduced from 100ms to 50ms
 
       showSuccess("A new OTP has been sent to your mobile number.");
     } catch (error: any) {
@@ -640,7 +628,15 @@ export default function VerifyRegistration() {
                           clearButtonMode="never"
                           // Prevent other inputs from interfering with autofill
                           contextMenuHidden={index !== 0}
-                          // Remove placeholder as it might interfere with autofill
+                          // Keep first input always ready for autofill
+                          onBlur={index === 0 ? () => {
+                            // Re-focus after a short delay to maintain autofill context
+                            setTimeout(() => {
+                              if (inputRefs.current[0] && !isLoading && !isAutoVerifying) {
+                                inputRefs.current[0].focus();
+                              }
+                            }, 100);
+                          } : undefined}
                         />
                       </Animated.View>
                     ))}
