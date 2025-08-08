@@ -47,8 +47,15 @@ export default function VerifyRegistration() {
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAutoVerifying, setIsAutoVerifying] = useState(false);
+  const [showVerifyingText, setShowVerifyingText] = useState(false); // Separate state for UI display
 
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const isHandlingAutofill = useRef(false);
+  const lastOtpInputTime = useRef(0);
+  const autofillDigits = useRef<string[]>([]);
+  const autofillTimeout = useRef<NodeJS.Timeout | null>(null);
+  const containerRef = useRef<View>(null); // Add container ref for autofill focus
 
   useEffect(() => {
     // Start countdown timer
@@ -65,6 +72,56 @@ export default function VerifyRegistration() {
     return () => clearInterval(timer);
   }, []);
 
+  // Force focus on first input when component mounts to trigger SMS autofill
+  useEffect(() => {
+    // Add console log to debug autofill detection
+    console.log("🔍 Setting up SMS autofill for verify-registration");
+    
+    // Simple, direct focus without blur-focus cycle
+    const timer = setTimeout(() => {
+      if (inputRefs.current[0] && !isLoading && !isAutoVerifying) {
+        console.log("📱 Focusing first input for SMS autofill");
+        inputRefs.current[0].focus();
+      }
+    }, 500); // Back to 500ms delay like forgot-password
+
+    return () => clearTimeout(timer);
+  }, []); // Only run once on mount
+
+  // Reset OTP when component mounts to ensure clean state for autofill
+  useEffect(() => {
+    console.log("🔄 Initializing OTP state for autofill");
+    setOtp(["", "", "", "", "", ""]);
+    setIsAutoVerifying(false);
+    setShowVerifyingText(false);
+    // Reset autofill flags
+    isHandlingAutofill.current = false;
+    lastOtpInputTime.current = 0;
+    autofillDigits.current = [];
+    if (autofillTimeout.current) {
+      clearTimeout(autofillTimeout.current);
+      autofillTimeout.current = null;
+    }
+  }, []);
+
+  // Periodic refresh to re-trigger autofill detection
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Only refresh if OTP is empty and not in loading state
+      if (otp.every(digit => digit === "") && !isLoading && !isAutoVerifying && inputRefs.current[0]) {
+        console.log("🔄 Refreshing autofill context");
+        inputRefs.current[0].blur();
+        setTimeout(() => {
+          if (inputRefs.current[0]) {
+            inputRefs.current[0].focus();
+          }
+        }, 100);
+      }
+    }, 10000); // Every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [otp, isLoading, isAutoVerifying]);
+
   useEffect(() => {
     // Handle back button on Android
     const backAction = () => {
@@ -79,25 +136,183 @@ export default function VerifyRegistration() {
     return () => backHandler.remove();
   }, []);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autofillTimeout.current) {
+        clearTimeout(autofillTimeout.current);
+      }
+    };
+  }, []);
+
   const handleOtpChange = (value: string, index: number) => {
-    if (isLoading) return; // Prevent changes while loading
-    if (value.length > 1) return; // Prevent multiple characters
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+    if (isLoading || isAutoVerifying) return; // Prevent changes while loading or auto-verifying
+    
+    // Handle pasted OTP (auto-fill from SMS) - can happen on any input
+    if (value.length > 1) {
+      const pastedOtp = value.replace(/\D/g, '').slice(0, 6); // Extract only digits, max 6
+      
+      if (pastedOtp.length >= 6) {
+        // Set flag to prevent interference from subsequent events
+        isHandlingAutofill.current = true;
+        setIsAutoVerifying(true);
+        setShowVerifyingText(true); // Show verifying text immediately
+        
+        // Create new OTP array with all 6 digits
+        const newOtp = pastedOtp.split('').slice(0, 6);
+        
+        setOtp(newOtp);
+        
+        // Clear the flag after state update completes
+        setTimeout(() => {
+          isHandlingAutofill.current = false;
+        }, 500);
+        
+        // Focus the last input to show completion
+        setTimeout(() => {
+          inputRefs.current[5]?.focus();
+          inputRefs.current[5]?.blur();
+        }, 100);
+        
+        // Auto-verify when 6 digits are pasted
+        setTimeout(() => {
+          handleVerify(pastedOtp);
+        }, 200);
+        
+        return;
+      }
     }
 
-    // Auto-verify when all 6 digits are entered
-    if (newOtp.every((digit) => digit !== "") && newOtp.length === 6) {
-      // Small delay to ensure UI updates first
+    // Check if this is part of a rapid sequence (likely autofill)
+    const now = Date.now();
+    const timeDiff = now - lastOtpInputTime.current;
+    lastOtpInputTime.current = now;
+    
+    // If inputs are coming very rapidly (< 100ms apart), it's likely autofill
+    const isRapidInput = timeDiff < 100 && timeDiff > 0;
+    
+    // Check if we're already in autofill mode or this is a rapid input
+    if (isRapidInput || isHandlingAutofill.current) {
+      if (!isHandlingAutofill.current) {
+        isHandlingAutofill.current = true;
+        setIsAutoVerifying(true);
+        setShowVerifyingText(true); // Show verifying text when autofill starts
+        // Initialize the digits array
+        autofillDigits.current = new Array(6).fill("");
+      }
+      
+      // Collect the digit for this position
+      autofillDigits.current[index] = value.slice(-1);
+      
+      // Reset the timeout each time we get a new digit
+      if (autofillTimeout.current) clearTimeout(autofillTimeout.current);
+      autofillTimeout.current = setTimeout(() => {
+        const collectedDigits = [...autofillDigits.current];
+        const validDigits = collectedDigits.filter((d: string) => d && d !== "");
+        
+        if (validDigits.length >= 5) { // Changed from 6 to 5 to handle the missing first digit
+          // If we're missing the first digit, let's try to get it from the current state
+          if (!collectedDigits[0] && otp[0]) {
+            collectedDigits[0] = otp[0];
+          }
+          
+          // Smooth UI update - set OTP
+          setOtp(collectedDigits);
+          
+          // Auto-verify if we have all 6 digits
+          const finalValidDigits = collectedDigits.filter((d: string) => d && d !== "");
+          if (finalValidDigits.length === 6) {
+            // Remove focus from all inputs to prevent shaking
+            inputRefs.current.forEach(ref => ref?.blur());
+            
+            setTimeout(() => {
+              handleVerify(collectedDigits.join(""));
+            }, 200); // Slightly longer delay for smoother transition
+          }
+        } else if (validDigits.length > 0) {
+          // Even if we don't have enough, set what we have (but don't show loading)
+          setOtp(collectedDigits);
+        }
+        
+        // Cleanup
+        autofillDigits.current = [];
+        isHandlingAutofill.current = false;
+        // Don't reset setIsAutoVerifying here to prevent flickering
+        // It will be reset in handleVerify
+      }, 150); // Timeout to ensure we capture all digits
+      
+      return; // Don't process as manual input
+    }
+
+    // Special handling for the first input when it might be part of an autofill sequence
+    // If this is index 0 and OTP is empty, delay processing to see if more inputs come rapidly
+    if (index === 0 && otp.every(digit => digit === "")) {
+      // Don't show verifying UI immediately - wait to see if it's autofill or manual
+      isHandlingAutofill.current = true;
+      autofillDigits.current = new Array(6).fill("");
+      autofillDigits.current[0] = value.slice(-1);
+      
+      // Wait a short time to see if more inputs come rapidly (indicating autofill)
       setTimeout(() => {
-        handleVerify(newOtp.join(""));
-      }, 100);
+        if (isHandlingAutofill.current) {
+          // Check if we collected more digits
+          const collectedCount = autofillDigits.current.filter((d: string) => d && d !== "").length;
+          
+          if (collectedCount === 1) {
+            // Only one digit collected in 50ms, treat as manual input
+            isHandlingAutofill.current = false;
+            autofillDigits.current = [];
+            
+            setOtp(prevOtp => {
+              const newOtp = [...prevOtp];
+              newOtp[0] = value.slice(-1);
+              
+              // Auto-focus next input for manual typing
+              if (value) {
+                setTimeout(() => {
+                  inputRefs.current[1]?.focus();
+                }, 10);
+              }
+              
+              return newOtp;
+            });
+          } else if (collectedCount > 1) {
+            // Multiple digits collected rapidly, this is autofill
+            setIsAutoVerifying(true);
+            setShowVerifyingText(true);
+            // The autofill timeout will handle the rest
+          }
+        }
+      }, 50); // Short delay to detect rapid sequence
+      
+      return;
+    }
+
+    // Handle single character input (manual typing)
+    if (value.length <= 1) {
+      // Use functional update to ensure we have the latest state
+      setOtp(prevOtp => {
+        const newOtp = [...prevOtp];
+        newOtp[index] = value.slice(-1);
+        
+        // Auto-verify when all 6 digits are entered manually
+        if (newOtp.every((digit) => digit !== "") && newOtp.length === 6) {
+          setIsAutoVerifying(true);
+          setShowVerifyingText(true); // Show verifying text for manual completion
+          setTimeout(() => {
+            handleVerify(newOtp.join(""));
+          }, 100);
+        }
+        
+        return newOtp;
+      });
+
+      // Auto-focus next input (but not during auto-verify)
+      if (value && index < 5 && !isAutoVerifying) {
+        setTimeout(() => {
+          inputRefs.current[index + 1]?.focus();
+        }, 10);
+      }
     }
   };
 
@@ -223,13 +438,13 @@ export default function VerifyRegistration() {
       setIsLoading(false);
       console.error("❌ OTP verification error:", error);
 
-      // Clear OTP form on error
-      setOtp(["", "", "", "", "", ""]);
-      if (inputRefs.current[0]) {
-        inputRefs.current[0].focus();
-      }
-
-      let errorMessage = "Invalid OTP. Please try again.";
+          // Clear OTP form on error
+          setOtp(["", "", "", "", "", ""]);
+          setIsAutoVerifying(false);
+          setShowVerifyingText(false); // Reset verifying text display
+          if (inputRefs.current[0]) {
+            inputRefs.current[0].focus();
+          }      let errorMessage = "Invalid OTP. Please try again.";
 
       if (error.message) {
         errorMessage = error.message;
@@ -256,7 +471,15 @@ export default function VerifyRegistration() {
       setOtp(["", "", "", "", "", ""]);
       setCountdown(60);
       setCanResend(false);
-      inputRefs.current[0]?.focus();
+      setIsAutoVerifying(false);
+      setShowVerifyingText(false);
+      
+      // Simple focus like forgot-password
+      setTimeout(() => {
+        if (inputRefs.current[0]) {
+          inputRefs.current[0].focus();
+        }
+      }, 100);
 
       showSuccess("A new OTP has been sent to your mobile number.");
     } catch (error: any) {
@@ -265,6 +488,8 @@ export default function VerifyRegistration() {
 
       // Clear OTP form when resending
       setOtp(["", "", "", "", "", ""]);
+      setIsAutoVerifying(false);
+      setShowVerifyingText(false); // Reset verifying text display
 
       let errorMessage = "Failed to resend OTP. Please try again.";
 
@@ -348,36 +573,71 @@ export default function VerifyRegistration() {
 
             <Animated.View entering={FadeInDown.duration(800).delay(200)}>
               <Card variant="elevated">
-                <View style={styles.otpContainer}>
-                  <Text style={styles.otpLabel}>Enter OTP</Text>
-
-                  {isLoading && (
-                    <View style={styles.loadingContainer}>
-                      <Text style={styles.loadingText}>Verifying...</Text>
-                    </View>
+                <View 
+                  style={styles.otpContainer}
+                  ref={containerRef}
+                >
+                  {!showVerifyingText && (
+                    <Animated.View
+                      entering={FadeInDown.duration(300)}
+                      exiting={FadeInUp.duration(200)}
+                    >
+                      <Text style={styles.otpLabel}>Enter OTP</Text>
+                    </Animated.View>
                   )}
 
-                  <View style={styles.otpInputContainer}>
+                  <View 
+                    style={styles.otpInputContainer} 
+                    key={`otp-container-verify-${countdown > 50 ? 'fresh' : 'active'}`}
+                  >
+                    {showVerifyingText && (
+                      <Animated.View 
+                        style={styles.loadingContainer}
+                        entering={FadeInDown.duration(300)}
+                        exiting={FadeInUp.duration(200)}
+                      >
+                        <Text style={styles.loadingText}>
+                          Verifying...
+                        </Text>
+                      </Animated.View>
+                    )}
                     {otp.map((digit, index) => (
-                      <TextInput
-                        key={index}
-                        ref={(ref) => {
-                          inputRefs.current[index] = ref;
-                        }}
-                        style={[
-                          styles.otpInput,
-                          digit && styles.otpInputFilled,
-                          isLoading && styles.otpInputDisabled,
-                        ]}
-                        value={digit}
-                        onChangeText={(value) => handleOtpChange(value, index)}
-                        onKeyPress={(e) => handleKeyPress(e, index)}
-                        keyboardType="numeric"
-                        maxLength={1}
-                        autoFocus={index === 0}
-                        selectTextOnFocus
-                        editable={!isLoading}
-                      />
+                      <Animated.View
+                        key={`otp-input-wrapper-${index}-verify-${countdown > 50 ? 'fresh' : 'active'}`}
+                        style={styles.otpInputWrapper}
+                      >
+                        <TextInput
+                          ref={(ref) => {
+                            inputRefs.current[index] = ref;
+                          }}
+                          style={[
+                            styles.otpInput,
+                            digit && styles.otpInputFilled,
+                            (isLoading || isAutoVerifying) && styles.otpInputDisabled,
+                          ]}
+                          value={digit}
+                          onChangeText={(value) => !isAutoVerifying && handleOtpChange(value, index)} // Prevent input during auto-verify
+                          onKeyPress={(e) => !isAutoVerifying && handleKeyPress(e, index)}
+                          keyboardType="numeric"
+                          maxLength={index === 0 ? 6 : 1} // Allow pasting full OTP in first input only
+                          autoFocus={index === 0 && !isAutoVerifying}
+                          selectTextOnFocus={true}
+                          editable={!isLoading && !isAutoVerifying} // Disable during auto-verify
+                          textContentType={index === 0 ? "oneTimeCode" : "none"} // SMS auto-fill for first input only
+                          autoComplete={index === 0 ? "sms-otp" : "off"} // Android SMS auto-fill for first input only
+                          importantForAutofill={index === 0 ? "yes" : "no"} // Android autofill priority
+                          blurOnSubmit={false}
+                          returnKeyType="next"
+                          // Additional props for better SMS autofill
+                          autoCorrect={false}
+                          autoCapitalize="none"
+                          spellCheck={false}
+                          clearButtonMode="never"
+                          // Prevent other inputs from interfering with autofill
+                          contextMenuHidden={index !== 0}
+                          // Remove placeholder as it might interfere with autofill
+                        />
+                      </Animated.View>
                     ))}
                   </View>
 
@@ -400,8 +660,10 @@ export default function VerifyRegistration() {
                   </View>
 
                   <Text style={styles.helpText}>
-                    Enter all 6 digits for automatic verification.{"\n"}
-                    Didn't receive the code? Check your SMS or try resending.
+                    {Platform.OS === 'ios' 
+                      ? 'Tap the SMS suggestion to auto-fill all 6 digits, or enter them manually for automatic verification.'
+                      : 'The OTP will auto-fill from SMS when available. Enter all 6 digits for automatic verification.'
+                    }
                   </Text>
                 </View>
               </Card>
@@ -516,6 +778,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.sm,
   },
+  otpInputWrapper: {
+    // Wrapper for individual input animations
+  },
   otpInput: {
     width: 40,
     height: 48,
@@ -536,13 +801,17 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   loadingContainer: {
+    position: "absolute",
+    top: -10,
+    left: 0,
+    right: 0,
     alignItems: "center",
-    marginBottom: SPACING.sm,
+    zIndex: 10,
   },
   loadingText: {
     fontSize: 14,
     color: COLORS.primary,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   resendContainer: {
     alignItems: "center",
