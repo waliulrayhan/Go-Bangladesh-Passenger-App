@@ -121,18 +121,10 @@ export default function RegistrationPersonalInfo() {
       newErrors.confirmPassword = "Passwords do not match";
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleNext = async () => {
-    if (!validateForm()) {
-      showError("Please correct all the errors before proceeding.");
-      return;
-    }
-
-    // Check age requirement (must be 5 years or older)
-    if (selectedDate) {
+    // Date of birth validation
+    if (!form.dateOfBirth.trim()) {
+      newErrors.dateOfBirth = "Date of birth is required";
+    } else if (selectedDate) {
       const today = new Date();
       const birthDate = new Date(selectedDate);
       const age = today.getFullYear() - birthDate.getFullYear();
@@ -144,9 +136,18 @@ export default function RegistrationPersonalInfo() {
         (age === 5 && monthDiff < 0) ||
         (age === 5 && monthDiff === 0 && today.getDate() < birthDate.getDate())
       ) {
-        showError("You must be at least 5 years old to register.");
-        return;
+        newErrors.dateOfBirth = "You must be at least 5 years old to register";
       }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNext = async () => {
+    if (!validateForm()) {
+      showError("Please correct all the errors before proceeding.");
+      return;
     }
 
     setIsLoading(true);
