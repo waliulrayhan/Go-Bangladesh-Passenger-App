@@ -325,11 +325,12 @@ export interface TripTransaction {
 }
 
 export interface RechargeTransaction {
-  transactionType: 'Recharge';
+  transactionType: 'Recharge' | 'Return';
   amount: number;
   cardId: string;
   agentId: string;
   tripId: null;
+  medium: null;
   transactionId: string;
   card: null;
   agent: {
@@ -341,9 +342,9 @@ export interface RechargeTransaction {
     isApproved: boolean;
     isActive: boolean;
     roleId: null;
-    dateOfBirth: null;
+    dateOfBirth: string | null;
     mobileNumber: string;
-    address: null;
+    address: string | null;
     gender: string;
     userType: string;
     passengerId: null;
@@ -365,7 +366,7 @@ export interface RechargeTransaction {
     };
     serial: number;
     code: string;
-    designation: null;
+    designation: string | null;
     id: string;
     createTime: string;
     lastModifiedTime: string;

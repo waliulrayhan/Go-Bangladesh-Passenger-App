@@ -705,13 +705,23 @@ export default function History() {
     const transactionId = item.transactionId;
     const agent = item.agent;
     const organization = agent?.organization;
+    const isRecharge = item.transactionType === 'Recharge';
+    const isReturn = item.transactionType === 'Return';
+    const amount = item.amount || 0;
+    const displayAmount = Math.abs(amount);
 
     return (
       <Card variant="elevated" style={styles.historyCard}>
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
-            <View style={styles.rechargeIconContainer}>
-              <Ionicons name="add-circle" size={20} color={COLORS.white} />
+            <View style={[
+              isRecharge ? styles.rechargeIconContainer : styles.returnIconContainer
+            ]}>
+              <Ionicons 
+                name={isRecharge ? "add-circle" : "remove-circle"} 
+                size={20} 
+                color={COLORS.white} 
+              />
             </View>
             <View>
               <Text
@@ -719,7 +729,14 @@ export default function History() {
                 color={COLORS.gray[900]}
                 style={styles.cardTitle}
               >
-                {agent?.name || "Manual Recharge"}
+                {isRecharge ? "Wallet Recharge" : "Wallet Return"}
+              </Text>
+              <Text
+                variant="caption"
+                color={COLORS.gray[600]}
+                style={styles.cardSubtitle}
+              >
+                by {agent?.name || "Unknown Agent"}
               </Text>
               {organization && (
                 <Text
@@ -734,10 +751,12 @@ export default function History() {
           </View>
           <Text
             variant="h6"
-            color={COLORS.success}
-            style={styles.rechargeAmount}
+            color={isRecharge ? COLORS.success : COLORS.error}
+            style={[
+              isRecharge ? styles.rechargeAmount : styles.returnAmount
+            ]}
           >
-            +৳{item.amount?.toFixed(2) || "0.00"}
+            {isRecharge ? '+' : '-'}৳{displayAmount.toFixed(2)}
           </Text>
         </View>
 
@@ -828,7 +847,7 @@ export default function History() {
                 color={COLORS.gray[600]}
                 style={styles.loadingText}
               >
-                Loading more {activeTab === "trips" ? "trips" : "recharges"}...
+                Loading more {activeTab === "trips" ? "trips" : "transactions"}...
               </Text>
               {(() => {
                 const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
@@ -853,7 +872,7 @@ export default function History() {
               onPress={onLoadMore}
             >
               <Text variant="labelSmall" color={COLORS.primary}>
-                Load More {activeTab === "trips" ? "Trips" : "Recharges"}
+                Load More {activeTab === "trips" ? "Trips" : "Transactions"}
               </Text>
               {(() => {
                 const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
@@ -885,7 +904,7 @@ export default function History() {
                 color={COLORS.gray[600]}
                 style={styles.emptyText}
               >
-                No {activeTab === "trips" ? "trip" : "recharge"} history found
+                No {activeTab === "trips" ? "trip" : "wallet"} history found
               </Text>
               <Text
                 variant="body"
@@ -899,7 +918,7 @@ export default function History() {
                     filters.maxAmount !== undefined
                   ? "Try adjusting your filters"
                   : `Your ${
-                      activeTab === "trips" ? "bus trips" : "recharge history"
+                      activeTab === "trips" ? "bus trips" : "wallet history"
                     } will appear here`}
               </Text>
               {(searchQuery ||
@@ -945,7 +964,7 @@ export default function History() {
               color={COLORS.gray[900]}
               style={styles.modalTitle}
             >
-              Filter {activeTab === "trips" ? "Trips" : "Recharges"}
+              Filter {activeTab === "trips" ? "Trips" : "Wallet History"}
             </Text>
             <TouchableOpacity onPress={resetFilters}>
               <Text variant="labelSmall" color={COLORS.primary}>
@@ -1213,7 +1232,7 @@ export default function History() {
               <TextInput
                 style={styles.searchInput}
                 placeholder={`Search ${
-                  activeTab === "trips" ? "trips" : "recharges"
+                  activeTab === "trips" ? "trips" : "wallet history"
                 }...`}
                 placeholderTextColor={COLORS.gray[500]}
                 value={searchQuery}
@@ -1240,7 +1259,7 @@ export default function History() {
             <View style={styles.filterInfo}>
               <Text variant="bodySmall" color={COLORS.gray[600]}>
                 {filteredData.length}{" "}
-                {activeTab === "trips" ? "trips" : "recharges"}
+                {activeTab === "trips" ? "trips" : "transactions"}
                 {/* Show total count if different from filtered count */}
                 {(() => {
                   const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
@@ -1495,6 +1514,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  returnIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.error,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   deductionIconContainer: {
     backgroundColor: COLORS.error,
   },
@@ -1516,6 +1543,9 @@ const styles = StyleSheet.create({
     // Font properties handled by Text component
   },
   rechargeAmount: {
+    // Font properties handled by Text component
+  },
+  returnAmount: {
     // Font properties handled by Text component
   },
   tripDetails: {
