@@ -36,6 +36,10 @@ export default function ForgotPassword() {
   const { sendOTPForForgotPassword, verifyOTP, isLoading, error, clearError } = useAuthStore();
   const { toast, showError, showSuccess, showInfo, hideToast } = useToast();
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const isHandlingAutofill = useRef(false);
+  const lastOtpInputTime = useRef(0);
+  const autofillDigits = useRef<string[]>([]);
+  const autofillTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Get indicator color based on validation state for mobile
   const getIndicatorColor = () => {
@@ -62,8 +66,25 @@ export default function ForgotPassword() {
   useEffect(() => {
     if (isOtpSent) {
       setOtp(["", "", "", "", "", ""]);
+      // Reset autofill flag when entering OTP state
+      isHandlingAutofill.current = false;
+      lastOtpInputTime.current = 0;
+      autofillDigits.current = [];
+      if (autofillTimeout.current) {
+        clearTimeout(autofillTimeout.current);
+        autofillTimeout.current = null;
+      }
     }
   }, [isOtpSent]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autofillTimeout.current) {
+        clearTimeout(autofillTimeout.current);
+      }
+    };
+  }, []);
 
   const handleGoBack = () => {
     router.back();
@@ -123,52 +144,178 @@ export default function ForgotPassword() {
   const handleOtpChange = (value: string, index: number) => {
     if (isLoading) return; // Prevent changes while loading
     
-    // Handle pasted OTP (auto-fill from SMS)
+    console.log(`[OTP DEBUG] Input ${index}: value="${value}", length=${value.length}, current otp:`, otp);
+    
+    // Handle pasted OTP (auto-fill from SMS) - can happen on any input
     if (value.length > 1) {
       const pastedOtp = value.replace(/\D/g, '').slice(0, 6); // Extract only digits, max 6
-      if (pastedOtp.length > 0) {
-        const newOtp = [...otp];
+      console.log(`[OTP DEBUG] Detected paste on index ${index}: "${pastedOtp}"`);
+      
+      if (pastedOtp.length >= 6) {
+        // Set flag to prevent interference from subsequent events
+        isHandlingAutofill.current = true;
         
-        // Fill the OTP digits starting from current index
-        for (let i = 0; i < pastedOtp.length && (index + i) < 6; i++) {
-          newOtp[index + i] = pastedOtp[i];
-        }
+        // Create new OTP array with all 6 digits
+        const newOtp = pastedOtp.split('').slice(0, 6);
         
+        console.log(`[OTP DEBUG] Setting full OTP:`, newOtp);
         setOtp(newOtp);
         
-        // Focus the last filled input or verify if complete
-        if (pastedOtp.length === 6) {
-          // Auto-verify when 6 digits are pasted
-          setTimeout(() => {
-            handleVerifyOTP(pastedOtp);
-          }, 100);
-        } else {
-          // Focus next empty input
-          const lastFilledIndex = Math.min(index + pastedOtp.length - 1, 5);
-          const nextEmptyIndex = newOtp.findIndex((digit, i) => i > lastFilledIndex && digit === "");
-          if (nextEmptyIndex !== -1) {
-            inputRefs.current[nextEmptyIndex]?.focus();
-          }
-        }
+        // Clear the flag after state update completes
+        setTimeout(() => {
+          isHandlingAutofill.current = false;
+          console.log(`[OTP DEBUG] Autofill flag cleared`);
+        }, 500);
+        
+        // Focus the last input to show completion
+        setTimeout(() => {
+          inputRefs.current[5]?.focus();
+          inputRefs.current[5]?.blur();
+        }, 100);
+        
+        // Auto-verify when 6 digits are pasted
+        setTimeout(() => {
+          console.log(`[OTP DEBUG] Auto-verifying: ${pastedOtp}`);
+          handleVerifyOTP(pastedOtp);
+        }, 200);
+        
         return;
       }
     }
 
-    // Handle single character input
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+    // Check if this is part of a rapid sequence (likely autofill)
+    const now = Date.now();
+    const timeDiff = now - lastOtpInputTime.current;
+    lastOtpInputTime.current = now;
+    
+    // If inputs are coming very rapidly (< 100ms apart), it's likely autofill
+    const isRapidInput = timeDiff < 100 && timeDiff > 0;
+    
+    // Check if we're already in autofill mode or this is a rapid input
+    if (isRapidInput || isHandlingAutofill.current) {
+      if (!isHandlingAutofill.current) {
+        console.log(`[OTP DEBUG] Detected rapid input sequence - likely autofill (${timeDiff}ms)`);
+        isHandlingAutofill.current = true;
+        // Initialize the digits array
+        autofillDigits.current = new Array(6).fill("");
+      }
+      
+      // Collect the digit for this position
+      autofillDigits.current[index] = value.slice(-1);
+      console.log(`[OTP DEBUG] Collected digit at position ${index}: "${value.slice(-1)}", array:`, autofillDigits.current);
+      
+      // Reset the timeout each time we get a new digit
+      if (autofillTimeout.current) clearTimeout(autofillTimeout.current);
+      autofillTimeout.current = setTimeout(() => {
+        const collectedDigits = [...autofillDigits.current];
+        const validDigits = collectedDigits.filter((d: string) => d && d !== "");
+        
+        console.log(`[OTP DEBUG] Processing collected digits:`, collectedDigits);
+        console.log(`[OTP DEBUG] Valid digits count: ${validDigits.length}`);
+        
+        if (validDigits.length >= 5) { // Changed from 6 to 5 to handle the missing first digit
+          // If we're missing the first digit, let's try to get it from the current state
+          if (!collectedDigits[0] && otp[0]) {
+            collectedDigits[0] = otp[0];
+            console.log(`[OTP DEBUG] Added first digit from current state:`, collectedDigits);
+          }
+          
+          console.log(`[OTP DEBUG] Setting complete OTP:`, collectedDigits);
+          setOtp(collectedDigits);
+          
+          // Auto-verify if we have all 6 digits
+          const finalValidDigits = collectedDigits.filter((d: string) => d && d !== "");
+          if (finalValidDigits.length === 6) {
+            setTimeout(() => {
+              console.log(`[OTP DEBUG] Auto-verifying: ${collectedDigits.join("")}`);
+              handleVerifyOTP(collectedDigits.join(""));
+            }, 100);
+          }
+        } else if (validDigits.length > 0) {
+          // Even if we don't have enough, set what we have
+          console.log(`[OTP DEBUG] Setting partial OTP:`, collectedDigits);
+          setOtp(collectedDigits);
+        }
+        
+        // Cleanup
+        autofillDigits.current = [];
+        isHandlingAutofill.current = false;
+        console.log(`[OTP DEBUG] Autofill processing completed`);
+      }, 150); // Timeout to ensure we capture all digits
+      
+      return; // Don't process as manual input
     }
 
-    // Auto-verify when all 6 digits are entered
-    if (newOtp.every((digit) => digit !== "") && newOtp.length === 6) {
+    // Special handling for the first input when it might be part of an autofill sequence
+    // If this is index 0 and OTP is empty, delay processing to see if more inputs come rapidly
+    if (index === 0 && otp.every(digit => digit === "")) {
+      console.log(`[OTP DEBUG] First input detected, checking for autofill sequence...`);
+      
+      // Start autofill collection mode preemptively
+      isHandlingAutofill.current = true;
+      autofillDigits.current = new Array(6).fill("");
+      autofillDigits.current[0] = value.slice(-1);
+      
+      // Wait a short time to see if more inputs come
       setTimeout(() => {
-        handleVerifyOTP(newOtp.join(""));
-      }, 100);
+        if (isHandlingAutofill.current) {
+          // Check if we collected more digits
+          const collectedCount = autofillDigits.current.filter((d: string) => d && d !== "").length;
+          
+          if (collectedCount === 1) {
+            // Only one digit collected, treat as manual input
+            console.log(`[OTP DEBUG] No additional inputs detected, treating as manual input`);
+            isHandlingAutofill.current = false;
+            autofillDigits.current = [];
+            
+            setOtp(prevOtp => {
+              const newOtp = [...prevOtp];
+              newOtp[0] = value.slice(-1);
+              console.log(`[OTP DEBUG] Manual first input: value="${value}", new:`, newOtp);
+              
+              // Auto-focus next input
+              if (value) {
+                setTimeout(() => {
+                  inputRefs.current[1]?.focus();
+                }, 10);
+              }
+              
+              return newOtp;
+            });
+          }
+          // If more digits were collected, the autofill timeout will handle it
+        }
+      }, 50); // Short delay to detect rapid sequence
+      
+      return;
+    }
+
+    // Handle single character input (manual typing)
+    if (value.length <= 1) {
+      // Use functional update to ensure we have the latest state
+      setOtp(prevOtp => {
+        const newOtp = [...prevOtp];
+        newOtp[index] = value.slice(-1);
+        
+        console.log(`[OTP DEBUG] Manual input: index=${index}, value="${value}", prev:`, prevOtp, "new:", newOtp);
+        
+        // Auto-verify when all 6 digits are entered manually
+        if (newOtp.every((digit) => digit !== "") && newOtp.length === 6) {
+          setTimeout(() => {
+            console.log(`[OTP DEBUG] Auto-verifying manual entry: ${newOtp.join("")}`);
+            handleVerifyOTP(newOtp.join(""));
+          }, 100);
+        }
+        
+        return newOtp;
+      });
+
+      // Auto-focus next input
+      if (value && index < 5) {
+        setTimeout(() => {
+          inputRefs.current[index + 1]?.focus();
+        }, 10);
+      }
     }
   };
 
@@ -314,7 +461,7 @@ export default function ForgotPassword() {
                   <View style={styles.otpContent}>
                     <Text style={styles.otpLabel}>Verification Code</Text>
 
-                    <View style={styles.otpInputContainer}>
+                    <View style={styles.otpInputContainer} key={`otp-container-${isOtpSent}`}>
                       {isLoading && (
                         <View style={styles.loadingContainer}>
                           <Text style={styles.loadingText}>Verifying...</Text>
@@ -322,7 +469,7 @@ export default function ForgotPassword() {
                       )}
                       {otp.map((digit, index) => (
                         <TextInput
-                          key={index}
+                          key={`otp-input-${index}-${isOtpSent}`}
                           ref={(ref) => {
                             inputRefs.current[index] = ref;
                           }}
@@ -335,14 +482,16 @@ export default function ForgotPassword() {
                           onChangeText={(value) => handleOtpChange(value, index)}
                           onKeyPress={(e) => handleKeyPress(e, index)}
                           keyboardType="numeric"
-                          maxLength={index === 0 ? 6 : 1} // Allow pasting full OTP in first input
+                          maxLength={index === 0 ? 6 : 1} // Allow pasting full OTP in first input only
                           autoFocus={index === 0}
-                          selectTextOnFocus
+                          selectTextOnFocus={true}
                           editable={!isLoading}
-                          textContentType={index === 0 ? "oneTimeCode" : "none"} // SMS auto-fill for first input
-                          autoComplete={index === 0 ? "sms-otp" : "off"} // Android SMS auto-fill
+                          textContentType={index === 0 ? "oneTimeCode" : "none"} // SMS auto-fill for first input only
+                          autoComplete={index === 0 ? "sms-otp" : "off"} // Android SMS auto-fill for first input only
                           importantForAutofill={index === 0 ? "yes" : "no"} // Android autofill priority
                           blurOnSubmit={false}
+                          // Prevent other inputs from interfering with autofill
+                          contextMenuHidden={index !== 0}
                         />
                       ))}
                     </View>
@@ -385,8 +534,8 @@ export default function ForgotPassword() {
 
                     <Text style={styles.helpText}>
                       {Platform.OS === 'ios' 
-                        ? 'The code will auto-fill from SMS. You can also enter all 6 digits for automatic verification.'
-                        : 'Enter all 6 digits for automatic verification. The code may auto-fill from SMS.'
+                        ? 'Tap the SMS suggestion to auto-fill all 6 digits, or enter them manually for automatic verification.'
+                        : 'The OTP will auto-fill from SMS when available. Enter all 6 digits for automatic verification.'
                       }
                     </Text>
                   </View>

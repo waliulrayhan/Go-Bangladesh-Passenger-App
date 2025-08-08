@@ -4,15 +4,15 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
-  BackHandler,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+    BackHandler,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { Card } from "../../components/ui/Card";
@@ -81,8 +81,44 @@ export default function VerifyRegistration() {
 
   const handleOtpChange = (value: string, index: number) => {
     if (isLoading) return; // Prevent changes while loading
-    if (value.length > 1) return; // Prevent multiple characters
+    
+    // Handle pasted OTP (auto-fill from SMS)
+    if (value.length > 1) {
+      const pastedOtp = value.replace(/\D/g, '').slice(0, 6); // Extract only digits, max 6
+      if (pastedOtp.length > 0) {
+        // Create new OTP array and fill it with pasted digits
+        const newOtp = ["", "", "", "", "", ""];
+        
+        // Fill the OTP digits from the beginning
+        for (let i = 0; i < pastedOtp.length && i < 6; i++) {
+          newOtp[i] = pastedOtp[i];
+        }
+        
+        setOtp(newOtp);
+        
+        // If we have all 6 digits, auto-verify
+        if (pastedOtp.length === 6) {
+          // Focus the last input to show completion
+          setTimeout(() => {
+            inputRefs.current[5]?.focus();
+          }, 50);
+          
+          // Auto-verify when 6 digits are pasted
+          setTimeout(() => {
+            handleVerify(pastedOtp);
+          }, 100);
+        } else {
+          // Focus the next empty input
+          const nextIndex = Math.min(pastedOtp.length, 5);
+          setTimeout(() => {
+            inputRefs.current[nextIndex]?.focus();
+          }, 50);
+        }
+        return;
+      }
+    }
 
+    // Handle single character input
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
@@ -373,10 +409,14 @@ export default function VerifyRegistration() {
                         onChangeText={(value) => handleOtpChange(value, index)}
                         onKeyPress={(e) => handleKeyPress(e, index)}
                         keyboardType="numeric"
-                        maxLength={1}
+                        maxLength={index === 0 ? 6 : 1} // Allow pasting full OTP in first input only
                         autoFocus={index === 0}
                         selectTextOnFocus
                         editable={!isLoading}
+                        textContentType={index === 0 ? "oneTimeCode" : "none"} // SMS auto-fill for first input
+                        autoComplete={index === 0 ? "sms-otp" : "off"} // Android SMS auto-fill
+                        importantForAutofill={index === 0 ? "yes" : "no"} // Android autofill priority
+                        blurOnSubmit={false}
                       />
                     ))}
                   </View>
