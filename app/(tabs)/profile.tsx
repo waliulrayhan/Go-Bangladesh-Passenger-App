@@ -2,49 +2,69 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
-import { Alert, Dimensions, Image, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Image,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
+
+// Components
 import { EditProfileModal } from '../../components/EditProfileModal';
 import { HelpSupportModal } from '../../components/HelpSupportModal';
 import { SettingsModal } from '../../components/SettingsModal';
 import { Text } from '../../components/ui/Text';
 import { UpdateCardModal } from '../../components/UpdateCardModal';
+
+// Hooks & Services
 import { useTokenRefresh } from '../../hooks/useTokenRefresh';
 import { apiService } from '../../services/api';
+
+// Stores & Utils
 import { useAuthStore } from '../../stores/authStore';
-import { useCardStore } from '../../stores/cardStore';
 import { API_BASE_URL, COLORS } from '../../utils/constants';
 
-const { width } = Dimensions.get('window');
-
+/**
+ * Profile Screen Component
+ * Displays user profile information, balance, account details, and quick actions
+ */
 export default function Profile() {
-  const { user, logout, refreshUserData, isLoading } = useAuthStore();
-  const { card } = useCardStore();
+  // Auth store hooks
+  const { user, logout } = useAuthStore();
   
-  // Use token refresh hook to get fresh data
+  // Token refresh hook for data synchronization
   const { refreshAllData } = useTokenRefresh();
   
+  // Modal state management
   const [refreshing, setRefreshing] = React.useState(false);
   const [showUpdateCardModal, setShowUpdateCardModal] = React.useState(false);
   const [showSettingsModal, setShowSettingsModal] = React.useState(false);
   const [showHelpSupportModal, setShowHelpSupportModal] = React.useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = React.useState(false);
 
-  // Check if user is public type
-  const isPublicUser = user?.userType === 'public';
-
-  // Only refresh when user explicitly pulls to refresh
+  /**
+   * Handle pull-to-refresh functionality
+   * Refreshes user data and card information
+   */
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
       await refreshAllData(true); // Force refresh
     } catch (error) {
-      console.log('Refresh error:', error);
+      // Silently handle refresh errors to avoid disrupting user experience
     } finally {
       setRefreshing(false);
     }
   }, [refreshAllData]);
 
+  /**
+   * Handle user logout with confirmation dialog
+   */
   const handleLogout = async () => {
     Alert.alert(
       'Logout',
@@ -57,7 +77,7 @@ export default function Profile() {
           onPress: async () => {
             try {
               await logout();
-              // Use router.dismissAll() and then navigate to ensure clean navigation stack
+              // Clean navigation stack and redirect to login
               router.dismissAll();
               router.replace('/');
             } catch (error) {
@@ -71,8 +91,34 @@ export default function Profile() {
       ]
     );
   };
+
+  /**
+   * Get organization display text with proper fallbacks
+   */
+  const getOrganizationText = () => {
+    if (!user?.organization) return 'Not Provided';
+    if (typeof user.organization === 'string') {
+      return user.organization;
+    } else if (typeof user.organization === 'object' && user.organization?.name) {
+      return user.organization.name;
+    }
+    return 'Not Provided';
+  };
+
+  /**
+   * Get gender display text with proper formatting
+   */
+  const getGenderText = () => {
+    const gender = user?.gender || user?.sex;
+    if (!gender) return 'Not Provided';
+    return gender.charAt(0).toUpperCase() + gender.slice(1);
+  };
+
+  /**
+   * Render profile header with user avatar, name, type, and organization
+   */
   const renderProfileHeader = () => {
-    // Always show profile header, even if user data is loading or incomplete
+    // Show loading state if user data is not available
     if (!user) {
       return (
         <Animated.View entering={FadeInUp.duration(600)} style={styles.headerContainer}>
@@ -91,17 +137,16 @@ export default function Profile() {
       );
     }
 
-    // Create a unique key for the profile image to force re-render
+    // Generate profile image URL and unique key for re-rendering
     const profileImageUrl = user?.imageUrl ? `${API_BASE_URL}/${user.imageUrl}` : null;
     const imageKey = `profile-${user?.id || 'default'}-${user?.imageUrl || 'no-image'}`;
 
-    // Safely get user type display text
+    // Helper to format user type display text
     const getUserTypeText = () => {
       const gender = user?.gender || user?.sex;
       const genderText = gender ? (gender.charAt(0).toUpperCase() + gender.slice(1)) : '';
       const userTypeText = user?.userType ? (user.userType.charAt(0).toUpperCase() + user.userType.slice(1)) : 'Passenger';
-      // return genderText ? `${genderText} • ${userTypeText+" User"}` : userTypeText;
-      return genderText ? `${userTypeText+" User"}` : userTypeText;
+      return genderText ? `${userTypeText} User` : userTypeText;
     };
 
     return (
@@ -127,16 +172,22 @@ export default function Profile() {
           <View style={styles.profileInfo}>
             <Text style={styles.name}>{user?.name || 'Not Provided'}</Text>
             <Text style={styles.userType}>{getUserTypeText()}</Text>
+            <View style={styles.organizationContainer}>
+              <Ionicons name="business-outline" size={12} color={COLORS.gray[600]} style={styles.organizationIcon} />
+              <Text style={styles.userType}>{getOrganizationText()}</Text>
+            </View>
           </View>
         </View>
       </Animated.View>
     );
   };
+  /**
+   * Render balance card showing current balance and card information
+   */
   const renderBalanceCard = () => {
-    // Always show balance card for both public and private users
-    // If no balance data, show as "Not Provided"
+    // Don't show balance card if user data is not available
     if (!user) {
-      return null; // Only hide if no user at all
+      return null;
     }
 
     const hasBalance = typeof user?.balance === 'number';
@@ -156,8 +207,7 @@ export default function Profile() {
                 styles.balanceAmount,
                 !hasBalance && { color: COLORS.gray[500] }
               ]}>
-                {/* {hasBalance ? `৳${displayBalance+" BDT"}` : displayBalance} */}
-                {hasBalance ? `${displayBalance+" BDT"}` : displayBalance}
+                {hasBalance ? `${displayBalance} BDT` : displayBalance}
               </Text>
             </View>
               <TouchableOpacity 
@@ -178,25 +228,10 @@ export default function Profile() {
     );
   };
 
+  /**
+   * Render account information section with user details
+   */
   const renderAccountInfo = () => {
-    // Helper function to get organization display text
-    const getOrganizationText = () => {
-      if (!user?.organization) return 'Not Provided';
-      if (typeof user.organization === 'string') {
-        return user.organization;
-      } else if (typeof user.organization === 'object' && user.organization?.name) {
-        return user.organization.name;
-      }
-      return 'Not Provided';
-    };
-
-    // Helper function to get gender display text
-    const getGenderText = () => {
-      const gender = user?.gender || user?.sex;
-      if (!gender) return 'Not Provided';
-      return gender.charAt(0).toUpperCase() + gender.slice(1);
-    };
-
     return (
       <Animated.View entering={FadeInUp.duration(600).delay(400)} style={styles.section}>
         <View style={styles.sectionHeader}>
@@ -214,7 +249,7 @@ export default function Profile() {
         <View style={styles.infoList}>
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.primary + '15' }]}>
-              <Ionicons name="person" size={16} color={COLORS.primary} />
+              <Ionicons name="person-outline" size={16} color={COLORS.primary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Full Name</Text>
@@ -224,7 +259,7 @@ export default function Profile() {
 
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
-              <Ionicons name="call" size={16} color={COLORS.info} />
+              <Ionicons name="call-outline" size={16} color={COLORS.info} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Phone</Text>
@@ -234,7 +269,7 @@ export default function Profile() {
           
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.success + '15' }]}>
-              <Ionicons name="mail" size={16} color={COLORS.success} />
+              <Ionicons name="mail-outline" size={16} color={COLORS.success} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Email</Text>
@@ -244,7 +279,7 @@ export default function Profile() {
           
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.warning + '15' }]}>
-              <Ionicons name={user?.gender === 'female' || user?.sex === 'female' ? 'female' : 'male'} size={16} color={COLORS.warning} />
+              <Ionicons name={user?.gender === 'female' || user?.sex === 'female' ? 'female-outline' : 'male-outline'} size={16} color={COLORS.warning} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Gender</Text>
@@ -252,24 +287,14 @@ export default function Profile() {
             </View>
           </View>
 
-          <View style={styles.infoRow}>
-            <View style={[styles.infoIcon, { backgroundColor: COLORS.info + '15' }]}>
-              <Ionicons name="business" size={16} color={COLORS.info} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Organization</Text>
-              <Text style={styles.infoValue}>{getOrganizationText()}</Text>
-            </View>
-          </View>
-
           {/* Show Student ID / Passenger ID */}
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.primary + '15' }]}>
-              <Ionicons name="id-card" size={16} color={COLORS.primary} />
+              <Ionicons name="id-card-outline" size={16} color={COLORS.primary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>
-                {user?.passengerId ? 'Passenger ID' : user?.studentId ? 'Student ID' : 'ID'}
+                {user?.passengerId ? 'Identity Number' : user?.studentId ? 'Identity Number' : 'Identity Number'}
               </Text>
               <Text style={styles.infoValue}>
                 {user?.passengerId || user?.studentId || 'Not Provided'}
@@ -279,7 +304,7 @@ export default function Profile() {
 
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.purple + '15' }]}>
-              <Ionicons name="calendar" size={16} color={COLORS.purple} />
+              <Ionicons name="calendar-outline" size={16} color={COLORS.purple} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Date of Birth</Text>
@@ -291,7 +316,7 @@ export default function Profile() {
 
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.secondary + '15' }]}>
-              <Ionicons name="location" size={16} color={COLORS.secondary} />
+              <Ionicons name="location-outline" size={16} color={COLORS.secondary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Address</Text>
@@ -303,6 +328,9 @@ export default function Profile() {
     );
   };
 
+  /**
+   * Render quick actions section with settings, password change, help, and logout
+   */
   const renderActions = () => (
     <Animated.View entering={FadeInDown.duration(600).delay(700)} style={styles.section}>
       <Text variant="h5" color={COLORS.secondary} style={styles.sectionTitle}> Quick Actions</Text>
@@ -346,6 +374,35 @@ export default function Profile() {
           <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
         </TouchableOpacity>
 
+        <TouchableOpacity 
+          style={styles.actionItem}
+          onPress={() => {
+            Alert.alert(
+              'Delete Account',
+              'Are you sure you want to delete your account? This action cannot be undone.',
+              [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Delete', 
+            style: 'destructive',
+            onPress: () => {
+              // Add delete account logic here
+              console.log('Delete account');
+            }
+          }
+              ]
+            );
+          }}
+        >
+          <View style={styles.actionLeft}>
+            <View style={[styles.actionIconContainer, { backgroundColor: COLORS.error + '15' }]}>
+              <Ionicons name="trash-outline" size={18} color={COLORS.error} />
+            </View>
+            <Text style={styles.actionText}>Delete Account</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
+        </TouchableOpacity>
+
       </View>
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -355,6 +412,9 @@ export default function Profile() {
     </Animated.View>
   );
 
+  /**
+   * Send OTP for card number update verification
+   */
   const handleSendOTPForCardUpdate = async (newCardNumber: string) => {
     const mobileNumber = user?.mobileNumber || user?.mobile;
     if (!mobileNumber) {
@@ -368,6 +428,9 @@ export default function Profile() {
     }
   };
 
+  /**
+   * Update user card number after OTP verification
+   */
   const handleUpdateCard = async (newCardNumber: string, otp: string) => {
     if (!user?.id) {
       throw new Error('User ID not found');
@@ -397,6 +460,9 @@ export default function Profile() {
     }
   };
 
+  /**
+   * Update user profile information
+   */
   const handleUpdateProfile = async (updateData: any) => {
     if (!user?.id) {
       throw new Error('User ID not found');
@@ -419,7 +485,7 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Refined Gradient Background - Brand Colors */}
+      {/* Brand gradient background */}
       <LinearGradient
         colors={[
           "rgba(74, 144, 226, 0.5)", // Blue at top
@@ -453,7 +519,7 @@ export default function Profile() {
         {renderActions()}
       </ScrollView>
 
-      {/* Update Card Modal */}
+      {/* Modals */}
       <UpdateCardModal
         visible={showUpdateCardModal}
         currentCardNumber={user?.cardNumber || 'Not Provided'}
@@ -463,19 +529,16 @@ export default function Profile() {
         onSendOTP={handleSendOTPForCardUpdate}
       />
 
-      {/* Settings Modal */}
       <SettingsModal
         visible={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
       />
 
-      {/* Help & Support Modal */}
       <HelpSupportModal
         visible={showHelpSupportModal}
         onClose={() => setShowHelpSupportModal(false)}
       />
 
-      {/* Edit Profile Modal */}
       {user && (
         <EditProfileModal
           visible={showEditProfileModal}
@@ -508,14 +571,19 @@ export default function Profile() {
   );
 }
 
+/**
+ * StyleSheet for Profile component
+ * Organized by component sections with clear naming conventions
+ */
 const styles = StyleSheet.create({
+  // Main container styles
   container: {
     flex: 1,
     backgroundColor: 'transparent',
     position: 'relative',
   },
   
-  // Background Gradient Styles
+  // Background gradient styles
   glowBackground: {
     position: 'absolute',
     top: 0,
@@ -525,6 +593,7 @@ const styles = StyleSheet.create({
     zIndex: -1,
   },
   
+  // Content container styles
   content: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -537,7 +606,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   
-  // Profile Header Styles
+  // Profile header styles
   headerContainer: {
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -612,30 +681,22 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     letterSpacing: 0.2,
   },
+  organizationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  organizationIcon: {
+    marginRight: 4,
+  },
   userType: {
     fontSize: 13,
     color: COLORS.gray[600],
     marginBottom: 6,
     fontWeight: '500',
   },
-  statusChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 200, 81, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 200, 81, 0.2)',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
 
-  // Balance Card Styles
+  // Balance card styles
   balanceCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.98)',
     borderRadius: 16,
@@ -718,7 +779,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Section Styles
+  // Section header styles
   sectionTitle: {
     fontWeight: '600',
   },
@@ -745,7 +806,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 
-  // Info List Styles
+  // Account information styles
   infoList: {
     backgroundColor: 'rgba(255, 255, 255, 0.98)',
     borderRadius: 14,
@@ -789,40 +850,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
 
-  // Stats Grid Styles
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  statItem: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-  },
-  statIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.gray[900],
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 10,
-    color: COLORS.gray[500],
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-
-  // Actions Styles
+  // Quick actions styles
   actionsList: {
     backgroundColor: 'rgba(255, 255, 255, 0.98)',
     borderRadius: 14,
