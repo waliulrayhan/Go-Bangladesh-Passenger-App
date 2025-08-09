@@ -3,7 +3,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
 import {
-  Alert,
   Image,
   RefreshControl,
   SafeAreaView,
@@ -15,13 +14,16 @@ import {
 import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
 
 // Components
+import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { EditProfileModal } from '../../components/EditProfileModal';
 import { HelpSupportModal } from '../../components/HelpSupportModal';
 import { SettingsModal } from '../../components/SettingsModal';
 import { Text } from '../../components/ui/Text';
+import { Toast } from '../../components/ui/Toast';
 import { UpdateCardModal } from '../../components/UpdateCardModal';
 
 // Hooks & Services
+import { useToast } from '../../hooks/useToast';
 import { useTokenRefresh } from '../../hooks/useTokenRefresh';
 import { apiService } from '../../services/api';
 
@@ -40,12 +42,16 @@ export default function Profile() {
   // Token refresh hook for data synchronization
   const { refreshAllData } = useTokenRefresh();
   
+  // Toast hook for notifications
+  const { toast, showToast, hideToast } = useToast();
+  
   // Modal state management
   const [refreshing, setRefreshing] = React.useState(false);
   const [showUpdateCardModal, setShowUpdateCardModal] = React.useState(false);
   const [showSettingsModal, setShowSettingsModal] = React.useState(false);
   const [showHelpSupportModal, setShowHelpSupportModal] = React.useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = React.useState(false);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = React.useState(false);
 
   /**
    * Handle pull-to-refresh functionality
@@ -65,31 +71,30 @@ export default function Profile() {
   /**
    * Handle user logout with confirmation dialog
    */
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              // Clean navigation stack and redirect to login
-              router.dismissAll();
-              router.replace('/');
-            } catch (error) {
-              console.error('Logout error:', error);
-              // Force navigation even if logout fails
-              router.dismissAll();
-              router.replace('/');
-            }
-          }
-        }
-      ]
-    );
+  const handleLogout = () => {
+    setShowLogoutConfirmation(true);
+  };
+
+  /**
+   * Perform actual logout after confirmation
+   */
+  const performLogout = async () => {
+    try {
+      await logout();
+      // Show success toast
+      showToast('Logged out successfully', 'success');
+      // Clean navigation stack and redirect to login
+      router.dismissAll();
+      router.replace('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      showToast('Logout failed. Please try again.', 'error');
+      // Force navigation even if logout fails
+      router.dismissAll();
+      router.replace('/');
+    } finally {
+      setShowLogoutConfirmation(false);
+    }
   };
 
   /**
@@ -377,21 +382,7 @@ export default function Profile() {
         <TouchableOpacity 
           style={styles.actionItem}
           onPress={() => {
-            Alert.alert(
-              'Delete Account',
-              'Are you sure you want to delete your account? This action cannot be undone.',
-              [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Delete', 
-            style: 'destructive',
-            onPress: () => {
-              // Add delete account logic here
-              console.log('Delete account');
-            }
-          }
-              ]
-            );
+            showToast('Account deletion feature coming soon', 'info');
           }}
         >
           <View style={styles.actionLeft}>
@@ -449,7 +440,7 @@ export default function Profile() {
       const response = await apiService.updateCardNumber(user.id.toString(), newCardNumber);
       
       if (response.isSuccess) {
-        Alert.alert('Success', response.message || 'Card number updated successfully!');
+        showToast(response.message || 'Card number updated successfully!', 'success');
         // Refresh user data to get the updated card number
         await refreshAllData();
       } else {
@@ -472,7 +463,7 @@ export default function Profile() {
       const response = await apiService.updatePassengerProfile(updateData);
       
       if (response.isSuccess) {
-        Alert.alert('Success', response.message || 'Profile updated successfully!');
+        showToast(response.message || 'Profile updated successfully!', 'success');
         // Refresh user data to get the updated information
         await refreshAllData();
       } else {
@@ -567,6 +558,28 @@ export default function Profile() {
           }}
         />
       )}
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        visible={showLogoutConfirmation}
+        title="Confirm Sign Out"
+        message="You will need to login again to access your account."
+        confirmText="Sign Out"
+        cancelText="Cancel"
+        confirmButtonColor={COLORS.error}
+        icon="log-out-outline"
+        iconColor={COLORS.error}
+        onConfirm={performLogout}
+        onCancel={() => setShowLogoutConfirmation(false)}
+      />
+
+      {/* Toast Component */}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
     </SafeAreaView>
   );
 }
@@ -684,7 +697,6 @@ const styles = StyleSheet.create({
   organizationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
   },
   organizationIcon: {
     marginRight: 4,
@@ -692,7 +704,6 @@ const styles = StyleSheet.create({
   userType: {
     fontSize: 13,
     color: COLORS.gray[600],
-    marginBottom: 6,
     fontWeight: '500',
   },
 
