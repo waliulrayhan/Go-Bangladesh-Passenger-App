@@ -217,53 +217,55 @@ export default function ResetPassword() {
                     <Text style={styles.requirementsTitle}>
                       Password requirements:
                     </Text>
-                    <View style={styles.requirement}>
-                      <Ionicons
-                        name={
-                          newPassword.length >= 8
-                            ? "checkmark-circle"
-                            : "ellipse-outline"
-                        }
-                        size={16}
-                        color={
-                          newPassword.length >= 8
-                            ? COLORS.success
-                            : COLORS.gray[400]
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.requirementText,
-                          newPassword.length >= 8 && styles.requirementMet,
-                        ]}
-                      >
-                        At least 8 characters
-                      </Text>
-                    </View>
-                    <View style={styles.requirement}>
-                      <Ionicons
-                        name={
-                          newPassword === confirmPassword && newPassword
-                            ? "checkmark-circle"
-                            : "ellipse-outline"
-                        }
-                        size={16}
-                        color={
-                          newPassword === confirmPassword && newPassword
-                            ? COLORS.success
-                            : COLORS.gray[400]
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.requirementText,
-                          newPassword === confirmPassword &&
-                            newPassword &&
-                            styles.requirementMet,
-                        ]}
-                      >
-                        Passwords match
-                      </Text>
+                    <View style={styles.requirementsRow}>
+                      <View style={styles.requirement}>
+                        <Ionicons
+                          name={
+                            newPassword.length >= 8
+                              ? "checkmark-circle"
+                              : "ellipse-outline"
+                          }
+                          size={16}
+                          color={
+                            newPassword.length >= 8
+                              ? COLORS.success
+                              : COLORS.gray[400]
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.requirementText,
+                            newPassword.length >= 8 && styles.requirementMet,
+                          ]}
+                        >
+                          At least 8 characters
+                        </Text>
+                      </View>
+                      <View style={styles.requirement}>
+                        <Ionicons
+                          name={
+                            newPassword === confirmPassword && newPassword
+                              ? "checkmark-circle"
+                              : "ellipse-outline"
+                          }
+                          size={16}
+                          color={
+                            newPassword === confirmPassword && newPassword
+                              ? COLORS.success
+                              : COLORS.gray[400]
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.requirementText,
+                            newPassword === confirmPassword &&
+                              newPassword &&
+                              styles.requirementMet,
+                          ]}
+                        >
+                          Passwords match
+                        </Text>
+                      </View>
                     </View>
                   </View>
 
@@ -284,16 +286,7 @@ export default function ResetPassword() {
             <Animated.View
               entering={FadeInUp.duration(800).delay(400)}
               style={styles.helpSection}
-            >
-              {timeRemaining <= 60 && timeRemaining > 0 && (
-                <View style={styles.warningContainer}>
-                  <Ionicons name="warning-outline" size={16} color={COLORS.error} />
-                  <Text style={styles.warningText}>
-                    Session expiring soon! Complete your password reset quickly.
-                  </Text>
-                </View>
-              )}
-              
+            > 
               <Text style={styles.helpNote}>
                 Make sure to remember your new password. You'll use it to login to
                 your account.
@@ -392,11 +385,17 @@ const styles = StyleSheet.create({
     color: COLORS.gray[700],
     marginBottom: SPACING.xs,
   },
+  requirementsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: SPACING.sm,
+  },
   requirement: {
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.xs,
-    marginBottom: SPACING.xs / 2,
+    flex: 1,
   },
   requirementText: {
     fontSize: 13,
