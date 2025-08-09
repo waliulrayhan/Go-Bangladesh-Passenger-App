@@ -1,15 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  BackHandler,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
@@ -29,22 +29,64 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes in seconds
+  const [isExpired, setIsExpired] = useState(false);
 
   const { resetPassword, isLoading, error, clearError } = useAuthStore();
   const { toast, showError, showSuccess, hideToast } = useToast();
 
-  const handleGoBack = () => {
-    router.back();
-  };
+  // Timer countdown effect
+  useEffect(() => {
+    if (timeRemaining <= 0) {
+      setIsExpired(true);
+      showError("Password reset session has expired Please start over.");
+      setTimeout(() => {
+        router.replace("/(auth)/forgot-password");
+      }, 2000);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setTimeRemaining(prev => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [timeRemaining]);
+
+  // Prevent back navigation (hardware back button and gesture)
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        // Return true to prevent default back action
+        return true;
+      };
+
+      // Add event listener for hardware back button
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [])
+  );
 
   const validatePassword = (password: string) => {
     if (password.length < 8) {
-      return "Password must be at least 8 characters long";
+      return "Password must be at least 8 characters long!";
     }
     return null;
   };
 
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
   const handleResetPassword = async () => {
+    if (isExpired) {
+      showError("Session has expired. Please start over.");
+      return;
+    }
+
     clearError();
 
     // Validate new password
@@ -56,23 +98,23 @@ export default function ResetPassword() {
 
     // Check if passwords match
     if (newPassword !== confirmPassword) {
-      showError("Passwords do not match");
+      showError("Passwords do not match!");
       return;
     }
 
     if (!mobile) {
-      showError("Mobile number not found. Please start over.");
+      showError("Mobile number not found. Please start over!");
       return;
     }
 
     const success = await resetPassword(mobile, newPassword, confirmPassword);
 
     if (success) {
-      showSuccess("Your password has been reset successfully. You can now login with your new password.");
+      showSuccess("Your password has been reset successfully. You can now login with your new password!");
       // Navigate to login after a short delay to allow user to see the success message
       setTimeout(() => {
         router.replace("/(auth)/passenger-login");
-      }, 2000);
+      }, 3000);
     }
   };
 
@@ -97,10 +139,6 @@ export default function ResetPassword() {
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
         />
-
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
 
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
@@ -127,6 +165,21 @@ export default function ResetPassword() {
               <Text style={styles.subtitle}>
                 Create a new password for your account: {mobile}
               </Text>
+              
+              {/* Timer Display */}
+              <View style={styles.timerContainer}>
+                <Ionicons 
+                  name="time-outline" 
+                  size={16} 
+                  color={timeRemaining <= 60 ? COLORS.error : COLORS.warning} 
+                />
+                <Text style={[
+                  styles.timerText,
+                  { color: timeRemaining <= 60 ? COLORS.error : COLORS.warning }
+                ]}>
+                  Session expires in {formatTime(timeRemaining)}
+                </Text>
+              </View>
             </Animated.View>
 
             <Animated.View entering={FadeInDown.duration(800).delay(200)}>
@@ -142,6 +195,7 @@ export default function ResetPassword() {
                     rightIcon={showPassword ? "eye-off-outline" : "eye-outline"}
                     onRightIconPress={() => setShowPassword(!showPassword)}
                     autoCapitalize="none"
+                    editable={!isExpired}
                   />
 
                   <Input
@@ -156,21 +210,8 @@ export default function ResetPassword() {
                       setShowConfirmPassword(!showConfirmPassword)
                     }
                     autoCapitalize="none"
+                    editable={!isExpired}
                   />
-
-                  {error && (
-                    <Animated.View
-                      entering={FadeInDown.duration(300)}
-                      style={styles.errorContainer}
-                    >
-                      <Ionicons
-                        name="alert-circle"
-                        size={16}
-                        color={COLORS.error}
-                      />
-                      <Text style={styles.errorText}>{error}</Text>
-                    </Animated.View>
-                  )}
 
                   <View style={styles.passwordRequirements}>
                     <Text style={styles.requirementsTitle}>
@@ -227,13 +268,14 @@ export default function ResetPassword() {
                   </View>
 
                   <Button
-                    title="Reset Password"
+                    title={isExpired ? "Session Expired" : "Reset Password"}
                     onPress={handleResetPassword}
                     loading={isLoading}
+                    disabled={isExpired}
                     variant="primary"
                     size="medium"
                     fullWidth
-                    icon="checkmark-outline"
+                    icon={isExpired ? "time-outline" : "checkmark-outline"}
                   />
                 </View>
               </Card>
@@ -243,6 +285,15 @@ export default function ResetPassword() {
               entering={FadeInUp.duration(800).delay(400)}
               style={styles.helpSection}
             >
+              {timeRemaining <= 60 && timeRemaining > 0 && (
+                <View style={styles.warningContainer}>
+                  <Ionicons name="warning-outline" size={16} color={COLORS.error} />
+                  <Text style={styles.warningText}>
+                    Session expiring soon! Complete your password reset quickly.
+                  </Text>
+                </View>
+              )}
+              
               <Text style={styles.helpNote}>
                 Make sure to remember your new password. You'll use it to login to
                 your account.
@@ -276,30 +327,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: SPACING.md,
-    paddingTop: 100, // Space for back button
+    paddingTop: SPACING.xl, // Reduced padding since no back button
     paddingBottom: SPACING.lg,
   },
-  backButton: {
-    position: "absolute",
-    top: 62, // Increased for translucent status bar
-    left: SPACING.md,
-    zIndex: 2,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: COLORS.primary,
-    fontFamily: FONT_WEIGHTS.semiBold,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: SPACING.md,
-    justifyContent: "center",
-    paddingTop: SPACING.lg,
-    zIndex: 1,
-  },
   header: {
+    paddingTop: SPACING["5xl"],
     alignItems: "center",
     marginBottom: SPACING.lg,
   },
@@ -324,25 +356,29 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     paddingHorizontal: SPACING.md,
   },
+  timerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACING.xs,
+    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.gray[50],
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
+  },
+  timerText: {
+    fontSize: 14,
+    fontFamily: FONT_WEIGHTS.medium,
+    textAlign: "center",
+  },
   formCard: {
     marginBottom: SPACING.md,
   },
   formContent: {
     gap: SPACING.sm,
-  },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.error + "10",
-    padding: SPACING.sm,
-    borderRadius: 8,
-    gap: SPACING.xs,
-  },
-  errorText: {
-    color: COLORS.error,
-    fontSize: 14,
-    flex: 1,
-    fontFamily: FONT_WEIGHTS.medium,
   },
   passwordRequirements: {
     backgroundColor: COLORS.gray[50],
@@ -374,6 +410,25 @@ const styles = StyleSheet.create({
   helpSection: {
     alignItems: "center",
     paddingTop: SPACING.md,
+  },
+  warningContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.xs,
+    backgroundColor: COLORS.error + "10",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.error + "30",
+    marginBottom: SPACING.md,
+  },
+  warningText: {
+    fontSize: 13,
+    color: COLORS.error,
+    fontFamily: FONT_WEIGHTS.medium,
+    textAlign: "center",
+    flex: 1,
   },
   helpNote: {
     fontSize: 14,

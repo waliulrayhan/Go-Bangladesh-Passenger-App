@@ -49,7 +49,9 @@ export default function AuthLayout() {
         name="reset-password" 
         options={{ 
           headerShown: false,
-          title: "Reset Password"
+          title: "Reset Password",
+          gestureEnabled: false, // Disable swipe gestures
+          headerBackVisible: false, // Hide back button if header was shown
         }} 
       />
       <Stack.Screen 
