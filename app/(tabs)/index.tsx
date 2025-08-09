@@ -79,7 +79,8 @@ const UI_TEXTS = {
     IN_PROGRESS: "Trip in Progress",
     TAP_OUT: "Tap Out",
     FORCE_TAP_OUT_TITLE: "Confirm Force Tap Out",
-    FORCE_TAP_OUT_MESSAGE: "Are you sure you want to force tap out of this trip?",
+    FORCE_TAP_OUT_MESSAGE:
+      "Are you sure you want to force tap out of this trip?",
     ROUTE_SEPARATOR: " ⇄ ",
   },
   ACTIVITY: {
@@ -90,7 +91,8 @@ const UI_TEXTS = {
     LOADING: "Loading activity...",
     LOADING_SUBTITLE: "Fetching your latest transactions",
     EMPTY_TITLE: "No recent activity",
-    EMPTY_SUBTITLE: "Your transaction history will appear here once you start using your card",
+    EMPTY_SUBTITLE:
+      "Your transaction history will appear here once you start using your card",
     LABELS: {
       BUS: "BUS",
       ROUTE: "ROUTE",
@@ -109,8 +111,18 @@ const UI_TEXTS = {
 // Utility functions
 const formatDateString = (date: Date): string => {
   const months = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ];
   const day = date.getDate();
   const month = months[date.getMonth()];
@@ -127,7 +139,9 @@ const formatTimeString = (date: Date): string => {
 };
 
 const formatBalanceDisplay = (balance: number | undefined): string => {
-  return typeof balance === "number" ? `৳ ${balance.toFixed(2)}` : UI_TEXTS.FALLBACKS.BALANCE;
+  return typeof balance === "number"
+    ? `৳ ${balance.toFixed(2)}`
+    : UI_TEXTS.FALLBACKS.BALANCE;
 };
 
 const getCardTypeLabel = (userType: string | undefined): string => {
@@ -175,10 +189,15 @@ export default function Dashboard() {
   const { toast, showSuccess, hideToast } = useToast();
 
   // Real-time trip monitoring with dynamic intervals
-  const { checkNow: checkTripNow, restartPolling, stopPolling } = useRealtimeTrip({
-    interval: tripStatus === "active" 
-      ? DASHBOARD_CONFIG.POLLING_INTERVALS.ACTIVE_TRIP 
-      : DASHBOARD_CONFIG.POLLING_INTERVALS.IDLE_TRIP,
+  const {
+    checkNow: checkTripNow,
+    restartPolling,
+    stopPolling,
+  } = useRealtimeTrip({
+    interval:
+      tripStatus === "active"
+        ? DASHBOARD_CONFIG.POLLING_INTERVALS.ACTIVE_TRIP
+        : DASHBOARD_CONFIG.POLLING_INTERVALS.IDLE_TRIP,
     enabled: true,
     onlyWhenActive: true,
     onTripStatusChange: (status, trip) => {
@@ -215,7 +234,9 @@ export default function Dashboard() {
   useEffect(() => {
     if (isLoadingBalance) {
       loadingAnimation.value = withRepeat(
-        withTiming(1, { duration: DASHBOARD_CONFIG.LOADING_ANIMATION_DURATION }),
+        withTiming(1, {
+          duration: DASHBOARD_CONFIG.LOADING_ANIMATION_DURATION,
+        }),
         -1,
         false
       );
@@ -252,12 +273,12 @@ export default function Dashboard() {
   // Handle balance visibility animation
   useEffect(() => {
     if (showBalance) {
-      balanceAnimation.value = withTiming(1, { 
-        duration: DASHBOARD_CONFIG.BALANCE_ANIMATION_DURATION.SHOW 
+      balanceAnimation.value = withTiming(1, {
+        duration: DASHBOARD_CONFIG.BALANCE_ANIMATION_DURATION.SHOW,
       });
     } else {
-      balanceAnimation.value = withTiming(0, { 
-        duration: DASHBOARD_CONFIG.BALANCE_ANIMATION_DURATION.HIDE 
+      balanceAnimation.value = withTiming(0, {
+        duration: DASHBOARD_CONFIG.BALANCE_ANIMATION_DURATION.HIDE,
       });
     }
   }, [showBalance]);
@@ -265,23 +286,23 @@ export default function Dashboard() {
   // Pull-to-refresh handler (lightweight)
   const onRefresh = async () => {
     setRefreshing(true);
-    
+
     // Temporarily pause realtime polling during refresh
     stopPolling();
-    
+
     try {
       // Only refresh essential data - no redundant API calls
       await Promise.all([
         useAuthStore.getState().refreshBalance(), // Just balance
-        checkOngoingTrip() // Just ongoing trip status
+        checkOngoingTrip(), // Just ongoing trip status
       ]);
-      
+
       setHasLoadedData(true);
     } catch (error) {
       console.error("Refresh error:", error);
     } finally {
       setRefreshing(false);
-      
+
       // Resume realtime polling after refresh
       setTimeout(() => {
         restartPolling();
@@ -367,10 +388,10 @@ export default function Dashboard() {
   const toggleBalanceVisibility = async () => {
     if (!showBalance) {
       setIsLoadingBalance(true);
-      
+
       // Temporarily pause realtime polling during balance fetch
       stopPolling();
-      
+
       try {
         // Only refresh the balance - no excessive API calls
         await useAuthStore.getState().refreshBalance();
@@ -384,7 +405,7 @@ export default function Dashboard() {
         console.error("Error fetching fresh balance:", error);
       } finally {
         setIsLoadingBalance(false);
-        
+
         // Resume realtime polling after a short delay
         setTimeout(() => {
           restartPolling();
@@ -400,7 +421,10 @@ export default function Dashboard() {
    * Renders the main header with branding, logo, and profile access
    */
   const renderHeader = () => (
-    <Animated.View entering={FadeInUp.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.HEADER)} style={styles.header}>
+    <Animated.View
+      entering={FadeInUp.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.HEADER)}
+      style={styles.header}
+    >
       {/* Status Bar Area - Same color as header */}
       <View style={styles.statusBarArea} />
 
@@ -463,13 +487,12 @@ export default function Dashboard() {
       {/* Profile Menu */}
       {showProfileMenu && (
         <Animated.View
-          entering={FadeInDown.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.PROFILE_MENU)}
+          entering={FadeInDown.duration(
+            DASHBOARD_CONFIG.ANIMATION_DELAYS.PROFILE_MENU
+          )}
           style={styles.profileMenu}
         >
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={navigateToProfile}
-          >
+          <TouchableOpacity style={styles.menuItem} onPress={navigateToProfile}>
             <Ionicons name="person-outline" size={18} color={COLORS.primary} />
             <Text
               variant="bodySmall"
@@ -500,7 +523,9 @@ export default function Dashboard() {
    */
   const renderRFIDCard = () => (
     <Animated.View
-      entering={FadeInDown.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.RFID_CARD).delay(DASHBOARD_CONFIG.ANIMATION_DELAYS.RFID_CARD)}
+      entering={FadeInDown.duration(
+        DASHBOARD_CONFIG.ANIMATION_DELAYS.RFID_CARD
+      ).delay(DASHBOARD_CONFIG.ANIMATION_DELAYS.RFID_CARD)}
       style={styles.cardContainer}
     >
       <LinearGradient
@@ -542,7 +567,9 @@ export default function Dashboard() {
         {/* Middle Section - Card Number */}
         <View style={styles.cardNumberSection}>
           <Text variant="h4" color={COLORS.white} style={styles.cardNumber}>
-            {user?.cardNumber || card?.cardNumber || UI_TEXTS.FALLBACKS.CARD_NUMBER}
+            {user?.cardNumber ||
+              card?.cardNumber ||
+              UI_TEXTS.FALLBACKS.CARD_NUMBER}
           </Text>
         </View>
 
@@ -621,7 +648,9 @@ export default function Dashboard() {
 
     return (
       <Animated.View
-        entering={FadeInDown.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.HEADER).delay(DASHBOARD_CONFIG.ANIMATION_DELAYS.TRIP_STATUS)}
+        entering={FadeInDown.duration(
+          DASHBOARD_CONFIG.ANIMATION_DELAYS.HEADER
+        ).delay(DASHBOARD_CONFIG.ANIMATION_DELAYS.TRIP_STATUS)}
         style={styles.tripContainer}
       >
         <View style={styles.tripCard}>
@@ -689,7 +718,9 @@ export default function Dashboard() {
                     numberOfLines={2}
                   >
                     {currentTrip?.tripStartPlace || UI_TEXTS.FALLBACKS.GENERIC}
-                    <Text style={styles.routeArrowSmall}>{UI_TEXTS.TRIP_STATUS.ROUTE_SEPARATOR}</Text>
+                    <Text style={styles.routeArrowSmall}>
+                      {UI_TEXTS.TRIP_STATUS.ROUTE_SEPARATOR}
+                    </Text>
                     {currentTrip?.tripEndPlace || UI_TEXTS.FALLBACKS.GENERIC}
                   </Text>
                 </View>
@@ -706,8 +737,12 @@ export default function Dashboard() {
                   <Text variant="bodySmall" style={styles.bottomDetailValue}>
                     {currentTrip?.tripStartTime
                       ? (() => {
-                          const adjustedDate = adjustTimeForTimezone(currentTrip.tripStartTime);
-                          return `${formatTimeString(adjustedDate)} , ${adjustedDate.toLocaleDateString("en-US", {
+                          const adjustedDate = adjustTimeForTimezone(
+                            currentTrip.tripStartTime
+                          );
+                          return `${formatTimeString(
+                            adjustedDate
+                          )} , ${adjustedDate.toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                           })}`;
@@ -741,7 +776,9 @@ export default function Dashboard() {
   };
 
   const getActivityTitle = (transactionType: string) => {
-    return transactionType === "BusFare" ? UI_TEXTS.ACTIVITY.BUS_FARE : UI_TEXTS.ACTIVITY.TOP_UP;
+    return transactionType === "BusFare"
+      ? UI_TEXTS.ACTIVITY.BUS_FARE
+      : UI_TEXTS.ACTIVITY.TOP_UP;
   };
 
   const getActivityAmount = (transactionType: string, amount: number) => {
@@ -756,8 +793,12 @@ export default function Dashboard() {
   const getCombinedTransactions = () => {
     return [...tripTransactions, ...rechargeTransactions]
       .sort((a, b) => {
-        const aDate = new Date(a.createTime || (a as any).trip?.tripStartTime || 0);
-        const bDate = new Date(b.createTime || (b as any).trip?.tripStartTime || 0);
+        const aDate = new Date(
+          a.createTime || (a as any).trip?.tripStartTime || 0
+        );
+        const bDate = new Date(
+          b.createTime || (b as any).trip?.tripStartTime || 0
+        );
         return bDate.getTime() - aDate.getTime();
       })
       .slice(0, DASHBOARD_CONFIG.RECENT_TRANSACTIONS_LIMIT);
@@ -771,7 +812,9 @@ export default function Dashboard() {
 
     return (
       <Animated.View
-        entering={FadeInDown.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.HEADER).delay(DASHBOARD_CONFIG.ANIMATION_DELAYS.RECENT_ACTIVITY)}
+        entering={FadeInDown.duration(
+          DASHBOARD_CONFIG.ANIMATION_DELAYS.HEADER
+        ).delay(DASHBOARD_CONFIG.ANIMATION_DELAYS.RECENT_ACTIVITY)}
         style={styles.recentActivity}
       >
         <View style={styles.sectionHeader}>
@@ -819,7 +862,7 @@ export default function Dashboard() {
             allTransactions.map((transaction: any, index: number) => {
               const iconInfo = getActivityIcon(transaction.transactionType);
               const transactionDate = new Date(transaction.createTime);
-              
+
               return (
                 <View key={transaction.id} style={styles.activityItem}>
                   <View
@@ -847,7 +890,8 @@ export default function Dashboard() {
                       color={COLORS.gray[500]}
                       style={styles.activityTime}
                     >
-                      {formatDateString(transactionDate)}, {formatTimeString(transactionDate)}
+                      {formatDateString(transactionDate)},{" "}
+                      {formatTimeString(transactionDate)}
                     </Text>
                   </View>
                   <Text
@@ -855,7 +899,10 @@ export default function Dashboard() {
                     color={getActivityColor(transaction.transactionType)}
                     style={styles.activityAmount}
                   >
-                    {getActivityAmount(transaction.transactionType, transaction.amount)}
+                    {getActivityAmount(
+                      transaction.transactionType,
+                      transaction.amount
+                    )}
                   </Text>
                 </View>
               );
