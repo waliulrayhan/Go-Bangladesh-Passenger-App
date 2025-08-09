@@ -36,6 +36,115 @@ import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
 import { API_BASE_URL, COLORS } from "../../utils/constants";
 
+// Dashboard configuration constants
+const DASHBOARD_CONFIG = {
+  ANIMATION_DELAYS: {
+    HEADER: 800,
+    TRIP_STATUS: 200,
+    RFID_CARD: 300,
+    RECENT_ACTIVITY: 600,
+    PROFILE_MENU: 300,
+  },
+  POLLING_INTERVALS: {
+    ACTIVE_TRIP: 15000,
+    IDLE_TRIP: 30000,
+  },
+  BALANCE_AUTO_HIDE_DELAY: 4000,
+  BALANCE_ANIMATION_DURATION: {
+    SHOW: 500,
+    HIDE: 300,
+  },
+  PULSE_ANIMATION_DURATION: 1500,
+  LOADING_ANIMATION_DURATION: 1000,
+  RECENT_TRANSACTIONS_LIMIT: 3,
+} as const;
+
+// UI text constants
+const UI_TEXTS = {
+  BRAND: {
+    NAME: "Go Bangladesh",
+    SLOGAN: "One step toward a better future",
+  },
+  CARD_LABELS: {
+    AVAILABLE_BALANCE: "Available Balance",
+    SHOW_BALANCE: "Show Balance",
+    LOADING: "Loading...",
+    CARD_TYPES: {
+      PRIVATE: "PRIVATE CARD",
+      PUBLIC: "PUBLIC CARD",
+      NORMAL: "NORMAL CARD",
+    },
+  },
+  TRIP_STATUS: {
+    IN_PROGRESS: "Trip in Progress",
+    TAP_OUT: "Tap Out",
+    FORCE_TAP_OUT_TITLE: "Confirm Force Tap Out",
+    FORCE_TAP_OUT_MESSAGE: "Are you sure you want to force tap out of this trip?",
+    ROUTE_SEPARATOR: " ⇄ ",
+  },
+  ACTIVITY: {
+    SECTION_TITLE: "Recent Activity",
+    VIEW_ALL: "View All",
+    BUS_FARE: "Bus Fare",
+    TOP_UP: "Top Up",
+    LOADING: "Loading activity...",
+    LOADING_SUBTITLE: "Fetching your latest transactions",
+    EMPTY_TITLE: "No recent activity",
+    EMPTY_SUBTITLE: "Your transaction history will appear here once you start using your card",
+    LABELS: {
+      BUS: "BUS",
+      ROUTE: "ROUTE",
+      TRIP_STARTED: "TRIP STARTED",
+    },
+  },
+  FALLBACKS: {
+    NAME: "Not Provided",
+    CARD_NUMBER: "Not Available",
+    BALANCE: "N/A",
+    BUS_NAME: "Bus Name Not Available!",
+    GENERIC: "N/A",
+  },
+} as const;
+
+// Utility functions
+const formatDateString = (date: Date): string => {
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+  const day = date.getDate();
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+const formatTimeString = (date: Date): string => {
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+const formatBalanceDisplay = (balance: number | undefined): string => {
+  return typeof balance === "number" ? `৳ ${balance.toFixed(2)}` : UI_TEXTS.FALLBACKS.BALANCE;
+};
+
+const getCardTypeLabel = (userType: string | undefined): string => {
+  switch (userType) {
+    case "private":
+      return UI_TEXTS.CARD_LABELS.CARD_TYPES.PRIVATE;
+    case "public":
+      return UI_TEXTS.CARD_LABELS.CARD_TYPES.PUBLIC;
+    default:
+      return UI_TEXTS.CARD_LABELS.CARD_TYPES.NORMAL;
+  }
+};
+
+const adjustTimeForTimezone = (dateString: string): Date => {
+  return new Date(new Date(dateString).getTime() + 6 * 60 * 60 * 1000);
+};
+
 /**
  * Dashboard Component - Main passenger app screen
  * Displays RFID card, trip status, balance, and recent activity
@@ -67,7 +176,9 @@ export default function Dashboard() {
 
   // Real-time trip monitoring with dynamic intervals
   const { checkNow: checkTripNow, restartPolling, stopPolling } = useRealtimeTrip({
-    interval: tripStatus === "active" ? 15000 : 30000, // 15s active, 30s idle
+    interval: tripStatus === "active" 
+      ? DASHBOARD_CONFIG.POLLING_INTERVALS.ACTIVE_TRIP 
+      : DASHBOARD_CONFIG.POLLING_INTERVALS.IDLE_TRIP,
     enabled: true,
     onlyWhenActive: true,
     onTripStatusChange: (status, trip) => {
@@ -104,7 +215,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (isLoadingBalance) {
       loadingAnimation.value = withRepeat(
-        withTiming(1, { duration: 1000 }),
+        withTiming(1, { duration: DASHBOARD_CONFIG.LOADING_ANIMATION_DURATION }),
         -1,
         false
       );
@@ -128,7 +239,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (tripStatus === "active") {
       pulseAnimation.value = withRepeat(
-        withTiming(1, { duration: 1500 }),
+        withTiming(1, { duration: DASHBOARD_CONFIG.PULSE_ANIMATION_DURATION }),
         -1,
         true
       );
@@ -141,9 +252,13 @@ export default function Dashboard() {
   // Handle balance visibility animation
   useEffect(() => {
     if (showBalance) {
-      balanceAnimation.value = withTiming(1, { duration: 500 });
+      balanceAnimation.value = withTiming(1, { 
+        duration: DASHBOARD_CONFIG.BALANCE_ANIMATION_DURATION.SHOW 
+      });
     } else {
-      balanceAnimation.value = withTiming(0, { duration: 300 });
+      balanceAnimation.value = withTiming(0, { 
+        duration: DASHBOARD_CONFIG.BALANCE_ANIMATION_DURATION.HIDE 
+      });
     }
   }, [showBalance]);
 
@@ -219,11 +334,15 @@ export default function Dashboard() {
   });
 
   // Event handlers
-  const handleProfilePress = () => {
+  const handleProfileMenuToggle = () => {
     setShowProfileMenu(!showProfileMenu);
   };
 
-  const handleViewAllPress = () => {
+  const navigateToProfile = () => {
+    router.push("/(tabs)/profile");
+  };
+
+  const navigateToHistory = () => {
     router.push("/(tabs)/history");
   };
 
@@ -240,6 +359,10 @@ export default function Dashboard() {
     setShowTapOutConfirmation(false);
   };
 
+  const handleLogout = () => {
+    logout();
+  };
+
   // Balance visibility toggle with loading and auto-hide
   const toggleBalanceVisibility = async () => {
     if (!showBalance) {
@@ -253,10 +376,10 @@ export default function Dashboard() {
         await useAuthStore.getState().refreshBalance();
         setShowBalance(true);
 
-        // Auto-hide balance after 4 seconds
+        // Auto-hide balance after configured delay
         setTimeout(() => {
           setShowBalance(false);
-        }, 4000);
+        }, DASHBOARD_CONFIG.BALANCE_AUTO_HIDE_DELAY);
       } catch (error) {
         console.error("Error fetching fresh balance:", error);
       } finally {
@@ -272,34 +395,12 @@ export default function Dashboard() {
     }
   };
 
-  // Utility functions
-  const formatDate = (date: Date) => {
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-    const day = date.getDate();
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
-  };
-
   // Render functions
   /**
    * Renders the main header with branding, logo, and profile access
    */
   const renderHeader = () => (
-    <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
+    <Animated.View entering={FadeInUp.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.HEADER)} style={styles.header}>
       {/* Status Bar Area - Same color as header */}
       <View style={styles.statusBarArea} />
 
@@ -317,21 +418,21 @@ export default function Dashboard() {
           </View>
           <View style={styles.brandTextContainer}>
             <Text variant="h6" color={COLORS.white} style={styles.brandName}>
-              Go Bangladesh
+              {UI_TEXTS.BRAND.NAME}
             </Text>
             <Text
               variant="caption"
               color={COLORS.white}
               style={styles.brandSlogan}
             >
-              One step toward a better future
+              {UI_TEXTS.BRAND.SLOGAN}
             </Text>
           </View>
         </View>
 
         <TouchableOpacity
           style={styles.profileSection}
-          onPress={() => router.push("/(tabs)/profile")}
+          onPress={navigateToProfile}
         >
           <View style={styles.avatar}>
             {user?.imageUrl ? (
@@ -362,12 +463,12 @@ export default function Dashboard() {
       {/* Profile Menu */}
       {showProfileMenu && (
         <Animated.View
-          entering={FadeInDown.duration(300)}
+          entering={FadeInDown.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.PROFILE_MENU)}
           style={styles.profileMenu}
         >
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => router.push("/(tabs)/profile")}
+            onPress={navigateToProfile}
           >
             <Ionicons name="person-outline" size={18} color={COLORS.primary} />
             <Text
@@ -379,7 +480,7 @@ export default function Dashboard() {
             </Text>
           </TouchableOpacity>
           <View style={styles.menuDivider} />
-          <TouchableOpacity style={styles.menuItem} onPress={() => logout()}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={18} color={COLORS.error} />
             <Text
               variant="bodySmall"
@@ -399,7 +500,7 @@ export default function Dashboard() {
    */
   const renderRFIDCard = () => (
     <Animated.View
-      entering={FadeInDown.duration(800).delay(300)}
+      entering={FadeInDown.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.RFID_CARD).delay(DASHBOARD_CONFIG.ANIMATION_DELAYS.RFID_CARD)}
       style={styles.cardContainer}
     >
       <LinearGradient
@@ -418,18 +519,14 @@ export default function Dashboard() {
               style={styles.cardHolderName}
               numberOfLines={1}
             >
-              {user?.name?.toUpperCase() || "Not Provided"}
+              {user?.name?.toUpperCase() || UI_TEXTS.FALLBACKS.NAME}
             </Text>
             <Text
               variant="caption"
               color={COLORS.white}
               style={styles.cardUserType}
             >
-              {user?.userType === "private"
-                ? "PRIVATE CARD"
-                : user?.userType === "public"
-                ? "PUBLIC CARD"
-                : "NORMAL CARD"}
+              {getCardTypeLabel(user?.userType)}
             </Text>
           </View>
           <View style={styles.rfidIconContainer}>
@@ -445,7 +542,7 @@ export default function Dashboard() {
         {/* Middle Section - Card Number */}
         <View style={styles.cardNumberSection}>
           <Text variant="h4" color={COLORS.white} style={styles.cardNumber}>
-            {user?.cardNumber || card?.cardNumber || "Not Available"}
+            {user?.cardNumber || card?.cardNumber || UI_TEXTS.FALLBACKS.CARD_NUMBER}
           </Text>
         </View>
 
@@ -456,7 +553,7 @@ export default function Dashboard() {
             color={COLORS.white}
             style={styles.balanceLabel}
           >
-            Available Balance
+            {UI_TEXTS.CARD_LABELS.AVAILABLE_BALANCE}
           </Text>
 
           <View style={styles.balanceContainer}>
@@ -481,7 +578,7 @@ export default function Dashboard() {
                         />
                       </Animated.View>
                       <Text variant="bodySmall" style={styles.showBalanceText}>
-                        Loading...
+                        {UI_TEXTS.CARD_LABELS.LOADING}
                       </Text>
                     </View>
                   ) : (
@@ -492,7 +589,7 @@ export default function Dashboard() {
                         color={COLORS.white}
                       />
                       <Text variant="bodySmall" style={styles.showBalanceText}>
-                        Show Balance
+                        {UI_TEXTS.CARD_LABELS.SHOW_BALANCE}
                       </Text>
                     </>
                   )}
@@ -504,11 +601,7 @@ export default function Dashboard() {
                 style={[styles.balanceDisplayContainer, balanceSlideStyle]}
               >
                 <Text variant="h2" color={COLORS.white} style={styles.balance}>
-                  {typeof user?.balance === "number"
-                    ? "৳ " + user.balance.toFixed(2)
-                    : typeof card?.balance === "number"
-                    ? "৳ " + card.balance.toFixed(2)
-                    : "N/A"}
+                  {formatBalanceDisplay(user?.balance || card?.balance)}
                 </Text>
               </Animated.View>
             )}
@@ -528,7 +621,7 @@ export default function Dashboard() {
 
     return (
       <Animated.View
-        entering={FadeInDown.duration(800).delay(200)}
+        entering={FadeInDown.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.HEADER).delay(DASHBOARD_CONFIG.ANIMATION_DELAYS.TRIP_STATUS)}
         style={styles.tripContainer}
       >
         <View style={styles.tripCard}>
@@ -542,7 +635,7 @@ export default function Dashboard() {
                 <Animated.View style={[styles.pulsingDot, dotPulseStyle]} />
               </View>
               <Text variant="bodySmall" style={styles.statusText}>
-                Trip in Progress
+                {UI_TEXTS.TRIP_STATUS.IN_PROGRESS}
               </Text>
             </View>
             <TouchableOpacity
@@ -551,7 +644,7 @@ export default function Dashboard() {
             >
               <Ionicons name="exit-outline" size={16} color={COLORS.white} />
               <Text variant="caption" style={styles.tapOutButtonText}>
-                Tap Out
+                {UI_TEXTS.TRIP_STATUS.TAP_OUT}
               </Text>
             </TouchableOpacity>
           </View>
@@ -567,18 +660,18 @@ export default function Dashboard() {
                   color={COLORS.brand.orange_light}
                 />
                 <Text variant="caption" style={styles.busLabel}>
-                  BUS
+                  {UI_TEXTS.ACTIVITY.LABELS.BUS}
                 </Text>
               </View>
               <Text variant="h6" style={styles.busText} numberOfLines={1}>
-                {currentTrip?.busNumber || "N/A"}
+                {currentTrip?.busNumber || UI_TEXTS.FALLBACKS.GENERIC}
               </Text>
               <Text
                 variant="caption"
                 style={styles.busNumber}
                 numberOfLines={1}
               >
-                {currentTrip?.busName || "Bus Name Not Available!"}
+                {currentTrip?.busName || UI_TEXTS.FALLBACKS.BUS_NAME}
               </Text>
             </View>
 
@@ -588,16 +681,16 @@ export default function Dashboard() {
                 <Ionicons name="navigate" size={14} color={COLORS.primary} />
                 <View style={styles.bottomDetailInfo}>
                   <Text variant="caption" style={styles.bottomDetailLabel}>
-                    ROUTE
+                    {UI_TEXTS.ACTIVITY.LABELS.ROUTE}
                   </Text>
                   <Text
                     variant="bodySmall"
                     style={styles.bottomDetailValue}
                     numberOfLines={2}
                   >
-                    {currentTrip?.tripStartPlace || "N/A"}
-                    <Text style={styles.routeArrowSmall}> ⇄ </Text>
-                    {currentTrip?.tripEndPlace || "N/A"}
+                    {currentTrip?.tripStartPlace || UI_TEXTS.FALLBACKS.GENERIC}
+                    <Text style={styles.routeArrowSmall}>{UI_TEXTS.TRIP_STATUS.ROUTE_SEPARATOR}</Text>
+                    {currentTrip?.tripEndPlace || UI_TEXTS.FALLBACKS.GENERIC}
                   </Text>
                 </View>
               </View>
@@ -608,27 +701,18 @@ export default function Dashboard() {
                 <Ionicons name="time" size={14} color={COLORS.success} />
                 <View style={styles.bottomDetailInfo}>
                   <Text variant="caption" style={styles.bottomDetailLabel}>
-                    TRIP STARTED
+                    {UI_TEXTS.ACTIVITY.LABELS.TRIP_STARTED}
                   </Text>
                   <Text variant="bodySmall" style={styles.bottomDetailValue}>
                     {currentTrip?.tripStartTime
-                      ? new Date(
-                          new Date(currentTrip.tripStartTime).getTime() +
-                            6 * 60 * 60 * 1000
-                        ).toLocaleTimeString("en-US", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: true,
-                        }) +
-                        " ,  " +
-                        new Date(
-                          new Date(currentTrip.tripStartTime).getTime() +
-                            6 * 60 * 60 * 1000
-                        ).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })
-                      : "N/A"}
+                      ? (() => {
+                          const adjustedDate = adjustTimeForTimezone(currentTrip.tripStartTime);
+                          return `${formatTimeString(adjustedDate)} , ${adjustedDate.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}`;
+                        })()
+                      : UI_TEXTS.FALLBACKS.GENERIC}
                   </Text>
                 </View>
               </View>
@@ -639,55 +723,55 @@ export default function Dashboard() {
     );
   };
 
+  // Activity helper functions
+  const getActivityIcon = (transactionType: string) => {
+    if (transactionType === "BusFare") {
+      return {
+        icon: "arrow-up-outline" as const,
+        color: COLORS.error,
+        backgroundColor: COLORS.error + "20",
+      };
+    } else {
+      return {
+        icon: "arrow-down-outline" as const,
+        color: COLORS.success,
+        backgroundColor: COLORS.success + "20",
+      };
+    }
+  };
+
+  const getActivityTitle = (transactionType: string) => {
+    return transactionType === "BusFare" ? UI_TEXTS.ACTIVITY.BUS_FARE : UI_TEXTS.ACTIVITY.TOP_UP;
+  };
+
+  const getActivityAmount = (transactionType: string, amount: number) => {
+    const prefix = transactionType === "BusFare" ? "-" : "+";
+    return `${prefix}৳${amount.toFixed(2)}`;
+  };
+
+  const getActivityColor = (transactionType: string) => {
+    return transactionType === "BusFare" ? COLORS.error : COLORS.success;
+  };
+
+  const getCombinedTransactions = () => {
+    return [...tripTransactions, ...rechargeTransactions]
+      .sort((a, b) => {
+        const aDate = new Date(a.createTime || (a as any).trip?.tripStartTime || 0);
+        const bDate = new Date(b.createTime || (b as any).trip?.tripStartTime || 0);
+        return bDate.getTime() - aDate.getTime();
+      })
+      .slice(0, DASHBOARD_CONFIG.RECENT_TRANSACTIONS_LIMIT);
+  };
+
   /**
    * Renders recent activity section with transactions history
    */
   const renderRecentActivity = () => {
-    // Combine and sort both transaction types by date, then get the most recent 3
-    const allTransactions = [...tripTransactions, ...rechargeTransactions]
-      .sort((a, b) => {
-        const aDate = new Date(
-          a.createTime || (a as any).trip?.tripStartTime || 0
-        );
-        const bDate = new Date(
-          b.createTime || (b as any).trip?.tripStartTime || 0
-        );
-        return bDate.getTime() - aDate.getTime();
-      })
-      .slice(0, 3);
-
-    const getActivityIcon = (transactionType: string) => {
-      if (transactionType === "BusFare") {
-        return {
-          icon: "arrow-up-outline" as const,
-          color: COLORS.error,
-          backgroundColor: COLORS.error + "20",
-        };
-      } else {
-        return {
-          icon: "arrow-down-outline" as const,
-          color: COLORS.success,
-          backgroundColor: COLORS.success + "20",
-        };
-      }
-    };
-
-    const getActivityTitle = (transactionType: string) => {
-      return transactionType === "BusFare" ? "Bus Fare" : "Top Up";
-    };
-
-    const getActivityAmount = (transactionType: string, amount: number) => {
-      const prefix = transactionType === "BusFare" ? "-" : "+";
-      return `${prefix}৳${amount.toFixed(2)}`;
-    };
-
-    const getActivityColor = (transactionType: string) => {
-      return transactionType === "BusFare" ? COLORS.error : COLORS.success;
-    };
+    const allTransactions = getCombinedTransactions();
 
     return (
       <Animated.View
-        entering={FadeInDown.duration(800).delay(600)}
+        entering={FadeInDown.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.HEADER).delay(DASHBOARD_CONFIG.ANIMATION_DELAYS.RECENT_ACTIVITY)}
         style={styles.recentActivity}
       >
         <View style={styles.sectionHeader}>
@@ -696,15 +780,15 @@ export default function Dashboard() {
             color={COLORS.secondary}
             style={styles.sectionTitle}
           >
-            Recent Activity
+            {UI_TEXTS.ACTIVITY.SECTION_TITLE}
           </Text>
-          <TouchableOpacity onPress={handleViewAllPress}>
+          <TouchableOpacity onPress={navigateToHistory}>
             <Text
               variant="bodySmall"
               color={COLORS.primary}
               style={styles.viewAllText}
             >
-              View All
+              {UI_TEXTS.ACTIVITY.VIEW_ALL}
             </Text>
           </TouchableOpacity>
         </View>
@@ -721,19 +805,21 @@ export default function Dashboard() {
                 color={COLORS.gray[500]}
                 style={styles.emptyActivityTitle}
               >
-                Loading activity...
+                {UI_TEXTS.ACTIVITY.LOADING}
               </Text>
               <Text
                 variant="caption"
                 color={COLORS.gray[400]}
                 style={styles.emptyActivitySubtitle}
               >
-                Fetching your latest transactions
+                {UI_TEXTS.ACTIVITY.LOADING_SUBTITLE}
               </Text>
             </View>
           ) : allTransactions.length > 0 ? (
             allTransactions.map((transaction: any, index: number) => {
               const iconInfo = getActivityIcon(transaction.transactionType);
+              const transactionDate = new Date(transaction.createTime);
+              
               return (
                 <View key={transaction.id} style={styles.activityItem}>
                   <View
@@ -761,12 +847,7 @@ export default function Dashboard() {
                       color={COLORS.gray[500]}
                       style={styles.activityTime}
                     >
-                      {formatDate(new Date(transaction.createTime))},{" "}
-                      {new Date(transaction.createTime).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: true,
-                      })}
+                      {formatDateString(transactionDate)}, {formatTimeString(transactionDate)}
                     </Text>
                   </View>
                   <Text
@@ -774,10 +855,7 @@ export default function Dashboard() {
                     color={getActivityColor(transaction.transactionType)}
                     style={styles.activityAmount}
                   >
-                    {getActivityAmount(
-                      transaction.transactionType,
-                      transaction.amount
-                    )}
+                    {getActivityAmount(transaction.transactionType, transaction.amount)}
                   </Text>
                 </View>
               );
@@ -797,15 +875,14 @@ export default function Dashboard() {
                 color={COLORS.gray[500]}
                 style={styles.emptyActivityTitle}
               >
-                No recent activity
+                {UI_TEXTS.ACTIVITY.EMPTY_TITLE}
               </Text>
               <Text
                 variant="caption"
                 color={COLORS.gray[400]}
                 style={styles.emptyActivitySubtitle}
               >
-                Your transaction history will appear here once you start using
-                your card
+                {UI_TEXTS.ACTIVITY.EMPTY_SUBTITLE}
               </Text>
             </View>
           )}
@@ -860,9 +937,9 @@ export default function Dashboard() {
         {/* Force tap out confirmation modal */}
         <ConfirmationModal
           visible={showTapOutConfirmation}
-          title="Confirm Force Tap Out"
-          message="Are you sure you want to force tap out of this trip?"
-          confirmText="Tap Out"
+          title={UI_TEXTS.TRIP_STATUS.FORCE_TAP_OUT_TITLE}
+          message={UI_TEXTS.TRIP_STATUS.FORCE_TAP_OUT_MESSAGE}
+          confirmText={UI_TEXTS.TRIP_STATUS.TAP_OUT}
           cancelText="Cancel"
           confirmButtonColor={COLORS.error}
           icon="exit-outline"
@@ -873,7 +950,7 @@ export default function Dashboard() {
           busNumber={currentTrip?.busNumber || currentTrip?.busName}
           route={
             currentTrip?.tripStartPlace && currentTrip?.tripEndPlace
-              ? `${currentTrip.tripStartPlace} ⇄ ${currentTrip.tripEndPlace}`
+              ? `${currentTrip.tripStartPlace}${UI_TEXTS.TRIP_STATUS.ROUTE_SEPARATOR}${currentTrip.tripEndPlace}`
               : undefined
           }
           penaltyAmount={currentTrip?.penaltyAmount || 0}
