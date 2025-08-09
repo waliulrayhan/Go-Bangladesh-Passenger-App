@@ -3,7 +3,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Alert,
   Image,
   RefreshControl,
   SafeAreaView,
@@ -22,6 +21,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { Text } from "../../components/ui/Text";
 import { useRealtimeTrip } from "../../hooks/useRealtimeTrip";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
@@ -70,6 +70,7 @@ export default function Dashboard() {
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showTapOutConfirmation, setShowTapOutConfirmation] = useState(false);
 
   // Animation for pulse effect - moved to top level
   const pulseAnimation = useSharedValue(0);
@@ -120,6 +121,8 @@ export default function Dashboard() {
       );
     } else {
       pulseAnimation.value = 0;
+      // Reset confirmation state when trip ends
+      setShowTapOutConfirmation(false);
     }
   }, [tripStatus]);
 
@@ -170,6 +173,19 @@ export default function Dashboard() {
 
   const handleViewAllPress = () => {
     router.push("/(tabs)/history");
+  };
+
+  const handleForceTapOut = () => {
+    setShowTapOutConfirmation(true);
+  };
+
+  const confirmForceTapOut = () => {
+    setShowTapOutConfirmation(false);
+    forceTapOut();
+  };
+
+  const cancelForceTapOut = () => {
+    setShowTapOutConfirmation(false);
   };
   const renderHeader = () => (
     <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
@@ -338,25 +354,6 @@ export default function Dashboard() {
     if (!currentTrip || tripStatus !== "active") {
       return null;
     }
-
-    const handleForceTapOut = () => {
-      const penaltyAmount = currentTrip?.penaltyAmount || 0;
-
-      Alert.alert(
-        "Force Tap Out",
-        `Are you sure you want to force tap out? A penalty of ৳${penaltyAmount.toFixed(
-          2
-        )} will be charged.`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Force Tap Out",
-            style: "destructive",
-            onPress: () => forceTapOut(),
-          },
-        ]
-      );
-    };
 
     return (
       <Animated.View
@@ -678,6 +675,26 @@ export default function Dashboard() {
           {renderRFIDCard()}
           {renderRecentActivity()}
         </ScrollView>
+
+        {/* Confirmation Modal */}
+        <ConfirmationModal
+          visible={showTapOutConfirmation}
+          title="Confirm Force Tap Out"
+          message="Are you sure you want to force tap out of this trip?"
+          confirmText="Tap Out"
+          cancelText="Cancel"
+          confirmButtonColor={COLORS.error}
+          icon="exit-outline"
+          iconColor={COLORS.error}
+          onConfirm={confirmForceTapOut}
+          onCancel={cancelForceTapOut}
+          showTripDetails={true}
+          busNumber={currentTrip?.busNumber || currentTrip?.busName}
+          route={currentTrip?.tripStartPlace && currentTrip?.tripEndPlace 
+            ? `${currentTrip.tripStartPlace} ⇄ ${currentTrip.tripEndPlace}` 
+            : undefined}
+          penaltyAmount={currentTrip?.penaltyAmount || 0}
+        />
       </SafeAreaView>
     </>
   );
