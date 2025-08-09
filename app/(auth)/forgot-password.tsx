@@ -22,7 +22,7 @@ import { Input } from "../../components/ui/Input";
 import { Text } from "../../components/ui/Text";
 import { Toast } from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
-import { useAuthStore } from "../../stores/authStore";
+import { useForgotPasswordStore } from "../../stores/forgotPasswordStore";
 import { COLORS, SPACING } from "../../utils/constants";
 
 const ANIMATION_DELAYS = {
@@ -137,7 +137,7 @@ export default function ForgotPassword() {
   const otpAutofill = useOTPAutofill();
 
   // External hooks and stores
-  const { sendOTPForForgotPassword, verifyOTP, isLoading, clearError } = useAuthStore();
+  const { sendOTPForForgotPassword, verifyOTP, resetPassword, isLoading, clearError } = useForgotPasswordStore();
   const { toast, showError, showSuccess, showInfo, hideToast } = useToast();
   
   // Refs
@@ -230,7 +230,7 @@ export default function ForgotPassword() {
       startTimer();
       showSuccess(`A verification code has been sent to ${formattedMobile}`);
     } else {
-      const currentError = useAuthStore.getState().error;
+      const currentError = useForgotPasswordStore.getState().error;
       if (currentError) {
         if (currentError.includes("not found")) {
           showError(MESSAGES.NOT_REGISTERED);
@@ -491,7 +491,7 @@ export default function ForgotPassword() {
           params: { mobile: formattedMobile },
         });
       } else {
-        const currentError = useAuthStore.getState().error;
+        const currentError = useForgotPasswordStore.getState().error;
         
         setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
         setIsAutoVerifying(false);
@@ -530,7 +530,7 @@ export default function ForgotPassword() {
       startTimer();
       showSuccess(MESSAGES.RESEND_SUCCESS);
     } else {
-      const currentError = useAuthStore.getState().error;
+      const currentError = useForgotPasswordStore.getState().error;
       if (currentError) {
         if (currentError.includes("not found")) {
           showError(MESSAGES.NOT_REGISTERED);

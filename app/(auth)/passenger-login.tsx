@@ -55,7 +55,7 @@ export default function PassengerLogin() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const { loginWithPassword, isLoading, clearError } = useAuthStore();
+  const { login, isLoading, clearError } = useAuthStore();
   const { toast, showError, hideToast } = useToast();
 
   const inputType = determineInputType(identifier);
@@ -114,7 +114,7 @@ export default function PassengerLogin() {
     if (!validateInputs()) return;
 
     try {
-      const success = await loginWithPassword(identifier, password);
+      const success = await login(identifier, password);
 
       if (success) {
         router.replace("/(tabs)");

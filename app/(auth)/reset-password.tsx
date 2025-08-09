@@ -19,7 +19,7 @@ import { Input } from "../../components/ui/Input";
 import { Text } from "../../components/ui/Text";
 import { Toast } from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
-import { useAuthStore } from "../../stores/authStore";
+import { useForgotPasswordStore } from "../../stores/forgotPasswordStore";
 import { COLORS, SPACING } from "../../utils/constants";
 import { FONT_WEIGHTS } from "../../utils/fonts";
 
@@ -32,7 +32,7 @@ export default function ResetPassword() {
   const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes in seconds
   const [isExpired, setIsExpired] = useState(false);
 
-  const { resetPassword, isLoading, error, clearError } = useAuthStore();
+  const { resetPassword, isLoading, error, clearError } = useForgotPasswordStore();
   const { toast, showError, showSuccess, hideToast } = useToast();
 
   // Timer countdown effect

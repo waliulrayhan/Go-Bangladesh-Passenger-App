@@ -1,53 +1,61 @@
 import { create } from 'zustand';
 import { apiService, RechargeTransaction, TripTransaction } from '../services/api';
-import { Bus, Card, PaginationState, Trip } from '../types';
+import { Card, PaginationState, Trip } from '../types';
 import { useAuthStore } from './authStore';
 
 interface CardState {
+  // State
   card: Card | null;
   tripTransactions: TripTransaction[];
   rechargeTransactions: RechargeTransaction[];
-  buses: Bus[];
+  currentTrip: Trip | null;
+  tripStatus: 'idle' | 'active' | 'completed';
   isLoading: boolean;
   error: string | null;
-  tripStatus: 'idle' | 'active' | 'completed';
-  currentTrip: Trip | null;
+  
+  // Trip pagination
+  tripPage: number;
+  tripHasMore: boolean;
   tripPagination: PaginationState;
+  
+  // Recharge pagination
+  rechargePage: number;
+  rechargeHasMore: boolean;
   rechargePagination: PaginationState;
-  lastDataLoadTime: Date | null;
-  lastTripCheckTime: Date | null;
-  tripCheckCount: number;
 
+  // Actions
   loadCardDetails: () => Promise<void>;
   loadTripHistory: (pageNo?: number, reset?: boolean) => Promise<void>;
   loadRechargeHistory: (pageNo?: number, reset?: boolean) => Promise<void>;
-  loadBuses: () => Promise<void>;
-  tapIn: (cardNumber: string, busId: number) => Promise<boolean>;
-  tapOut: (cardNumber: string) => Promise<boolean>;
-  recharge: (cardNumber: string, amount: number) => Promise<boolean>;
-  realTapOut: () => Promise<boolean>;
-  forceTapOut: () => Promise<{ success: boolean; message: string }>;
-  clearError: () => void;
   loadMoreTripHistory: () => Promise<void>;
   loadMoreRechargeHistory: () => Promise<void>;
   checkOngoingTrip: () => Promise<void>;
-  clearAllCardData: () => Promise<void>;
-  refreshCardData: () => Promise<void>;
+  tapOut: () => Promise<boolean>;
+  forceTapOut: () => Promise<boolean>;
+  clearError: () => void;
+  refreshData: () => Promise<void>;
   forceRefreshData: () => Promise<void>;
+  clearAllCardData: () => Promise<void>;
 }
 
+const formatError = (error: any): string => {
+  if (error.response?.data?.data?.message) {
+    return error.response.data.data.message;
+  }
+  return error.message || 'An error occurred';
+};
+
 export const useCardStore = create<CardState>((set, get) => ({
+  // Initial state
   card: null,
   tripTransactions: [],
   rechargeTransactions: [],
-  buses: [],
+  currentTrip: null,
+  tripStatus: 'idle',
   isLoading: false,
   error: null,
-  tripStatus: 'idle',
-  currentTrip: null,
-  lastDataLoadTime: null,
-  lastTripCheckTime: null,
-  tripCheckCount: 0,
+  tripPage: 1,
+  tripHasMore: true,
   tripPagination: {
     currentPage: 1,
     pageSize: 10,
@@ -56,6 +64,8 @@ export const useCardStore = create<CardState>((set, get) => ({
     totalLoaded: 0,
     totalCount: 0,
   },
+  rechargePage: 1,
+  rechargeHasMore: true,
   rechargePagination: {
     currentPage: 1,
     pageSize: 10,
@@ -65,73 +75,44 @@ export const useCardStore = create<CardState>((set, get) => ({
     totalCount: 0,
   },
 
+  // Load card details (for compatibility)
   loadCardDetails: async () => {
-    const { lastDataLoadTime } = get();
-
-    // Prevent excessive API calls - only reload if it's been more than 30 seconds
-    if (lastDataLoadTime && (Date.now() - lastDataLoadTime.getTime()) < 30000) {
-      console.log('🔒 [CARD] Skipping card details reload - recent data available');
-      return;
-    }
-
-    set({ isLoading: true, error: null });
-
-    try {
-      // Get fresh user data from auth store (NO MOCK DATA)
-      const authStore = useAuthStore.getState();
-      const user = authStore.user;
-
-      if (!user) {
-        throw new Error('No user data available. Please login again.');
-      }
-
-      // Create fresh card object from current user data (NO MOCK DATA)
+    // This is mainly for refreshing user data, which is handled by auth store
+    await useAuthStore.getState().refreshUserData();
+    
+    // Create card from user data for compatibility
+    const user = useAuthStore.getState().user;
+    if (user) {
       const card: Card = {
         id: user.id ? parseInt(user.id.toString()) : Date.now(),
-        cardNumber: user.cardNumber || 'GB-0000000000', // Default for new users without card
+        cardNumber: user.cardNumber || '',
         userId: parseInt(user.id?.toString() || '1'),
         balance: typeof user.balance === 'number' ? user.balance : 0,
         isActive: true,
         createdAt: new Date().toISOString()
       };
-
-      set({
-        card,
-        isLoading: false,
-        lastDataLoadTime: new Date()
-      });
-
-      // Check for ongoing trip after loading fresh card details
-      get().checkOngoingTrip();
-
-    } catch (error: any) {
-      console.error('❌ [CARD] Error loading card details:', error);
-      set({
-        isLoading: false,
-        error: error.message || 'Failed to load card details'
-      });
+      set({ card });
     }
   },
 
-  loadTripHistory: async (pageNo: number = 1, reset: boolean = false) => {
-    const { tripPagination, tripTransactions } = get();
-
-    // Skip loading if we already have recent data and it's not a forced reset
-    if (!reset && tripTransactions.length > 0 && pageNo === 1) {
-      console.log('🔒 [TRIP HISTORY] Skipping reload - recent data available');
-      return;
-    }
-
+  // Load trip history
+  loadTripHistory: async (pageNo = 1, reset = false) => {
+    const { tripTransactions, tripPage, tripPagination } = get();
+    
     if (reset) {
-      set({
-        isLoading: true,
-        error: null,
+      set({ 
+        isLoading: true, 
+        error: null, 
+        tripPage: 1, 
+        tripHasMore: true,
+        tripTransactions: [],
         tripPagination: {
           ...tripPagination,
           currentPage: 1,
           hasMore: true,
+          isLoadingMore: false,
           totalLoaded: 0,
-          totalCount: 0
+          totalCount: 0,
         }
       });
     } else {
@@ -142,76 +123,69 @@ export const useCardStore = create<CardState>((set, get) => ({
         }
       });
     }
-
+    
     try {
-      // Get user ID from auth store
-      const authStore = useAuthStore.getState();
-      const user = authStore.user;
-
-      const userId = user?.id?.toString();
-
-      if (!userId) {
-        throw new Error('No user ID available. Please login again.');
+      const user = useAuthStore.getState().user;
+      if (!user?.id) {
+        throw new Error('User not logged in');
       }
-
-      console.log('🚌 [TRIP HISTORY] Loading trip history for user:', userId);
-
-      // Use the new trip history API
-      const response = await apiService.getPassengerTripHistory(userId, pageNo, tripPagination.pageSize);
-
-      const newTripTransactions = response.data || [];
+      
+      const pageToLoad = reset ? 1 : (pageNo || tripPage);
+      const response = await apiService.getPassengerTripHistory(
+        user.id.toString(), 
+        pageToLoad, 
+        10
+      );
+      
+      const newTransactions = response.data || [];
       const totalCount = response.rowCount || 0;
-      console.log('✅ [TRIP HISTORY] Loaded:', newTripTransactions.length, 'trip transactions');
-      console.log('📊 [TRIP HISTORY] Total available:', totalCount, 'trip transactions');
-
-      // Calculate if there are more pages available
-      const currentTotal = reset ? newTripTransactions.length : tripPagination.totalLoaded + newTripTransactions.length;
-      const hasMore = currentTotal < totalCount;
-
+      const hasMore = newTransactions.length === 10;
+      const currentTotal = reset ? newTransactions.length : tripPagination.totalLoaded + newTransactions.length;
+      
       set({
-        tripTransactions: reset ? newTripTransactions : [...get().tripTransactions, ...newTripTransactions],
-        isLoading: false,
+        tripTransactions: reset ? newTransactions : [...tripTransactions, ...newTransactions],
+        tripPage: pageToLoad,
+        tripHasMore: hasMore,
         tripPagination: {
           ...tripPagination,
-          currentPage: pageNo,
+          currentPage: pageToLoad,
           hasMore,
           isLoadingMore: false,
           totalLoaded: currentTotal,
           totalCount
-        }
+        },
+        isLoading: false
       });
     } catch (error: any) {
-      console.error('❌ [TRIP HISTORY] Error loading trip history:', error);
       set({
         isLoading: false,
-        error: error.message || 'Failed to load trip history',
+        error: formatError(error),
         tripPagination: {
-          ...tripPagination,
+          ...get().tripPagination,
           isLoadingMore: false
         }
       });
     }
   },
 
-  loadRechargeHistory: async (pageNo: number = 1, reset: boolean = false) => {
-    const { rechargePagination, rechargeTransactions } = get();
-
-    // Skip loading if we already have recent data and it's not a forced reset
-    if (!reset && rechargeTransactions.length > 0 && pageNo === 1) {
-      console.log('🔒 [RECHARGE HISTORY] Skipping reload - recent data available');
-      return;
-    }
-
+  // Load recharge history
+  loadRechargeHistory: async (pageNo = 1, reset = false) => {
+    const { rechargeTransactions, rechargePage, rechargePagination } = get();
+    
     if (reset) {
-      set({
-        isLoading: true,
-        error: null,
+      set({ 
+        isLoading: true, 
+        error: null, 
+        rechargePage: 1, 
+        rechargeHasMore: true,
+        rechargeTransactions: [],
         rechargePagination: {
           ...rechargePagination,
           currentPage: 1,
           hasMore: true,
+          isLoadingMore: false,
           totalLoaded: 0,
-          totalCount: 0
+          totalCount: 0,
         }
       });
     } else {
@@ -222,421 +196,204 @@ export const useCardStore = create<CardState>((set, get) => ({
         }
       });
     }
-
+    
     try {
-      // Get user ID from auth store
-      const authStore = useAuthStore.getState();
-      const user = authStore.user;
-
-      const userId = user?.id?.toString();
-
-      if (!userId) {
-        throw new Error('No user ID available. Please login again.');
+      const user = useAuthStore.getState().user;
+      if (!user?.id) {
+        throw new Error('User not logged in');
       }
-
-      console.log('💳 [RECHARGE HISTORY] Loading recharge history for user:', userId);
-
-      // Use the new recharge history API
-      const response = await apiService.getPassengerRechargeHistory(userId, pageNo, rechargePagination.pageSize);
-
-      const newRechargeTransactions = response.data || [];
+      
+      const pageToLoad = reset ? 1 : (pageNo || rechargePage);
+      const response = await apiService.getPassengerRechargeHistory(
+        user.id.toString(), 
+        pageToLoad, 
+        10
+      );
+      
+      const newTransactions = response.data || [];
       const totalCount = response.rowCount || 0;
-      console.log('✅ [RECHARGE HISTORY] Loaded:', newRechargeTransactions.length, 'recharge transactions');
-      console.log('📊 [RECHARGE HISTORY] Total available:', totalCount, 'recharge transactions');
-
-      // Calculate if there are more pages available
-      const currentTotal = reset ? newRechargeTransactions.length : rechargePagination.totalLoaded + newRechargeTransactions.length;
-      const hasMore = currentTotal < totalCount;
-
+      const hasMore = newTransactions.length === 10;
+      const currentTotal = reset ? newTransactions.length : rechargePagination.totalLoaded + newTransactions.length;
+      
       set({
-        rechargeTransactions: reset ? newRechargeTransactions : [...get().rechargeTransactions, ...newRechargeTransactions],
-        isLoading: false,
+        rechargeTransactions: reset ? newTransactions : [...rechargeTransactions, ...newTransactions],
+        rechargePage: pageToLoad,
+        rechargeHasMore: hasMore,
         rechargePagination: {
           ...rechargePagination,
-          currentPage: pageNo,
+          currentPage: pageToLoad,
           hasMore,
           isLoadingMore: false,
           totalLoaded: currentTotal,
           totalCount
-        }
+        },
+        isLoading: false
       });
     } catch (error: any) {
-      console.error('❌ [RECHARGE HISTORY] Error loading recharge history:', error);
       set({
         isLoading: false,
-        error: error.message || 'Failed to load recharge history',
+        error: formatError(error),
         rechargePagination: {
-          ...rechargePagination,
+          ...get().rechargePagination,
           isLoadingMore: false
         }
       });
     }
   },
 
+  // Load more trip history
   loadMoreTripHistory: async () => {
-    const { tripPagination } = get();
-    if (tripPagination.hasMore && !tripPagination.isLoadingMore) {
-      await get().loadTripHistory(tripPagination.currentPage + 1, false);
-    }
+    const { tripHasMore, isLoading, tripPage, tripPagination } = get();
+    
+    if (!tripHasMore || isLoading || tripPagination.isLoadingMore) return;
+    
+    set({ tripPage: tripPage + 1 });
+    await get().loadTripHistory(tripPage + 1, false);
   },
 
+  // Load more recharge history
   loadMoreRechargeHistory: async () => {
-    const { rechargePagination } = get();
-    if (rechargePagination.hasMore && !rechargePagination.isLoadingMore) {
-      await get().loadRechargeHistory(rechargePagination.currentPage + 1, false);
-    }
+    const { rechargeHasMore, isLoading, rechargePage, rechargePagination } = get();
+    
+    if (!rechargeHasMore || isLoading || rechargePagination.isLoadingMore) return;
+    
+    set({ rechargePage: rechargePage + 1 });
+    await get().loadRechargeHistory(rechargePage + 1, false);
   },
 
-  loadBuses: async () => {
-    set({ isLoading: true, error: null });
-
+  // Check for ongoing trip
+  checkOngoingTrip: async () => {
     try {
-      // TODO: Replace with real API call when bus endpoints are available
-      // For now, return empty array to avoid crashes
-      const buses: Bus[] = [];
-      set({ buses, isLoading: false });
-    } catch (error: any) {
+      const ongoingTrip = await apiService.getOnGoingTrip();
+      
       set({
-        isLoading: false,
-        error: error.message || 'Failed to load buses'
+        currentTrip: ongoingTrip && ongoingTrip.isRunning ? ongoingTrip : null,
+        tripStatus: ongoingTrip && ongoingTrip.isRunning ? 'active' : 'idle'
       });
+    } catch (error: any) {
+      console.error('Error checking ongoing trip:', error);
+      // Don't set error for background checks
     }
   },
 
-  tapIn: async (cardNumber: string, busId: number) => {
+  // Regular tap out
+  tapOut: async () => {
     set({ isLoading: true, error: null });
-
-    try {
-      // TODO: Replace with real API call when tap-in endpoints are available
-      // For now, simulate success to avoid crashes
-      console.log('Tap-in simulated for card:', cardNumber, 'bus:', busId);
-      set({ isLoading: false, tripStatus: 'active' });
-      return true;
-    } catch (error: any) {
-      set({
-        isLoading: false,
-        error: error.message || 'Tap in failed'
-      });
-      return false;
-    }
-  },
-
-  tapOut: async (cardNumber: string) => {
-    set({ isLoading: true, error: null });
-
-    try {
-      // TODO: Replace with real API call when tap-out endpoints are available
-      // For now, simulate success to avoid crashes
-      console.log('Tap-out simulated for card:', cardNumber);
-      set({ isLoading: false, tripStatus: 'completed', currentTrip: null });
-      return true;
-    } catch (error: any) {
-      set({
-        isLoading: false,
-        error: error.message || 'Tap out failed'
-      });
-      return false;
-    }
-  },
-
-  recharge: async (cardNumber: string, amount: number) => {
-    set({ isLoading: true, error: null });
-
-    try {
-      // TODO: Replace with real API call when recharge endpoints are available
-      // For now, simulate success to avoid crashes
-      console.log('Recharge simulated for card:', cardNumber, 'amount:', amount);
-      set({ isLoading: false });
-      return true;
-    } catch (error: any) {
-      set({
-        isLoading: false,
-        error: error.message || 'Recharge failed'
-      });
-      return false;
-    }
-  },
-
-  realTapOut: async () => {
-    console.log('🔄 [TRIP] Attempting real tap out...');
-
+    
     try {
       const success = await apiService.tapOutTrip();
-
+      
       if (success) {
-        console.log('✅ [TRIP] Tap out successful, updating state');
         set({
+          currentTrip: null,
           tripStatus: 'idle',
-          currentTrip: null
+          isLoading: false
         });
-
-        // Refresh card details and history after tap out
-        get().loadCardDetails();
-        get().loadTripHistory(1, true);
-
+        
+        // Refresh data after tap out
+        await get().refreshData();
         return true;
-      } else {
-        console.log('❌ [TRIP] Tap out failed');
-        set({ error: 'Failed to tap out. Please try again.' });
-        return false;
       }
+      
+      throw new Error('Tap out failed');
     } catch (error: any) {
-      console.error('💥 [TRIP] Error during tap out:', error.message);
-      set({ error: error.message || 'Failed to tap out. Please try again.' });
+      set({
+        isLoading: false,
+        error: formatError(error)
+      });
       return false;
     }
   },
 
+  // Force tap out
   forceTapOut: async () => {
-    console.log('🔄 [FORCE TAP OUT] Attempting force tap out...');
-
-    try {
-      const state = get();
-      const { user } = useAuthStore.getState();
-
-      if (!state.currentTrip || !user) {
-        console.log('❌ [FORCE TAP OUT] No active trip or user found');
-        return {
-          success: false,
-          message: 'No active trip found or user not logged in'
-        };
-      }
-
-      // Debug user data structure
-      console.log('🔍 [FORCE TAP OUT] User data available:', {
-        id: user.id,
-        passengerId: user.passengerId,
-        cardNumber: user.cardNumber,
-        userType: user.userType,
-        name: user.name
-      });
-
-      // Debug trip data structure
-      console.log('🔍 [FORCE TAP OUT] Trip data available:', {
-        tripId: state.currentTrip.tripId,
-        cardId: state.currentTrip.cardId,
-        cardNumber: state.currentTrip.cardNumber,
-        sessionId: state.currentTrip.sessionId,
-        busName: state.currentTrip.busName,
-        busNumber: state.currentTrip.busNumber
-      });
-
-      // Use cardId from the current trip for the new API
-      const cardId = state.currentTrip.cardId;
-
-      if (!cardId) {
-        console.log('❌ [FORCE TAP OUT] No card ID found in current trip');
-        return {
-          success: false,
-          message: 'Card ID not found in trip data. Please contact support.'
-        };
-      }
-
-      console.log('💡 [FORCE TAP OUT] Using cardId:', cardId);
-
-      const tripId = state.currentTrip.tripId;
-      const sessionId = state.currentTrip.sessionId;
-
-      console.log('📋 [FORCE TAP OUT] Trip details:', {
-        cardId,
-        tripId,
-        sessionId,
-        currentTripData: state.currentTrip
-      });
-
-      // Ensure all required IDs are available
-      if (!cardId || !tripId || !sessionId) {
-        console.log('❌ [FORCE TAP OUT] Missing required IDs:', { cardId, tripId, sessionId });
-        return {
-          success: false,
-          message: 'Missing required trip information. Please try again.'
-        };
-      }
-
-      const result = await apiService.forceTripStop(cardId, tripId, sessionId);
-
-      if (result.success) {
-        console.log('✅ [FORCE TAP OUT] Force tap out successful, updating state');
-        set({
-          tripStatus: 'idle',
-          currentTrip: null
-        });
-
-        // Refresh card details and history after force tap out
-        get().loadCardDetails();
-        get().loadTripHistory(1, true);
-
-        return {
-          success: true,
-          message: result.message
-        };
-      } else {
-        console.log('❌ [FORCE TAP OUT] Force tap out failed');
-        set({ error: result.message });
-        return {
-          success: false,
-          message: result.message
-        };
-      }
-    } catch (error: any) {
-      console.error('💥 [FORCE TAP OUT] Error during force tap out:', error.message);
-      const errorMessage = error.message || 'Failed to force tap out. Please try again.';
-      set({ error: errorMessage });
-      return {
-        success: false,
-        message: errorMessage
-      };
-    }
-  },
-
-  clearError: () => set({ error: null }),
-
-  checkOngoingTrip: async () => {
-    const { lastTripCheckTime, tripCheckCount } = get();
-    const now = new Date();
+    const { currentTrip } = get();
     
-    console.log('🔄 [TRIP] Checking for ongoing trip...');
-
-    try {
-      // Update check metadata
-      set({
-        lastTripCheckTime: now,
-        tripCheckCount: tripCheckCount + 1
-      });
-
-      const ongoingTrip = await apiService.getOnGoingTrip();
-
-      if (ongoingTrip && ongoingTrip.isRunning) {
-        console.log('✅ [TRIP] Ongoing trip found, updating state');
-        
-        const previousStatus = get().tripStatus;
-        
-        set({
-          tripStatus: 'active',
-          currentTrip: ongoingTrip as Trip
-        });
-
-        // Log status changes
-        if (previousStatus !== 'active') {
-          console.log('🚨 [TRIP] Trip status changed to active');
-        }
-      } else {
-        console.log('ℹ️ [TRIP] No ongoing trip found');
-        
-        const previousStatus = get().tripStatus;
-        
-        set({
-          tripStatus: 'idle',  
-          currentTrip: null
-        });
-
-        // Log when trip ends
-        if (previousStatus === 'active') {
-          console.log('🏁 [TRIP] Trip ended');
-        }
-      }
-    } catch (error: any) {
-      console.error('💥 [TRIP] Error checking ongoing trip:', error.message);
-      
-      // Don't set error state for trip checks as this is a background operation
-      // But if we had an active trip and now we can't check, keep the state
-      const currentState = get();
-      if (currentState.tripStatus !== 'active') {
-        set({
-          tripStatus: 'idle',
-          currentTrip: null
-        });
-      }
+    if (!currentTrip) {
+      set({ error: 'No active trip found' });
+      return false;
     }
-  },
-
-  clearAllCardData: async () => {
+    
+    set({ isLoading: true, error: null });
+    
     try {
-      // Clear card-related storage
-      const keysToRemove = [
-        'card_data',
-        'trip_data',
-        'transaction_cache',
-        'history_cache',
-        'bus_data_cache'
-      ];
-
-      const { storageService } = await import('../utils/storage');
-      await Promise.all(
-        keysToRemove.map(key => storageService.removeItem(key))
+      const result = await apiService.forceTripStop(
+        currentTrip.cardId,
+        currentTrip.tripId,
+        currentTrip.sessionId
       );
-
-      // Reset card store state
+      
+      if (result.success) {
+        set({
+          currentTrip: null,
+          tripStatus: 'idle',
+          isLoading: false
+        });
+        
+        // Refresh data after force tap out
+        await get().refreshData();
+        return true;
+      }
+      
+      throw new Error(result.message || 'Force tap out failed');
+    } catch (error: any) {
       set({
-        card: null,
-        tripTransactions: [],
-        rechargeTransactions: [],
-        buses: [],
-        tripStatus: 'idle',
-        currentTrip: null,
-        error: null,
-        tripPagination: {
-          currentPage: 1,
-          pageSize: 10,
-          hasMore: true,
-          isLoadingMore: false,
-          totalLoaded: 0,
-          totalCount: 0,
-        },
-        rechargePagination: {
-          currentPage: 1,
-          pageSize: 10,
-          hasMore: true,
-          isLoadingMore: false,
-          totalLoaded: 0,
-          totalCount: 0,
-        }
+        isLoading: false,
+        error: formatError(error)
       });
-
-      console.log('✅ [CARD] All card data cleared successfully');
-    } catch (error) {
-      console.error('❌ [CARD] Error clearing card data:', error);
+      return false;
     }
   },
 
-  refreshCardData: async () => {
-    try {
-      // Clear existing data first
-      await get().clearAllCardData();
-
-      // Load fresh data (NO CACHE, NO MOCK DATA)
-      await Promise.all([
-        get().loadCardDetails(),
-        get().loadTripHistory(1, true),
-        get().loadRechargeHistory(1, true),
-        get().loadBuses()
-      ]);
-
-      // Check for ongoing trips with fresh data
-      await get().checkOngoingTrip();
-
-      console.log('✅ [CARD] All card data refreshed successfully');
-    } catch (error) {
-      console.error('❌ [CARD] Error refreshing card data:', error);
-    }
+  // Refresh all data
+  refreshData: async () => {
+    await Promise.all([
+      get().loadTripHistory(1, true),
+      get().loadRechargeHistory(1, true),
+      get().checkOngoingTrip()
+    ]);
+    
+    // Also refresh user data in auth store
+    await useAuthStore.getState().refreshUserData();
   },
 
+  // Force refresh data (alias for refreshData)
   forceRefreshData: async () => {
-    try {
-      // Reset lastDataLoadTime to force fresh API calls
-      set({ lastDataLoadTime: null });
+    await get().refreshData();
+  },
 
-      // Force reload all data
-      await Promise.all([
-        get().loadCardDetails(),
-        get().loadTripHistory(1, true),
-        get().loadRechargeHistory(1, true),
-        get().checkOngoingTrip()
-      ]);
+  // Clear all card data
+  clearAllCardData: async () => {
+    set({
+      card: null,
+      tripTransactions: [],
+      rechargeTransactions: [],
+      currentTrip: null,
+      tripStatus: 'idle',
+      error: null,
+      tripPage: 1,
+      tripHasMore: true,
+      rechargePage: 1,
+      rechargeHasMore: true,
+      tripPagination: {
+        currentPage: 1,
+        pageSize: 10,
+        hasMore: true,
+        isLoadingMore: false,
+        totalLoaded: 0,
+        totalCount: 0,
+      },
+      rechargePagination: {
+        currentPage: 1,
+        pageSize: 10,
+        hasMore: true,
+        isLoadingMore: false,
+        totalLoaded: 0,
+        totalCount: 0,
+      }
+    });
+  },
 
-      console.log('✅ [CARD] Force refresh completed successfully');
-    } catch (error) {
-      console.error('❌ [CARD] Error during force refresh:', error);
-    }
-  }
+  // Clear error
+  clearError: () => set({ error: null })
 }));

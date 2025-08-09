@@ -43,7 +43,7 @@ export const useTokenRefresh = () => {
 
       // Refresh card data
       const cardStore = useCardStore.getState();
-      await cardStore.refreshCardData();
+      await cardStore.refreshData();
 
       if (authSuccess) {
         setLastRefreshTime(new Date());

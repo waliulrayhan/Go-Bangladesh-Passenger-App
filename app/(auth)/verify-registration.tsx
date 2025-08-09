@@ -376,8 +376,8 @@ export default function VerifyRegistration() {
 
   const handleAutoLogin = async (tempData: any) => {
     try {
-      const { loginWithPassword } = useAuthStore.getState();
-      const loginSuccess = await loginWithPassword(tempData.phone, tempData.password);
+      const { login } = useAuthStore.getState();
+      const loginSuccess = await login(tempData.phone, tempData.password);
 
       if (loginSuccess) {
         try {
