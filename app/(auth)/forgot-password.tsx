@@ -4,7 +4,6 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -15,6 +14,7 @@ import {
   View,
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+
 import { GoBangladeshLogo } from "../../components/GoBangladeshLogo";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -25,105 +25,183 @@ import { useToast } from "../../hooks/useToast";
 import { useAuthStore } from "../../stores/authStore";
 import { COLORS, SPACING } from "../../utils/constants";
 
-const { width } = Dimensions.get("window");
+const ANIMATION_DELAYS = {
+  HEADER: 800,
+  FORM: 1000,
+  BOTTOM: 1200,
+} as const;
 
-export default function ForgotPassword() {
-  const [mobile, setMobile] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [timer, setTimer] = useState(0);
-  const [isAutoVerifying, setIsAutoVerifying] = useState(false);
-  const [showVerifyingText, setShowVerifyingText] = useState(false); // Separate state for UI display
+const MOBILE_CONSTRAINTS = {
+  MAX_LENGTH: 11,
+  MIN_LENGTH: 11,
+} as const;
 
-  const { sendOTPForForgotPassword, verifyOTP, isLoading, error, clearError } =
-    useAuthStore();
-  const { toast, showError, showSuccess, showInfo, hideToast } = useToast();
-  const inputRefs = useRef<(TextInput | null)[]>([]);
+const OTP_CONSTRAINTS = {
+  LENGTH: 6,
+  TIMER_DURATION: 60,
+  AUTO_FILL_TIMEOUT: 150,
+  RAPID_INPUT_THRESHOLD: 100,
+  FIRST_INPUT_DELAY: 50,
+  VERIFICATION_DELAY: 200,
+  FOCUS_DELAY: 300,
+} as const;
+
+const MESSAGES = {
+  INVALID_MOBILE: "Please enter a valid Bangladesh mobile number (01xxxxxxxxx)",
+  INVALID_OTP: "Please enter a valid 6-digit OTP",
+  NOT_REGISTERED: "This mobile number is not registered!",
+  SEND_FAILED: "Failed to send verification code. Please try again.",
+  VERIFY_SUCCESS: "OTP verified successfully!",
+  VERIFY_FAILED: "The OTP you entered is incorrect. Please try again!",
+  VERIFY_ERROR: "Failed to verify OTP. Please try again!",
+  RESEND_SUCCESS: "A new verification code has been sent to your mobile!",
+  RESEND_FAILED: "Failed to resend verification code. Please try again.",
+  HELP_INFO: "If you're having trouble with your account, please contact us at info@thegobd.com",
+} as const;
+
+/**
+ * Custom hook for managing OTP autofill logic
+ */
+const useOTPAutofill = () => {
   const isHandlingAutofill = useRef(false);
   const lastOtpInputTime = useRef(0);
   const autofillDigits = useRef<string[]>([]);
   const autofillTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Get indicator color based on validation state for mobile
-  const getIndicatorColor = () => {
-    if (mobile.length === 11 && validateMobile(mobile)) {
-      return COLORS.success;
-    } else if (mobile.length > 11) {
-      return COLORS.error;
+  const resetAutofill = () => {
+    isHandlingAutofill.current = false;
+    lastOtpInputTime.current = 0;
+    autofillDigits.current = [];
+    if (autofillTimeout.current) {
+      clearTimeout(autofillTimeout.current);
+      autofillTimeout.current = null;
     }
-    return COLORS.primary;
   };
 
-  // Timer effect for OTP resend
+  const cleanup = () => {
+    if (autofillTimeout.current) {
+      clearTimeout(autofillTimeout.current);
+    }
+  };
+
+  return {
+    isHandlingAutofill,
+    lastOtpInputTime,
+    autofillDigits,
+    autofillTimeout,
+    resetAutofill,
+    cleanup,
+  };
+};
+
+/**
+ * Custom hook for managing OTP timer
+ */
+const useOTPTimer = () => {
+  const [timer, setTimer] = useState(0);
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (timer > 0) {
       interval = setInterval(() => {
-        setTimer(timer - 1);
+        setTimer((prev) => prev - 1);
       }, 1000);
     }
     return () => clearInterval(interval);
   }, [timer]);
 
-  // Clear OTP when entering OTP state for better auto-fill detection
-  useEffect(() => {
-    if (isOtpSent) {
-      setOtp(["", "", "", "", "", ""]);
-      setIsAutoVerifying(false);
-      setShowVerifyingText(false); // Reset verifying text display
-      // Reset autofill flag when entering OTP state
-      isHandlingAutofill.current = false;
-      lastOtpInputTime.current = 0;
-      autofillDigits.current = [];
-      if (autofillTimeout.current) {
-        clearTimeout(autofillTimeout.current);
-        autofillTimeout.current = null;
-      }
-    }
-  }, [isOtpSent]);
+  const startTimer = () => setTimer(OTP_CONSTRAINTS.TIMER_DURATION);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (autofillTimeout.current) {
-        clearTimeout(autofillTimeout.current);
-      }
-    };
-  }, []);
+  return { timer, startTimer };
+};
 
-  const handleGoBack = () => {
-    router.back();
-  };
+/**
+ * ForgotPassword Component
+ * 
+ * Handles password recovery with:
+ * - Mobile number validation and formatting
+ * - OTP sending and verification with SMS autofill support
+ * - Resend functionality with countdown timer
+ * - Clean separation of concerns with custom hooks
+ */
+export default function ForgotPassword() {
+  // State management
+  const [mobile, setMobile] = useState("");
+  const [otp, setOtp] = useState(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isAutoVerifying, setIsAutoVerifying] = useState(false);
+  const [showVerifyingText, setShowVerifyingText] = useState(false);
 
-  const validateMobile = (mobile: string) => {
-    // Bangladesh mobile number format: 01xxxxxxxxx or +8801xxxxxxxxx
+  // Custom hooks
+  const { timer, startTimer } = useOTPTimer();
+  const otpAutofill = useOTPAutofill();
+
+  // External hooks and stores
+  const { sendOTPForForgotPassword, verifyOTP, isLoading, clearError } = useAuthStore();
+  const { toast, showError, showSuccess, showInfo, hideToast } = useToast();
+  
+  // Refs
+  const inputRefs = useRef<(TextInput | null)[]>([]);
+
+  const navigateBack = () => router.back();
+
+  const validateMobile = (mobile: string): boolean => {
     const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
     return phoneRegex.test(mobile);
   };
 
-  const formatMobile = (mobile: string) => {
-    // Remove +88 if present
+  const formatMobile = (mobile: string): string => {
     let formatted = mobile.replace(/^\+?88/, "");
-
-    // Ensure it starts with 01 (only add if it doesn't already start with 01)
+    
     if (!formatted.startsWith("01")) {
       if (formatted.startsWith("1")) {
-        formatted = "0" + formatted; // Add missing 0 to make it 01xxxxxxxxx
+        formatted = "0" + formatted;
       } else if (formatted.startsWith("0") && !formatted.startsWith("01")) {
-        formatted = "01" + formatted.substring(1); // Replace 0x with 01x
+        formatted = "01" + formatted.substring(1);
       } else {
-        formatted = "01" + formatted; // Add 01 prefix
+        formatted = "01" + formatted;
       }
     }
-
+    
     return formatted;
   };
 
+  const getIndicatorColor = () => {
+    if (mobile.length === MOBILE_CONSTRAINTS.MAX_LENGTH && validateMobile(mobile)) {
+      return COLORS.success;
+    }
+    if (mobile.length > MOBILE_CONSTRAINTS.MAX_LENGTH) {
+      return COLORS.error;
+    }
+    return COLORS.primary;
+  };
+
+  // Effects
+  useEffect(() => {
+    if (isOtpSent) {
+      setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
+      setIsAutoVerifying(false);
+      setShowVerifyingText(false);
+      otpAutofill.resetAutofill();
+      
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, OTP_CONSTRAINTS.FOCUS_DELAY);
+    }
+  }, [isOtpSent]);
+
+  useEffect(() => {
+    return () => {
+      otpAutofill.cleanup();
+    };
+  }, []);
+
+  // Event handlers
   const handleSendOTP = async () => {
     clearError();
 
     if (!validateMobile(mobile)) {
-      showError("Please enter a valid Bangladesh mobile number (01xxxxxxxxx)");
+      showError(MESSAGES.INVALID_MOBILE);
       return;
     }
 
@@ -132,183 +210,142 @@ export default function ForgotPassword() {
 
     if (success) {
       setIsOtpSent(true);
-      setTimer(60); // 60 seconds countdown
+      startTimer();
       showSuccess(`A verification code has been sent to ${formattedMobile}`);
     } else {
-      // Check if the error is about mobile number not found
-      if (error && error.includes("not found")) {
-        showError(
-          "This mobile number is not registered!"
-        );
-        // Optionally navigate to registration after a delay
-        setTimeout(() => {
-          router.push("/(auth)/passenger-registration");
-        }, 3000);
+      const currentError = useAuthStore.getState().error;
+      if (currentError) {
+        if (currentError.includes("not found")) {
+          showError(MESSAGES.NOT_REGISTERED);
+        } else {
+          showError(currentError);
+        }
+      } else {
+        showError(MESSAGES.SEND_FAILED);
       }
     }
   };
 
-  const handleOtpChange = (value: string, index: number) => {
-    if (isLoading || isAutoVerifying) return; // Prevent changes while loading or auto-verifying
+  const handlePastedOTP = (pastedOtp: string): boolean => {
+    // Clean the input to only contain digits
+    const cleanOtp = pastedOtp.replace(/\D/g, "");
+    console.log("handlePastedOTP called with:", pastedOtp, "cleaned:", cleanOtp);
+    
+    if (cleanOtp.length >= OTP_CONSTRAINTS.LENGTH) {
+      console.log("Processing full OTP:", cleanOtp);
+      otpAutofill.isHandlingAutofill.current = true;
+      setIsAutoVerifying(true);
+      setShowVerifyingText(true);
 
-    // Handle pasted OTP (auto-fill from SMS) - can happen on any input
-    if (value.length > 1) {
-      const pastedOtp = value.replace(/\D/g, "").slice(0, 6); // Extract only digits, max 6
-
-      if (pastedOtp.length >= 6) {
-        // Set flag to prevent interference from subsequent events
-        isHandlingAutofill.current = true;
-        setIsAutoVerifying(true);
-        setShowVerifyingText(true); // Show verifying text immediately
-
-        // Create new OTP array with all 6 digits
-        const newOtp = pastedOtp.split("").slice(0, 6);
-
-        setOtp(newOtp);
-
-        // Clear the flag after state update completes
-        setTimeout(() => {
-          isHandlingAutofill.current = false;
-        }, 500);
-
-        // Focus the last input to show completion
-        setTimeout(() => {
-          inputRefs.current[5]?.focus();
-          inputRefs.current[5]?.blur();
-        }, 100);
-
-        // Auto-verify when 6 digits are pasted
-        setTimeout(() => {
-          handleVerifyOTP(pastedOtp);
-        }, 200);
-
-        return;
+      // Take exactly 6 digits and split them
+      const newOtp = cleanOtp.slice(0, OTP_CONSTRAINTS.LENGTH).split("");
+      
+      // Ensure we have exactly 6 elements
+      while (newOtp.length < OTP_CONSTRAINTS.LENGTH) {
+        newOtp.push("");
       }
+      
+      console.log("Setting OTP array:", newOtp);
+      setOtp(newOtp);
+
+      setTimeout(() => {
+        otpAutofill.isHandlingAutofill.current = false;
+      }, 500);
+
+      setTimeout(() => {
+        inputRefs.current[OTP_CONSTRAINTS.LENGTH - 1]?.focus();
+        inputRefs.current[OTP_CONSTRAINTS.LENGTH - 1]?.blur();
+      }, 100);
+
+      setTimeout(() => {
+        handleVerifyOTP(newOtp.join(""));
+      }, OTP_CONSTRAINTS.VERIFICATION_DELAY);
+
+      return true;
+    }
+    return false;
+  };
+
+  const handleAutofillSequence = (value: string, index: number): boolean => {
+    const now = Date.now();
+    const timeDiff = now - otpAutofill.lastOtpInputTime.current;
+    otpAutofill.lastOtpInputTime.current = now;
+
+    // Extract only digits from the value
+    const cleanValue = value.replace(/\D/g, "");
+    const isRapidInput = timeDiff < OTP_CONSTRAINTS.RAPID_INPUT_THRESHOLD && timeDiff > 0;
+
+    // Special handling for first input with full OTP
+    if (index === 0 && cleanValue.length >= OTP_CONSTRAINTS.LENGTH) {
+      return handlePastedOTP(cleanValue);
     }
 
-    // Check if this is part of a rapid sequence (likely autofill)
-    const now = Date.now();
-    const timeDiff = now - lastOtpInputTime.current;
-    lastOtpInputTime.current = now;
-
-    // If inputs are coming very rapidly (< 100ms apart), it's likely autofill
-    const isRapidInput = timeDiff < 100 && timeDiff > 0;
-
-    // Check if we're already in autofill mode or this is a rapid input
-    if (isRapidInput || isHandlingAutofill.current) {
-      if (!isHandlingAutofill.current) {
-        isHandlingAutofill.current = true;
+    if (isRapidInput || otpAutofill.isHandlingAutofill.current) {
+      if (!otpAutofill.isHandlingAutofill.current) {
+        otpAutofill.isHandlingAutofill.current = true;
         setIsAutoVerifying(true);
-        setShowVerifyingText(true); // Show verifying text when autofill starts
-        // Initialize the digits array
-        autofillDigits.current = new Array(6).fill("");
+        setShowVerifyingText(true);
+        otpAutofill.autofillDigits.current = new Array(OTP_CONSTRAINTS.LENGTH).fill("");
       }
 
-      // Collect the digit for this position
-      autofillDigits.current[index] = value.slice(-1);
+      // Store the digit in the correct position
+      otpAutofill.autofillDigits.current[index] = cleanValue.slice(-1);
 
-      // Reset the timeout each time we get a new digit
-      if (autofillTimeout.current) clearTimeout(autofillTimeout.current);
-      autofillTimeout.current = setTimeout(() => {
-        const collectedDigits = [...autofillDigits.current];
-        const validDigits = collectedDigits.filter(
-          (d: string) => d && d !== ""
-        );
+      if (otpAutofill.autofillTimeout.current) clearTimeout(otpAutofill.autofillTimeout.current);
+      otpAutofill.autofillTimeout.current = setTimeout(() => {
+        const collectedDigits = [...otpAutofill.autofillDigits.current];
+        const validDigits = collectedDigits.filter((d: string) => d && d !== "");
 
-        if (validDigits.length >= 5) {
-          // Changed from 6 to 5 to handle the missing first digit
-          // If we're missing the first digit, let's try to get it from the current state
-          if (!collectedDigits[0] && otp[0]) {
-            collectedDigits[0] = otp[0];
+        // Lower threshold to 3 to catch more autofill scenarios
+        if (validDigits.length >= 3) {
+          // Fill in any missing digits from current OTP state
+          for (let i = 0; i < OTP_CONSTRAINTS.LENGTH; i++) {
+            if (!collectedDigits[i] && otp[i]) {
+              collectedDigits[i] = otp[i];
+            }
           }
 
-          // Smooth UI update - set OTP
           setOtp(collectedDigits);
 
-          // Auto-verify if we have all 6 digits
-          const finalValidDigits = collectedDigits.filter(
-            (d: string) => d && d !== ""
-          );
-          if (finalValidDigits.length === 6) {
-            // Remove focus from all inputs to prevent shaking
+          const finalValidDigits = collectedDigits.filter((d: string) => d && d !== "");
+          if (finalValidDigits.length >= OTP_CONSTRAINTS.LENGTH) {
             inputRefs.current.forEach((ref) => ref?.blur());
-
             setTimeout(() => {
               handleVerifyOTP(collectedDigits.join(""));
-            }, 200); // Slightly longer delay for smoother transition
+            }, OTP_CONSTRAINTS.VERIFICATION_DELAY);
           }
         } else if (validDigits.length > 0) {
-          // Even if we don't have enough, set what we have (but don't show loading)
           setOtp(collectedDigits);
         }
 
-        // Cleanup
-        autofillDigits.current = [];
-        isHandlingAutofill.current = false;
-        // Don't reset setIsAutoVerifying here to prevent flickering
-        // It will be reset in handleVerifyOTP
-      }, 150); // Timeout to ensure we capture all digits
+        otpAutofill.autofillDigits.current = [];
+        otpAutofill.isHandlingAutofill.current = false;
+      }, OTP_CONSTRAINTS.AUTO_FILL_TIMEOUT);
 
-      return; // Don't process as manual input
+      return true;
     }
-
-    // Special handling for the first input when it might be part of an autofill sequence
-    // If this is index 0 and OTP is empty, delay processing to see if more inputs come rapidly
-    if (index === 0 && otp.every((digit) => digit === "")) {
-      // Don't show verifying UI immediately - wait to see if it's autofill or manual
-      isHandlingAutofill.current = true;
-      autofillDigits.current = new Array(6).fill("");
-      autofillDigits.current[0] = value.slice(-1);
-
-      // Wait a short time to see if more inputs come rapidly (indicating autofill)
+    
+    if (index === 0 && !otpAutofill.isHandlingAutofill.current) {
       setTimeout(() => {
-        if (isHandlingAutofill.current) {
-          // Check if we collected more digits
-          const collectedCount = autofillDigits.current.filter(
-            (d: string) => d && d !== ""
-          ).length;
-
-          if (collectedCount === 1) {
-            // Only one digit collected in 50ms, treat as manual input
-            isHandlingAutofill.current = false;
-            autofillDigits.current = [];
-
-            setOtp((prevOtp) => {
-              const newOtp = [...prevOtp];
-              newOtp[0] = value.slice(-1);
-
-              // Auto-focus next input for manual typing
-              if (value) {
-                setTimeout(() => {
-                  inputRefs.current[1]?.focus();
-                }, 10);
-              }
-
-              return newOtp;
-            });
-          } else if (collectedCount > 1) {
-            // Multiple digits collected rapidly, this is autofill
-            setIsAutoVerifying(true);
-            setShowVerifyingText(true);
-            // The autofill timeout will handle the rest
-          }
+        if (!otpAutofill.isHandlingAutofill.current) {
+          handleManualOTPInput(cleanValue, index);
         }
-      }, 50); // Short delay to detect rapid sequence
-
-      return;
+      }, OTP_CONSTRAINTS.FIRST_INPUT_DELAY);
+      return true;
     }
+    
+    return false;
+  };
 
-    // Handle single character input (manual typing)
+  const handleManualOTPInput = (value: string, index: number) => {
     if (value.length <= 1) {
-      // Use functional update to ensure we have the latest state
       setOtp((prevOtp) => {
         const newOtp = [...prevOtp];
         newOtp[index] = value.slice(-1);
 
-        // Auto-verify when all 6 digits are entered manually
-        if (newOtp.every((digit) => digit !== "") && newOtp.length === 6) {
+        if (newOtp.every((digit) => digit !== "") && newOtp.length === OTP_CONSTRAINTS.LENGTH) {
           setIsAutoVerifying(true);
-          setShowVerifyingText(true); // Show verifying text for manual completion
+          setShowVerifyingText(true);
           setTimeout(() => {
             handleVerifyOTP(newOtp.join(""));
           }, 100);
@@ -317,13 +354,58 @@ export default function ForgotPassword() {
         return newOtp;
       });
 
-      // Auto-focus next input (but not during auto-verify)
-      if (value && index < 5 && !isAutoVerifying) {
+      if (value && index < OTP_CONSTRAINTS.LENGTH - 1 && !isAutoVerifying) {
         setTimeout(() => {
           inputRefs.current[index + 1]?.focus();
         }, 10);
       }
     }
+  };
+
+  const handleOtpChange = (value: string, index: number) => {
+    if (isLoading || isAutoVerifying) return;
+
+    // Handle pasted OTP (multiple characters at once)
+    if (value.length > 1) {
+      const pastedOtp = value.replace(/\D/g, "").slice(0, OTP_CONSTRAINTS.LENGTH);
+      if (handlePastedOTP(pastedOtp)) return;
+    }
+
+    // For first input, handle SMS autofill specially
+    if (index === 0) {
+      // Extract the clean digit(s)
+      const cleanValue = value.replace(/\D/g, "");
+      
+      // If we get multiple digits in first input (SMS autofill), handle as paste
+      if (cleanValue.length > 1) {
+        console.log("Detected multi-digit input in first field:", cleanValue);
+        if (handlePastedOTP(cleanValue)) return;
+      }
+      
+      // Store the first digit immediately (even if it's part of a larger string)
+      setOtp((prevOtp) => {
+        const newOtp = [...prevOtp];
+        newOtp[0] = cleanValue.slice(0, 1); // Take only the first digit for position 0
+        return newOtp;
+      });
+      
+      // Try autofill sequence detection
+      if (handleAutofillSequence(cleanValue, index)) return;
+      
+      // If not autofill and we have a value, handle as manual and focus next
+      if (cleanValue && !isAutoVerifying) {
+        setTimeout(() => {
+          inputRefs.current[1]?.focus();
+        }, 10);
+      }
+      return;
+    }
+
+    // For other inputs, check autofill sequence first
+    if (handleAutofillSequence(value, index)) return;
+
+    // Handle manual input for non-first inputs
+    handleManualOTPInput(value, index);
   };
 
   const handleKeyPress = (e: any, index: number) => {
@@ -333,14 +415,15 @@ export default function ForgotPassword() {
   };
 
   const handleVerifyOTP = async (otpCode?: string) => {
-    if (isLoading) return; // Prevent multiple submissions
+    if (isLoading) return;
 
     clearError();
 
     const otpString = otpCode || otp.join("");
-    if (!otpString || otpString.length !== 6) {
-      showError("Please enter a valid 6-digit OTP");
-      setIsAutoVerifying(false); // Reset auto-verifying state
+    if (!otpString || otpString.length !== OTP_CONSTRAINTS.LENGTH) {
+      showError(MESSAGES.INVALID_OTP);
+      setIsAutoVerifying(false);
+      setShowVerifyingText(false);
       return;
     }
 
@@ -349,37 +432,34 @@ export default function ForgotPassword() {
       const success = await verifyOTP(formattedMobile, otpString);
 
       if (success) {
-        // Navigate to password reset form with the verified mobile number
+        showSuccess(MESSAGES.VERIFY_SUCCESS);
         router.push({
           pathname: "/(auth)/reset-password",
           params: { mobile: formattedMobile },
         });
       } else {
-        // Clear OTP inputs on error
-        setOtp(["", "", "", "", "", ""]);
+        const currentError = useAuthStore.getState().error;
+        
+        setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
         setIsAutoVerifying(false);
-        setShowVerifyingText(false); // Reset verifying text display
+        setShowVerifyingText(false);
 
-        // Show error alert
-        showError("The OTP you entered is incorrect. Please try again!");
+        if (currentError) {
+          showError(currentError);
+        } else {
+          showError(MESSAGES.VERIFY_FAILED);
+        }
 
-        // Refocus first input after a short delay
         setTimeout(() => {
           inputRefs.current[0]?.focus();
         }, 100);
       }
     } catch (error) {
-      console.error("[ForgotPassword] OTP verification failed:", error);
-
-      // Clear OTP inputs on error
-      setOtp(["", "", "", "", "", ""]);
+      setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
       setIsAutoVerifying(false);
-      setShowVerifyingText(false); // Reset verifying text display
+      setShowVerifyingText(false);
+      showError(MESSAGES.VERIFY_ERROR);
 
-      // Show error toast
-      showError("Failed to verify OTP. Please try again!");
-
-      // Refocus first input after a short delay
       setTimeout(() => {
         inputRefs.current[0]?.focus();
       }, 100);
@@ -394,233 +474,228 @@ export default function ForgotPassword() {
     const success = await sendOTPForForgotPassword(formattedMobile);
 
     if (success) {
-      setTimer(60);
-      showSuccess("A new verification code has been sent to your mobile!");
+      startTimer();
+      showSuccess(MESSAGES.RESEND_SUCCESS);
     } else {
-      // Check if the error is about mobile number not found
-      if (error && error.includes("not found")) {
-        showError(
-          "This mobile number is not registered!"
-        );
-        // Optionally navigate to registration after a delay
-        setTimeout(() => {
-          router.push("/(auth)/passenger-registration");
-        }, 3000);
+      const currentError = useAuthStore.getState().error;
+      if (currentError) {
+        if (currentError.includes("not found")) {
+          showError(MESSAGES.NOT_REGISTERED);
+          setTimeout(() => {
+            router.push("/(auth)/passenger-registration");
+          }, 3000);
+        } else {
+          showError(currentError);
+        }
+      } else {
+        showError(MESSAGES.RESEND_FAILED);
       }
     }
   };
 
   const handleContactOrganization = () => {
-    showInfo(
-      "If you're having trouble with your account, please contact us at info@thegobd.com"
+    showInfo(MESSAGES.HELP_INFO);
+  };
+
+  // Render functions
+  const renderHeader = () => (
+    <Animated.View
+      entering={FadeInUp.duration(ANIMATION_DELAYS.HEADER)}
+      style={styles.header}
+    >
+      <View style={styles.logoContainer}>
+        <GoBangladeshLogo size={70} />
+      </View>
+      <Text variant="h3" style={styles.title}>
+        {isOtpSent ? "Enter Verification Code" : "Forgot Password?"}
+      </Text>
+      <Text style={styles.subtitle}>
+        {isOtpSent
+          ? `We've sent a 6-digit verification code to ${formatMobile(mobile)}`
+          : "Enter your mobile number and we'll send you a verification code to reset your password."
+        }
+      </Text>
+    </Animated.View>
+  );
+
+  const renderInputIndicator = () => {
+    if (!mobile.trim()) return null;
+
+    const indicatorColor = getIndicatorColor();
+    
+    return (
+      <View
+        style={[
+          styles.inputTypeIndicator,
+          {
+            borderColor: indicatorColor + "50",
+            backgroundColor: indicatorColor + "10",
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.inputTypeText,
+            { color: indicatorColor },
+          ]}
+        >
+          Mobile
+        </Text>
+      </View>
     );
   };
 
-  // OTP input state
-  if (isOtpSent) {
-    return (
-      <>
-        <StatusBar
-          style="light"
-          backgroundColor="transparent"
-          translucent={true}
-        />
-        <SafeAreaView style={styles.container}>
-          <LinearGradient
-            colors={[
-              "rgba(74, 144, 226, 0.5)", // Blue at top
-              "rgba(74, 144, 226, 0.2)",
-              "transparent",
-              "rgba(255, 138, 0, 0.2)", // Orange transition
-              "rgba(255, 138, 0, 0.4)", // Orange at bottom
-            ]}
-            locations={[0, 0.2, 0.5, 0.8, 1]}
-            style={styles.glowBackground}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
+  const renderMobileInput = () => (
+    <Animated.View entering={FadeInDown.duration(ANIMATION_DELAYS.FORM)}>
+      <Card variant="elevated" style={styles.formCard}>
+        <View style={styles.formContent}>
+          <Input
+            label="Mobile Number"
+            value={mobile}
+            onChangeText={setMobile}
+            placeholder="(e.g. 01XXXXXXXXXX)"
+            keyboardType="phone-pad"
+            icon="call-outline"
+            autoCapitalize="none"
           />
 
-          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
-          </TouchableOpacity>
+          {renderInputIndicator()}
 
-          <KeyboardAvoidingView
-            style={styles.keyboardAvoidingView}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-          >
-            <ScrollView
-              contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-              bounces={false}
-              overScrollMode="never"
-            >
+          <Button
+            title="Send Verification Code"
+            onPress={handleSendOTP}
+            loading={isLoading}
+            disabled={!mobile.trim()}
+            icon="paper-plane-outline"
+            size="medium"
+            fullWidth
+          />
+        </View>
+      </Card>
+    </Animated.View>
+  );
+
+  const renderOTPInput = () => (
+    <Animated.View entering={FadeInDown.duration(ANIMATION_DELAYS.FORM)}>
+      <Card variant="elevated" style={styles.formCard}>
+        <View style={styles.formContent}>
+          {!showVerifyingText && (
+            <Animated.View entering={FadeInDown.duration(300)}>
+              <Text style={styles.otpLabel}>Verification Code</Text>
+            </Animated.View>
+          )}
+
+          <View style={styles.otpInputContainer}>
+            {showVerifyingText && (
               <Animated.View
-                entering={FadeInUp.duration(800)}
-                style={styles.header}
+                style={styles.loadingContainer}
+                entering={FadeInDown.duration(300)}
               >
-                <View style={styles.logoContainer}>
-                  <GoBangladeshLogo size={70} />
-                </View>
-
-                <Text variant="h3" style={styles.title}>
-                  Enter Verification Code
-                </Text>
-                <Text style={styles.subtitle}>
-                  We've sent a 6-digit verification code to{" "}
-                  {formatMobile(mobile)}
-                </Text>
+                <Text style={styles.loadingText}>Verifying...</Text>
               </Animated.View>
-
-              <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-                <Card variant="elevated" style={styles.otpCard}>
-                  <View style={styles.otpContent}>
-                    {!showVerifyingText && (
-                      <Animated.View
-                        entering={FadeInDown.duration(300)}
-                        exiting={FadeInUp.duration(200)}
-                      >
-                        <Text style={styles.otpLabel}>Verification Code</Text>
-                      </Animated.View>
-                    )}
-
-                    <View
-                      style={styles.otpInputContainer}
-                      key={`otp-container-${isOtpSent}`}
-                    >
-                      {showVerifyingText && (
-                        <Animated.View
-                          style={styles.loadingContainer}
-                          entering={FadeInDown.duration(300)}
-                          exiting={FadeInUp.duration(200)}
-                        >
-                          <Text style={styles.loadingText}>Verifying...</Text>
-                        </Animated.View>
-                      )}
-                      {otp.map((digit, index) => (
-                        <Animated.View
-                          key={`otp-input-wrapper-${index}-${isOtpSent}`}
-                          style={styles.otpInputWrapper}
-                        >
-                          <TextInput
-                            ref={(ref) => {
-                              inputRefs.current[index] = ref;
-                            }}
-                            style={[
-                              styles.otpInput,
-                              digit && styles.otpInputFilled,
-                              (isLoading || isAutoVerifying) &&
-                                styles.otpInputDisabled,
-                            ]}
-                            value={digit}
-                            onChangeText={(value) =>
-                              !isAutoVerifying && handleOtpChange(value, index)
-                            } // Prevent input during auto-verify
-                            onKeyPress={(e) =>
-                              !isAutoVerifying && handleKeyPress(e, index)
-                            }
-                            keyboardType="numeric"
-                            maxLength={index === 0 ? 6 : 1} // Allow pasting full OTP in first input only
-                            autoFocus={index === 0 && !isAutoVerifying}
-                            selectTextOnFocus={true}
-                            editable={!isLoading && !isAutoVerifying} // Disable during auto-verify
-                            textContentType={
-                              index === 0 ? "oneTimeCode" : "none"
-                            } // SMS auto-fill for first input only
-                            autoComplete={index === 0 ? "sms-otp" : "off"} // Android SMS auto-fill for first input only
-                            importantForAutofill={index === 0 ? "yes" : "no"} // Android autofill priority
-                            blurOnSubmit={false}
-                            // Prevent other inputs from interfering with autofill
-                            contextMenuHidden={index !== 0}
-                          />
-                        </Animated.View>
-                      ))}
-                    </View>
-
-                    {/* {error && (
-                      <Animated.View
-                        entering={FadeInDown.duration(300)}
-                        style={styles.errorContainer}
-                      >
-                        <Ionicons
-                          name="alert-circle"
-                          size={16}
-                          color={COLORS.error}
-                        />
-                        <Text style={styles.errorText}>{error}</Text>
-                      </Animated.View>
-                    )} */}
-
-                    <View style={styles.resendContainer}>
-                      {timer > 0 ? (
-                        <Text style={styles.timerText}>
-                          Resend code in {timer}s
-                        </Text>
-                      ) : (
-                        <TouchableOpacity
-                          onPress={handleResendOTP}
-                          disabled={isLoading}
-                        >
-                          <Text
-                            style={[
-                              styles.resendText,
-                              isLoading && styles.resendTextDisabled,
-                            ]}
-                          >
-                            Resend Code
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-
-                    <Text style={styles.helpText}>
-                      {Platform.OS === "ios"
-                        ? "Tap the SMS suggestion to auto-fill all 6 digits, or enter them manually for automatic verification."
-                        : "The OTP will auto-fill from SMS when available."}
-                    </Text>
-                  </View>
-                </Card>
-              </Animated.View>
-
+            )}
+            {otp.map((digit, index) => (
               <Animated.View
-                entering={FadeInDown.duration(800).delay(400)}
-                style={styles.bottomSection}
+                key={`otp-input-wrapper-${index}-${isOtpSent}`}
+                style={styles.otpInputWrapper}
               >
-                <TouchableOpacity
-                  onPress={handleContactOrganization}
-                  style={styles.organizationButton}
+                <TextInput
+                  ref={(ref) => {
+                    inputRefs.current[index] = ref;
+                  }}
+                  style={[
+                    styles.otpInput,
+                    digit && styles.otpInputFilled,
+                    (isLoading || isAutoVerifying) && styles.otpInputDisabled,
+                  ]}
+                  value={digit}
+                  onChangeText={(value) =>
+                    !isAutoVerifying && handleOtpChange(value, index)
+                  }
+                  onKeyPress={(e) =>
+                    !isAutoVerifying && handleKeyPress(e, index)
+                  }
+                  keyboardType="numeric"
+                  maxLength={index === 0 ? OTP_CONSTRAINTS.LENGTH : 1}
+                  autoFocus={index === 0 && !isAutoVerifying}
+                  selectTextOnFocus={true}
+                  editable={!isLoading && !isAutoVerifying}
+                  textContentType={index === 0 ? "oneTimeCode" : "none"}
+                  autoComplete={index === 0 ? "sms-otp" : "off"}
+                  importantForAutofill={index === 0 ? "yes" : "no"}
+                  blurOnSubmit={false}
+                  contextMenuHidden={index !== 0}
+                  autoCorrect={false}
+                  spellCheck={false}
+                />
+              </Animated.View>
+            ))}
+          </View>
+
+          <View style={styles.resendContainer}>
+            {timer > 0 ? (
+              <Text style={styles.timerText}>Resend code in {timer}s</Text>
+            ) : (
+              <TouchableOpacity onPress={handleResendOTP} disabled={isLoading}>
+                <Text
+                  style={[
+                    styles.resendText,
+                    isLoading && styles.resendTextDisabled,
+                  ]}
                 >
-                  <Text style={styles.organizationText}>
-                    Need help with your account?
-                  </Text>
-                  <Text style={styles.organizationEmail}>info@thegobd.com</Text>
-                </TouchableOpacity>
-              </Animated.View>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </>
-    );
-  }
+                  Resend Code
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
-  // Initial phone number input state
+          <Text style={styles.helpText}>
+            {Platform.OS === "ios"
+              ? "Tap the SMS suggestion to auto-fill all 6 digits, or enter them manually for automatic verification."
+              : "The OTP will auto-fill from SMS when available."
+            }
+          </Text>
+        </View>
+      </Card>
+    </Animated.View>
+  );
+
+  const renderBottomSection = () => (
+    <Animated.View
+      entering={FadeInDown.duration(ANIMATION_DELAYS.BOTTOM)}
+      style={styles.bottomSection}
+    >
+      {!isOtpSent && (
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.dividerLine} />
+        </View>
+      )}
+
+      <TouchableOpacity
+        onPress={handleContactOrganization}
+        style={styles.organizationButton}
+      >
+        <Text style={styles.organizationText}>
+          Need help with your account?
+        </Text>
+        <Text style={styles.organizationEmail}>info@thegobd.com</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+
   return (
     <>
-      <StatusBar
-        style="light"
-        backgroundColor="transparent"
-        translucent={true}
-      />
+      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
       <SafeAreaView style={styles.container}>
-        {/* Teal Left + Warm Orange Bottom Dual Glow */}
         <LinearGradient
           colors={[
-            "rgba(74, 144, 226, 0.5)", // Blue at top
+            "rgba(74, 144, 226, 0.5)",
             "rgba(74, 144, 226, 0.2)",
             "transparent",
-            "rgba(255, 138, 0, 0.2)", // Orange transition
-            "rgba(255, 138, 0, 0.4)", // Orange at bottom
+            "rgba(255, 138, 0, 0.2)",
+            "rgba(255, 138, 0, 0.4)",
           ]}
           locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}
@@ -628,14 +703,14 @@ export default function ForgotPassword() {
           end={{ x: 0.5, y: 1 }}
         />
 
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+        <TouchableOpacity style={styles.backButton} onPress={navigateBack}>
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
 
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+          keyboardVerticalOffset={0}
         >
           <ScrollView
             contentContainerStyle={styles.scrollContent}
@@ -644,108 +719,12 @@ export default function ForgotPassword() {
             bounces={false}
             overScrollMode="never"
           >
-            <Animated.View
-              entering={FadeInUp.duration(800)}
-              style={styles.header}
-            >
-              <View style={styles.logoContainer}>
-                <GoBangladeshLogo size={70} />
-              </View>
-
-              <Text variant="h3" color={COLORS.secondary}>
-                Forgot Password?
-              </Text>
-              <Text style={styles.subtitle}>
-                Enter your mobile number and we'll send you a verification code
-                to reset your password.
-              </Text>
-            </Animated.View>
-
-            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-              <Card variant="elevated" style={styles.loginCard}>
-                <View style={styles.loginContent}>
-                  <Input
-                    label="Mobile Number"
-                    value={mobile}
-                    onChangeText={setMobile}
-                    placeholder="(e.g. 01XXXXXXXXXX)"
-                    keyboardType="phone-pad"
-                    icon="call-outline"
-                    autoCapitalize="none"
-                  />
-
-                  {mobile.trim() && (
-                    <View
-                      style={[
-                        styles.inputTypeIndicator,
-                        {
-                          borderColor: getIndicatorColor() + "50",
-                          backgroundColor: getIndicatorColor() + "10",
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.inputTypeText,
-                          { color: getIndicatorColor() },
-                        ]}
-                      >
-                        Mobile
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* {error && (
-                    <Animated.View
-                      entering={FadeInDown.duration(300)}
-                      style={styles.errorContainer}
-                    >
-                      <Ionicons
-                        name="alert-circle"
-                        size={16}
-                        color={COLORS.error}
-                      />
-                      <Text style={styles.errorText}>{error}</Text>
-                    </Animated.View>
-                  )} */}
-
-                  <Button
-                    title="Send Verification Code"
-                    onPress={handleSendOTP}
-                    loading={isLoading}
-                    disabled={!mobile.trim()}
-                    icon="paper-plane-outline"
-                    size="medium"
-                    fullWidth
-                  />
-                </View>
-              </Card>
-            </Animated.View>
-
-            <Animated.View
-              entering={FadeInDown.duration(800).delay(400)}
-              style={styles.bottomSection}
-            >
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <TouchableOpacity
-                style={styles.organizationButton}
-                onPress={handleContactOrganization}
-              >
-                <Text style={styles.organizationText}>
-                  Need help with your account?
-                </Text>
-                <Text style={styles.organizationEmail}>info@thegobd.com</Text>
-              </TouchableOpacity>
-            </Animated.View>
+            {renderHeader()}
+            {isOtpSent ? renderOTPInput() : renderMobileInput()}
+            {renderBottomSection()}
           </ScrollView>
         </KeyboardAvoidingView>
 
-        {/* Toast notification */}
         <Toast
           visible={toast.visible}
           message={toast.message}
@@ -759,10 +738,31 @@ export default function ForgotPassword() {
 }
 
 const styles = StyleSheet.create({
+  // Main container
   container: {
     flex: 1,
     backgroundColor: COLORS.brand.background,
   },
+  glowBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#ffffff",
+    zIndex: 0,
+  },
+
+  // Navigation
+  backButton: {
+    position: "absolute",
+    left: SPACING.md,
+    top: 60,
+    padding: SPACING.sm,
+    zIndex: 2,
+  },
+
+  // Layout
   keyboardAvoidingView: {
     flex: 1,
     zIndex: 1,
@@ -770,26 +770,15 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: SPACING.md,
-    paddingTop: 80, // Space for back button
+    paddingTop: 80,
     paddingBottom: SPACING.lg,
     justifyContent: "center",
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: SPACING.md,
-    justifyContent: "center",
-    zIndex: 1,
-  },
+
+  // Header
   header: {
     alignItems: "center",
     marginBottom: SPACING.lg,
-  },
-  backButton: {
-    position: "absolute",
-    left: SPACING.md,
-    top: 60, // Increased for translucent status bar
-    padding: SPACING.sm,
-    zIndex: 2,
   },
   logoContainer: {
     marginBottom: SPACING.sm,
@@ -807,13 +796,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     lineHeight: 20,
   },
-  loginCard: {
+
+  // Form
+  formCard: {
     marginBottom: SPACING.md,
   },
-  loginContent: {
+  formContent: {
     padding: SPACING.md,
     gap: SPACING.sm,
   },
+
+  // Input type indicator
   inputTypeIndicator: {
     position: "absolute",
     right: 20,
@@ -830,44 +823,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 4,
   },
-  otpCard: {
-    marginBottom: SPACING.md,
-  },
-  otpContent: {
-    padding: SPACING.md,
-    gap: SPACING.sm,
-  },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: SPACING.sm,
-    backgroundColor: COLORS.error + "10",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.error + "30",
-  },
-  errorText: {
-    color: COLORS.error,
-    fontSize: 14,
-    marginLeft: SPACING.sm,
-    flex: 1,
-  },
-  resendContainer: {
-    alignItems: "center",
-    marginTop: SPACING.sm,
-  },
-  timerText: {
-    fontSize: 14,
-    color: COLORS.gray[500],
-  },
-  resendText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    fontWeight: "600",
-  },
-  resendTextDisabled: {
-    color: COLORS.gray[400],
-  },
+
+  // OTP Input
   otpLabel: {
     fontSize: 16,
     fontWeight: "600",
@@ -881,8 +838,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
   },
   otpInputWrapper: {
-    // Wrapper for individual input animations
-    paddingTop: SPACING["xl"],
+    paddingTop: SPACING.xl,
   },
   otpInput: {
     width: 45,
@@ -918,6 +874,24 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: "600",
   },
+
+  // Resend
+  resendContainer: {
+    alignItems: "center",
+    marginTop: SPACING.sm,
+  },
+  timerText: {
+    fontSize: 14,
+    color: COLORS.gray[500],
+  },
+  resendText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: "600",
+  },
+  resendTextDisabled: {
+    color: COLORS.gray[400],
+  },
   helpText: {
     fontSize: 14,
     color: COLORS.gray[600],
@@ -925,6 +899,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
     lineHeight: 18,
   },
+  // Bottom section
   bottomSection: {
     alignItems: "center",
   },
@@ -962,23 +937,5 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: "600",
     marginTop: 4,
-  },
-  glowBackgroundRight: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "#ffffff",
-    zIndex: 0,
-  },
-  glowBackground: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "#ffffff",
-    zIndex: 0,
   },
 });
