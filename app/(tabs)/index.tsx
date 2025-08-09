@@ -403,14 +403,14 @@ export default function Dashboard() {
                 </Text>
               </View>
               <Text variant="h6" style={styles.busText} numberOfLines={1}>
-                {currentTrip?.busName || "Bus Name Not Available!"}
+                {currentTrip?.busNumber || "N/A"}
               </Text>
               <Text
                 variant="caption"
                 style={styles.busNumber}
                 numberOfLines={1}
               >
-                {currentTrip?.busNumber || "N/A"}
+                {currentTrip?.busName || "Bus Name Not Available!"}
               </Text>
             </View>
 
@@ -451,19 +451,14 @@ export default function Dashboard() {
                           hour: "2-digit",
                           minute: "2-digit",
                           hour12: true,
-                        })
-                      : "N/A"}
-                  </Text>
-                  <Text variant="caption" style={styles.bottomDetailSubtext}>
-                    {currentTrip?.tripStartTime
-                      ? new Date(
+                        }) + " ,  " + new Date(
                           new Date(currentTrip.tripStartTime).getTime() +
                             6 * 60 * 60 * 1000
                         ).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
                         })
-                      : ""}
+                      : "N/A"}
                   </Text>
                 </View>
               </View>
