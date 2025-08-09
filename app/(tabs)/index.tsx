@@ -440,7 +440,7 @@ export default function Dashboard() {
                 <Ionicons name="time" size={14} color={COLORS.success} />
                 <View style={styles.bottomDetailInfo}>
                   <Text variant="caption" style={styles.bottomDetailLabel}>
-                    START TIME
+                    TRIP STARTED
                   </Text>
                   <Text variant="bodySmall" style={styles.bottomDetailValue}>
                     {currentTrip?.tripStartTime
@@ -1010,7 +1010,7 @@ const styles = StyleSheet.create({
   bottomDetailItem: {
     flex: 1,
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 8,
   },
   bottomDetailInfo: {
