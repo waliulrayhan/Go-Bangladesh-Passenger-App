@@ -749,6 +749,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   loadingContainer: {
+    paddingTop: 5,
     position: "absolute",
     top: -30,
     left: 0,
