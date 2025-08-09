@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+
 import { GoBangladeshLogo } from "../../components/GoBangladeshLogo";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -21,114 +22,213 @@ import { Input } from "../../components/ui/Input";
 import { Text } from "../../components/ui/Text";
 import { Toast } from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
+import type { CardValidationResponse } from "../../services/api";
 import { apiService } from "../../services/api";
 import { COLORS, SPACING } from "../../utils/constants";
 
 const { width } = Dimensions.get("window");
 
+const ANIMATION_DELAYS = {
+  HEADER: 800,
+  FORM: 1000,
+  BOTTOM: 1200,
+} as const;
+
+const CARD_CONSTRAINTS = {
+  MIN_LENGTH: 8,
+  MAX_LENGTH: 16,
+  VALID_PATTERN: /^[A-Z0-9]{8,}$/,
+} as const;
+
+const MESSAGES = {
+  INVALID_CARD: "Please enter a valid card number! (at least 8 characters)",
+  CARD_NOT_AVAILABLE: "This card is not available for registration!",
+  CARD_NOT_FOUND: "Card not found. Please check your card number and try again!",
+  CARD_UNAVAILABLE_CONTACT: "This card is not available for registration. Please contact support if this is your card.",
+  NETWORK_ERROR: "Unable to verify card. Please check your internet connection and try again!",
+  CARD_AVAILABLE: "This card is available!",
+} as const;
+
+/**
+ * PassengerRegistration Component
+ * 
+ * Handles the initial step of user registration:
+ * - Card number validation and formatting
+ * - API validation for card availability
+ * - Navigation to personal info form
+ * - Clean error handling and user feedback
+ */
+
 export default function PassengerRegistration() {
+  // State management
   const [cardNumber, setCardNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // External hooks
   const { toast, showError, showSuccess, hideToast } = useToast();
 
-  const handleGoBack = () => {
-    router.back();
+  // Helper functions
+  const validateCardNumber = (input: string): boolean => {
+    return CARD_CONSTRAINTS.VALID_PATTERN.test(input.trim());
   };
 
-  const validateCardNumber = (input: string) => {
-    // Validation for card number (at least 8 characters, only capital letters and numbers)
-    const cardRegex = /^[A-Z0-9]{8,}$/;
-    return cardRegex.test(input.trim());
+  const formatCardNumber = (text: string): string => {
+    return text.toUpperCase().replace(/[^A-Z0-9]/g, "");
   };
 
+  const navigateBack = () => router.back();
+
+  const navigateToLogin = () => router.push("/(auth)/passenger-login");
+
+  const navigateToPersonalInfo = (validationResponse: CardValidationResponse) => {
+    router.push({
+      pathname: "/(auth)/registration-personal-info",
+      params: {
+        cardNumber: cardNumber.trim(),
+        organizationType: validationResponse.content!.organization.organizationType,
+        organizationId: validationResponse.content!.organizationId,
+        organizationName: validationResponse.content!.organization.name,
+      },
+    });
+  };
+
+  // Event handlers
   const handleCardNumberChange = (text: string) => {
-    // Convert to uppercase and filter only letters and numbers
-    const filteredText = text.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    setCardNumber(filteredText);
+    const formattedText = formatCardNumber(text);
+    setCardNumber(formattedText);
+  };
+
+  const validateCardAvailability = async (): Promise<boolean> => {
+    try {
+      console.log("🔍 Checking card validity for:", cardNumber);
+      const validationResponse = await apiService.checkCardValidityRegistration(cardNumber.trim());
+
+      if (!validationResponse.isSuccess) {
+        showError(validationResponse.message || MESSAGES.CARD_NOT_AVAILABLE);
+        return false;
+      }
+
+      if (!validationResponse.content) {
+        showError(MESSAGES.CARD_NOT_FOUND);
+        return false;
+      }
+
+      if (validationResponse.message !== MESSAGES.CARD_AVAILABLE) {
+        showError(MESSAGES.CARD_UNAVAILABLE_CONTACT);
+        return false;
+      }
+
+      console.log("✅ Card is available for registration");
+      console.log("🏢 Organization Type:", validationResponse.content.organization.organizationType);
+      console.log("📋 Card Status:", validationResponse.content.status);
+      console.log("💬 Message:", validationResponse.message);
+
+      navigateToPersonalInfo(validationResponse);
+      return true;
+    } catch (error: any) {
+      console.error("❌ Card validation error:", error);
+      showError(MESSAGES.NETWORK_ERROR);
+      return false;
+    }
   };
 
   const handleProceed = async () => {
     if (!validateCardNumber(cardNumber)) {
-      showError("Please enter a valid card number! (at least 8 characters)");
+      showError(MESSAGES.INVALID_CARD);
       return;
     }
 
     setIsLoading(true);
-
-    try {
-      // Check card validity using API
-      console.log("🔍 Checking card validity for:", cardNumber);
-      const validationResponse = await apiService.checkCardValidityRegistration(
-        cardNumber.trim()
-      );
-
-      if (!validationResponse.isSuccess) {
-        showError(validationResponse.message || "This card is not available for registration!");
-        setIsLoading(false);
-        return;
-      }
-
-      // Check if card content exists
-      if (!validationResponse.content) {
-        showError("Card not found. Please check your card number and try again!");
-        setIsLoading(false);
-        return;
-      }
-
-      // Check if card is available based on the message
-      if (validationResponse.message !== "This card is available!") {
-        showError("This card is not available for registration. Please contact support if this is your card.");
-        setIsLoading(false);
-        return;
-      }
-
-      // If card is available, proceed to personal info page
-      console.log("✅ Card is available for registration");
-      console.log(
-        "🏢 Organization Type:",
-        validationResponse.content.organization.organizationType
-      );
-      console.log("📋 Card Status:", validationResponse.content.status);
-      console.log("💬 Message:", validationResponse.message);
-
-      router.push({
-        pathname: "/(auth)/registration-personal-info",
-        params: {
-          cardNumber: cardNumber.trim(),
-          organizationType:
-            validationResponse.content.organization.organizationType,
-          organizationId: validationResponse.content.organizationId,
-          organizationName: validationResponse.content.organization.name,
-        },
-      });
-    } catch (error: any) {
-      console.error("❌ Card validation error:", error);
-      showError("Unable to verify card. Please check your internet connection and try again!");
-    } finally {
-      setIsLoading(false);
-    }
+    await validateCardAvailability();
+    setIsLoading(false);
   };
 
-  const handleLogin = () => {
-    router.push("/(auth)/passenger-login");
-  };
+  // Render functions
+  const renderHeader = () => (
+    <Animated.View entering={FadeInUp.duration(ANIMATION_DELAYS.HEADER)} style={styles.header}>
+      <View style={styles.logoContainer}>
+        <GoBangladeshLogo size={70} />
+      </View>
+
+      <Text variant="h3" color={COLORS.secondary} style={styles.title}>
+        User Registration
+      </Text>
+      <Text style={styles.subtitle}>
+        Enter your card number to get started
+      </Text>
+    </Animated.View>
+  );
+
+  const renderRegistrationForm = () => (
+    <Animated.View entering={FadeInDown.duration(ANIMATION_DELAYS.FORM).delay(200)}>
+      <Card variant="elevated" style={styles.cardContainer}>
+        <View style={styles.cardContent}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="card-outline" size={32} color={COLORS.primary} />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Input
+              label="Card Number"
+              value={cardNumber}
+              onChangeText={handleCardNumberChange}
+              placeholder="(e.g. ABCD1234)"
+              keyboardType="default"
+              icon="card-outline"
+              maxLength={CARD_CONSTRAINTS.MAX_LENGTH}
+              autoCapitalize="characters"
+            />
+          </View>
+
+          <Text style={styles.helperText}>
+            Enter the card number printed on your Go Bangladesh transport card
+          </Text>
+
+          <Button
+            title="Proceed"
+            onPress={handleProceed}
+            loading={isLoading}
+            disabled={!cardNumber.trim()}
+            icon="arrow-forward-outline"
+            size="medium"
+            fullWidth
+          />
+        </View>
+      </Card>
+    </Animated.View>
+  );
+
+  const renderBottomSection = () => (
+    <Animated.View
+      entering={FadeInDown.duration(ANIMATION_DELAYS.BOTTOM).delay(400)}
+      style={styles.bottomSection}
+    >
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>OR</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <TouchableOpacity style={styles.loginButton} onPress={navigateToLogin}>
+        <Text style={styles.loginText}>
+          Already have an account?{" "}
+        </Text>
+        <Text style={styles.loginLink}>Sign In</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
 
   return (
     <>
-      <StatusBar
-        style="light"
-        backgroundColor="transparent"
-        translucent={true}
-      />
+      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
       <SafeAreaView style={styles.container}>
         <LinearGradient
           colors={[
-            "rgba(74, 144, 226, 0.5)", // Blue at top
+            "rgba(74, 144, 226, 0.5)",
             "rgba(74, 144, 226, 0.2)",
             "transparent",
-            "rgba(255, 138, 0, 0.2)", // Orange transition
-            "rgba(255, 138, 0, 0.4)", // Orange at bottom
+            "rgba(255, 138, 0, 0.2)",
+            "rgba(255, 138, 0, 0.4)",
           ]}
           locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}
@@ -136,14 +236,14 @@ export default function PassengerRegistration() {
           end={{ x: 0.5, y: 1 }}
         />
 
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+        <TouchableOpacity style={styles.backButton} onPress={navigateBack}>
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
 
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+          keyboardVerticalOffset={0}
         >
           <ScrollView
             contentContainerStyle={styles.scrollContent}
@@ -152,81 +252,12 @@ export default function PassengerRegistration() {
             bounces={false}
             overScrollMode="never"
           >
-            <Animated.View
-              entering={FadeInUp.duration(800)}
-              style={styles.header}
-            >
-              <View style={styles.logoContainer}>
-                <GoBangladeshLogo size={70} />
-              </View>
-
-              <Text variant="h3" color={COLORS.secondary} style={styles.title}>
-                User Registration
-              </Text>
-              <Text style={styles.subtitle}>
-                Enter your card number to get started
-              </Text>
-            </Animated.View>
-
-            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-              <Card variant="elevated" style={styles.cardContainer}>
-                <View style={styles.cardContent}>
-                  <View style={styles.iconContainer}>
-                    <Ionicons name="card-outline" size={32} color={COLORS.primary} />
-                  </View>
-
-                  <View style={styles.inputContainer}>
-                    <Input
-                      label="Card Number"
-                      value={cardNumber}
-                      onChangeText={handleCardNumberChange}
-                      placeholder="(e.g. ABCD1234)"
-                      keyboardType="default"
-                      icon="card-outline"
-                      maxLength={16}
-                      autoCapitalize="characters"
-                    />
-                  </View>
-
-                  <Text style={styles.helperText}>
-                    Enter the card number printed on your Go Bangladesh transport
-                    card
-                  </Text>
-
-                  <Button
-                    title="Proceed"
-                    onPress={handleProceed}
-                    loading={isLoading}
-                    disabled={!cardNumber.trim()}
-                    icon="arrow-forward-outline"
-                    size="medium"
-                    fullWidth
-                  />
-                </View>
-              </Card>
-            </Animated.View>
-
-            <Animated.View
-              entering={FadeInDown.duration(800).delay(400)}
-              style={styles.bottomSection}
-            >
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-                <Text style={styles.loginText}>
-                  Already have an account?{" "}
-                </Text>
-                <Text style={styles.loginLink}>Sign In</Text>
-              </TouchableOpacity>
-            </Animated.View>
+            {renderHeader()}
+            {renderRegistrationForm()}
+            {renderBottomSection()}
           </ScrollView>
         </KeyboardAvoidingView>
 
-        {/* Toast notification */}
         <Toast
           visible={toast.visible}
           message={toast.message}
