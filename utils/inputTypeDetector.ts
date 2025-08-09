@@ -31,21 +31,9 @@ export const determineInputType = (input: string): 'email' | 'mobile' => {
  * Get appropriate keyboard type based on input content
  */
 export const getKeyboardTypeForInput = (input: string): 'email-address' | 'phone-pad' | 'default' => {
-  if (!input.trim()) {
-    return 'default';
-  }
-  
-  const inputType = determineInputType(input);
-  
-  switch (inputType) {
-    case 'email':
-      return 'email-address';
-    case 'mobile':
-      return 'phone-pad';
-    default:
-      return 'default';
-  }
-};
+  // Always return default to use full QWERTY keyboard
+  return 'default';
+}
 
 /**
  * Get appropriate placeholder text based on detected input type

@@ -16,6 +16,7 @@ interface InputProps {
   keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   autoCorrect?: boolean;
+  autoComplete?: 'off' | 'username' | 'password' | 'email' | 'name' | 'tel' | 'street-address' | 'postal-code' | 'cc-number' | 'cc-csc' | 'cc-exp' | 'cc-exp-month' | 'cc-exp-year';
   editable?: boolean;
   icon?: keyof typeof Ionicons.glyphMap;
   rightIcon?: keyof typeof Ionicons.glyphMap;
@@ -34,6 +35,8 @@ export const Input: React.FC<InputProps> = ({
   secureTextEntry = false,
   keyboardType = 'default',
   autoCapitalize = 'sentences',
+  autoCorrect,
+  autoComplete,
   editable = true,
   icon,
   rightIcon,
@@ -97,6 +100,8 @@ export const Input: React.FC<InputProps> = ({
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+          autoComplete={autoComplete}
           onFocus={handleFocus}
           onBlur={handleBlur}
           editable={editable}

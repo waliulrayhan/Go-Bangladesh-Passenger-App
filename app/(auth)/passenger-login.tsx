@@ -14,93 +14,77 @@ import {
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
-// Custom components
 import { GoBangladeshLogo } from "../../components/GoBangladeshLogo";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Text } from "../../components/ui/Text";
 import { Toast } from "../../components/ui/Toast";
-
-// Hooks
 import { useToast } from "../../hooks/useToast";
-
-// Stores
 import { useAuthStore } from "../../stores/authStore";
-
-// Utils
 import { COLORS, SPACING } from "../../utils/constants";
 import {
   determineInputType,
   getIconForInput,
-  getKeyboardTypeForInput,
   getPlaceholderForInput,
   getValidationErrorMessage,
   validateInput,
 } from "../../utils/inputTypeDetector";
 
+const ANIMATION_DELAYS = {
+  HEADER: 600,
+  FORM: 750,
+  BOTTOM: 900,
+} as const;
+
+const INPUT_CONSTRAINTS = {
+  MOBILE_MAX_LENGTH: 11,
+  PASSWORD_MIN_LENGTH: 8,
+} as const;
+
 /**
  * PassengerLogin Component
  *
- * Handles user authentication for passengers with dynamic input type detection
- * Supports both email and mobile number login with real-time validation
+ * Provides authentication interface for passengers with:
+ * - Dynamic input type detection (email/mobile)
+ * - Real-time validation and visual feedback
+ * - Smooth animations and user-friendly UX
  */
 export default function PassengerLogin() {
-  // State variables
-  const [identifier, setIdentifier] = useState(""); // Email or Mobile number
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Auth store hook
-  const { loginWithPassword, isLoading, error, clearError } = useAuthStore();
+  const { loginWithPassword, isLoading, clearError } = useAuthStore();
+  const { toast, showError, hideToast } = useToast();
 
-  // Toast hook
-  const { toast, showError, showSuccess, hideToast } = useToast();
-
-  /**
-   * Navigation handlers
-   */
-  const handleForgotPassword = () => {
-    router.push("/(auth)/forgot-password");
-  };
-
-  const handleGoBack = () => {
-    router.back();
-  };
-
-  /**
-   * Dynamic input type detection for email/mobile
-   */
   const inputType = determineInputType(identifier);
-  const dynamicKeyboardType = getKeyboardTypeForInput(identifier);
-  const dynamicPlaceholder = getPlaceholderForInput(identifier);
-  const dynamicIcon = getIconForInput(identifier);
 
-  /**
-   * Get indicator color based on validation state
-   * Returns appropriate color for input type indicator
-   */
+  const navigateToForgotPassword = () => router.push("/(auth)/forgot-password");
+  const navigateBack = () => router.back();
+  const navigateToRegistration = () =>
+    router.push("/(auth)/passenger-registration");
+
   const getIndicatorColor = () => {
     if (inputType === "email") {
       return validateInput(identifier) ? COLORS.success : COLORS.primary;
-    } else if (inputType === "mobile") {
-      if (identifier.length === 11 && validateInput(identifier)) {
-        return COLORS.success;
-      } else if (identifier.length > 11) {
-        return COLORS.error;
-      }
-      return COLORS.primary;
     }
+
+    if (inputType === "mobile") {
+      const isValid =
+        identifier.length === INPUT_CONSTRAINTS.MOBILE_MAX_LENGTH &&
+        validateInput(identifier);
+      const isTooLong = identifier.length > INPUT_CONSTRAINTS.MOBILE_MAX_LENGTH;
+
+      if (isValid) return COLORS.success;
+      if (isTooLong) return COLORS.error;
+    }
+
     return COLORS.primary;
   };
 
-  /**
-   * Handle identifier input change with mobile number filtering
-   * Ensures only numeric characters for mobile input
-   */
   const handleIdentifierChange = (text: string) => {
-    if (determineInputType(identifier) === "mobile" && text.length > 0) {
-      // Remove non-digit characters for mobile input
+    if (inputType === "mobile" && text.length > 0) {
       const numericOnly = text.replace(/\D/g, "");
       setIdentifier(numericOnly);
     } else {
@@ -108,45 +92,171 @@ export default function PassengerLogin() {
     }
   };
 
-  /**
-   * Handle login process with validation
-   * Validates input and password before attempting login
-   */
+  const validateInputs = () => {
+    if (!validateInput(identifier)) {
+      showError(getValidationErrorMessage(identifier));
+      return false;
+    }
+
+    if (!password || password.length < INPUT_CONSTRAINTS.PASSWORD_MIN_LENGTH) {
+      showError(
+        `Password must be at least ${INPUT_CONSTRAINTS.PASSWORD_MIN_LENGTH} characters`
+      );
+      return false;
+    }
+
+    return true;
+  };
+
   const handleLogin = async () => {
     clearError();
 
-    // Validate identifier input
-    if (!validateInput(identifier)) {
-      showError(getValidationErrorMessage(identifier));
-      return;
-    }
+    if (!validateInputs()) return;
 
-    // Validate password input
-    if (!password || password.length < 8) {
-      showError("Please enter a valid password (min. 8 characters)");
-      return;
-    }
+    try {
+      const success = await loginWithPassword(identifier, password);
 
-    // Attempt login
-    const success = await loginWithPassword(identifier, password);
-
-    if (success) {
-      // Navigate to Homepage immediately
-      router.replace("/(tabs)");
-    } else {
-      // Get the current error from the store after the login attempt
-      const currentError = useAuthStore.getState().error;
-      if (currentError) {
-        showError(currentError);
+      if (success) {
+        router.replace("/(tabs)");
       } else {
-        showError("Login failed. Please check your credentials and try again.");
+        const currentError = useAuthStore.getState().error;
+        showError(
+          currentError ||
+            "Login failed. Please check your credentials and try again."
+        );
       }
+    } catch (error) {
+      showError("An unexpected error occurred. Please try again.");
     }
   };
 
+  const isFormValid = identifier.trim() && password.trim();
+
+  const renderHeader = () => (
+    <Animated.View
+      entering={FadeInUp.duration(ANIMATION_DELAYS.HEADER)}
+      style={styles.header}
+    >
+      <View style={styles.logoContainer}>
+        <GoBangladeshLogo size={70} />
+      </View>
+      <Text variant="h3" style={styles.title}>
+        Welcome Back!
+      </Text>
+      <Text style={styles.subtitle}>Sign in to your account</Text>
+    </Animated.View>
+  );
+
+  const renderInputTypeIndicator = () => {
+    if (!identifier.trim()) return null;
+
+    const indicatorColor = getIndicatorColor();
+
+    return (
+      <View
+        style={[
+          styles.inputTypeIndicator,
+          {
+            borderColor: indicatorColor + "50",
+            backgroundColor: indicatorColor + "10",
+          },
+        ]}
+      >
+        <Text style={[styles.inputTypeText, { color: indicatorColor }]}>
+          {inputType === "email" ? "Email" : "Mobile"}
+        </Text>
+      </View>
+    );
+  };
+
+  const renderLoginForm = () => (
+    <Animated.View entering={FadeInDown.duration(ANIMATION_DELAYS.FORM)}>
+      <Card variant="elevated" style={styles.loginCard}>
+        <View style={styles.loginContent}>
+          <Input
+            label="Email or Phone Number"
+            value={identifier}
+            onChangeText={handleIdentifierChange}
+            placeholder={getPlaceholderForInput(identifier)}
+            keyboardType="default"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="off"
+            icon={getIconForInput(identifier)}
+            maxLength={
+              inputType === "mobile"
+                ? INPUT_CONSTRAINTS.MOBILE_MAX_LENGTH
+                : undefined
+            }
+          />
+
+          {renderInputTypeIndicator()}
+
+          <Input
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Enter your password"
+            secureTextEntry={!showPassword}
+            keyboardType="default"
+            autoCorrect={false}
+            autoComplete="password"
+            icon="lock-closed-outline"
+            rightIcon={showPassword ? "eye-off-outline" : "eye-outline"}
+            onRightIconPress={() => setShowPassword(!showPassword)}
+          />
+
+          <Button
+            title="Sign In"
+            onPress={handleLogin}
+            loading={isLoading}
+            disabled={!isFormValid}
+            icon="arrow-forward"
+            size="medium"
+            fullWidth
+          />
+        </View>
+      </Card>
+    </Animated.View>
+  );
+
+  const renderBottomSection = () => (
+    <Animated.View
+      entering={FadeInDown.duration(ANIMATION_DELAYS.BOTTOM)}
+      style={styles.bottomSection}
+    >
+      <TouchableOpacity
+        style={styles.forgotPasswordButton}
+        onPress={navigateToForgotPassword}
+      >
+        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+      </TouchableOpacity>
+
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>OR</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <TouchableOpacity
+        style={styles.createAccountButton}
+        onPress={navigateToRegistration}
+      >
+        <Text style={styles.createAccountText}>
+          Don't have an account?{" "}
+          <Text style={styles.createAccountLink}>Register Now</Text>
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.organizationButton}>
+        <Text style={styles.organizationText}>Need help?</Text>
+        <Text style={styles.organizationEmail}>info@thegobd.com</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+
   return (
     <>
-      {/* Status bar configuration */}
       <StatusBar
         style="light"
         backgroundColor="transparent"
@@ -154,14 +264,13 @@ export default function PassengerLogin() {
       />
 
       <SafeAreaView style={styles.container}>
-        {/* Background gradient */}
         <LinearGradient
           colors={[
-            "rgba(74, 144, 226, 0.5)", // Blue at top
+            "rgba(74, 144, 226, 0.5)",
             "rgba(74, 144, 226, 0.2)",
             "transparent",
-            "rgba(255, 138, 0, 0.2)", // Orange transition
-            "rgba(255, 138, 0, 0.4)", // Orange at bottom
+            "rgba(255, 138, 0, 0.2)",
+            "rgba(255, 138, 0, 0.4)",
           ]}
           locations={[0, 0.2, 0.5, 0.8, 1]}
           style={styles.glowBackground}
@@ -169,15 +278,14 @@ export default function PassengerLogin() {
           end={{ x: 0.5, y: 1 }}
         />
 
-        {/* Back button */}
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+        <TouchableOpacity style={styles.backButton} onPress={navigateBack}>
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
 
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+          keyboardVerticalOffset={0}
         >
           <ScrollView
             contentContainerStyle={styles.scrollContent}
@@ -188,127 +296,12 @@ export default function PassengerLogin() {
             scrollEventThrottle={16}
             removeClippedSubviews={false}
           >
-            {/* Header section with logo and title */}
-            <Animated.View
-              entering={FadeInUp.duration(600)}
-              style={styles.header}
-            >
-              <View style={styles.logoContainer}>
-                <GoBangladeshLogo size={70} />
-              </View>
-
-              <Text variant="h3" style={styles.title}>
-                Welcome Back!
-              </Text>
-              <Text style={styles.subtitle}>Sign in to your account</Text>
-            </Animated.View>
-
-            {/* Login form card */}
-            <Animated.View entering={FadeInDown.duration(600).delay(150)}>
-              <Card variant="elevated" style={styles.loginCard}>
-                <View style={styles.loginContent}>
-                  {/* Email/Phone input with dynamic detection */}
-                  <Input
-                    label="Email or Phone Number"
-                    value={identifier}
-                    onChangeText={handleIdentifierChange}
-                    placeholder={dynamicPlaceholder}
-                    keyboardType={dynamicKeyboardType}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    icon={dynamicIcon}
-                    maxLength={inputType === "mobile" ? 11 : undefined}
-                  />
-
-                  {/* Input type indicator */}
-                  {identifier.trim() && (
-                    <View
-                      style={[
-                        styles.inputTypeIndicator,
-                        {
-                          borderColor: getIndicatorColor() + "50",
-                          backgroundColor: getIndicatorColor() + "10",
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.inputTypeText,
-                          { color: getIndicatorColor() },
-                        ]}
-                      >
-                        {inputType === "email" ? "Email" : "Mobile"}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Password input */}
-                  <Input
-                    label="Password"
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="Enter your password"
-                    secureTextEntry={!showPassword}
-                    icon="lock-closed-outline"
-                    rightIcon={showPassword ? "eye-off-outline" : "eye-outline"}
-                    onRightIconPress={() => setShowPassword(!showPassword)}
-                  />
-
-                  {/* Login button */}
-                  <Button
-                    title="Sign In"
-                    onPress={handleLogin}
-                    loading={isLoading}
-                    disabled={!identifier.trim() || !password.trim()}
-                    icon="arrow-forward"
-                    size="medium"
-                    fullWidth
-                  />
-                </View>
-              </Card>
-            </Animated.View>
-
-            {/* Bottom section with additional options */}
-            <Animated.View
-              entering={FadeInDown.duration(600).delay(300)}
-              style={styles.bottomSection}
-            >
-              {/* Forgot password link */}
-              <TouchableOpacity
-                style={styles.forgotPasswordButton}
-                onPress={handleForgotPassword}
-              >
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
-
-              {/* Divider */}
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* Registration link */}
-              <TouchableOpacity
-                style={styles.createAccountButton}
-                onPress={() => router.push("/(auth)/passenger-registration")}
-              >
-                <Text style={styles.createAccountText}>
-                  Don't have an account?{" "}
-                  <Text style={styles.createAccountLink}>Register Now</Text>
-                </Text>
-              </TouchableOpacity>
-
-              {/* Help contact information */}
-              <TouchableOpacity style={styles.organizationButton}>
-                <Text style={styles.organizationText}>Need help?</Text>
-                <Text style={styles.organizationEmail}>info@thegobd.com</Text>
-              </TouchableOpacity>
-            </Animated.View>
+            {renderHeader()}
+            {renderLoginForm()}
+            {renderBottomSection()}
           </ScrollView>
         </KeyboardAvoidingView>
 
-        {/* Toast notification */}
         <Toast
           visible={toast.visible}
           message={toast.message}
@@ -321,33 +314,11 @@ export default function PassengerLogin() {
   );
 }
 
-/**
- * StyleSheet for PassengerLogin component
- * Organized by component sections for better maintainability
- */
 const styles = StyleSheet.create({
-  // Main container styles
+  // Main container
   container: {
     flex: 1,
     backgroundColor: COLORS.brand.background,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-    zIndex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: SPACING.md,
-    paddingTop: 80, // Space for back button
-    paddingBottom: SPACING.lg,
-    justifyContent: "center",
-    minHeight: "100%", // Ensure minimum height to prevent content jumping
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: SPACING.md,
-    justifyContent: "center",
-    zIndex: 1,
   },
   glowBackground: {
     position: "absolute",
@@ -359,21 +330,33 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
 
-  // Navigation styles
+  // Navigation
   backButton: {
     position: "absolute",
     left: SPACING.md,
-    top: 60, // Accounts for translucent status bar
+    top: 60,
     padding: SPACING.sm,
     zIndex: 2,
   },
 
-  // Header section styles
+  // Layout
+  keyboardAvoidingView: {
+    flex: 1,
+    zIndex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: SPACING.md,
+    paddingTop: 70,
+    paddingBottom: SPACING.xl,
+    justifyContent: "center",
+  },
+
+  // Header
   header: {
     alignItems: "center",
     marginBottom: SPACING.lg,
-    marginTop: SPACING.md,
-    minHeight: 150, // Fixed minimum height to prevent shifting
+    marginTop: SPACING.xl,
   },
   logoContainer: {
     marginBottom: SPACING.sm,
@@ -391,7 +374,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // Login form styles
+  // Login form
   loginCard: {
     marginBottom: SPACING.lg,
   },
@@ -400,28 +383,25 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
 
-  // Input type indicator styles
+  // Input type indicator
   inputTypeIndicator: {
     position: "absolute",
     right: 20,
     top: 49,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.primary + "10",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.primary + "30",
   },
   inputTypeText: {
     fontSize: 10,
-    color: COLORS.primary,
     fontWeight: "600",
     marginLeft: 4,
   },
 
-  // Bottom section styles
+  // Bottom section
   bottomSection: {
     alignItems: "center",
   },
@@ -435,7 +415,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // Divider styles
+  // Divider
   divider: {
     flexDirection: "row",
     alignItems: "center",
@@ -454,7 +434,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  // Registration and help styles
+  // Registration and help
   createAccountButton: {
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
