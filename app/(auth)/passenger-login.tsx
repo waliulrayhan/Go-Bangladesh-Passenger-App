@@ -133,6 +133,14 @@ export default function PassengerLogin() {
     if (success) {
       // Navigate to Homepage immediately
       router.replace("/(tabs)");
+    } else {
+      // Get the current error from the store after the login attempt
+      const currentError = useAuthStore.getState().error;
+      if (currentError) {
+        showError(currentError);
+      } else {
+        showError("Login failed. Please check your credentials and try again.");
+      }
     }
   };
 
@@ -254,18 +262,6 @@ export default function PassengerLogin() {
                     size="medium"
                     fullWidth
                   />
-
-                  {/* Error message display */}
-                  {error && (
-                    <View style={styles.errorContainer}>
-                      <Ionicons
-                        name="alert-circle"
-                        size={16}
-                        color={COLORS.error}
-                      />
-                      <Text style={styles.errorText}>{error}</Text>
-                    </View>
-                  )}
                 </View>
               </Card>
             </Animated.View>
@@ -418,23 +414,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: "600",
     marginLeft: 4,
-  },
-
-  // Error display styles
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: SPACING.sm,
-    backgroundColor: COLORS.error + "10",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.error + "30",
-  },
-  errorText: {
-    color: COLORS.error,
-    fontSize: 14,
-    marginLeft: SPACING.sm,
-    flex: 1,
   },
 
   // Bottom section styles

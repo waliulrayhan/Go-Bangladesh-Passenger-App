@@ -135,15 +135,16 @@ export default function ForgotPassword() {
       setTimer(60); // 60 seconds countdown
       showSuccess(`A verification code has been sent to ${formattedMobile}`);
     } else {
-      // Check if the error is about mobile number not found
-      if (error && error.includes("not found")) {
-        showError(
-          "This mobile number is not registered with us. Please check your number or create a new account."
-        );
-        // Optionally navigate to registration after a delay
-        setTimeout(() => {
-          router.push("/(auth)/passenger-registration");
-        }, 3000);
+      // Get the current error from the store after the OTP send attempt
+      const currentError = useAuthStore.getState().error;
+      if (currentError) {
+        if (currentError.includes("not found")) {
+          showError("This mobile number is not registered!");
+        } else {
+          showError(currentError);
+        }
+      } else {
+        showError("Failed to send OTP. Please try again!");
       }
     }
   };
@@ -335,54 +336,48 @@ export default function ForgotPassword() {
   const handleVerifyOTP = async (otpCode?: string) => {
     if (isLoading) return; // Prevent multiple submissions
 
-    clearError();
-
     const otpString = otpCode || otp.join("");
+    
     if (!otpString || otpString.length !== 6) {
       showError("Please enter a valid 6-digit OTP");
       setIsAutoVerifying(false); // Reset auto-verifying state
       return;
     }
 
-    try {
-      const formattedMobile = formatMobile(mobile);
-      const success = await verifyOTP(formattedMobile, otpString);
+    const formattedMobile = formatMobile(mobile);
+    const success = await verifyOTP(formattedMobile, otpString);
 
-      if (success) {
-        // Navigate to password reset form with the verified mobile number
-        router.push({
-          pathname: "/(auth)/reset-password",
-          params: { mobile: formattedMobile },
-        });
-      } else {
-        // Clear OTP inputs on error
-        setOtp(["", "", "", "", "", ""]);
-        setIsAutoVerifying(false);
-        setShowVerifyingText(false); // Reset verifying text display
-
-        // Show error alert
-        showError("The OTP you entered is incorrect. Please try again.");
-
-        // Refocus first input after a short delay
-        setTimeout(() => {
-          inputRefs.current[0]?.focus();
-        }, 100);
-      }
-    } catch (error) {
-      console.error("[ForgotPassword] OTP verification failed:", error);
-
+    if (success) {
+      // Navigate to password reset form with the verified mobile number
+      router.push({
+        pathname: "/(auth)/reset-password",
+        params: { mobile: formattedMobile },
+      });
+    } else {
       // Clear OTP inputs on error
       setOtp(["", "", "", "", "", ""]);
       setIsAutoVerifying(false);
       setShowVerifyingText(false); // Reset verifying text display
 
-      // Show error toast
-      showError("Failed to verify OTP. Please try again.");
+      // Hide any existing toast first
+      hideToast();
+
+      // Get the current error from the store after the OTP verification attempt
+      const currentError = useAuthStore.getState().error;
+      
+      // Show error after ensuring previous toast is hidden
+      setTimeout(() => {
+        if (currentError) {
+          showError(currentError);
+        } else {
+          showError("The OTP you entered is incorrect. Please try again!");
+        }
+      }, 300);
 
       // Refocus first input after a short delay
       setTimeout(() => {
         inputRefs.current[0]?.focus();
-      }, 100);
+      }, 400);
     }
   };
 
@@ -395,17 +390,18 @@ export default function ForgotPassword() {
 
     if (success) {
       setTimer(60);
-      showSuccess("A new verification code has been sent to your mobile");
+      showSuccess("A new verification code has been sent to your mobile!");
     } else {
-      // Check if the error is about mobile number not found
-      if (error && error.includes("not found")) {
-        showError(
-          "This mobile number is not registered with us. Please check your number or create a new account."
-        );
-        // Optionally navigate to registration after a delay
-        setTimeout(() => {
-          router.push("/(auth)/passenger-registration");
-        }, 3000);
+      // Get the current error from the store after the OTP send attempt
+      const currentError = useAuthStore.getState().error;
+      if (currentError) {
+        if (currentError.includes("not found")) {
+          showError("This mobile number is not registered!");
+        } else {
+          showError(currentError);
+        }
+      } else {
+        showError("Failed to send OTP. Please try again!");
       }
     }
   };
@@ -538,20 +534,6 @@ export default function ForgotPassword() {
                       ))}
                     </View>
 
-                    {error && (
-                      <Animated.View
-                        entering={FadeInDown.duration(300)}
-                        style={styles.errorContainer}
-                      >
-                        <Ionicons
-                          name="alert-circle"
-                          size={16}
-                          color={COLORS.error}
-                        />
-                        <Text style={styles.errorText}>{error}</Text>
-                      </Animated.View>
-                    )}
-
                     <View style={styles.resendContainer}>
                       {timer > 0 ? (
                         <Text style={styles.timerText}>
@@ -600,6 +582,15 @@ export default function ForgotPassword() {
             </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>
+
+        {/* Toast notification for OTP form */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+          position="top"
+        />
       </>
     );
   }
@@ -695,20 +686,6 @@ export default function ForgotPassword() {
                     </View>
                   )}
 
-                  {error && (
-                    <Animated.View
-                      entering={FadeInDown.duration(300)}
-                      style={styles.errorContainer}
-                    >
-                      <Ionicons
-                        name="alert-circle"
-                        size={16}
-                        color={COLORS.error}
-                      />
-                      <Text style={styles.errorText}>{error}</Text>
-                    </Animated.View>
-                  )}
-
                   <Button
                     title="Send Verification Code"
                     onPress={handleSendOTP}
@@ -744,16 +721,16 @@ export default function ForgotPassword() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
-
-        {/* Toast notification */}
-        <Toast
-          visible={toast.visible}
-          message={toast.message}
-          type={toast.type}
-          onHide={hideToast}
-          position="top"
-        />
       </SafeAreaView>
+
+      {/* Toast notification - moved outside SafeAreaView to ensure visibility */}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+        position="top"
+      />
     </>
   );
 }
@@ -836,21 +813,6 @@ const styles = StyleSheet.create({
   otpContent: {
     padding: SPACING.md,
     gap: SPACING.sm,
-  },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: SPACING.sm,
-    backgroundColor: COLORS.error + "10",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.error + "30",
-  },
-  errorText: {
-    color: COLORS.error,
-    fontSize: 14,
-    marginLeft: SPACING.sm,
-    flex: 1,
   },
   resendContainer: {
     alignItems: "center",

@@ -9,9 +9,9 @@ import { storageService } from '../utils/storage';
 const formatApiError = (error: any, defaultMessage: string = 'Operation failed'): string => {
   // Handle specific API error messages
   if (error.message === 'User not found with this mobile number!') {
-    return 'Mobile number not found in our records. Please check your number or register a new account.';
+    return 'Mobile number not found in our records!';
   } else if (error.message === 'User not found!') {
-    return 'Account not found. Please check your email/mobile number or contact support to register.';
+    return 'Account not found!';
   } else if (error.response?.data?.data?.message) {
     return error.response.data.data.message;
   } else if (error.message) {
@@ -65,7 +65,7 @@ const clearAllAppData = async (): Promise<void> => {
 const storeAuthTokens = async (authResponse: any): Promise<void> => {
   // Validate and store access token
   if (!authResponse.token || typeof authResponse.token !== 'string') {
-    throw new Error('Invalid authentication token received');
+    throw new Error('Invalid authentication token received!');
   }
   await storageService.setSecureItem(STORAGE_KEYS.AUTH_TOKEN, authResponse.token);
   
@@ -368,7 +368,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             console.warn('❌ [LOGIN] JWT user type validation failed:', payload.UserType);
             set({
               isLoading: false,
-              error: 'Access denied. This app is only for Passengers.'
+              error: 'Access denied. This app is only for Passengers!'
             });
             return false;
           }
@@ -445,7 +445,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               console.warn('❌ [LOGIN] User type validation failed:', userResponse.userType);
               set({
                 isLoading: false,
-                error: 'Access denied. This app is only for Passengers.'
+                error: 'Access denied. This app is only for Passengers!'
               });
               return false;
             }
@@ -557,7 +557,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           console.warn('❌ [LOGIN] JWT user type validation failed:', payload.UserType);
           set({
             isLoading: false,
-            error: 'Access denied. This app is only for Passengers.'
+            error: 'Access denied. This app is only for Passengers!'
           });
           return false;
         }
@@ -707,7 +707,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               user: null,
               isAuthenticated: false,
               isLoading: false,
-              error: 'Access denied. This app is only for Public or Private users.'
+              error: 'Access denied. This app is only for Passengers!'
             });
             return;
           }
@@ -825,12 +825,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       // Validate password confirmation
       if (newPassword !== confirmPassword) {
-        throw new Error('Passwords do not match');
+        throw new Error('Passwords do not match!');
       }
       
       // Validate password strength
-      if (newPassword.length < 6) {
-        throw new Error('Password must be at least 6 characters long');
+      if (newPassword.length < 8) {
+        throw new Error('Password must be at least 8 characters long!');
       }
       
       // Use the new password reset API
@@ -856,8 +856,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       
       // Validate password strength
-      if (newPassword.length < 6) {
-        return { success: false, message: 'New password must be at least 6 characters long' };
+      if (newPassword.length < 8) {
+        return { success: false, message: 'New password must be at least 8 characters long' };
       }
       
       // Use the change password API
