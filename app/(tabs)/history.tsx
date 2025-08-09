@@ -1,8 +1,8 @@
+// React Native and Expo imports
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Clipboard,
   FlatList,
   Linking,
@@ -16,15 +16,19 @@ import {
   View,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
+
+// Custom components and utilities
 import { Card } from "../../components/ui/Card";
 import { Text } from "../../components/ui/Text";
+import { Toast } from "../../components/ui/Toast";
+import { useToast } from "../../hooks/useToast";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { RechargeTransaction, TripTransaction } from "../../services/api";
 import { useCardStore } from "../../stores/cardStore";
 import { COLORS, SPACING } from "../../utils/constants";
 
+// Type definitions
 type HistoryTab = "trips" | "recharge";
-
 type DateFilter = "all" | "today" | "week" | "month" | "custom";
 type SortOrder = "newest" | "oldest" | "amount_high" | "amount_low";
 
@@ -37,7 +41,12 @@ interface FilterOptions {
   maxAmount?: number;
 }
 
+/**
+ * History Component - Displays trip and wallet transaction history
+ * with filtering, searching, and pagination capabilities
+ */
 export default function History() {
+  // Store data and functions
   const {
     tripTransactions,
     rechargeTransactions,
@@ -51,23 +60,31 @@ export default function History() {
     rechargePagination,
   } = useCardStore();
 
-  // Use token refresh hook to get fresh data
-  const { isRefreshing, refreshAllData } = useTokenRefresh();
+  // Custom hooks
+  const { refreshAllData } = useTokenRefresh();
+  const { toast, showToast, hideToast } = useToast();
 
+  // Component state management
   const [activeTab, setActiveTab] = useState<HistoryTab>("trips");
   const [refreshing, setRefreshing] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
+  
+  // Filter state
   const [filters, setFilters] = useState<FilterOptions>({
     dateFilter: "all",
     sortOrder: "newest",
   });
+  
+  // Derived state
   const [filteredData, setFilteredData] = useState<
     (TripTransaction | RechargeTransaction)[]
   >([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
-  // Only load data once when component mounts
+  // Effects
+  
+  // Load initial data when component mounts
   useEffect(() => {
     if (!hasInitialLoad) {
       loadTripHistory(1, true);
@@ -76,7 +93,7 @@ export default function History() {
     }
   }, [hasInitialLoad]);
 
-  // Filter and sort data based on current filters
+  // Filter and sort data whenever dependencies change
   useEffect(() => {
     let data: (TripTransaction | RechargeTransaction)[] =
       activeTab === "trips" ? tripTransactions : rechargeTransactions;
@@ -197,24 +214,29 @@ export default function History() {
     console.log("📊 [HISTORY COMPONENT] Filtered data:", data.length);
   }, [tripTransactions, rechargeTransactions, activeTab, filters, searchQuery]);
 
+  // Event handlers
+
+  // Pull-to-refresh handler with error feedback
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await refreshAllData(true); // Force refresh
+      await refreshAllData(true);
     } catch (error) {
       console.log("Refresh error:", error);
+      showToast("Failed to refresh data. Please try again.", "error");
     } finally {
       setRefreshing(false);
     }
-  }, [refreshAllData]);
+  }, [refreshAllData, showToast]);
 
-  // Handle tab change - only reload if switching to a tab without data
+  // Handle tab switching
   const handleTabChange = (tab: HistoryTab) => {
     setActiveTab(tab);
     // Optional: Only reload data if we don't have enough data for the specific tab
     // This prevents unnecessary API calls when just switching tabs
   };
 
+  // Load more data with error handling
   const onLoadMore = useCallback(async () => {
     const currentPagination =
       activeTab === "trips" ? tripPagination : rechargePagination;
@@ -222,7 +244,12 @@ export default function History() {
       activeTab === "trips" ? loadMoreTripHistory : loadMoreRechargeHistory;
 
     if (currentPagination.hasMore && !currentPagination.isLoadingMore) {
-      await loadMoreFunction();
+      try {
+        await loadMoreFunction();
+      } catch (error) {
+        console.log("Load more error:", error);
+        showToast("Failed to load more data. Please try again.", "error");
+      }
     }
   }, [
     activeTab,
@@ -232,8 +259,12 @@ export default function History() {
     rechargePagination.isLoadingMore,
     loadMoreTripHistory,
     loadMoreRechargeHistory,
+    showToast,
   ]);
 
+  // Utility functions
+
+  // Open location in Google Maps
   const openMapLocation = (
     latitude: number,
     longitude: number,
@@ -243,6 +274,7 @@ export default function History() {
     Linking.openURL(url);
   };
 
+  // Open route in Google Maps
   const openRouteMap = (
     startLat: number,
     startLng: number,
@@ -253,19 +285,19 @@ export default function History() {
     Linking.openURL(url);
   };
 
+  // Copy transaction ID to clipboard with toast feedback
   const copyTransactionId = async (transactionId: string) => {
     try {
       await Clipboard.setString(transactionId);
-      Alert.alert("Copied!", "Transaction ID copied to clipboard", [
-        { text: "OK" }
-      ]);
+      showToast("Transaction ID copied to clipboard", "success");
     } catch (error) {
-      Alert.alert("Error", "Failed to copy transaction ID", [
-        { text: "OK" }
-      ]);
+      showToast("Failed to copy transaction ID", "error");
     }
   };
 
+  // Helper functions
+
+  // Get user-friendly date filter label
   const getDateFilterLabel = (filter: DateFilter) => {
     switch (filter) {
       case "today":
@@ -281,6 +313,7 @@ export default function History() {
     }
   };
 
+  // Get user-friendly sort order label
   const getSortOrderLabel = (sort: SortOrder) => {
     switch (sort) {
       case "oldest":
@@ -294,6 +327,9 @@ export default function History() {
     }
   };
 
+  // Filter management functions
+  
+  // Reset filters to default values
   const resetFilters = () => {
     setFilters({
       dateFilter: "all",
@@ -301,11 +337,15 @@ export default function History() {
     });
   };
 
+  // Apply new filters and close modal
   const applyFilters = (newFilters: FilterOptions) => {
     setFilters(newFilters);
     setShowFilterModal(false);
   };
 
+  // Date and time formatting functions
+  
+  // Format date to readable string with month name
   const formatDate = (date: Date) => {
     const months = [
       "Jan",
@@ -324,9 +364,10 @@ export default function History() {
     const day = date.getDate();
     const month = months[date.getMonth()];
     const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
+    return `${day} ${month} ${year}`;
   };
 
+  // Format time string to 12-hour format with timezone adjustment
   const formatTime = (dateString: string) => {
     const date = new Date(new Date(dateString).getTime() + 6 * 60 * 60 * 1000);
     const hours24 = date.getHours();
@@ -339,6 +380,9 @@ export default function History() {
     return `${hours12}:${minutes} ${ampm}`;
   };
 
+  // Render functions
+  
+  // Render individual trip transaction item
   const renderTripItem = ({ item }: { item: TripTransaction }) => {
     const trip = item.trip;
 
@@ -517,7 +561,7 @@ export default function History() {
                     trip.endingLatitude &&
                     trip.endingLongitude
                       ? COLORS.primary
-                      : COLORS.gray[400]
+                      : COLORS.primary
                   }
                 />
                 <Text
@@ -533,7 +577,7 @@ export default function History() {
                   }
                   style={styles.distanceText}
                 >
-                  {distance.toFixed(2)}km
+                  {distance.toFixed(2)} km
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1181,6 +1225,7 @@ export default function History() {
     );
   };
 
+  // Main component render
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -1386,11 +1431,21 @@ export default function History() {
       </View>
 
       <FilterModal />
+      
+      {/* Toast notification */}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
     </SafeAreaView>
   );
 }
 
+// Styles
 const styles = StyleSheet.create({
+  // Main container styles
   container: {
     flex: 1,
     backgroundColor: COLORS.gray[50],
@@ -1398,6 +1453,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  
+  // Header section styles
   headerSection: {
     backgroundColor: COLORS.gray[50],
     paddingBottom: 8,
@@ -1407,6 +1464,8 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
   },
+  
+  // Tab navigation styles
   tabContainer: {
     flexDirection: "row",
     backgroundColor: COLORS.white,
@@ -1438,6 +1497,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
+  
+  // Search and filter styles
   searchContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
@@ -1481,6 +1542,8 @@ const styles = StyleSheet.create({
   filterButtonActive: {
     backgroundColor: COLORS.primary,
   },
+  
+  // Transaction card styles
   historyCard: {
     marginBottom: 12,
   },
@@ -1496,6 +1559,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 12,
   },
+  
+  // Icon container styles
   busIconContainer: {
     width: 40,
     height: 40,
@@ -1523,6 +1588,8 @@ const styles = StyleSheet.create({
   deductionIconContainer: {
     backgroundColor: COLORS.error,
   },
+  
+  // Text and content styles
   cardTitle: {
     // Font properties handled by Text component
     fontWeight: "500",
@@ -1546,6 +1613,8 @@ const styles = StyleSheet.create({
   returnAmount: {
     // Font properties handled by Text component
   },
+  
+  // Trip details styles
   tripDetails: {
     borderTopWidth: 1,
     borderTopColor: COLORS.gray[100],
@@ -1589,7 +1658,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     padding: SPACING.xs,
-    backgroundColor: "#F1F8E9",
+    backgroundColor: COLORS.primary + "20",
     borderRadius: 6,
     justifyContent: "center",
     minHeight: 32,
@@ -1599,7 +1668,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     padding: SPACING.xs,
-    backgroundColor: "#FFF3F3",
+    backgroundColor: COLORS.primary + "20",
     borderRadius: 6,
     justifyContent: "center",
     minHeight: 32,
@@ -1652,9 +1721,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     padding: SPACING.xs,
-    backgroundColor: "#E8F5E8", // Light green background
+    // backgroundColor: "#E8F5E8", // Light green background
     borderRadius: 6,
-    borderColor: "#C8E6C9",
     justifyContent: "center",
     minHeight: 32,
   },
@@ -1692,7 +1760,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     padding: SPACING.xs,
-    backgroundColor: COLORS.primary + "30",
+    backgroundColor: COLORS.primary + "20",
     borderRadius: 6,
     justifyContent: "center",
     minHeight: 32,
