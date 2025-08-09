@@ -27,6 +27,186 @@ import { RechargeTransaction, TripTransaction } from "../../services/api";
 import { useCardStore } from "../../stores/cardStore";
 import { COLORS, SPACING } from "../../utils/constants";
 
+// History configuration constants
+const HISTORY_CONFIG = {
+  ANIMATION_DELAYS: {
+    FILTER_HEADER: 200,
+    TAB_CONTENT: 600,
+  },
+  LOAD_MORE_THRESHOLD: 0.1,
+  TIMEZONE_OFFSET: 6 * 60 * 60 * 1000, // 6 hours in milliseconds
+  TRANSACTION_ID_MAX_WIDTH: "35%",
+  QUICK_FILTER_AMOUNTS: {
+    SMALL: { min: 0, max: 50 },
+    MEDIUM: { min: 50, max: 200 },
+    LARGE: { min: 200, max: 1000 },
+  },
+} as const;
+
+// UI text constants
+const UI_TEXTS = {
+  TABS: {
+    TRIPS: "Trip History",
+    WALLET: "Wallet History",
+  },
+  SEARCH: {
+    TRIPS_PLACEHOLDER: "Search trips...",
+    WALLET_PLACEHOLDER: "Search wallet history...",
+  },
+  TRANSACTION_TYPES: {
+    RECHARGE: "Recharge",
+    RETURN: "Return",
+    BUS_FARE: "Bus Fare",
+  },
+  FILTER_LABELS: {
+    DATE_RANGES: {
+      ALL: "All Time",
+      TODAY: "Today",
+      WEEK: "This Week",
+      MONTH: "This Month",
+      CUSTOM: "Custom Range",
+    },
+    SORT_OPTIONS: {
+      NEWEST: "Newest First",
+      OLDEST: "Oldest First",
+      AMOUNT_HIGH: "Amount: High to Low",
+      AMOUNT_LOW: "Amount: Low to High",
+    },
+    SECTIONS: {
+      DATE_RANGE: "Date Range",
+      SORT_BY: "Sort By",
+      AMOUNT_RANGE: "Amount Range (৳)",
+      QUICK_FILTERS: "Quick filters:",
+    },
+  },
+  BUTTONS: {
+    FILTER: "Filter",
+    RESET: "Reset",
+    RETRY: "Retry",
+    LOAD_MORE_TRIPS: "Load More Trips",
+    LOAD_MORE_TRANSACTIONS: "Load More Transactions",
+    CLEAR_SEARCH_AND_FILTERS: "Clear Search & Filters",
+    CLEAR_FILTERS: "Clear Filters",
+  },
+  MODAL: {
+    FOOTER: {
+      CANCEL: "Cancel",
+      APPLY_FILTERS: "Apply Filters",
+    },
+  },
+  LOADING_STATES: {
+    LOADING_HISTORY: "Loading history...",
+    LOADING_MORE_TRIPS: "Loading more trips...",
+    LOADING_MORE_TRANSACTIONS: "Loading more transactions...",
+  },
+  EMPTY_STATES: {
+    NO_TRIP_HISTORY: "No trip history found",
+    NO_WALLET_HISTORY: "No wallet history found",
+    NO_RESULTS_FOR: "No results found for",
+    TRY_ADJUSTING_FILTERS: "Try adjusting your filters",
+    BUS_TRIPS_WILL_APPEAR: "Your bus trips will appear here",
+    WALLET_HISTORY_WILL_APPEAR: "Your wallet history will appear here",
+  },
+  TOAST_MESSAGES: {
+    REFRESH_FAILED: "Failed to refresh data. Please try again.",
+    LOAD_MORE_FAILED: "Failed to load more data. Please try again.",
+    TRANSACTION_ID_COPIED: "Transaction ID copied to clipboard",
+    COPY_FAILED: "Failed to copy transaction ID",
+  },
+  TAP_TYPES: {
+    CARD: "Card",
+    TIME_OUT: "Time-Out",
+    STAFF: "Staff",
+    SESSION_OUT: "Session-Out",
+    MOBILE_APP: "Mobile App",
+    PENALTY: "Penalty",
+  },
+  FALLBACKS: {
+    NOT_AVAILABLE: "N/A",
+    UNKNOWN_AGENT: "Unknown Agent",
+    ORGANIZATION_INFO: "Organization Info",
+  },
+  LABELS: {
+    TAP_IN: "Tap In",
+    TAP_OUT: "Tap Out",
+    DISTANCE: "Distance",
+    TAP_IN_BY: "Tap In By",
+    TAP_OUT_BY: "Tap Out By",
+    MIN: "Min",
+    MAX: "Max",
+    BY: "by",
+  },
+} as const;
+
+// Utility functions
+const formatDateString = (date: Date): string => {
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+  const day = date.getDate();
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+const formatTimeString = (dateString: string): string => {
+  const date = new Date(new Date(dateString).getTime() + HISTORY_CONFIG.TIMEZONE_OFFSET);
+  const hours24 = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const hours12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
+  const ampm = hours24 >= 12 ? "PM" : "AM";
+  return `${hours12}:${minutes} ${ampm}`;
+};
+
+const openMapLocation = (latitude: number, longitude: number, label: string): void => {
+  const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+  Linking.openURL(url);
+};
+
+const openRouteMap = (startLat: number, startLng: number, endLat: number, endLng: number): void => {
+  const url = `https://www.google.com/maps/dir/${startLat},${startLng}/${endLat},${endLng}`;
+  Linking.openURL(url);
+};
+
+const getTapTypeColor = (tapType: string): string => {
+  switch (tapType) {
+    case UI_TEXTS.TAP_TYPES.CARD:
+      return "#1976D2";
+    case UI_TEXTS.TAP_TYPES.TIME_OUT:
+      return "#F57C00";
+    case UI_TEXTS.TAP_TYPES.STAFF:
+      return "#388E3C";
+    case UI_TEXTS.TAP_TYPES.SESSION_OUT:
+      return "#D32F2F";
+    case UI_TEXTS.TAP_TYPES.MOBILE_APP:
+      return "#7B1FA2";
+    case UI_TEXTS.TAP_TYPES.PENALTY:
+      return "#E65100";
+    default:
+      return COLORS.gray[500];
+  }
+};
+
+const getTapTypeIcon = (tapType: string): any => {
+  switch (tapType) {
+    case UI_TEXTS.TAP_TYPES.CARD:
+      return "card-outline";
+    case UI_TEXTS.TAP_TYPES.TIME_OUT:
+      return "time-outline";
+    case UI_TEXTS.TAP_TYPES.STAFF:
+      return "person-circle-outline";
+    case UI_TEXTS.TAP_TYPES.SESSION_OUT:
+      return "exit-outline";
+    case UI_TEXTS.TAP_TYPES.MOBILE_APP:
+      return "phone-portrait-outline";
+    case UI_TEXTS.TAP_TYPES.PENALTY:
+      return "warning-outline";
+    default:
+      return "help-circle-outline";
+  }
+};
+
 // Type definitions
 type HistoryTab = "trips" | "recharge";
 type DateFilter = "all" | "today" | "week" | "month" | "custom";
@@ -223,7 +403,7 @@ export default function History() {
       await refreshAllData(true);
     } catch (error) {
       console.log("Refresh error:", error);
-      showToast("Failed to refresh data. Please try again.", "error");
+      showToast(UI_TEXTS.TOAST_MESSAGES.REFRESH_FAILED, "error");
     } finally {
       setRefreshing(false);
     }
@@ -248,7 +428,7 @@ export default function History() {
         await loadMoreFunction();
       } catch (error) {
         console.log("Load more error:", error);
-        showToast("Failed to load more data. Please try again.", "error");
+        showToast(UI_TEXTS.TOAST_MESSAGES.LOAD_MORE_FAILED, "error");
       }
     }
   }, [
@@ -262,75 +442,52 @@ export default function History() {
     showToast,
   ]);
 
-  // Utility functions
-
-  // Open location in Google Maps
-  const openMapLocation = (
-    latitude: number,
-    longitude: number,
-    label: string
-  ) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-    Linking.openURL(url);
-  };
-
-  // Open route in Google Maps
-  const openRouteMap = (
-    startLat: number,
-    startLng: number,
-    endLat: number,
-    endLng: number
-  ) => {
-    const url = `https://www.google.com/maps/dir/${startLat},${startLng}/${endLat},${endLng}`;
-    Linking.openURL(url);
-  };
-
-  // Copy transaction ID to clipboard with toast feedback
-  const copyTransactionId = async (transactionId: string) => {
-    try {
-      await Clipboard.setString(transactionId);
-      showToast("Transaction ID copied to clipboard", "success");
-    } catch (error) {
-      showToast("Failed to copy transaction ID", "error");
-    }
-  };
-
   // Helper functions
 
   // Get user-friendly date filter label
-  const getDateFilterLabel = (filter: DateFilter) => {
+  const getDateFilterLabel = (filter: DateFilter): string => {
     switch (filter) {
       case "today":
-        return "Today";
+        return UI_TEXTS.FILTER_LABELS.DATE_RANGES.TODAY;
       case "week":
-        return "This Week";
+        return UI_TEXTS.FILTER_LABELS.DATE_RANGES.WEEK;
       case "month":
-        return "This Month";
+        return UI_TEXTS.FILTER_LABELS.DATE_RANGES.MONTH;
       case "custom":
-        return "Custom Range";
+        return UI_TEXTS.FILTER_LABELS.DATE_RANGES.CUSTOM;
       default:
-        return "All Time";
+        return UI_TEXTS.FILTER_LABELS.DATE_RANGES.ALL;
     }
   };
 
   // Get user-friendly sort order label
-  const getSortOrderLabel = (sort: SortOrder) => {
+  const getSortOrderLabel = (sort: SortOrder): string => {
     switch (sort) {
       case "oldest":
-        return "Oldest First";
+        return UI_TEXTS.FILTER_LABELS.SORT_OPTIONS.OLDEST;
       case "amount_high":
-        return "Amount: High to Low";
+        return UI_TEXTS.FILTER_LABELS.SORT_OPTIONS.AMOUNT_HIGH;
       case "amount_low":
-        return "Amount: Low to High";
+        return UI_TEXTS.FILTER_LABELS.SORT_OPTIONS.AMOUNT_LOW;
       default:
-        return "Newest First";
+        return UI_TEXTS.FILTER_LABELS.SORT_OPTIONS.NEWEST;
+    }
+  };
+
+  // Copy transaction ID to clipboard with toast feedback
+  const copyTransactionId = async (transactionId: string): Promise<void> => {
+    try {
+      await Clipboard.setString(transactionId);
+      showToast(UI_TEXTS.TOAST_MESSAGES.TRANSACTION_ID_COPIED, "success");
+    } catch (error) {
+      showToast(UI_TEXTS.TOAST_MESSAGES.COPY_FAILED, "error");
     }
   };
 
   // Filter management functions
   
   // Reset filters to default values
-  const resetFilters = () => {
+  const resetFilters = (): void => {
     setFilters({
       dateFilter: "all",
       sortOrder: "newest",
@@ -338,46 +495,9 @@ export default function History() {
   };
 
   // Apply new filters and close modal
-  const applyFilters = (newFilters: FilterOptions) => {
+  const applyFilters = (newFilters: FilterOptions): void => {
     setFilters(newFilters);
     setShowFilterModal(false);
-  };
-
-  // Date and time formatting functions
-  
-  // Format date to readable string with month name
-  const formatDate = (date: Date) => {
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-    const day = date.getDate();
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
-  };
-
-  // Format time string to 12-hour format with timezone adjustment
-  const formatTime = (dateString: string) => {
-    const date = new Date(new Date(dateString).getTime() + 6 * 60 * 60 * 1000);
-    const hours24 = date.getHours();
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-
-    // Convert to 12-hour format
-    const hours12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
-    const ampm = hours24 >= 12 ? "PM" : "AM";
-
-    return `${hours12}:${minutes} ${ampm}`;
   };
 
   // Render functions
@@ -438,7 +558,7 @@ export default function History() {
                 color={COLORS.gray[500]}
                 style={styles.cardDate}
               >
-                {tripStartTime ? formatDate(new Date(tripStartTime)) : "N/A"}
+                {tripStartTime ? formatDateString(new Date(tripStartTime)) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
               </Text>
             </View>
           </View>
@@ -455,7 +575,7 @@ export default function History() {
                 color={COLORS.gray[600]}
                 style={styles.timeLabel}
               >
-                Tap In
+                {UI_TEXTS.LABELS.TAP_IN}
               </Text>
               <TouchableOpacity
                 style={styles.tapInButton}
@@ -476,7 +596,7 @@ export default function History() {
                   color={COLORS.white}
                   style={styles.timeText}
                 >
-                  {tripStartTime ? formatTime(tripStartTime) : "N/A"}
+                  {tripStartTime ? formatTimeString(tripStartTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
                 <Ionicons name="location-outline" size={14} color={COLORS.success} />
               </TouchableOpacity>
@@ -489,7 +609,7 @@ export default function History() {
                   color={COLORS.gray[600]}
                   style={styles.timeLabel}
                 >
-                  Tap Out
+                  {UI_TEXTS.LABELS.TAP_OUT}
                 </Text>
                 <TouchableOpacity
                   style={styles.tapOutButton}
@@ -510,7 +630,7 @@ export default function History() {
                     color={COLORS.white}
                     style={styles.timeText}
                   >
-                    {tripEndTime ? formatTime(tripEndTime) : "N/A"}
+                    {tripEndTime ? formatTimeString(tripEndTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                   </Text>
                   <Ionicons name="location-outline" size={14} color={COLORS.error} />
                 </TouchableOpacity>
@@ -523,7 +643,7 @@ export default function History() {
                 color={COLORS.gray[600]}
                 style={styles.timeLabel}
               >
-                Distance
+                {UI_TEXTS.LABELS.DISTANCE}
               </Text>
               <TouchableOpacity
                 style={styles.distanceButton}
@@ -591,7 +711,7 @@ export default function History() {
                 color={COLORS.gray[600]}
                 style={styles.timeLabel}
               >
-                Tap In By
+                {UI_TEXTS.LABELS.TAP_IN_BY}
               </Text>
               <View
                 style={[
@@ -605,58 +725,16 @@ export default function History() {
                 ]}
               >
                 <Ionicons
-                  name={
-                    tapInType === "Card"
-                      ? "card-outline"
-                      : tapInType === "Time-Out"
-                      ? "time-outline"
-                      : tapInType === "Staff"
-                      ? "person-circle-outline"
-                      : tapInType === "Session-Out"
-                      ? "exit-outline"
-                      : tapInType === "Mobile App"
-                      ? "phone-portrait-outline"
-                      : tapInType === "Penalty"
-                      ? "warning-outline"
-                      : "help-circle-outline"
-                  }
+                  name={getTapTypeIcon(tapInType || "")}
                   size={14}
-                  color={
-                    tapInType === "Card"
-                      ? "#1976D2"
-                      : tapInType === "Time-Out"
-                      ? "#F57C00"
-                      : tapInType === "Staff"
-                      ? "#388E3C"
-                      : tapInType === "Session-Out"
-                      ? "#D32F2F"
-                      : tapInType === "Mobile App"
-                      ? "#7B1FA2"
-                      : tapInType === "Penalty"
-                      ? "#E65100"
-                      : COLORS.gray[500]
-                  }
+                  color={getTapTypeColor(tapInType || "")}
                 />
                 <Text
                   variant="bodySmall"
-                  color={
-                    tapInType === "Card"
-                      ? "#1976D2"
-                      : tapInType === "Time-Out"
-                      ? "#F57C00"
-                      : tapInType === "Staff"
-                      ? "#388E3C"
-                      : tapInType === "Session-Out"
-                      ? "#D32F2F"
-                      : tapInType === "Mobile App"
-                      ? "#7B1FA2"
-                      : tapInType === "Penalty"
-                      ? "#E65100"
-                      : COLORS.gray[600]
-                  }
+                  color={getTapTypeColor(tapInType || "")}
                   style={styles.tapByText}
                 >
-                  {tapInType || "N/A"}
+                  {tapInType || UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
               </View>
             </View>
@@ -668,7 +746,7 @@ export default function History() {
                   color={COLORS.gray[600]}
                   style={styles.timeLabel}
                 >
-                  Tap Out By
+                  {UI_TEXTS.LABELS.TAP_OUT_BY}
                 </Text>
                 <View
                   style={[
@@ -683,58 +761,16 @@ export default function History() {
                   ]}
                 >
                   <Ionicons
-                    name={
-                      tapOutStatus === "Card"
-                        ? "card-outline"
-                        : tapOutStatus === "Time-Out"
-                        ? "time-outline"
-                        : tapOutStatus === "Staff"
-                        ? "person-circle-outline"
-                        : tapOutStatus === "Session-Out"
-                        ? "exit-outline"
-                        : tapOutStatus === "Mobile App"
-                        ? "phone-portrait-outline"
-                        : tapOutStatus === "Penalty"
-                        ? "warning-outline"
-                        : "help-circle-outline"
-                    }
+                    name={getTapTypeIcon(tapOutStatus || "")}
                     size={14}
-                    color={
-                      tapOutStatus === "Card"
-                        ? "#1976D2"
-                        : tapOutStatus === "Time-Out"
-                        ? "#F57C00"
-                        : tapOutStatus === "Staff"
-                        ? "#388E3C"
-                        : tapOutStatus === "Session-Out"
-                        ? "#D32F2F"
-                        : tapOutStatus === "Mobile App"
-                        ? "#7B1FA2"
-                        : tapOutStatus === "Penalty"
-                        ? "#E65100"
-                        : COLORS.gray[500]
-                    }
+                    color={getTapTypeColor(tapOutStatus || "")}
                   />
                   <Text
                     variant="bodySmall"
-                    color={
-                      tapOutStatus === "Card"
-                        ? "#1976D2"
-                        : tapOutStatus === "Time-Out"
-                        ? "#F57C00"
-                        : tapOutStatus === "Staff"
-                        ? "#388E3C"
-                        : tapOutStatus === "Session-Out"
-                        ? "#D32F2F"
-                        : tapOutStatus === "Mobile App"
-                        ? "#7B1FA2"
-                        : tapOutStatus === "Penalty"
-                        ? "#E65100"
-                        : COLORS.gray[600]
-                    }
+                    color={getTapTypeColor(tapOutStatus || "")}
                     style={styles.tapByText}
                   >
-                    {tapOutStatus || "N/A"}
+                    {tapOutStatus || UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                   </Text>
                 </View>
               </View>
@@ -773,14 +809,14 @@ export default function History() {
                 color={COLORS.gray[900]}
                 style={styles.cardTitle}
               >
-                {isRecharge ? "Recharge" : "Return"}
+                {isRecharge ? UI_TEXTS.TRANSACTION_TYPES.RECHARGE : UI_TEXTS.TRANSACTION_TYPES.RETURN}
               </Text>
               <Text
                 variant="caption"
                 color={COLORS.gray[600]}
                 style={styles.cardSubtitle}
               >
-                by {agent?.name || "Unknown Agent"}
+                {UI_TEXTS.LABELS.BY} {agent?.name || UI_TEXTS.FALLBACKS.UNKNOWN_AGENT}
               </Text>
               {organization && (
                 <Text
@@ -832,8 +868,8 @@ export default function History() {
                   style={styles.detailText}
                 >
                   {item.createTime
-                    ? formatDate(new Date(item.createTime))
-                    : "N/A"}
+                    ? formatDateString(new Date(item.createTime))
+                    : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
               </View>
               <View style={styles.TimeItem}>
@@ -843,7 +879,7 @@ export default function History() {
                   color={COLORS.gray[600]}
                   style={styles.detailText}
                 >
-                  {item.createTime ? formatTime(item.createTime) : "N/A"}
+                  {item.createTime ? formatTimeString(item.createTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
               </View>
             </View>
@@ -891,7 +927,9 @@ export default function History() {
                 color={COLORS.gray[600]}
                 style={styles.loadingText}
               >
-                Loading more {activeTab === "trips" ? "trips" : "transactions"}...
+                {activeTab === "trips" 
+                  ? UI_TEXTS.LOADING_STATES.LOADING_MORE_TRIPS 
+                  : UI_TEXTS.LOADING_STATES.LOADING_MORE_TRANSACTIONS}
               </Text>
               {(() => {
                 const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
@@ -916,7 +954,9 @@ export default function History() {
               onPress={onLoadMore}
             >
               <Text variant="labelSmall" color={COLORS.primary}>
-                Load More {activeTab === "trips" ? "Trips" : "Transactions"}
+                {activeTab === "trips" 
+                  ? UI_TEXTS.BUTTONS.LOAD_MORE_TRIPS 
+                  : UI_TEXTS.BUTTONS.LOAD_MORE_TRANSACTIONS}
               </Text>
               {(() => {
                 const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
@@ -948,7 +988,9 @@ export default function History() {
                 color={COLORS.gray[600]}
                 style={styles.emptyText}
               >
-                No {activeTab === "trips" ? "trip" : "wallet"} history found
+                {activeTab === "trips" 
+                  ? UI_TEXTS.EMPTY_STATES.NO_TRIP_HISTORY 
+                  : UI_TEXTS.EMPTY_STATES.NO_WALLET_HISTORY}
               </Text>
               <Text
                 variant="body"
@@ -956,14 +998,14 @@ export default function History() {
                 style={styles.emptySubtext}
               >
                 {searchQuery
-                  ? `No results found for "${searchQuery}"`
+                  ? `${UI_TEXTS.EMPTY_STATES.NO_RESULTS_FOR} "${searchQuery}"`
                   : filters.dateFilter !== "all" ||
                     filters.minAmount !== undefined ||
                     filters.maxAmount !== undefined
-                  ? "Try adjusting your filters"
-                  : `Your ${
-                      activeTab === "trips" ? "bus trips" : "wallet history"
-                    } will appear here`}
+                  ? UI_TEXTS.EMPTY_STATES.TRY_ADJUSTING_FILTERS
+                  : activeTab === "trips" 
+                    ? UI_TEXTS.EMPTY_STATES.BUS_TRIPS_WILL_APPEAR
+                    : UI_TEXTS.EMPTY_STATES.WALLET_HISTORY_WILL_APPEAR}
               </Text>
               {(searchQuery ||
                 filters.dateFilter !== "all" ||
@@ -977,7 +1019,9 @@ export default function History() {
                   }}
                 >
                   <Text variant="labelSmall" color={COLORS.primary}>
-                    Clear {searchQuery ? "Search & Filters" : "Filters"}
+                    {searchQuery 
+                      ? UI_TEXTS.BUTTONS.CLEAR_SEARCH_AND_FILTERS 
+                      : UI_TEXTS.BUTTONS.CLEAR_FILTERS}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -1008,11 +1052,13 @@ export default function History() {
               color={COLORS.gray[900]}
               style={styles.modalTitle}
             >
-              Filter {activeTab === "trips" ? "Trips" : "Wallet History"}
+              {activeTab === "trips" 
+                ? `${UI_TEXTS.BUTTONS.FILTER} ${UI_TEXTS.TABS.TRIPS}` 
+                : `${UI_TEXTS.BUTTONS.FILTER} ${UI_TEXTS.TABS.WALLET}`}
             </Text>
             <TouchableOpacity onPress={resetFilters}>
               <Text variant="labelSmall" color={COLORS.primary}>
-                Reset
+                {UI_TEXTS.BUTTONS.RESET}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1025,7 +1071,7 @@ export default function History() {
                 color={COLORS.gray[700]}
                 style={styles.sectionTitle}
               >
-                Date Range
+                {UI_TEXTS.FILTER_LABELS.SECTIONS.DATE_RANGE}
               </Text>
               <View style={styles.filterOptions}>
                 {(["all", "today", "week", "month"] as DateFilter[]).map(
@@ -1064,7 +1110,7 @@ export default function History() {
                 color={COLORS.gray[700]}
                 style={styles.sectionTitle}
               >
-                Sort By
+                {UI_TEXTS.FILTER_LABELS.SECTIONS.SORT_BY}
               </Text>
               <View style={styles.filterOptions}>
                 {(
@@ -1108,12 +1154,12 @@ export default function History() {
                 color={COLORS.gray[700]}
                 style={styles.sectionTitle}
               >
-                Amount Range (৳)
+                {UI_TEXTS.FILTER_LABELS.SECTIONS.AMOUNT_RANGE}
               </Text>
               <View style={styles.amountInputs}>
                 <View style={styles.amountInput}>
                   <Text variant="bodySmall" color={COLORS.gray[600]}>
-                    Min
+                    {UI_TEXTS.LABELS.MIN}
                   </Text>
                   <TouchableOpacity
                     style={styles.amountButton}
@@ -1129,7 +1175,7 @@ export default function History() {
                 </View>
                 <View style={styles.amountInput}>
                   <Text variant="bodySmall" color={COLORS.gray[600]}>
-                    Max
+                    {UI_TEXTS.LABELS.MAX}
                   </Text>
                   <TouchableOpacity
                     style={styles.amountButton}
@@ -1152,7 +1198,7 @@ export default function History() {
                   color={COLORS.gray[600]}
                   style={styles.quickFiltersLabel}
                 >
-                  Quick filters:
+                  {UI_TEXTS.FILTER_LABELS.SECTIONS.QUICK_FILTERS}
                 </Text>
                 <View style={styles.filterOptions}>
                   <TouchableOpacity
@@ -1208,7 +1254,7 @@ export default function History() {
               onPress={() => setShowFilterModal(false)}
             >
               <Text variant="labelSmall" color={COLORS.gray[700]}>
-                Cancel
+                {UI_TEXTS.MODAL.FOOTER.CANCEL}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -1216,7 +1262,7 @@ export default function History() {
               onPress={() => applyFilters(tempFilters)}
             >
               <Text variant="labelSmall" color={COLORS.white}>
-                Apply Filters
+                {UI_TEXTS.MODAL.FOOTER.APPLY_FILTERS}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1247,7 +1293,7 @@ export default function History() {
                 color={activeTab === "trips" ? COLORS.white : COLORS.gray[600]}
                 style={styles.tabText}
               >
-                Trip History
+                {UI_TEXTS.TABS.TRIPS}
               </Text>
             </TouchableOpacity>
 
@@ -1265,7 +1311,7 @@ export default function History() {
                 color={activeTab === "recharge" ? COLORS.white : COLORS.gray[600]}
                 style={styles.tabText}
               >
-                Wallet History
+                {UI_TEXTS.TABS.WALLET}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1276,9 +1322,11 @@ export default function History() {
               <Ionicons name="search" size={20} color={COLORS.gray[500]} />
               <TextInput
                 style={styles.searchInput}
-                placeholder={`Search ${
-                  activeTab === "trips" ? "trips" : "wallet history"
-                }...`}
+                placeholder={
+                  activeTab === "trips" 
+                    ? UI_TEXTS.SEARCH.TRIPS_PLACEHOLDER 
+                    : UI_TEXTS.SEARCH.WALLET_PLACEHOLDER
+                }
                 placeholderTextColor={COLORS.gray[500]}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
