@@ -71,12 +71,33 @@ export default function Dashboard() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showTapOutConfirmation, setShowTapOutConfirmation] = useState(false);
+  const [showBalance, setShowBalance] = useState(false);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
   // Animation for pulse effect - moved to top level
   const pulseAnimation = useSharedValue(0);
 
+  // Balance visibility animation
+  const balanceAnimation = useSharedValue(0);
+
+  // Loading animation for refresh icon
+  const loadingAnimation = useSharedValue(0);
+
   // Track if data has been loaded to prevent unnecessary API calls
   const [hasLoadedData, setHasLoadedData] = useState(false);
+
+  // Start loading animation when balance is being fetched
+  useEffect(() => {
+    if (isLoadingBalance) {
+      loadingAnimation.value = withRepeat(
+        withTiming(1, { duration: 1000 }),
+        -1,
+        false
+      );
+    } else {
+      loadingAnimation.value = 0;
+    }
+  }, [isLoadingBalance]);
 
   useEffect(() => {
     // Only load data if we have a user and haven't loaded data yet
@@ -187,6 +208,67 @@ export default function Dashboard() {
   const cancelForceTapOut = () => {
     setShowTapOutConfirmation(false);
   };
+
+  const toggleBalanceVisibility = async () => {
+    if (!showBalance) {
+      // When showing balance, add loading state and make fresh API call
+      setIsLoadingBalance(true);
+      try {
+        await loadCardDetails(); // This will fetch fresh balance data
+        await refreshAllData(true); // Force refresh to get latest data
+        setShowBalance(true);
+        
+        // Auto-hide balance after 4 seconds
+        setTimeout(() => {
+          setShowBalance(false);
+        }, 4000);
+      } catch (error) {
+        console.error("Error fetching fresh balance:", error);
+      } finally {
+        setIsLoadingBalance(false);
+      }
+    } else {
+      setShowBalance(false);
+    }
+  };
+
+  // Balance animation effect
+  useEffect(() => {
+    if (showBalance) {
+      balanceAnimation.value = withTiming(1, { duration: 500 });
+    } else {
+      balanceAnimation.value = withTiming(0, { duration: 300 });
+    }
+  }, [showBalance]);
+
+  // Balance slide animation styles
+  const balanceSlideStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(balanceAnimation.value, [0, 1], [0, 1]);
+    const scale = interpolate(balanceAnimation.value, [0, 1], [0.9, 1]);
+    
+    return {
+      opacity,
+      transform: [{ scale }],
+    };
+  });
+
+  const hiddenBalanceStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(balanceAnimation.value, [0, 1], [1, 0]);
+    const scale = interpolate(balanceAnimation.value, [0, 1], [1, 0.9]);
+    
+    return {
+      opacity,
+      transform: [{ scale }],
+    };
+  });
+
+  const loadingRotationStyle = useAnimatedStyle(() => {
+    const rotation = interpolate(loadingAnimation.value, [0, 1], [0, 360]);
+    
+    return {
+      transform: [{ rotate: `${rotation}deg` }],
+    };
+  });
   const renderHeader = () => (
     <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
       {/* Status Bar Area - Same color as header */}
@@ -340,12 +422,49 @@ export default function Dashboard() {
           >
             Available Balance
           </Text>
-          <Text variant="h2" color={COLORS.white} style={styles.balance}>
-            {typeof user?.balance === "number"
-              ? user.balance.toFixed(2) + " BDT"
-              : card?.balance?.toFixed(2) + " BDT" || "N/A"}
-            {/* ৳ */}
-          </Text>
+          
+          <View style={styles.balanceContainer}>
+            {!showBalance ? (
+              // Show Balance Button
+              <Animated.View style={[styles.showBalanceContainer, hiddenBalanceStyle]}>
+                <TouchableOpacity 
+                  style={styles.showBalanceButton}
+                  onPress={toggleBalanceVisibility}
+                  activeOpacity={0.8}
+                  disabled={isLoadingBalance}
+                >
+                  {isLoadingBalance ? (
+                    <View style={styles.loadingContainer}>
+                      <Animated.View style={loadingRotationStyle}>
+                        <Ionicons name="refresh" size={18} color={COLORS.white} />
+                      </Animated.View>
+                      <Text variant="bodySmall" style={styles.showBalanceText}>
+                        Loading...
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      <Ionicons name="eye-outline" size={18} color={COLORS.white} />
+                      <Text variant="bodySmall" style={styles.showBalanceText}>
+                        Show Balance
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </Animated.View>
+            ) : (
+              // Balance Display (No Hide Button)
+              <Animated.View style={[styles.balanceDisplayContainer, balanceSlideStyle]}>
+                <Text variant="h2" color={COLORS.white} style={styles.balance}>
+                  {typeof user?.balance === "number"
+                    ? "৳ " + user.balance.toFixed(2)
+                    : typeof card?.balance === "number"
+                    ? "৳ " + card.balance.toFixed(2)
+                    : "N/A"}
+                </Text>
+              </Animated.View>
+            )}
+          </View>
         </View>
       </LinearGradient>
     </Animated.View>
@@ -893,14 +1012,31 @@ const styles = StyleSheet.create({
   balanceSection: {
     alignItems: "center",
     marginBottom: 10,
+    minHeight: 60,
+    justifyContent: "center",
   },
   balanceLabel: {
-    fontSize: 14,
-    opacity: 0.85,
-    marginBottom: 2,
+    fontSize: 15,
+    marginBottom: 8,
     fontWeight: "600",
     letterSpacing: 0.8,
     textAlign: "center",
+  },
+  balanceContainer: {
+    width: "100%",
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  showBalanceContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  balanceDisplayContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 12,
   },
   balance: {
     fontSize: 28,
@@ -908,6 +1044,31 @@ const styles = StyleSheet.create({
     lineHeight: 38,
     letterSpacing: -0.5,
     textAlign: "center",
+  },
+  showBalanceButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 8,
+    elevation: 2,
+    shadowColor: "rgba(0, 0, 0, 0.1)",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  showBalanceText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: COLORS.white,
+    letterSpacing: 0.3,
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 
   // Trip Status Styles - Compact Design
