@@ -1,3 +1,4 @@
+// React Native and Expo imports
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -12,6 +13,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
+// Reanimated imports for animations
 import Animated, {
   FadeInDown,
   FadeInUp,
@@ -21,6 +24,8 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
+
+// Custom components and utilities
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { Text } from "../../components/ui/Text";
 import { useRealtimeTrip } from "../../hooks/useRealtimeTrip";
@@ -29,7 +34,12 @@ import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
 import { API_BASE_URL, COLORS } from "../../utils/constants";
 
+/**
+ * Dashboard Component - Main passenger app screen
+ * Displays RFID card, trip status, balance, and recent activity
+ */
 export default function Dashboard() {
+  // Navigation and store hooks
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const {
@@ -47,46 +57,37 @@ export default function Dashboard() {
     forceRefreshData,
   } = useCardStore();
 
-  // Use token refresh hook to get fresh data
+  // Token refresh for maintaining session
   const { refreshAllData } = useTokenRefresh();
 
-  // Real-time trip monitoring
-  const {
-    isPolling,
-    checkNow: checkTripNow,
-    restartPolling
-  } = useRealtimeTrip({
-    interval: tripStatus === 'active' ? 15000 : 30000, // 15s active, 30s idle
+  // Real-time trip monitoring with dynamic intervals
+  const { checkNow: checkTripNow, restartPolling } = useRealtimeTrip({
+    interval: tripStatus === "active" ? 15000 : 30000, // 15s active, 30s idle
     enabled: true,
     onlyWhenActive: true,
     onTripStatusChange: (status, trip) => {
-      if (status === 'active' && trip) {
-        console.log('🚌 [DASHBOARD] Trip started:', trip.busName);
-      } else if (status === 'idle') {
-        console.log('🏁 [DASHBOARD] Trip ended');
+      if (status === "active" && trip) {
+        console.log("🚌 [DASHBOARD] Trip started:", trip.busName);
+      } else if (status === "idle") {
+        console.log("🏁 [DASHBOARD] Trip ended");
       }
-    }
+    },
   });
 
+  // Component state management
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showTapOutConfirmation, setShowTapOutConfirmation] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
-
-  // Animation for pulse effect - moved to top level
-  const pulseAnimation = useSharedValue(0);
-
-  // Balance visibility animation
-  const balanceAnimation = useSharedValue(0);
-
-  // Loading animation for refresh icon
-  const loadingAnimation = useSharedValue(0);
-
-  // Track if data has been loaded to prevent unnecessary API calls
   const [hasLoadedData, setHasLoadedData] = useState(false);
 
-  // Start loading animation when balance is being fetched
+  // Animation shared values
+  const pulseAnimation = useSharedValue(0); // For trip status pulse effect
+  const balanceAnimation = useSharedValue(0); // For balance show/hide animation
+  const loadingAnimation = useSharedValue(0); // For loading icon rotation
+
+  // Initialize loading animation when balance is being fetched
   useEffect(() => {
     if (isLoadingBalance) {
       loadingAnimation.value = withRepeat(
@@ -99,40 +100,18 @@ export default function Dashboard() {
     }
   }, [isLoadingBalance]);
 
+  // Load initial data when user is available
   useEffect(() => {
-    // Only load data if we have a user and haven't loaded data yet
     if (user && !hasLoadedData) {
       loadCardDetails();
-      loadTripHistory(1, true); // Load recent transactions
+      loadTripHistory(1, true);
       loadRechargeHistory(1, true);
       checkOngoingTrip();
       setHasLoadedData(true);
     }
   }, [user, hasLoadedData]);
 
-  // Handle pull-to-refresh - only refresh when user explicitly pulls
-  const onRefresh = async () => {
-    setRefreshing(true);
-    try {
-      // Use force refresh to ensure fresh data
-      await forceRefreshData();
-      await refreshAllData(true); // Force refresh regardless of timing
-      
-      // Force check trip status immediately after refresh
-      await checkTripNow();
-      
-      // Restart real-time polling to ensure fresh intervals
-      restartPolling();
-      
-      setHasLoadedData(true); // Mark as loaded after refresh
-    } catch (error) {
-      console.error("Refresh error:", error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  // Start pulse animation when trip is active
+  // Handle pulse animation for active trips
   useEffect(() => {
     if (tripStatus === "active") {
       pulseAnimation.value = withRepeat(
@@ -142,15 +121,39 @@ export default function Dashboard() {
       );
     } else {
       pulseAnimation.value = 0;
-      // Reset confirmation state when trip ends
       setShowTapOutConfirmation(false);
     }
   }, [tripStatus]);
 
+  // Handle balance visibility animation
+  useEffect(() => {
+    if (showBalance) {
+      balanceAnimation.value = withTiming(1, { duration: 500 });
+    } else {
+      balanceAnimation.value = withTiming(0, { duration: 300 });
+    }
+  }, [showBalance]);
+
+  // Pull-to-refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await forceRefreshData();
+      await refreshAllData(true);
+      await checkTripNow();
+      restartPolling();
+      setHasLoadedData(true);
+    } catch (error) {
+      console.error("Refresh error:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Animated style definitions
   const pulseStyle = useAnimatedStyle(() => {
     const scale = interpolate(pulseAnimation.value, [0, 1], [1, 1.2]);
     const opacity = interpolate(pulseAnimation.value, [0, 1], [0.8, 0.3]);
-
     return {
       transform: [{ scale }],
       opacity,
@@ -160,17 +163,83 @@ export default function Dashboard() {
   const dotPulseStyle = useAnimatedStyle(() => {
     const scale = interpolate(pulseAnimation.value, [0, 1], [1, 1.4]);
     const opacity = interpolate(pulseAnimation.value, [0, 1], [1, 0.6]);
-
     return {
       transform: [{ scale }],
       opacity,
     };
   });
 
+  const balanceSlideStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(balanceAnimation.value, [0, 1], [0, 1]);
+    const scale = interpolate(balanceAnimation.value, [0, 1], [0.9, 1]);
+    return {
+      opacity,
+      transform: [{ scale }],
+    };
+  });
+
+  const hiddenBalanceStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(balanceAnimation.value, [0, 1], [1, 0]);
+    const scale = interpolate(balanceAnimation.value, [0, 1], [1, 0.9]);
+    return {
+      opacity,
+      transform: [{ scale }],
+    };
+  });
+
+  const loadingRotationStyle = useAnimatedStyle(() => {
+    const rotation = interpolate(loadingAnimation.value, [0, 1], [0, 360]);
+    return {
+      transform: [{ rotate: `${rotation}deg` }],
+    };
+  });
+
+  // Event handlers
   const handleProfilePress = () => {
     setShowProfileMenu(!showProfileMenu);
   };
 
+  const handleViewAllPress = () => {
+    router.push("/(tabs)/history");
+  };
+
+  const handleForceTapOut = () => {
+    setShowTapOutConfirmation(true);
+  };
+
+  const confirmForceTapOut = () => {
+    setShowTapOutConfirmation(false);
+    forceTapOut();
+  };
+
+  const cancelForceTapOut = () => {
+    setShowTapOutConfirmation(false);
+  };
+
+  // Balance visibility toggle with loading and auto-hide
+  const toggleBalanceVisibility = async () => {
+    if (!showBalance) {
+      setIsLoadingBalance(true);
+      try {
+        await loadCardDetails(); // Fetch fresh balance data
+        await refreshAllData(true); // Force refresh to get latest data
+        setShowBalance(true);
+
+        // Auto-hide balance after 4 seconds
+        setTimeout(() => {
+          setShowBalance(false);
+        }, 4000);
+      } catch (error) {
+        console.error("Error fetching fresh balance:", error);
+      } finally {
+        setIsLoadingBalance(false);
+      }
+    } else {
+      setShowBalance(false);
+    }
+  };
+
+  // Utility functions
   const formatDate = (date: Date) => {
     const months = [
       "Jan",
@@ -192,83 +261,10 @@ export default function Dashboard() {
     return `${day} ${month} ${year}`;
   };
 
-  const handleViewAllPress = () => {
-    router.push("/(tabs)/history");
-  };
-
-  const handleForceTapOut = () => {
-    setShowTapOutConfirmation(true);
-  };
-
-  const confirmForceTapOut = () => {
-    setShowTapOutConfirmation(false);
-    forceTapOut();
-  };
-
-  const cancelForceTapOut = () => {
-    setShowTapOutConfirmation(false);
-  };
-
-  const toggleBalanceVisibility = async () => {
-    if (!showBalance) {
-      // When showing balance, add loading state and make fresh API call
-      setIsLoadingBalance(true);
-      try {
-        await loadCardDetails(); // This will fetch fresh balance data
-        await refreshAllData(true); // Force refresh to get latest data
-        setShowBalance(true);
-        
-        // Auto-hide balance after 4 seconds
-        setTimeout(() => {
-          setShowBalance(false);
-        }, 4000);
-      } catch (error) {
-        console.error("Error fetching fresh balance:", error);
-      } finally {
-        setIsLoadingBalance(false);
-      }
-    } else {
-      setShowBalance(false);
-    }
-  };
-
-  // Balance animation effect
-  useEffect(() => {
-    if (showBalance) {
-      balanceAnimation.value = withTiming(1, { duration: 500 });
-    } else {
-      balanceAnimation.value = withTiming(0, { duration: 300 });
-    }
-  }, [showBalance]);
-
-  // Balance slide animation styles
-  const balanceSlideStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(balanceAnimation.value, [0, 1], [0, 1]);
-    const scale = interpolate(balanceAnimation.value, [0, 1], [0.9, 1]);
-    
-    return {
-      opacity,
-      transform: [{ scale }],
-    };
-  });
-
-  const hiddenBalanceStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(balanceAnimation.value, [0, 1], [1, 0]);
-    const scale = interpolate(balanceAnimation.value, [0, 1], [1, 0.9]);
-    
-    return {
-      opacity,
-      transform: [{ scale }],
-    };
-  });
-
-  const loadingRotationStyle = useAnimatedStyle(() => {
-    const rotation = interpolate(loadingAnimation.value, [0, 1], [0, 360]);
-    
-    return {
-      transform: [{ rotate: `${rotation}deg` }],
-    };
-  });
+  // Render functions
+  /**
+   * Renders the main header with branding, logo, and profile access
+   */
   const renderHeader = () => (
     <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
       {/* Status Bar Area - Same color as header */}
@@ -365,6 +361,9 @@ export default function Dashboard() {
     </Animated.View>
   );
 
+  /**
+   * Renders the RFID card with balance visibility toggle
+   */
   const renderRFIDCard = () => (
     <Animated.View
       entering={FadeInDown.duration(800).delay(300)}
@@ -393,7 +392,11 @@ export default function Dashboard() {
               color={COLORS.white}
               style={styles.cardUserType}
             >
-              {user?.userType?.toUpperCase() + " USER" || "N/A"}
+              {user?.userType === "private"
+                ? "PRIVATE CARD"
+                : user?.userType === "public"
+                ? "PUBLIC CARD"
+                : "NORMAL CARD"}
             </Text>
           </View>
           <View style={styles.rfidIconContainer}>
@@ -422,12 +425,14 @@ export default function Dashboard() {
           >
             Available Balance
           </Text>
-          
+
           <View style={styles.balanceContainer}>
             {!showBalance ? (
               // Show Balance Button
-              <Animated.View style={[styles.showBalanceContainer, hiddenBalanceStyle]}>
-                <TouchableOpacity 
+              <Animated.View
+                style={[styles.showBalanceContainer, hiddenBalanceStyle]}
+              >
+                <TouchableOpacity
                   style={styles.showBalanceButton}
                   onPress={toggleBalanceVisibility}
                   activeOpacity={0.8}
@@ -436,7 +441,11 @@ export default function Dashboard() {
                   {isLoadingBalance ? (
                     <View style={styles.loadingContainer}>
                       <Animated.View style={loadingRotationStyle}>
-                        <Ionicons name="refresh" size={18} color={COLORS.white} />
+                        <Ionicons
+                          name="refresh"
+                          size={18}
+                          color={COLORS.white}
+                        />
                       </Animated.View>
                       <Text variant="bodySmall" style={styles.showBalanceText}>
                         Loading...
@@ -444,7 +453,11 @@ export default function Dashboard() {
                     </View>
                   ) : (
                     <>
-                      <Ionicons name="eye-outline" size={18} color={COLORS.white} />
+                      <Ionicons
+                        name="eye-outline"
+                        size={18}
+                        color={COLORS.white}
+                      />
                       <Text variant="bodySmall" style={styles.showBalanceText}>
                         Show Balance
                       </Text>
@@ -454,7 +467,9 @@ export default function Dashboard() {
               </Animated.View>
             ) : (
               // Balance Display (No Hide Button)
-              <Animated.View style={[styles.balanceDisplayContainer, balanceSlideStyle]}>
+              <Animated.View
+                style={[styles.balanceDisplayContainer, balanceSlideStyle]}
+              >
                 <Text variant="h2" color={COLORS.white} style={styles.balance}>
                   {typeof user?.balance === "number"
                     ? "৳ " + user.balance.toFixed(2)
@@ -469,6 +484,10 @@ export default function Dashboard() {
       </LinearGradient>
     </Animated.View>
   );
+
+  /**
+   * Renders trip status when user has an active trip
+   */
   const renderTripStatus = () => {
     if (!currentTrip || tripStatus !== "active") {
       return null;
@@ -567,7 +586,9 @@ export default function Dashboard() {
                           hour: "2-digit",
                           minute: "2-digit",
                           hour12: true,
-                        }) + " ,  " + new Date(
+                        }) +
+                        " ,  " +
+                        new Date(
                           new Date(currentTrip.tripStartTime).getTime() +
                             6 * 60 * 60 * 1000
                         ).toLocaleDateString("en-US", {
@@ -585,6 +606,9 @@ export default function Dashboard() {
     );
   };
 
+  /**
+   * Renders recent activity section with transactions history
+   */
   const renderRecentActivity = () => {
     // Combine and sort both transaction types by date, then get the most recent 3
     const allTransactions = [...tripTransactions, ...rechargeTransactions]
@@ -756,15 +780,19 @@ export default function Dashboard() {
       </Animated.View>
     );
   };
+
+  // Main component render
   return (
     <>
+      {/* Status bar configuration */}
       <StatusBar
         backgroundColor={COLORS.primary}
         barStyle="light-content"
         translucent={false}
       />
+
       <SafeAreaView style={styles.container}>
-        {/* Dual Color Glow Background - Blue Top, Orange Bottom */}
+        {/* Background gradient overlay */}
         <LinearGradient
           colors={[
             "rgba(74, 144, 226, 0.5)", // Blue at top
@@ -779,6 +807,7 @@ export default function Dashboard() {
           end={{ x: 0.5, y: 1 }}
         />
 
+        {/* Main scrollable content */}
         <ScrollView
           style={styles.content}
           showsVerticalScrollIndicator={false}
@@ -795,7 +824,7 @@ export default function Dashboard() {
           {renderRecentActivity()}
         </ScrollView>
 
-        {/* Confirmation Modal */}
+        {/* Force tap out confirmation modal */}
         <ConfirmationModal
           visible={showTapOutConfirmation}
           title="Confirm Force Tap Out"
@@ -809,9 +838,11 @@ export default function Dashboard() {
           onCancel={cancelForceTapOut}
           showTripDetails={true}
           busNumber={currentTrip?.busNumber || currentTrip?.busName}
-          route={currentTrip?.tripStartPlace && currentTrip?.tripEndPlace 
-            ? `${currentTrip.tripStartPlace} ⇄ ${currentTrip.tripEndPlace}` 
-            : undefined}
+          route={
+            currentTrip?.tripStartPlace && currentTrip?.tripEndPlace
+              ? `${currentTrip.tripStartPlace} ⇄ ${currentTrip.tripEndPlace}`
+              : undefined
+          }
           penaltyAmount={currentTrip?.penaltyAmount || 0}
         />
       </SafeAreaView>
@@ -819,14 +850,16 @@ export default function Dashboard() {
   );
 }
 
+/**
+ * Stylesheet definitions organized by component sections
+ */
 const styles = StyleSheet.create({
+  // Container and background styles
   container: {
     flex: 1,
     backgroundColor: "transparent",
     position: "relative",
   },
-
-  // Background Gradient Styles
   glowBackground: {
     position: "absolute",
     top: 0,
@@ -835,7 +868,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: -1,
   },
-
   content: {
     flex: 1,
     backgroundColor: "transparent",
@@ -844,7 +876,7 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
 
-  // Header Styles - Modern Clean Design
+  // Header styles
   header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
@@ -1071,7 +1103,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 
-  // Trip Status Styles - Compact Design
+  // Trip status styles
   tripContainer: {
     marginHorizontal: 16,
     marginBottom: 5,
@@ -1237,7 +1269,7 @@ const styles = StyleSheet.create({
     zIndex: -1,
   },
 
-  // Recent Activity Styles
+  // Recent activity styles
   recentActivity: {
     paddingHorizontal: 16,
     marginBottom: 20,
@@ -1294,7 +1326,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // Empty Activity State Styles
+  // Empty state styles
   emptyActivityContainer: {
     paddingVertical: 40,
     paddingHorizontal: 20,
