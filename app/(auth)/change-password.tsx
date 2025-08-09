@@ -43,7 +43,7 @@ export default function ChangePassword() {
 
   const validatePassword = (password: string) => {
     if (password.length < 8) {
-      return "Password must be at least 8 characters long";
+      return "Password must be at least 8 characters long!";
     }
     return null;
   };
@@ -53,17 +53,17 @@ export default function ChangePassword() {
 
     // Validate inputs
     if (!oldPassword.trim()) {
-      showError("Please enter your current password");
+      showError("Please enter your current password!");
       return;
     }
 
     if (!newPassword.trim()) {
-      showError("Please enter a new password");
+      showError("Please enter a new password!");
       return;
     }
 
     if (!confirmNewPassword.trim()) {
-      showError("Please confirm your new password");
+      showError("Please confirm your new password!");
       return;
     }
 
@@ -76,13 +76,13 @@ export default function ChangePassword() {
 
     // Check if passwords match
     if (newPassword !== confirmNewPassword) {
-      showError("New passwords do not match");
+      showError("New passwords do not match!");
       return;
     }
 
     // Check if old and new password are the same
     if (oldPassword === newPassword) {
-      showError("New password must be different from your current password");
+      showError("New password must be different from your current password!");
       return;
     }
 
@@ -93,7 +93,7 @@ export default function ChangePassword() {
     );
 
     if (result.success) { 
-      showSuccess("Your password has been updated successfully.");
+      showSuccess("Your password has been updated successfully!");
       // Navigate back after a short delay to allow user to see the success message
       setTimeout(() => {
         router.back();
@@ -274,17 +274,6 @@ export default function ChangePassword() {
                     size="medium"
                     fullWidth
                   />
-
-                  {error && (
-                    <View style={styles.errorContainer}>
-                      <Ionicons
-                        name="alert-circle"
-                        size={16}
-                        color={COLORS.error}
-                      />
-                      <Text style={styles.errorText}>{error}</Text>
-                    </View>
-                  )}
                 </View>
               </Card>
             </Animated.View>
@@ -358,21 +347,6 @@ const styles = StyleSheet.create({
   formContent: {
     padding: SPACING.sm,
     gap: SPACING.sm,
-  },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: SPACING.sm,
-    backgroundColor: COLORS.error + "10",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.error + "30",
-  },
-  errorText: {
-    color: COLORS.error,
-    fontSize: 14,
-    marginLeft: SPACING.sm,
-    flex: 1,
   },
   passwordRequirements: {
     backgroundColor: COLORS.gray[50],
