@@ -66,7 +66,7 @@ export default function Dashboard() {
   const { toast, showSuccess, hideToast } = useToast();
 
   // Real-time trip monitoring with dynamic intervals
-  const { checkNow: checkTripNow, restartPolling } = useRealtimeTrip({
+  const { checkNow: checkTripNow, restartPolling, stopPolling } = useRealtimeTrip({
     interval: tripStatus === "active" ? 15000 : 30000, // 15s active, 30s idle
     enabled: true,
     onlyWhenActive: true,
@@ -233,9 +233,13 @@ export default function Dashboard() {
   const toggleBalanceVisibility = async () => {
     if (!showBalance) {
       setIsLoadingBalance(true);
+      
+      // Temporarily pause realtime polling during balance fetch
+      stopPolling();
+      
       try {
-        await loadCardDetails(); // Fetch fresh balance data
-        await refreshAllData(true); // Force refresh to get latest data
+        // Only refresh the balance - no excessive API calls
+        await useAuthStore.getState().refreshBalance();
         setShowBalance(true);
 
         // Auto-hide balance after 4 seconds
@@ -246,6 +250,11 @@ export default function Dashboard() {
         console.error("Error fetching fresh balance:", error);
       } finally {
         setIsLoadingBalance(false);
+        
+        // Resume realtime polling after a short delay
+        setTimeout(() => {
+          restartPolling();
+        }, 1000);
       }
     } else {
       setShowBalance(false);

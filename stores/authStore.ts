@@ -30,6 +30,7 @@ interface AuthState {
     cardNumber: string;
   }) => Promise<boolean>;
   refreshUserData: () => Promise<void>;
+  refreshBalance: () => Promise<number | null>;
   refreshUserFromToken: () => Promise<boolean>;
   handleUnauthorized: () => Promise<void>;
   clearJustLoggedIn: () => void;
@@ -298,6 +299,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('Error refreshing user data:', error);
     }
+  },
+
+  // Refresh only balance (lightweight)
+  refreshBalance: async () => {
+    const { user } = get();
+    if (!user?.id) return null;
+    
+    try {
+      const userResponse = await apiService.getUserById(user.id.toString());
+      if (userResponse && typeof userResponse.balance === 'number') {
+        const updatedUser: User = {
+          ...user,
+          balance: userResponse.balance
+        };
+        
+        await storageService.setItem(STORAGE_KEYS.USER_DATA, updatedUser);
+        set({ user: updatedUser });
+        return userResponse.balance;
+      }
+    } catch (error) {
+      console.error('❌ [BALANCE] Error refreshing balance:', error);
+    }
+    
+    return null;
   },
 
   // Refresh user from token (for compatibility)
