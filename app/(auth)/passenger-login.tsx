@@ -185,10 +185,12 @@ export default function PassengerLogin() {
             showsVerticalScrollIndicator={false}
             bounces={false}
             overScrollMode="never"
+            scrollEventThrottle={16}
+            removeClippedSubviews={false}
           >
             {/* Header section with logo and title */}
             <Animated.View
-              entering={FadeInUp.duration(800)}
+              entering={FadeInUp.duration(600)}
               style={styles.header}
             >
               <View style={styles.logoContainer}>
@@ -202,7 +204,7 @@ export default function PassengerLogin() {
             </Animated.View>
 
             {/* Login form card */}
-            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+            <Animated.View entering={FadeInDown.duration(600).delay(150)}>
               <Card variant="elevated" style={styles.loginCard}>
                 <View style={styles.loginContent}>
                   {/* Email/Phone input with dynamic detection */}
@@ -268,7 +270,7 @@ export default function PassengerLogin() {
 
             {/* Bottom section with additional options */}
             <Animated.View
-              entering={FadeInDown.duration(800).delay(400)}
+              entering={FadeInDown.duration(600).delay(300)}
               style={styles.bottomSection}
             >
               {/* Forgot password link */}
@@ -338,6 +340,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingTop: 80, // Space for back button
     paddingBottom: SPACING.lg,
+    justifyContent: "center",
+    minHeight: "100%", // Ensure minimum height to prevent content jumping
   },
   content: {
     flex: 1,
@@ -369,6 +373,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: SPACING.lg,
     marginTop: SPACING.md,
+    minHeight: 150, // Fixed minimum height to prevent shifting
   },
   logoContainer: {
     marginBottom: SPACING.sm,
