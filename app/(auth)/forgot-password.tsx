@@ -196,6 +196,23 @@ export default function ForgotPassword() {
     };
   }, []);
 
+  // Monitor for autofill patterns that might miss the first digit
+  useEffect(() => {
+    const filledCount = otp.filter(digit => digit !== "").length;
+    const firstEmpty = otp[0] === "";
+    const restFilled = otp.slice(1).every(digit => digit !== "");
+    
+    // If we have exactly 5 digits filled, all in positions 2-6, and first is empty
+    // This is likely the autofill bug where first digit was missed
+    if (filledCount === 5 && firstEmpty && restFilled && !isAutoVerifying) {
+      console.log("Detected potential autofill bug: 5 digits filled but first is empty");
+      console.log("Current OTP state:", otp);
+      
+      // We could attempt to fix this by prompting user or making first field more prominent
+      // For now, just log it for debugging
+    }
+  }, [otp, isAutoVerifying]);
+
   // Event handlers
   const handleSendOTP = async () => {
     clearError();
@@ -229,10 +246,10 @@ export default function ForgotPassword() {
   const handlePastedOTP = (pastedOtp: string): boolean => {
     // Clean the input to only contain digits
     const cleanOtp = pastedOtp.replace(/\D/g, "");
-    console.log("handlePastedOTP called with:", pastedOtp, "cleaned:", cleanOtp);
+    console.log("handlePastedOTP called with:", pastedOtp, "cleaned:", cleanOtp, "length:", cleanOtp.length);
     
     if (cleanOtp.length >= OTP_CONSTRAINTS.LENGTH) {
-      console.log("Processing full OTP:", cleanOtp);
+      console.log("Processing full OTP with all 6 digits:", cleanOtp);
       otpAutofill.isHandlingAutofill.current = true;
       setIsAutoVerifying(true);
       setShowVerifyingText(true);
@@ -240,29 +257,50 @@ export default function ForgotPassword() {
       // Take exactly 6 digits and split them
       const newOtp = cleanOtp.slice(0, OTP_CONSTRAINTS.LENGTH).split("");
       
-      // Ensure we have exactly 6 elements
-      while (newOtp.length < OTP_CONSTRAINTS.LENGTH) {
-        newOtp.push("");
-      }
-      
-      console.log("Setting OTP array:", newOtp);
+      console.log("Setting complete OTP array:", newOtp);
       setOtp(newOtp);
 
+      // Clear autofill handling after a delay
       setTimeout(() => {
         otpAutofill.isHandlingAutofill.current = false;
+        setIsAutoVerifying(false);
+        setShowVerifyingText(false);
       }, 500);
 
+      // Blur all inputs
       setTimeout(() => {
-        inputRefs.current[OTP_CONSTRAINTS.LENGTH - 1]?.focus();
-        inputRefs.current[OTP_CONSTRAINTS.LENGTH - 1]?.blur();
+        inputRefs.current.forEach((ref) => ref?.blur());
       }, 100);
 
+      // Verify the OTP
       setTimeout(() => {
         handleVerifyOTP(newOtp.join(""));
       }, OTP_CONSTRAINTS.VERIFICATION_DELAY);
 
       return true;
+    } else if (cleanOtp.length >= 4) {
+      // Handle partial OTP (fallback for when not all digits come through)
+      console.log("Processing partial OTP with", cleanOtp.length, "digits:", cleanOtp);
+      const newOtp = [...otp];
+      
+      // Fill in the digits we have
+      for (let i = 0; i < cleanOtp.length && i < OTP_CONSTRAINTS.LENGTH; i++) {
+        newOtp[i] = cleanOtp[i];
+      }
+      
+      setOtp(newOtp);
+      
+      // Focus on the next empty input
+      const nextEmptyIndex = newOtp.findIndex(digit => digit === "");
+      if (nextEmptyIndex !== -1 && nextEmptyIndex < OTP_CONSTRAINTS.LENGTH) {
+        setTimeout(() => {
+          inputRefs.current[nextEmptyIndex]?.focus();
+        }, 100);
+      }
+      
+      return true;
     }
+    
     return false;
   };
 
@@ -343,6 +381,15 @@ export default function ForgotPassword() {
         const newOtp = [...prevOtp];
         newOtp[index] = value.slice(-1);
 
+        // Check if we have 5 consecutive digits (missing first digit scenario)
+        const filledDigits = newOtp.filter(digit => digit !== "").length;
+        const consecutiveDigits = newOtp.slice(1).filter(digit => digit !== "").length;
+        
+        if (filledDigits === 5 && consecutiveDigits === 5 && newOtp[0] === "") {
+          console.log("Detected 5 digits with missing first digit - likely autofill issue");
+          // This might be the autofill bug - let user know or handle gracefully
+        }
+
         if (newOtp.every((digit) => digit !== "") && newOtp.length === OTP_CONSTRAINTS.LENGTH) {
           setIsAutoVerifying(true);
           setShowVerifyingText(true);
@@ -365,9 +412,12 @@ export default function ForgotPassword() {
   const handleOtpChange = (value: string, index: number) => {
     if (isLoading || isAutoVerifying) return;
 
+    console.log(`handleOtpChange called - index: ${index}, value: "${value}", length: ${value.length}`);
+
     // Handle pasted OTP (multiple characters at once)
     if (value.length > 1) {
-      const pastedOtp = value.replace(/\D/g, "").slice(0, OTP_CONSTRAINTS.LENGTH);
+      const pastedOtp = value.replace(/\D/g, "");
+      console.log(`Multi-character input detected - cleaned: "${pastedOtp}"`);
       if (handlePastedOTP(pastedOtp)) return;
     }
 
@@ -375,36 +425,39 @@ export default function ForgotPassword() {
     if (index === 0) {
       // Extract the clean digit(s)
       const cleanValue = value.replace(/\D/g, "");
+      console.log(`First input - original: "${value}", cleaned: "${cleanValue}"`);
       
-      // If we get multiple digits in first input (SMS autofill), handle as paste
-      if (cleanValue.length > 1) {
-        console.log("Detected multi-digit input in first field:", cleanValue);
+      // If we get 6 digits in first input (SMS autofill), handle as complete OTP
+      if (cleanValue.length === OTP_CONSTRAINTS.LENGTH) {
+        console.log("Full 6-digit OTP detected in first input - handling as complete autofill");
         if (handlePastedOTP(cleanValue)) return;
       }
       
-      // Store the first digit immediately (even if it's part of a larger string)
-      setOtp((prevOtp) => {
-        const newOtp = [...prevOtp];
-        newOtp[0] = cleanValue.slice(0, 1); // Take only the first digit for position 0
-        return newOtp;
-      });
+      // If we get multiple digits (but not exactly 6), handle as paste
+      if (cleanValue.length > 1 && cleanValue.length < OTP_CONSTRAINTS.LENGTH) {
+        console.log("Partial multi-digit input detected");
+        if (handlePastedOTP(cleanValue)) return;
+      }
       
-      // Try autofill sequence detection
-      if (handleAutofillSequence(cleanValue, index)) return;
-      
-      // If not autofill and we have a value, handle as manual and focus next
-      if (cleanValue && !isAutoVerifying) {
-        setTimeout(() => {
-          inputRefs.current[1]?.focus();
-        }, 10);
+      // Store the first digit immediately (single digit input)
+      if (cleanValue.length === 1) {
+        setOtp((prevOtp) => {
+          const newOtp = [...prevOtp];
+          newOtp[0] = cleanValue;
+          return newOtp;
+        });
+        
+        // Focus next input for manual entry
+        if (!isAutoVerifying) {
+          setTimeout(() => {
+            inputRefs.current[1]?.focus();
+          }, 10);
+        }
       }
       return;
     }
 
-    // For other inputs, check autofill sequence first
-    if (handleAutofillSequence(value, index)) return;
-
-    // Handle manual input for non-first inputs
+    // For other inputs, handle normally
     handleManualOTPInput(value, index);
   };
 
@@ -627,6 +680,14 @@ export default function ForgotPassword() {
                   contextMenuHidden={index !== 0}
                   autoCorrect={false}
                   spellCheck={false}
+                  // Enhanced autofill handling
+                  onSelectionChange={index === 0 ? (event) => {
+                    // Monitor selection changes that might indicate autofill
+                    const { selection } = event.nativeEvent;
+                    if (selection.end > 1) {
+                      console.log("Selection change detected in first input, might be autofill");
+                    }
+                  } : undefined}
                 />
               </Animated.View>
             ))}
