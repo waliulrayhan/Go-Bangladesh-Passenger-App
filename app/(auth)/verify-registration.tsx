@@ -319,7 +319,7 @@ export default function VerifyRegistration() {
     const otpString = otpCode || otp.join("");
 
     if (otpString.length !== 6) {
-      showError("Please enter the complete 6-digit OTP.");
+      showError("Please enter the complete 6-digit OTP!");
       return;
     }
 
@@ -347,7 +347,7 @@ export default function VerifyRegistration() {
           console.error("❌ No stored registration data found");
           setIsLoading(false);
 
-          showError("Registration data not found. Please start the registration process again.");
+          showError("Registration data not found. Please start the registration process again!");
           
           // Navigate to registration after a short delay
           setTimeout(() => {
@@ -393,15 +393,20 @@ export default function VerifyRegistration() {
               router.replace("/(tabs)");
             }, 2000);
           } else {
-            // If login fails, still show success message but redirect to login
+            // If login fails after registration, get the current error and show it
             setIsLoading(false);
-
-            showSuccess("Your account has been created successfully. Please log in to continue.");
+            
+            const currentError = useAuthStore.getState().error;
+            if (currentError) {
+              showError(`Registration successful, but login failed: ${currentError}`);
+            } else {
+              showError("Registration successful, but automatic login failed. Please log in manually.");
+            }
             
             // Navigate to login after a short delay
             setTimeout(() => {
               router.replace("/(auth)/passenger-login");
-            }, 2000);
+            }, 3000);
           }
         } catch (registrationError: any) {
           console.error("❌ Registration API error:", registrationError);
@@ -426,18 +431,33 @@ export default function VerifyRegistration() {
             router.replace("/(auth)/passenger-registration");
           }, 3000);
         }
+      } else {
+        // Handle case where verificationResult is falsy but no exception was thrown
+        setIsLoading(false);
+        
+        // Clear OTP form on verification failure
+        setOtp(["", "", "", "", "", ""]);
+        setIsAutoVerifying(false);
+        setShowVerifyingText(false);
+        if (inputRefs.current[0]) {
+          inputRefs.current[0].focus();
+        }
+        
+        showError("OTP verification failed. Please check the code and try again.");
       }
     } catch (error: any) {
       setIsLoading(false);
       console.error("❌ OTP verification error:", error);
 
-          // Clear OTP form on error
-          setOtp(["", "", "", "", "", ""]);
-          setIsAutoVerifying(false);
-          setShowVerifyingText(false); // Reset verifying text display
-          if (inputRefs.current[0]) {
-            inputRefs.current[0].focus();
-          }      let errorMessage = "Invalid OTP. Please try again.";
+      // Clear OTP form on error
+      setOtp(["", "", "", "", "", ""]);
+      setIsAutoVerifying(false);
+      setShowVerifyingText(false); // Reset verifying text display
+      if (inputRefs.current[0]) {
+        inputRefs.current[0].focus();
+      }
+      
+      let errorMessage = "Invalid OTP. Please try again.";
 
       if (error.message) {
         errorMessage = error.message;
@@ -788,7 +808,7 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     position: "absolute",
-    top: -10,
+    top: -30,
     left: 0,
     right: 0,
     alignItems: "center",

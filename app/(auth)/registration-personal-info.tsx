@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeInUp, Layout } from "react-native-reanimated";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
@@ -81,64 +81,40 @@ export default function RegistrationPersonalInfo() {
 
     // Name validation
     if (!form.name.trim()) {
-      newErrors.name = "Full name is required";
+      newErrors.name = "Full name is required!";
     } else if (form.name.trim().length < 2) {
-      newErrors.name = "Name must be at least 2 characters";
+      newErrors.name = "Name must be at least 2 characters!";
     }
 
     // Phone validation
     const phoneRegex = /^(\+?88)?01[3-9]\d{8}$/;
     if (!form.phone.trim()) {
-      newErrors.phone = "Phone number is required";
+      newErrors.phone = "Phone number is required!";
     } else if (!phoneRegex.test(form.phone.trim())) {
-      newErrors.phone = "Please enter a valid Bangladeshi mobile number";
+      newErrors.phone = "Please enter a valid Bangladeshi mobile number!";
     }
 
     // Email validation (optional)
     if (form.email.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(form.email.trim())) {
-        newErrors.email = "Please enter a valid email address";
+        newErrors.email = "Please enter a valid email address!";
       }
     }
 
-    // // Student ID validation (required for private organizations)
-    // if (params.organizationType === 'Private' && !form.passengerId.trim()) {
-    //   newErrors.passengerId = 'Student ID is required for educational institutes';
-    // }
-
     // Password validation
     if (!form.password) {
-      newErrors.password = "Password is required";
-    } else if (form.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = "Password is required!";
+    } else if (form.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters!";
     }
 
     // Confirm password validation
     if (!form.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
+      newErrors.confirmPassword = "Please confirm your password!";
     } else if (form.password !== form.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
+      newErrors.confirmPassword = "Passwords do not match!";
     }
-
-    // // Date of birth validation
-    // if (!form.dateOfBirth.trim()) {
-    //   newErrors.dateOfBirth = "Date of birth is required";
-    // } else if (selectedDate) {
-    //   const today = new Date();
-    //   const birthDate = new Date(selectedDate);
-    //   const age = today.getFullYear() - birthDate.getFullYear();
-    //   const monthDiff = today.getMonth() - birthDate.getMonth();
-
-    //   // Check if the user is less than 5 years old
-    //   if (
-    //     age < 5 ||
-    //     (age === 5 && monthDiff < 0) ||
-    //     (age === 5 && monthDiff === 0 && today.getDate() < birthDate.getDate())
-    //   ) {
-    //     newErrors.dateOfBirth = "You must be at least 5 years old to register";
-    //   }
-    // }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -146,7 +122,7 @@ export default function RegistrationPersonalInfo() {
 
   const handleNext = async () => {
     if (!validateForm()) {
-      showError("Please correct all the errors before proceeding.");
+      showError("Please correct all the errors before proceeding!");
       return;
     }
 
@@ -238,7 +214,7 @@ export default function RegistrationPersonalInfo() {
       console.error("❌ Registration error:", error);
       setIsLoading(false);
 
-      let errorMessage = "Registration failed. Please try again.";
+      let errorMessage = "Registration failed. Please try again!";
 
       // Handle specific error messages
       if (error.message) {
@@ -255,16 +231,16 @@ export default function RegistrationPersonalInfo() {
             error.message.toLowerCase().includes("phone")
           ) {
             errorMessage =
-              "This mobile number is already registered. Please use a different mobile number or try logging in.";
+              "This mobile number is already registered! Please use a different mobile number or try logging in.";
           } else if (error.message.toLowerCase().includes("email")) {
             errorMessage =
-              "This email address is already registered. Please use a different email address.";
+              "This email address is already registered! Please use a different email address.";
           } else if (error.message.toLowerCase().includes("card")) {
             errorMessage =
-              "This card is already registered to another user. Please contact support if this is your card.";
+              "This card is already registered to another user! Please contact support if this is your card.";
           } else {
             errorMessage =
-              "User already exists. Please check your details or try logging in instead.";
+              "User already exists! Please check your details or try logging in instead.";
           }
         }
       } else if (error.response?.data?.data?.message) {
@@ -330,8 +306,9 @@ export default function RegistrationPersonalInfo() {
 
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+          enabled={Platform.OS === "ios"}
         >
           <ScrollView
             style={styles.content}
@@ -340,9 +317,13 @@ export default function RegistrationPersonalInfo() {
             keyboardShouldPersistTaps="handled"
             bounces={false}
             overScrollMode="never"
+            removeClippedSubviews={false}
+            scrollEventThrottle={16}
+            nestedScrollEnabled={false}
           >
           <Animated.View
-            entering={FadeInUp.duration(800)}
+            entering={FadeInUp.duration(600).delay(100)}
+            layout={Layout.springify()}
             style={styles.header}
           >
             <View style={styles.iconContainer}>
@@ -373,7 +354,7 @@ export default function RegistrationPersonalInfo() {
             )}
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.duration(800).delay(200)}>
+          <Animated.View entering={FadeInDown.duration(600).delay(150)} layout={Layout.springify()}>
             <Card variant="elevated" style={styles.formCard}>
               <View style={styles.formContent}>
                 <Input
@@ -412,7 +393,6 @@ export default function RegistrationPersonalInfo() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   icon="mail-outline"
-                  error={errors.email}
                 />
 
                 {params.organizationType === "Private" && (
@@ -422,7 +402,6 @@ export default function RegistrationPersonalInfo() {
                     onChangeText={(value) => updateForm("passengerId", value)}
                     placeholder="Enter your identity number"
                     icon="id-card-outline"
-                    error={errors.passengerId}
                   />
                 )}
 
@@ -492,7 +471,6 @@ export default function RegistrationPersonalInfo() {
                   onChangeText={(value) => updateForm("address", value)}
                   placeholder="Enter your address"
                   icon="location-outline"
-                  error={errors.address}
                 />
 
                 <View style={styles.dateSection}>
@@ -617,14 +595,17 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.xl,
-    paddingTop: SPACING.xl + 20, // Extra padding for status bar
+    paddingBottom: SPACING.xl + 40, // Extra bottom padding
+    paddingTop: SPACING.xl + 40, // Consistent top padding
+    minHeight: '100%', // Ensure minimum height
   },
   header: {
     alignItems: "center",
     marginBottom: SPACING.lg,
     paddingTop: SPACING.md,
+    minHeight: 200, // Fixed minimum height to prevent shifting
   },
   backButton: {
     position: "absolute",
@@ -696,6 +677,7 @@ const styles = StyleSheet.create({
   },
   formCard: {
     marginBottom: SPACING.md,
+    minHeight: 400, // Ensure minimum height to prevent collapse
   },
   formContent: {
     padding: SPACING.md,
@@ -726,6 +708,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: COLORS.white,
     gap: SPACING.xs,
+    minHeight: 48, // Fixed height to prevent shifting
   },
   genderButtonActive: {
     backgroundColor: COLORS.primary,
@@ -762,6 +745,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.gray[300],
     borderRadius: 8,
     gap: SPACING.sm,
+    minHeight: 48, // Fixed height to prevent shifting
   },
   dateIcon: {
     marginRight: SPACING.xs,

@@ -50,7 +50,7 @@ export default function PassengerRegistration() {
 
   const handleProceed = async () => {
     if (!validateCardNumber(cardNumber)) {
-      showError("Please enter a valid card number (at least 8 characters)");
+      showError("Please enter a valid card number! (at least 8 characters)");
       return;
     }
 
@@ -64,14 +64,14 @@ export default function PassengerRegistration() {
       );
 
       if (!validationResponse.isSuccess) {
-        showError(validationResponse.message || "This card is not available for registration");
+        showError(validationResponse.message || "This card is not available for registration!");
         setIsLoading(false);
         return;
       }
 
       // Check if card content exists
       if (!validationResponse.content) {
-        showError("Card not found. Please check your card number and try again.");
+        showError("Card not found. Please check your card number and try again!");
         setIsLoading(false);
         return;
       }
@@ -104,7 +104,7 @@ export default function PassengerRegistration() {
       });
     } catch (error: any) {
       console.error("❌ Card validation error:", error);
-      showError("Unable to verify card. Please check your internet connection and try again.");
+      showError("Unable to verify card. Please check your internet connection and try again!");
     } finally {
       setIsLoading(false);
     }
