@@ -113,6 +113,7 @@ interface AuthState {
   error: string | null;
   showWelcomePopup: boolean;
   isRegistering: boolean;
+  justLoggedIn: boolean;
   
   login: (mobile: string, otp: string) => Promise<boolean>;
   loginWithPassword: (identifier: string, password: string) => Promise<boolean>;
@@ -138,6 +139,7 @@ interface AuthState {
   refreshUserFromToken: () => Promise<boolean>;
   handleUnauthorized: () => Promise<void>;
   hideWelcomePopup: () => void;
+  clearJustLoggedIn: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -147,6 +149,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   error: null,
   showWelcomePopup: false,
   isRegistering: false,
+  justLoggedIn: false,
 
   sendOTP: async (mobile: string) => {
     set({ isLoading: true, error: null });
@@ -509,6 +512,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
 
             console.log('🎉 [LOGIN] Fresh login successful with API data!');
+            set({ justLoggedIn: true });
             return true;
           } else {
             console.warn('⚠️ [LOGIN] API returned null, falling back to JWT data...');
@@ -539,7 +543,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isAuthenticated: true,
           isLoading: false,
           error: null,
-          showWelcomePopup: true
+          showWelcomePopup: true,
+          justLoggedIn: true
         });
 
         return true;
@@ -626,7 +631,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: false,
         isLoading: false,
         error: null,
-        showWelcomePopup: false
+        showWelcomePopup: false,
+        justLoggedIn: false
       });
       
       // STEP 4: Clear card store data
@@ -1304,5 +1310,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   hideWelcomePopup: () => {
     set({ showWelcomePopup: false });
+  },
+
+  clearJustLoggedIn: () => {
+    set({ justLoggedIn: false });
   }
 }));

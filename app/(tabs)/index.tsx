@@ -28,7 +28,9 @@ import Animated, {
 // Custom components and utilities
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { Text } from "../../components/ui/Text";
+import { Toast } from "../../components/ui/Toast";
 import { useRealtimeTrip } from "../../hooks/useRealtimeTrip";
+import { useToast } from "../../hooks/useToast";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
@@ -41,7 +43,7 @@ import { API_BASE_URL, COLORS } from "../../utils/constants";
 export default function Dashboard() {
   // Navigation and store hooks
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, justLoggedIn, clearJustLoggedIn } = useAuthStore();
   const {
     card,
     loadCardDetails,
@@ -59,6 +61,9 @@ export default function Dashboard() {
 
   // Token refresh for maintaining session
   const { refreshAllData } = useTokenRefresh();
+
+  // Toast hook for notifications
+  const { toast, showSuccess, hideToast } = useToast();
 
   // Real-time trip monitoring with dynamic intervals
   const { checkNow: checkTripNow, restartPolling } = useRealtimeTrip({
@@ -86,6 +91,14 @@ export default function Dashboard() {
   const pulseAnimation = useSharedValue(0); // For trip status pulse effect
   const balanceAnimation = useSharedValue(0); // For balance show/hide animation
   const loadingAnimation = useSharedValue(0); // For loading icon rotation
+
+  // Handle login success message
+  useEffect(() => {
+    if (justLoggedIn) {
+      showSuccess("Your login is successful!");
+      clearJustLoggedIn();
+    }
+  }, [justLoggedIn, showSuccess, clearJustLoggedIn]);
 
   // Initialize loading animation when balance is being fetched
   useEffect(() => {
@@ -844,6 +857,15 @@ export default function Dashboard() {
               : undefined
           }
           penaltyAmount={currentTrip?.penaltyAmount || 0}
+        />
+
+        {/* Toast notification */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+          position="top"
         />
       </SafeAreaView>
     </>

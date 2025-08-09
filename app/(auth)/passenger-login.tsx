@@ -131,11 +131,8 @@ export default function PassengerLogin() {
     const success = await loginWithPassword(identifier, password);
 
     if (success) {
-      showSuccess("Your login is successful!");
-      // Navigate to Homepage a short delay to allow user to see the success message
-      setTimeout(() => {
-        router.replace("/(tabs)");
-      }, 2000);
+      // Navigate to Homepage immediately
+      router.replace("/(tabs)");
     }
   };
 
