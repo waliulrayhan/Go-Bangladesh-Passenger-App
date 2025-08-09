@@ -147,19 +147,30 @@ export default function Dashboard() {
     }
   }, [showBalance]);
 
-  // Pull-to-refresh handler
+  // Pull-to-refresh handler (lightweight)
   const onRefresh = async () => {
     setRefreshing(true);
+    
+    // Temporarily pause realtime polling during refresh
+    stopPolling();
+    
     try {
-      await forceRefreshData();
-      await refreshAllData(true);
-      await checkTripNow();
-      restartPolling();
+      // Only refresh essential data - no redundant API calls
+      await Promise.all([
+        useAuthStore.getState().refreshBalance(), // Just balance
+        checkOngoingTrip() // Just ongoing trip status
+      ]);
+      
       setHasLoadedData(true);
     } catch (error) {
       console.error("Refresh error:", error);
     } finally {
       setRefreshing(false);
+      
+      // Resume realtime polling after refresh
+      setTimeout(() => {
+        restartPolling();
+      }, 500);
     }
   };
 
