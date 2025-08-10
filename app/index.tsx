@@ -158,16 +158,7 @@ export default function WelcomeScreen() {
               entering={FadeInUp.duration(500)}
               style={[animatedPulseStyle]}
             >
-              <GoBangladeshLogo size={70} />
-            </Animated.View>
-            <Animated.View entering={FadeInDown.duration(800).delay(200)}>
-              <Text
-                variant="body"
-                color={COLORS.gray[600]}
-                style={styles.loadingText}
-              >
-                Loading...
-              </Text>
+              <GoBangladeshLogo size={100} />
             </Animated.View>
           </View>
         </SafeAreaView>
@@ -207,7 +198,7 @@ export default function WelcomeScreen() {
               style={styles.header}
             >
               <Animated.View style={[styles.logoContainer, animatedLogoStyle]}>
-                <GoBangladeshLogo size={100} />
+                <GoBangladeshLogo size={80} />
               </Animated.View>
               <Text variant="h2" color={COLORS.primary} style={styles.title}>
                 Go Bangladesh

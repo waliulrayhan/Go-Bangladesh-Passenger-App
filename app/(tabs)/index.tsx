@@ -70,9 +70,9 @@ const UI_TEXTS = {
     SHOW_BALANCE: "Show Balance",
     LOADING: "Loading...",
     CARD_TYPES: {
-      PRIVATE: "PRIVATE CARD",
-      PUBLIC: "PUBLIC CARD",
-      NORMAL: "NORMAL CARD",
+      PRIVATE: "PRIVATE",
+      PUBLIC: "PUBLIC",
+      NORMAL: "NORMAL",
     },
   },
   TRIP_STATUS: {

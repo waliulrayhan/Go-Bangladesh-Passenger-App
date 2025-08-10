@@ -60,6 +60,7 @@ export function ProfileOTPVerificationModal({
   const [isAutoVerifying, setIsAutoVerifying] = useState(false);
   const [showVerifyingText, setShowVerifyingText] = useState(false);
   const [isProcessingOTP, setIsProcessingOTP] = useState(false);
+  const [isOtpReady, setIsOtpReady] = useState(false);
   
   // Resend OTP state
   const [isResending, setIsResending] = useState(false);
@@ -70,6 +71,7 @@ export function ProfileOTPVerificationModal({
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const hasInitialized = useRef(false);
   const initializedForMobile = useRef<string | null>(null);
+  const isInitialOTPSending = useRef(false);
 
   // Helper functions
   const resetState = useCallback(() => {
@@ -88,6 +90,14 @@ export function ProfileOTPVerificationModal({
   }, []);
 
   const handleSendInitialOTP = useCallback(async () => {
+    // Prevent duplicate sends
+    if (isInitialOTPSending.current) {
+      console.log('🚫 [PROFILE OTP] Initial OTP send already in progress, skipping');
+      return;
+    }
+    
+    isInitialOTPSending.current = true;
+    
     try {
       console.log('📱 [PROFILE OTP] Sending initial OTP to:', mobileNumber);
       await apiService.sendOTP(mobileNumber);
@@ -96,6 +106,11 @@ export function ProfileOTPVerificationModal({
       console.error('❌ [PROFILE OTP] Failed to send initial OTP:', error);
       const errorMessage = error.response?.data?.message || 'Failed to send OTP';
       showError(errorMessage);
+    } finally {
+      // Reset the flag after a delay to allow legitimate re-sends
+      setTimeout(() => {
+        isInitialOTPSending.current = false;
+      }, 2000);
     }
   }, [mobileNumber, showError]);
 
@@ -205,14 +220,21 @@ export function ProfileOTPVerificationModal({
       hasInitialized.current = true;
       initializedForMobile.current = mobileNumber;
       
-      // Send initial OTP
-      handleSendInitialOTP();
+      // Send initial OTP with a small delay to prevent race conditions
+      const sendTimer = setTimeout(() => {
+        if (hasInitialized.current && initializedForMobile.current === mobileNumber) {
+          handleSendInitialOTP();
+        }
+      }, 50);
+      
+      return () => clearTimeout(sendTimer);
     } else if (!visible) {
       console.log('🔒 [PROFILE OTP MODAL] Modal closed, resetting flags');
       hasInitialized.current = false;
       initializedForMobile.current = null;
+      isInitialOTPSending.current = false; // Reset sending flag
     }
-  }, [visible, mobileNumber, handleSendInitialOTP, resetState, resetAutofillFlags]);
+  }, [visible, mobileNumber]);
 
   // Countdown timer effect
   useEffect(() => {
@@ -230,6 +252,27 @@ export function ProfileOTPVerificationModal({
 
     return () => clearInterval(timer);
   }, [visible, canResend]);
+
+  // OTP ready state for autofill
+  useEffect(() => {
+    if (visible) {
+      const timer = setTimeout(() => {
+        setIsOtpReady(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      setIsOtpReady(false);
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (isOtpReady && visible) {
+      // Only clear OTP if not already initialized to prevent triggering main effect
+      setOtp(prev => prev.every(digit => digit === '') ? prev : ['', '', '', '', '', '']);
+      setIsAutoVerifying(false);
+      setShowVerifyingText(false);
+    }
+  }, [isOtpReady, visible]);
 
   // Helper functions for OTP handling
   const handlePastedOTP = useCallback((pastedOtp: string): boolean => {
@@ -324,6 +367,11 @@ export function ProfileOTPVerificationModal({
   };
 
   const handleResendOTP = useCallback(async () => {
+    if (isResending) {
+      console.log('🚫 [PROFILE OTP] Resend already in progress, skipping');
+      return;
+    }
+    
     setIsResending(true);
     
     try {
@@ -338,7 +386,6 @@ export function ProfileOTPVerificationModal({
       inputRefs.current[0]?.focus();
       showSuccess('A new OTP has been sent to your mobile number.');
     } catch (error: any) {
-      setIsResending(false);
       console.error('❌ [PROFILE OTP] Resend OTP error:', error);
       
       // Clear form and reset flags
@@ -352,8 +399,10 @@ export function ProfileOTPVerificationModal({
         'Failed to resend OTP. Please try again.';
       
       showError(errorMessage);
+    } finally {
+      setIsResending(false);
     }
-  }, [mobileNumber, resetState, resetAutofillFlags, showSuccess, showError]);
+  }, [mobileNumber, resetState, resetAutofillFlags, showSuccess, showError, isResending]);
 
   const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -401,10 +450,10 @@ export function ProfileOTPVerificationModal({
   );
 
   const renderOTPInputs = () => (
-    <View style={styles.otpInputContainer}>
+    <View style={styles.otpInputContainer} key={`otp-container-${isOtpReady}`}>
       {otp.map((digit, index) => (
         <TouchableOpacity
-          key={`otp-input-wrapper-${index}`}
+          key={`otp-input-wrapper-${index}-${isOtpReady}`}
           style={styles.otpInputWrapper}
           onPress={() => {
             inputRefs.current[index]?.focus();
@@ -418,11 +467,11 @@ export function ProfileOTPVerificationModal({
               (isLoading || isAutoVerifying) && styles.otpInputDisabled
             ]}
             value={digit}
-            onChangeText={(value) => handleOtpChange(value, index)}
-            onKeyPress={(e) => handleKeyPress(e, index)}
+            onChangeText={(value) => !isAutoVerifying && handleOtpChange(value, index)}
+            onKeyPress={(e) => !isAutoVerifying && handleKeyPress(e, index)}
             keyboardType="numeric"
             maxLength={index === 0 ? TIMING_CONFIG.OTP_LENGTH : 1}
-            autoFocus={index === 0}
+            autoFocus={index === 0 && !isAutoVerifying}
             selectTextOnFocus
             editable={!isLoading && !isAutoVerifying}
             textContentType={index === 0 ? "oneTimeCode" : "none"}
