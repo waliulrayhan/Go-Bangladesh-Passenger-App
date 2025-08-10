@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Alert, Linking, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { COLORS, SPACING } from '../utils/constants';
+import { Linking, Modal, Platform, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useToast } from '../hooks/useToast';
+import { BORDER_RADIUS, COLORS, SPACING } from '../utils/constants';
 import { Text } from './ui/Text';
+import { Toast } from './ui/Toast';
 
 interface HelpSupportModalProps {
   visible: boolean;
@@ -14,6 +16,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
   onClose
 }) => {
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
+  const { toast, showToast, hideToast, showError, showSuccess } = useToast();
 
   const contactInfo = {
     email: 'info@thegobd.com',
@@ -60,28 +63,26 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
   const handleContactPress = (type: 'email' | 'phone' | 'website') => {
     switch (type) {
       case 'email':
-        Linking.openURL(`mailto:${contactInfo.email}`);
+        Linking.openURL(`mailto:${contactInfo.email}`).catch(() => {
+          showError('Unable to open email client');
+        });
         break;
       case 'phone':
-        Linking.openURL(`tel:${contactInfo.phone}`);
+        Linking.openURL(`tel:${contactInfo.phone}`).catch(() => {
+          showError('Unable to make phone call');
+        });
         break;
       case 'website':
-        Linking.openURL(contactInfo.website);
+        Linking.openURL(contactInfo.website).catch(() => {
+          showError('Unable to open website');
+        });
         break;
     }
   };
 
   const handleReportIssue = () => {
-    Alert.alert(
-      'Report Issue',
-      'Choose how you would like to report your issue:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Email Support',
-          onPress: () => {
-            const subject = 'Issue Report - Go Bangladesh App';
-            const body = `Hi Go Bangladesh Support Team,
+    const subject = 'Issue Report - Go Bangladesh App';
+    const body = `Hi Go Bangladesh Support Team,
 
 I'm experiencing an issue with the app. Here are the details:
 
@@ -91,28 +92,16 @@ Issue Description: [Please describe your issue here]
 
 Best regards,
 [Your Name]`;
-            Linking.openURL(`mailto:${contactInfo.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-          }
-        },
-        {
-          text: 'Call Support',
-          onPress: () => handleContactPress('phone')
-        }
-      ]
-    );
+    
+    Linking.openURL(`mailto:${contactInfo.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`)
+      .catch(() => {
+        showError('Unable to open email client');
+      });
   };
 
   const handleSendFeedback = () => {
-    Alert.alert(
-      'Send Feedback',
-      'We value your feedback! Please choose how you would like to share your thoughts:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Email Feedback',
-          onPress: () => {
-            const subject = 'App Feedback - Go Bangladesh';
-            const body = `Hi Go Bangladesh Team,
+    const subject = 'App Feedback - Go Bangladesh';
+    const body = `Hi Go Bangladesh Team,
 
 I'd like to share some feedback about the app:
 
@@ -127,18 +116,16 @@ Thank you for creating this app!
 
 Best regards,
 [Your Name]`;
-            Linking.openURL(`mailto:${contactInfo.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-          }
-        },
-        {
-          text: 'Rate on Store',
-          onPress: () => {
-            // Add app store rating logic here
-            Alert.alert('Thank you!', 'Redirecting to app store...');
-          }
-        }
-      ]
-    );
+    
+    Linking.openURL(`mailto:${contactInfo.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`)
+      .catch(() => {
+        showError('Unable to open email client');
+      });
+  };
+
+  const handleRateApp = () => {
+    showSuccess('Thank you for your feedback!');
+    // Add app store rating logic here
   };
 
   const toggleFAQ = (index: number) => {
@@ -236,6 +223,7 @@ Best regards,
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -327,6 +315,14 @@ Best regards,
           {/* Bottom padding for better scrolling */}
           <View style={styles.bottomPadding} />
         </ScrollView>
+
+        {/* Toast */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+        />
       </View>
     </Modal>
   );
@@ -335,7 +331,7 @@ Best regards,
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: COLORS.brand.background,
   },
   header: {
     flexDirection: 'row',
@@ -345,7 +341,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[200],
+    borderBottomColor: COLORS.gray[100],
   },
   headerLeft: {
     flexDirection: 'row',
@@ -353,10 +349,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary + '15',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.brand.blue_subtle,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.sm,
@@ -367,35 +363,41 @@ const styles = StyleSheet.create({
     color: COLORS.gray[900],
   },
   closeButton: {
-    padding: SPACING.xs,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.gray[100],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
   },
   section: {
-    marginTop: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.gray[700],
-    marginBottom: SPACING.sm,
+    color: COLORS.gray[800],
+    marginBottom: SPACING.md,
     paddingHorizontal: SPACING.xs,
   },
   sectionContent: {
     backgroundColor: COLORS.white,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
   },
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[100],
+    borderBottomColor: COLORS.gray[50],
   },
   contactLeft: {
     flexDirection: 'row',
@@ -403,35 +405,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary + '10',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.brand.blue_subtle,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
   },
   contactInfo: {
     flex: 1,
   },
   contactTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
     color: COLORS.gray[900],
+    marginBottom: 2,
   },
   contactSubtitle: {
-    fontSize: 12,
-    color: COLORS.gray[600],
-    marginTop: 1,
+    fontSize: 13,
+    color: COLORS.primary,
+    fontWeight: '500',
   },
   actionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[100],
+    borderBottomColor: COLORS.gray[50],
   },
   actionLeft: {
     flexDirection: 'row',
@@ -439,64 +442,68 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
   },
   actionInfo: {
     flex: 1,
   },
   actionTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
+    marginBottom: 2,
   },
   actionSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.gray[600],
-    marginTop: 1,
   },
   faqItem: {
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[100],
+    borderBottomColor: COLORS.gray[50],
   },
   faqHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
   },
   faqQuestion: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
     color: COLORS.gray[900],
     flex: 1,
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
+    lineHeight: 20,
   },
   faqAnswer: {
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.sm,
-    backgroundColor: COLORS.gray[50],
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.md,
+    backgroundColor: COLORS.brand.blue_subtle,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray[50],
   },
   faqAnswerText: {
-    fontSize: 13,
+    fontSize: 14,
     color: COLORS.gray[700],
-    lineHeight: 18,
+    lineHeight: 20,
+    paddingTop: SPACING.sm,
   },
   infoItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[100],
+    borderBottomColor: COLORS.gray[50],
   },
   infoTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
     color: COLORS.gray[900],
   },
@@ -505,6 +512,6 @@ const styles = StyleSheet.create({
     color: COLORS.gray[600],
   },
   bottomPadding: {
-    height: 40,
+    height: SPACING['6xl'],
   },
 });

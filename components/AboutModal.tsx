@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Alert, Animated, Linking, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { COLORS, SPACING } from '../utils/constants';
-import { Text } from './ui/Text';
+import { Linking, Modal, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useToast } from '../hooks/useToast';
+import { BORDER_RADIUS, COLORS, SPACING } from '../utils/constants';
 import { GoBangladeshLogo } from './GoBangladeshLogo';
+import { Text } from './ui/Text';
+import { Toast } from './ui/Toast';
 
 interface AboutModalProps {
   visible: boolean;
@@ -14,6 +16,8 @@ export const AboutModal: React.FC<AboutModalProps> = ({
   visible,
   onClose
 }) => {
+  const { toast, showError, hideToast } = useToast();
+  
   const appInfo = {
     version: '1.0.0',
     buildNumber: '100',
@@ -27,13 +31,13 @@ export const AboutModal: React.FC<AboutModalProps> = ({
 
   const handleLinkPress = (url: string) => {
     Linking.openURL(url).catch(() => {
-      Alert.alert('Error', 'Unable to open link');
+      showError('Unable to open link');
     });
   };
 
   const handleEmailPress = () => {
     Linking.openURL(`mailto:${appInfo.email}`).catch(() => {
-      Alert.alert('Error', 'Unable to open email client');
+      showError('Unable to open email client');
     });
   };
 
@@ -67,6 +71,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -133,6 +138,14 @@ export const AboutModal: React.FC<AboutModalProps> = ({
           {/* Bottom padding for better scrolling */}
           <View style={styles.bottomPadding} />
         </ScrollView>
+
+        {/* Toast */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+        />
       </View>
     </Modal>
   );
@@ -141,7 +154,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: COLORS.brand.background,
   },
   header: {
     flexDirection: 'row',
@@ -151,7 +164,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[200],
+    borderBottomColor: COLORS.gray[100],
   },
   headerLeft: {
     flexDirection: 'row',
@@ -159,10 +172,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary + '15',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.brand.blue_subtle,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.sm,
@@ -173,29 +186,36 @@ const styles = StyleSheet.create({
     color: COLORS.gray[900],
   },
   closeButton: {
-    padding: SPACING.xs,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.gray[100],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
   },
   logoSection: {
     alignItems: 'center',
-    paddingVertical: SPACING.xl,
-  },
-  logoContainer: {
+    paddingVertical: SPACING['2xl'],
     marginBottom: SPACING.md,
   },
+  logoContainer: {
+    marginBottom: SPACING.lg,
+  },
   logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primary + '15',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: COLORS.brand.blue_subtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
   appName: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
     color: COLORS.gray[900],
     marginBottom: SPACING.xs,
@@ -205,6 +225,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginBottom: SPACING.md,
     textAlign: 'center',
+    fontWeight: '500',
   },
   appDescription: {
     fontSize: 14,
@@ -214,31 +235,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
   },
   section: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.gray[700],
-    marginBottom: SPACING.sm,
+    color: COLORS.gray[800],
+    marginBottom: SPACING.md,
     paddingHorizontal: SPACING.xs,
   },
   sectionContent: {
     backgroundColor: COLORS.white,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
   },
   infoItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[100],
+    borderBottomColor: COLORS.gray[50],
   },
   infoLabel: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
     color: COLORS.gray[900],
   },
@@ -249,15 +270,15 @@ const styles = StyleSheet.create({
   infoLink: {
     fontSize: 14,
     color: COLORS.primary,
-    textDecorationLine: 'underline',
+    fontWeight: '500',
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[100],
+    borderBottomColor: COLORS.gray[50],
   },
   featureText: {
     fontSize: 14,
@@ -266,15 +287,18 @@ const styles = StyleSheet.create({
   },
   copyrightSection: {
     alignItems: 'center',
-    paddingVertical: SPACING.xl,
+    paddingVertical: SPACING['2xl'],
+    backgroundColor: COLORS.brand.blue_subtle,
+    marginHorizontal: -SPACING.lg,
+    paddingHorizontal: SPACING.lg,
   },
   copyrightText: {
     fontSize: 12,
-    color: COLORS.gray[500],
+    color: COLORS.gray[600],
     textAlign: 'center',
     marginBottom: SPACING.xs,
   },
   bottomPadding: {
-    height: 40,
+    height: SPACING['5xl'],
   },
 });

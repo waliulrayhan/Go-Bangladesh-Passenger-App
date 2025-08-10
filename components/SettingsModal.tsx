@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
-import { COLORS, SPACING } from '../utils/constants';
+import { Modal, ScrollView, StatusBar, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { useToast } from '../hooks/useToast';
+import { BORDER_RADIUS, COLORS, SPACING } from '../utils/constants';
 import { AboutModal } from './AboutModal';
 import { NotificationPreferencesModal } from './NotificationPreferencesModal';
 import { Text } from './ui/Text';
+import { Toast } from './ui/Toast';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -23,63 +25,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [autoTopUp, setAutoTopUp] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const { toast, showSuccess, hideToast } = useToast();
 
   const handleClearCache = () => {
-    Alert.alert(
-      'Clear Cache',
-      'Are you sure you want to clear the app cache? This will remove temporarily stored data.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: () => {
-            // Add cache clearing logic here
-            Alert.alert('Success', 'Cache cleared successfully');
-          }
-        }
-      ]
-    );
+    // Add cache clearing logic here
+    showSuccess('Cache cleared successfully');
   };
 
   const handleExportData = () => {
-    Alert.alert(
-      'Export Data',
-      'This will export your transaction history and profile data. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Export',
-          onPress: () => {
-            // Add data export logic here
-            Alert.alert('Success', 'Data exported successfully');
-          }
-        }
-      ]
-    );
+    // Add data export logic here
+    showSuccess('Data exported successfully');
   };
 
   const handleResetSettings = () => {
-    Alert.alert(
-      'Reset Settings',
-      'Are you sure you want to reset all settings to default values?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: () => {
-            setNotifications(true);
-            setBiometricAuth(false);
-            setAutoRefresh(true);
-            setDarkMode(false);
-            setSoundEffects(true);
-            setAutoTopUp(false);
-            Alert.alert('Success', 'Settings reset to default values');
-          }
-        }
-      ]
-    );
+    setNotifications(true);
+    setBiometricAuth(false);
+    setAutoRefresh(true);
+    setDarkMode(false);
+    setSoundEffects(true);
+    setAutoTopUp(false);
+    showSuccess('Settings reset to default values');
   };
 
   const SettingSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -139,6 +104,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -287,6 +253,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* Bottom padding for better scrolling */}
           <View style={styles.bottomPadding} />
         </ScrollView>
+
+        {/* Toast */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+        />
       </View>
 
       {/* About Modal */}
@@ -307,7 +281,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: COLORS.brand.background,
   },
   header: {
     flexDirection: 'row',
@@ -317,7 +291,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[200],
+    borderBottomColor: COLORS.gray[100],
   },
   headerLeft: {
     flexDirection: 'row',
@@ -325,10 +299,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary + '15',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.sm,
@@ -339,35 +312,41 @@ const styles = StyleSheet.create({
     color: COLORS.gray[900],
   },
   closeButton: {
-    padding: SPACING.xs,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.gray[100],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
   },
   section: {
-    marginTop: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.gray[700],
-    marginBottom: SPACING.sm,
+    color: COLORS.gray[800],
+    marginBottom: SPACING.md,
     paddingHorizontal: SPACING.xs,
   },
   sectionContent: {
     backgroundColor: COLORS.white,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[100],
+    borderBottomColor: COLORS.gray[50],
   },
   settingLeft: {
     flexDirection: 'row',
@@ -375,28 +354,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary + '10',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.brand.blue_subtle,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
   },
   settingInfo: {
     flex: 1,
   },
   settingTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
     color: COLORS.gray[900],
+    marginBottom: 2,
   },
   settingSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.gray[600],
-    marginTop: 1,
   },
   bottomPadding: {
-    height: 40,
+    height: SPACING['6xl'],
   },
 });
