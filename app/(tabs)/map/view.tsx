@@ -3,14 +3,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { PulsingDot } from '../../../components/PulsingDot';
@@ -709,8 +709,8 @@ const styles = StyleSheet.create({
   },
   realTimeIndicator: {
     position: 'absolute',
-    top: 160,
-    right: 5,
+    top: 50, // Adjusted since we're removing the header
+    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,

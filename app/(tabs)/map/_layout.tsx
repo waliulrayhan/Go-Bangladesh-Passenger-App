@@ -7,8 +7,19 @@ export default function MapLayout() {
         headerShown: false,
       }}
     >
-      <Stack.Screen name="index" />
-      <Stack.Screen name="view" />
+      <Stack.Screen 
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="view"
+        options={{
+          headerShown: false,
+          presentation: 'fullScreenModal',
+        }}
+      />
     </Stack>
   );
 }
