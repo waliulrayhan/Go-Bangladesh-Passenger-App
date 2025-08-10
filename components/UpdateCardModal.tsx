@@ -150,14 +150,15 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
   const handleCardNumberChange = useCallback((text: string) => {
     const filteredText = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
     setCardNumber(filteredText);
-  }, []);
+    hideToast(); // Hide any existing toast when user types
+  }, [hideToast]);
 
   const handleOtpChange = useCallback((value: string, index: number) => {
     if (isLoading) return;
     
     const newOtp = [...otp];
     
-    // Handle paste operation
+    // Handle paste operation (autofill from SMS)
     if (value.length > 1) {
       const pastedValue = value.replace(/[^0-9]/g, '').slice(0, OTP_LENGTH);
       const pastedArray = pastedValue.split('');
@@ -168,11 +169,18 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
       
       setOtp(newOtp);
       
-      // Focus on the next empty input or the last input
-      const nextIndex = Math.min(pastedArray.length, OTP_LENGTH - 1);
+      // Focus on the last input and blur to complete autofill
       setTimeout(() => {
-        otpInputRefs.current[nextIndex]?.focus();
-      }, 0);
+        otpInputRefs.current[OTP_LENGTH - 1]?.focus();
+        otpInputRefs.current[OTP_LENGTH - 1]?.blur();
+      }, 100);
+      
+      // Auto-verify when complete OTP is pasted
+      if (pastedArray.length === OTP_LENGTH) {
+        setTimeout(() => {
+          handleVerifyAndUpdate(newOtp);
+        }, 200);
+      }
       
       return;
     }
@@ -186,7 +194,14 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
       if (value && index < OTP_LENGTH - 1) {
         setTimeout(() => {
           otpInputRefs.current[index + 1]?.focus();
-        }, 0);
+        }, 10);
+      }
+      
+      // Auto-verify when all digits are filled manually
+      if (newOtp.every(digit => digit !== '') && newOtp.length === OTP_LENGTH) {
+        setTimeout(() => {
+          handleVerifyAndUpdate(newOtp);
+        }, 200);
       }
     }
   }, [otp, isLoading]);
@@ -206,7 +221,11 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
     const cardValidation = validateCardNumber(cardNumber);
     
     if (!cardValidation.isValid) {
-      showError(cardValidation.message || 'Invalid card number');
+      // Force toast to show by hiding first, then showing error
+      hideToast();
+      setTimeout(() => {
+        showError(cardValidation.message || 'Invalid card number');
+      }, 100);
       return;
     }
 
@@ -217,14 +236,21 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
       const cardValidationResponse = await apiService.checkCardValidity(cardNumber.trim());
       
       if (!cardValidationResponse.isSuccess) {
-        showError(cardValidationResponse.message || 'Card is not valid or not available');
+        hideToast();
+        setTimeout(() => {
+          showError(cardValidationResponse.message || 'Card is not valid or not available');
+        }, 100);
         return;
       }
 
       // Send OTP
       await onSendOTP(cardNumber.trim());
       
-      showSuccess('OTP sent successfully to your registered mobile number');
+      hideToast();
+      setTimeout(() => {
+        showSuccess('OTP sent successfully to your registered mobile number');
+      }, 100);
+      
       setStep('otp-verification');
       setOtpTimer(OTP_RESEND_TIMER);
       
@@ -238,24 +264,33 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
                           error.response?.data?.message || 
                           error.message || 
                           'Failed to send OTP';
-      showError(errorMessage);
+      hideToast();
+      setTimeout(() => {
+        showError(errorMessage);
+      }, 100);
     } finally {
       setIsLoading(false);
     }
-  }, [cardNumber, validateCardNumber, onSendOTP, showError, showSuccess]);
+  }, [cardNumber, validateCardNumber, onSendOTP, showError, showSuccess, hideToast]);
 
-  const handleVerifyAndUpdate = useCallback(async () => {
-    const otpValidation = validateOTP(otp);
+  const handleVerifyAndUpdate = useCallback(async (otpArray?: string[]) => {
+    const currentOtp = otpArray || otp;
+    const otpValidation = validateOTP(currentOtp);
     
     if (!otpValidation.isValid) {
       showError(otpValidation.message || 'Invalid OTP');
+      // Clear OTP on error and refocus first input
+      setOtp(new Array(OTP_LENGTH).fill(''));
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 100);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const otpString = otp.join('');
+      const otpString = currentOtp.join('');
       await onUpdate(cardNumber.trim(), otpString);
       
       showSuccess('Card number updated successfully!');
@@ -287,7 +322,11 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
     try {
       await onSendOTP(cardNumber.trim());
       setOtpTimer(OTP_RESEND_TIMER);
-      showSuccess('OTP resent successfully');
+      
+      hideToast();
+      setTimeout(() => {
+        showSuccess('OTP resent successfully');
+      }, 100);
       
       // Clear current OTP and focus first input
       setOtp(new Array(OTP_LENGTH).fill(''));
@@ -297,17 +336,14 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
       
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to resend OTP';
-      showError(errorMessage);
+      hideToast();
+      setTimeout(() => {
+        showError(errorMessage);
+      }, 100);
     } finally {
       setIsLoading(false);
     }
-  }, [cardNumber, onSendOTP, showError, showSuccess]);
-
-  const handleBack = useCallback(() => {
-    setStep('card-input');
-    setOtp(new Array(OTP_LENGTH).fill(''));
-    hideToast();
-  }, [hideToast]);
+  }, [cardNumber, onSendOTP, showError, showSuccess, hideToast]);
 
   const handleClose = useCallback(() => {
     resetModalState();
@@ -333,7 +369,7 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
           label="New Card Number"
           value={cardNumber}
           onChangeText={handleCardNumberChange}
-          placeholder="Enter new card number (e.g. ABCD1234)"
+          placeholder="(e.g. ABCD1234)"
           keyboardType="default"
           icon="card-outline"
           maxLength={CARD_NUMBER_MAX_LENGTH}
@@ -390,6 +426,15 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
       <View style={styles.sectionContainer}>
         <Text variant="body" style={styles.otpLabel}>Verification Code</Text>
         
+        {/* Loading indicator for auto-verification */}
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <Text variant="caption" style={styles.loadingText}>
+              Verifying...
+            </Text>
+          </View>
+        )}
+        
         <View style={styles.otpContainer}>
           {otp.map((digit, index) => (
             <TextInput
@@ -400,12 +445,13 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
               style={[
                 styles.otpInput,
                 digit && styles.otpInputFilled,
+                isLoading && styles.otpInputDisabled,
               ]}
               value={digit}
               onChangeText={(value) => handleOtpChange(value, index)}
               onKeyPress={(e) => handleOtpKeyPress(e, index)}
               keyboardType="numeric"
-              maxLength={1}
+              maxLength={index === 0 ? OTP_LENGTH : 1} // Allow paste on first input
               textAlign="center"
               selectTextOnFocus
               editable={!isLoading}
@@ -433,24 +479,11 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
             </TouchableOpacity>
           )}
         </View>
-      </View>
 
-      {/* Actions */}
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.cancelButton} onPress={handleBack}>
-          <Text variant="button" style={styles.cancelText}>Back</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.updateButtonContainer}>
-          <Button
-            title="Update Card"
-            onPress={handleVerifyAndUpdate}
-            loading={isLoading}
-            disabled={otp.some(digit => !digit) || isLoading}
-            size="medium"
-            fullWidth
-          />
-        </View>
+        {/* Help text */}
+        <Text variant="caption" style={styles.helpText}>
+          Didn't receive the code? Check your SMS or try resending.
+        </Text>
       </View>
     </>
   );
@@ -464,6 +497,16 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
         onRequestClose={handleClose}
       >
         <View style={styles.overlay}>
+          {/* Toast Component - Positioned above modal content */}
+          <Toast
+            visible={toast.visible}
+            message={toast.message}
+            type={toast.type}
+            onHide={hideToast}
+            duration={3000}
+            position="top"
+          />
+          
           <View style={styles.modalContainer}>
             {/* Header */}
             <View style={styles.header}>
@@ -484,16 +527,6 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
           </View>
         </View>
       </Modal>
-
-      {/* Toast Component */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-        duration={3000}
-        position="top"
-      />
     </>
   );
 };
@@ -663,6 +696,18 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
     backgroundColor: COLORS.primary + '05',
   },
+  otpInputDisabled: {
+    opacity: 0.5,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
   otpTimer: {
     alignItems: 'center',
     marginTop: SPACING.sm,
@@ -696,6 +741,13 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
     marginLeft: SPACING.xs,
+  },
+  helpText: {
+    textAlign: 'center',
+    color: COLORS.gray[600],
+    fontSize: 12,
+    marginTop: SPACING.sm,
+    lineHeight: 16,
   },
   // Action Styles
   actions: {
