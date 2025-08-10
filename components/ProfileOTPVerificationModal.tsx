@@ -13,7 +13,6 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { useToast } from '../hooks/useToast';
 import { apiService } from '../services/api';
@@ -24,16 +23,9 @@ import { Text } from './ui/Text';
 import { Toast } from './ui/Toast';
 
 // Constants
-const ANIMATION_DELAYS = {
-  HEADER: 800,
-  FORM: 1000,
-} as const;
-
 const TIMING_CONFIG = {
   OTP_LENGTH: 6,
   COUNTDOWN_DURATION: 60,
-  AUTOFILL_TIMEOUT: 150,
-  RAPID_INPUT_THRESHOLD: 100,
   AUTO_VERIFY_DELAY: 100,
   SUCCESS_CLOSE_DELAY: 1500,
 } as const;
@@ -74,12 +66,8 @@ export function ProfileOTPVerificationModal({
   const [countdown, setCountdown] = useState<number>(TIMING_CONFIG.COUNTDOWN_DURATION);
   const [canResend, setCanResend] = useState(false);
   
-  // Refs for input management and autofill handling
+  // Refs for input management
   const inputRefs = useRef<(TextInput | null)[]>([]);
-  const isHandlingAutofill = useRef(false);
-  const lastOtpInputTime = useRef(0);
-  const autofillDigits = useRef<string[]>([]);
-  const autofillTimeout = useRef<NodeJS.Timeout | null>(null);
   const hasInitialized = useRef(false);
   const initializedForMobile = useRef<string | null>(null);
 
@@ -96,13 +84,7 @@ export function ProfileOTPVerificationModal({
   }, []);
 
   const resetAutofillFlags = useCallback(() => {
-    isHandlingAutofill.current = false;
-    lastOtpInputTime.current = 0;
-    autofillDigits.current = [];
-    if (autofillTimeout.current) {
-      clearTimeout(autofillTimeout.current);
-      autofillTimeout.current = null;
-    }
+    // No autofill flags to reset in simplified implementation
   }, []);
 
   const handleSendInitialOTP = useCallback(async () => {
@@ -249,96 +231,66 @@ export function ProfileOTPVerificationModal({
     return () => clearInterval(timer);
   }, [visible, canResend]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (autofillTimeout.current) {
-        clearTimeout(autofillTimeout.current);
-      }
-    };
-  }, []);
-
   // Helper functions for OTP handling
-  const handlePastedOTP = useCallback((pastedValue: string) => {
-    const pastedOtp = pastedValue.replace(/\D/g, '').slice(0, TIMING_CONFIG.OTP_LENGTH);
+  const handlePastedOTP = useCallback((pastedOtp: string): boolean => {
+    const cleanOtp = pastedOtp.replace(/\D/g, '');
     
-    if (pastedOtp.length >= TIMING_CONFIG.OTP_LENGTH) {
-      isHandlingAutofill.current = true;
+    if (cleanOtp.length >= TIMING_CONFIG.OTP_LENGTH) {
       setIsAutoVerifying(true);
       setShowVerifyingText(true);
-      
-      const newOtp = pastedOtp.split('').slice(0, TIMING_CONFIG.OTP_LENGTH);
+
+      const newOtp = cleanOtp.slice(0, TIMING_CONFIG.OTP_LENGTH).split('');
       setOtp(newOtp);
-      
+
       setTimeout(() => {
-        isHandlingAutofill.current = false;
-      }, 500);
-      
-      // Focus and blur the last input
-      setTimeout(() => {
-        inputRefs.current[5]?.focus();
-        inputRefs.current[5]?.blur();
+        inputRefs.current[TIMING_CONFIG.OTP_LENGTH - 1]?.focus();
+        inputRefs.current[TIMING_CONFIG.OTP_LENGTH - 1]?.blur();
       }, 100);
-      
-      // Auto-verify
+
       setTimeout(() => {
-        handleVerify(pastedOtp);
+        handleVerify(newOtp.join(''));
       }, TIMING_CONFIG.AUTO_VERIFY_DELAY);
-      
+
       return true;
     }
     return false;
-  }, []);
+  }, [handleVerify]);
 
-  const handleAutofillSequence = useCallback((value: string, index: number) => {
-    const now = Date.now();
-    const timeDiff = now - lastOtpInputTime.current;
-    lastOtpInputTime.current = now;
+  const handleOtpChange = (value: string, index: number) => {
+    if (isLoading || isAutoVerifying) return;
     
-    const isRapidInput = timeDiff < TIMING_CONFIG.RAPID_INPUT_THRESHOLD && timeDiff > 0;
-    
-    if (isRapidInput || isHandlingAutofill.current) {
-      if (!isHandlingAutofill.current) {
-        isHandlingAutofill.current = true;
-        setIsAutoVerifying(true);
-        setShowVerifyingText(true);
-        autofillDigits.current = new Array(TIMING_CONFIG.OTP_LENGTH).fill("");
+    // Handle pasted OTP (multiple characters at once)
+    if (value.length > 1) {
+      const pastedOtp = value.replace(/\D/g, '').slice(0, TIMING_CONFIG.OTP_LENGTH);
+      if (handlePastedOTP(pastedOtp)) return;
+    }
+
+    // For first input, handle SMS autofill specially
+    if (index === 0) {
+      const cleanValue = value.replace(/\D/g, '');
+      
+      // If we get multiple digits in first input (SMS autofill), handle as paste
+      if (cleanValue.length > 1) {
+        if (handlePastedOTP(cleanValue)) return;
       }
       
-      autofillDigits.current[index] = value.slice(-1);
+      // Store the first digit immediately
+      setOtp((prevOtp) => {
+        const newOtp = [...prevOtp];
+        newOtp[0] = cleanValue.slice(-1);
+        return newOtp;
+      });
       
-      if (autofillTimeout.current) clearTimeout(autofillTimeout.current);
-      autofillTimeout.current = setTimeout(() => {
-        const collectedDigits = [...autofillDigits.current];
-        const validDigits = collectedDigits.filter((d: string) => d && d !== "");
-        
-        if (validDigits.length >= 5) {
-          if (!collectedDigits[0] && otp[0]) {
-            collectedDigits[0] = otp[0];
-          }
-          
-          setOtp(collectedDigits);
-          
-          const finalValidDigits = collectedDigits.filter((d: string) => d && d !== "");
-          if (finalValidDigits.length === TIMING_CONFIG.OTP_LENGTH) {
-            setTimeout(() => {
-              handleVerify(collectedDigits.join(''));
-            }, TIMING_CONFIG.AUTO_VERIFY_DELAY);
-          }
-        } else if (validDigits.length > 0) {
-          setOtp(collectedDigits);
-        }
-        
-        autofillDigits.current = [];
-        isHandlingAutofill.current = false;
-      }, TIMING_CONFIG.AUTOFILL_TIMEOUT);
-      
-      return true;
+      // Focus next input for manual entry
+      if (cleanValue && !isAutoVerifying) {
+        setTimeout(() => {
+          inputRefs.current[1]?.focus();
+        }, 10);
+      }
+      return;
     }
-    return false;
-  }, [otp, handleVerify]);
 
-  const handleManualInput = useCallback((value: string, index: number) => {
+    // Handle single character input (manual typing)
     if (value.length <= 1) {
       setOtp(prevOtp => {
         const newOtp = [...prevOtp];
@@ -363,66 +315,6 @@ export function ProfileOTPVerificationModal({
         }, 10);
       }
     }
-  }, [isAutoVerifying, handleVerify]);
-
-  const handleOtpChange = (value: string, index: number) => {
-    if (isLoading || isAutoVerifying) return;
-    
-    // Handle pasted OTP (auto-fill from SMS)
-    if (value.length > 1) {
-      if (handlePastedOTP(value)) return;
-    }
-
-    // Handle rapid input sequence (autofill)
-    if (handleAutofillSequence(value, index)) return;
-
-    // Handle special case for first input
-    if (index === 0 && otp.every(digit => digit === "")) {
-      isHandlingAutofill.current = true;
-      autofillDigits.current = new Array(TIMING_CONFIG.OTP_LENGTH).fill("");
-      autofillDigits.current[0] = value.slice(-1);
-      
-      setTimeout(() => {
-        if (isHandlingAutofill.current) {
-          const collectedCount = autofillDigits.current.filter((d: string) => d && d !== "").length;
-          
-          if (collectedCount === 1) {
-            // Manual input
-            setOtp(prevOtp => {
-              const newOtp = [...prevOtp];
-              newOtp[0] = autofillDigits.current[0];
-              return newOtp;
-            });
-            autofillDigits.current = [];
-            isHandlingAutofill.current = false;
-            
-            setTimeout(() => {
-              inputRefs.current[1]?.focus();
-            }, 10);
-          } else if (collectedCount > 1) {
-            // Autofill
-            setIsAutoVerifying(true);
-            setShowVerifyingText(true);
-            setOtp(autofillDigits.current);
-            
-            const validDigits = autofillDigits.current.filter((d: string) => d && d !== "");
-            if (validDigits.length === TIMING_CONFIG.OTP_LENGTH) {
-              setTimeout(() => {
-                handleVerify(autofillDigits.current.join(''));
-              }, TIMING_CONFIG.AUTO_VERIFY_DELAY);
-            }
-            
-            autofillDigits.current = [];
-            isHandlingAutofill.current = false;
-          }
-        }
-      }, 50);
-      
-      return;
-    }
-
-    // Handle manual single character input
-    handleManualInput(value, index);
   };
 
   const handleKeyPress = (e: any, index: number) => {
@@ -485,7 +377,7 @@ export function ProfileOTPVerificationModal({
 
   // Render functions
   const renderHeader = () => (
-    <Animated.View entering={FadeInUp.duration(ANIMATION_DELAYS.HEADER)} style={styles.header}>
+    <View style={styles.header}>
       <View style={styles.iconContainer}>
         <Ionicons name="shield-checkmark" size={32} color={COLORS.primary} />
       </View>
@@ -505,15 +397,18 @@ export function ProfileOTPVerificationModal({
           <Text style={styles.cardInfo}>Card: {userData.cardNumber}</Text>
         )}
       </View>
-    </Animated.View>
+    </View>
   );
 
   const renderOTPInputs = () => (
     <View style={styles.otpInputContainer}>
       {otp.map((digit, index) => (
-        <View
+        <TouchableOpacity
           key={`otp-input-wrapper-${index}`}
           style={styles.otpInputWrapper}
+          onPress={() => {
+            inputRefs.current[index]?.focus();
+          }}
         >
           <TextInput
             ref={(ref) => { inputRefs.current[index] = ref; }}
@@ -538,7 +433,7 @@ export function ProfileOTPVerificationModal({
             autoCorrect={false}
             spellCheck={false}
           />
-        </View>
+        </TouchableOpacity>
       ))}
     </View>
   );
@@ -564,7 +459,7 @@ export function ProfileOTPVerificationModal({
   );
 
   const renderOTPForm = () => (
-    <Animated.View entering={FadeInDown.duration(ANIMATION_DELAYS.FORM).delay(200)} style={styles.cardWrapper}>
+    <View style={styles.cardWrapper}>
       <Card variant="elevated">
         <View style={styles.otpContainer}>
           <View style={styles.otpLabelContainer}>
@@ -584,7 +479,7 @@ export function ProfileOTPVerificationModal({
           </Text>
         </View>
       </Card>
-    </Animated.View>
+    </View>
   );
 
   return (
@@ -672,6 +567,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     justifyContent: "center",
     paddingTop: SPACING.xl + 40,
+    minHeight: '100%',
   },
   
   // Header styles
@@ -738,7 +634,8 @@ const styles = StyleSheet.create({
   
   // Card and form styles
   cardWrapper: {
-    // Wrapper to prevent layout shifts
+    width: '100%',
+    minHeight: 300,
   },
   otpContainer: {
     padding: SPACING.md,
