@@ -796,9 +796,9 @@ export default function Dashboard() {
     if (transaction.transactionType === "BusFare") {
       return "Bus Fare";
     } else if (transaction.transactionType === "Recharge") {
-      return "Account Top Up";
+      return "Recharge";
     } else if (transaction.transactionType === "Return") {
-      return "Refund";
+      return "Return";
     } else if (transaction.transactionType === "Penalty") {
       return "Penalty";
     } else {

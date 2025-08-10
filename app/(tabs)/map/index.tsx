@@ -411,7 +411,7 @@ export default function MapScreen() {
               color={COLORS.brand.orange}
             />
             <Text style={styles.infoText}>
-              Both organization and route selection are required to proceed
+              Both organization and route selection are required to proceed!
             </Text>
           </View>
         </View>
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZES.xl,
     fontFamily: FONT_WEIGHTS.bold,
-    color: COLORS.gray[900],
+    color: COLORS.secondary,
     marginTop: 12,
     marginBottom: 8,
   },
@@ -586,13 +586,14 @@ const styles = StyleSheet.create({
   // Info Styles
   infoContainer: {
     backgroundColor: COLORS.brand.blue_subtle,
+    alignItems: "center",
     borderRadius: 12,
     padding: 16,
     gap: 12,
   },
   infoItem: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 8,
   },
   infoText: {
