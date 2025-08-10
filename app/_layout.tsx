@@ -1,7 +1,7 @@
 import { useFonts } from "expo-font";
 import { Slot, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTokenExpirationCheck } from "../hooks/useTokenExpirationCheck";
 import { useAuthStore } from "../stores/authStore";
 import { plusJakartaSansFonts } from "../utils/fonts";
@@ -18,6 +18,7 @@ export default function RootLayout() {
   const { isAuthenticated, loadUserFromStorage } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
+  const isNavigatingRef = useRef(false);
 
   // Initialize token expiration monitoring
   useTokenExpirationCheck();
@@ -51,18 +52,70 @@ export default function RootLayout() {
     // Only proceed with navigation if fonts are loaded
     if (!loaded && !error) return;
 
+    // Prevent multiple concurrent navigation attempts
+    if (isNavigatingRef.current) {
+      console.log('🔄 [NAVIGATION] Navigation already in progress, skipping...');
+      return;
+    }
+
     const inAuthGroup = segments[0] === "(auth)";
     const inTabsGroup = segments[0] === "(tabs)";
 
     console.log(`🔄 [NAVIGATION] Auth: ${isAuthenticated}, Segments: ${segments.join('/')}`);
 
     if (!isAuthenticated && inTabsGroup) {
-      console.log('🔄 [NAVIGATION] User not authenticated, redirecting to welcome...');
-      router.replace("/");
+      console.log('🔄 [NAVIGATION] User not authenticated, forcefully redirecting to welcome...');
+      
+      isNavigatingRef.current = true;
+      
+      // Use navigation service for robust redirect
+      setTimeout(async () => {
+        try {
+          const { navigationService } = await import('../utils/navigationService');
+          const success = await navigationService.forceRedirectToWelcome();
+          
+          if (success) {
+            console.log('✅ [NAVIGATION] Navigation service redirect successful');
+          } else {
+            console.log('❌ [NAVIGATION] Navigation service failed, trying manual redirect');
+            
+            // Fallback to manual navigation
+            router.dismissAll();
+            router.replace("/");
+          }
+        } catch (navError) {
+          console.error('💥 [NAVIGATION] Error during forced redirect:', navError);
+          
+          // Last resort: manual navigation
+          try {
+            router.dismissAll();
+            router.push("/");
+          } catch (pushError) {
+            console.error('💥 [NAVIGATION] Push also failed:', pushError);
+          }
+        } finally {
+          // Reset navigation flag after a delay
+          setTimeout(() => {
+            isNavigatingRef.current = false;
+          }, 1000);
+        }
+      }, 100);
+      
     } else if (isAuthenticated && !inTabsGroup && !inAuthGroup) {
       console.log('🔄 [NAVIGATION] User authenticated, redirecting to tabs...');
+      
+      isNavigatingRef.current = true;
+      
       // Default to passenger tabs for authenticated users
-      router.replace("/(tabs)");
+      try {
+        router.replace("/(tabs)");
+      } catch (navError) {
+        console.error('💥 [NAVIGATION] Error redirecting to tabs:', navError);
+      } finally {
+        setTimeout(() => {
+          isNavigatingRef.current = false;
+        }, 500);
+      }
     }
   }, [isAuthenticated, segments, loaded, error]);
 

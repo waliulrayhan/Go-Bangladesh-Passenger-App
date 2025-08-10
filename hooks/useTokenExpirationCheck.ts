@@ -23,12 +23,36 @@ export function useTokenExpirationCheck() {
       if (!token) {
         console.log('🚫 [TOKEN CHECK] No token found - triggering logout');
         await handleUnauthorized();
+        
+        // Force immediate navigation using navigation service
+        setTimeout(async () => {
+          try {
+            const { navigationService } = await import('../utils/navigationService');
+            await navigationService.forceRedirectToWelcome();
+            console.log('✅ [TOKEN CHECK] Emergency navigation to welcome completed');
+          } catch (navError) {
+            console.error('💥 [TOKEN CHECK] Emergency navigation failed:', navError);
+          }
+        }, 300);
+        
         return;
       }
 
       if (isTokenExpired(token)) {
         console.log('⏰ [TOKEN CHECK] Token expired - triggering automatic logout');
         await handleUnauthorized();
+        
+        // Force immediate navigation for expired token using navigation service
+        setTimeout(async () => {
+          try {
+            const { navigationService } = await import('../utils/navigationService');
+            await navigationService.forceRedirectToWelcome();
+            console.log('✅ [TOKEN CHECK] Expired token navigation to welcome completed');
+          } catch (navError) {
+            console.error('💥 [TOKEN CHECK] Expired token navigation failed:', navError);
+          }
+        }, 300);
+        
         return;
       }
 
@@ -37,6 +61,17 @@ export function useTokenExpirationCheck() {
       console.error('💥 [TOKEN CHECK] Error checking token:', error);
       // If we can't check the token, better to logout for security
       await handleUnauthorized();
+      
+      // Force navigation even on error using navigation service
+      setTimeout(async () => {
+        try {
+          const { navigationService } = await import('../utils/navigationService');
+          await navigationService.forceRedirectToWelcome();
+          console.log('✅ [TOKEN CHECK] Error recovery navigation completed');
+        } catch (navError) {
+          console.error('💥 [TOKEN CHECK] Error recovery navigation failed:', navError);
+        }
+      }, 300);
     }
   };
 

@@ -32,7 +32,6 @@ import { Toast } from "../../components/ui/Toast";
 import { useRealtimeTrip } from "../../hooks/useRealtimeTrip";
 import { useToast } from "../../hooks/useToast";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
-import { TripTransaction } from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
 import { API_BASE_URL, COLORS } from "../../utils/constants";
@@ -758,13 +757,15 @@ export default function Dashboard() {
 
   // Activity helper functions
   const getActivityIcon = (transactionType: string) => {
-    if (transactionType === "BusFare") {
+    if (transactionType === "BusFare" || transactionType === "Penalty") {
+      // Deductions - red with up arrow (money going out)
       return {
         icon: "arrow-up-outline" as const,
         color: COLORS.error,
         backgroundColor: COLORS.error + "20",
       };
     } else {
+      // Additions - green with down arrow (money coming in)
       return {
         icon: "arrow-down-outline" as const,
         color: COLORS.success,
@@ -773,40 +774,49 @@ export default function Dashboard() {
     }
   };
 
-  const getActivityTitle = (transaction: TripTransaction) => {
+  const getActivityTitle = (transaction: any) => {
     if (transaction.transactionType === "BusFare") {
-      // Use bus information from the trip
-      const busName =
-        transaction.trip?.session?.bus?.busNumber ||
-        transaction.trip?.session?.bus?.busName ||
-        UI_TEXTS.FALLBACKS.BUS_NAME;
-      return busName;
+      // Try to get bus information from the trip data (if available)
+      const busName = transaction.trip?.session?.bus?.busNumber || 
+                    transaction.trip?.session?.bus?.busName;
+      
+      // If we have bus info, return it, otherwise return a generic title
+      if (busName) {
+        return busName;
+      }
+      
+      // Fallback to transaction ID for unique identification
+      return `Bus Fare - ${transaction.transactionId}`;
     } else {
       return UI_TEXTS.ACTIVITY.TOP_UP;
     }
   };
 
-  const getActivitySubtitle = (transaction: TripTransaction) => {
+  const getActivitySubtitle = (transaction: any) => {
     if (transaction.transactionType === "BusFare") {
       return "Bus Fare";
     } else if (transaction.transactionType === "Recharge") {
-      return "Recharge";
+      return "Account Top Up";
     } else if (transaction.transactionType === "Return") {
-      return "Return";
+      return "Refund";
     } else if (transaction.transactionType === "Penalty") {
       return "Penalty";
     } else {
-      return "Unknown";
+      return "Transaction";
     }
   };
 
   const getActivityAmount = (transactionType: string, amount: number) => {
-    const prefix = transactionType === "BusFare" ? "-" : "+";
+    // BusFare and Penalty are deductions (negative)
+    // Recharge and Return are additions (positive)
+    const prefix = (transactionType === "BusFare" || transactionType === "Penalty") ? "-" : "+";
     return `${prefix}৳${amount.toFixed(2)}`;
   };
 
   const getActivityColor = (transactionType: string) => {
-    return transactionType === "BusFare" ? COLORS.error : COLORS.success;
+    // BusFare and Penalty are red (deductions)
+    // Recharge and Return are green (additions)
+    return (transactionType === "BusFare" || transactionType === "Penalty") ? COLORS.error : COLORS.success;
   };
 
   const getCombinedTransactions = () => {

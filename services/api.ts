@@ -236,14 +236,26 @@ export interface Transaction {
 }
 
 export interface TripTransaction {
-  transactionType: 'BusFare';
+  transactionType: 'BusFare' | 'Recharge' | 'Return';
   amount: number;
   cardId: string;
-  agentId: null;
-  tripId: string;
+  agentId: string | null;
+  tripId: string | null;
   transactionId: string;
-  card: null;
-  agent: null;
+  card: {
+    cardNumber: string;
+    status: string;
+    balance: number;
+    organizationId: string;
+    organization: any;
+    id: string;
+    createTime: string;
+    lastModifiedTime: string;
+    createdBy: string;
+    lastModifiedBy: string;
+    isDeleted: boolean;
+  } | null;
+  agent: AgentInfo | null;
   trip: {
     cardId: string;
     sessionId: string;
@@ -259,18 +271,18 @@ export interface TripTransaction {
     tapInType: string | null;
     tapOutStatus: string | null;
     session: SessionInfo;
-    card: null;
-    passenger: null;
-    passengerId: null;
+    card: any | null;
+    passenger: any | null;
+    passengerId: string | null;
     id: string;
     createTime: string;
     lastModifiedTime: string;
     createdBy: string;
     lastModifiedBy: string | null;
     isDeleted: boolean;
-  };
-  passenger: null;
-  passengerId: null;
+  } | null;
+  passenger: any | null;
+  passengerId: string | null;
   id: string;
   createTime: string;
   lastModifiedTime: string;
@@ -1205,11 +1217,11 @@ class ApiService {
   // PUBLIC METHODS - History Management
   // ========================================================================
 
-  async getRecentActivity(): Promise<TripTransaction[]> {
+  async getRecentActivity(): Promise<any[]> {
     ApiLogger.log('RECENT_ACTIVITY', 'Fetching recent activity');
 
     try {
-      const response = await this.api.get<ApiResponse<TripTransaction[]>>('/api/passenger/recentActivity');
+      const response = await this.api.get<ApiResponse<any[]>>('/api/passenger/recentActivity');
 
       ApiLogger.log('RECENT_ACTIVITY', 'Response received', {
         status: response.status,
@@ -1221,8 +1233,8 @@ class ApiService {
         return [];
       }
 
-      const activityData = this.validateApiResponse<TripTransaction[]>(response, 'RECENT_ACTIVITY');
-
+      const activityData = this.validateApiResponse<any[]>(response, 'RECENT_ACTIVITY');
+      
       if (activityData) {
         ApiLogger.success('RECENT_ACTIVITY', `Recent activity loaded: ${activityData.length} items`);
         return activityData;
@@ -1252,9 +1264,7 @@ class ApiService {
 
       return [];
     }
-  }
-
-  async getPassengerTripHistory(passengerId: string, pageNo: number = 1, pageSize: number = 10): Promise<{ data: TripTransaction[]; rowCount: number }> {
+  }  async getPassengerTripHistory(passengerId: string, pageNo: number = 1, pageSize: number = 10): Promise<{ data: TripTransaction[]; rowCount: number }> {
     ApiLogger.log('HISTORY', 'Fetching trip history', { passengerId, pageNo, pageSize });
 
     try {

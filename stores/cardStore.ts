@@ -8,7 +8,7 @@ interface CardState {
   card: Card | null;
   tripTransactions: TripTransaction[];
   rechargeTransactions: RechargeTransaction[];
-  recentActivity: TripTransaction[];
+  recentActivity: any[]; // Using any[] to handle the flexible transaction structure
   currentTrip: Trip | null;
   tripStatus: 'idle' | 'active' | 'completed';
   isLoading: boolean;

@@ -398,6 +398,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       console.log('✅ [AUTH] Session cleanup completed successfully');
       
+      // Use navigation service for robust redirect
+      setTimeout(async () => {
+        try {
+          const { navigationService } = await import('../utils/navigationService');
+          const success = await navigationService.forceRedirectToWelcome();
+          
+          if (success) {
+            console.log('✅ [AUTH] Navigation service redirect successful');
+          } else {
+            console.log('❌ [AUTH] Navigation service redirect failed, trying manual redirect');
+            
+            // Fallback to manual navigation
+            const { router } = await import('expo-router');
+            router.dismissAll();
+            router.replace('/');
+          }
+        } catch (navError) {
+          console.error('💥 [AUTH] All navigation attempts failed:', navError);
+        }
+      }, 200);
+      
     } catch (error) {
       console.error('💥 [AUTH] Error during session cleanup:', error);
       
@@ -409,6 +430,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: 'Session expired. Please login again.',
         justLoggedIn: false
       });
+      
+      // Still try to navigate even if cleanup failed
+      setTimeout(async () => {
+        try {
+          const { navigationService } = await import('../utils/navigationService');
+          await navigationService.forceRedirectToWelcome();
+        } catch (navError) {
+          console.error('💥 [AUTH] Final navigation attempt failed:', navError);
+        }
+      }, 200);
     }
   },
 
