@@ -323,25 +323,45 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!user?.id) return;
     
     try {
+      console.log('🔄 [AUTH] Refreshing user data from API...');
       const userResponse = await apiService.getUserById(user.id.toString());
       if (userResponse) {
+        console.log('✅ [AUTH] Fresh user data received from API');
+        
+        // Create a completely updated user object with ALL fields from API response
         const updatedUser: User = {
-          ...user,
+          id: userResponse.id,
           name: userResponse.name,
           email: userResponse.emailAddress,
+          emailAddress: userResponse.emailAddress,
           mobile: userResponse.mobileNumber,
-          balance: userResponse.balance,
+          mobileNumber: userResponse.mobileNumber,
+          sex: userResponse.gender?.toLowerCase() === 'female' ? 'female' : 'male',
+          gender: userResponse.gender,
           cardNumber: userResponse.cardNumber,
-          organization: userResponse.organization?.name || userResponse.organization,
+          userType: userResponse.userType?.toLowerCase() as 'passenger' | 'public' | 'private',
+          isActive: true,
+          createdAt: user.createdAt || new Date().toISOString(), // Keep original or set default
           profileImage: userResponse.imageUrl,
-          imageUrl: userResponse.imageUrl
+          imageUrl: userResponse.imageUrl,
+          dateOfBirth: userResponse.dateOfBirth,
+          address: userResponse.address,
+          passengerId: userResponse.passengerId,
+          organizationId: userResponse.organizationId,
+          organization: userResponse.organization?.name || userResponse.organization,
+          balance: userResponse.balance
         };
         
+        console.log('💾 [AUTH] Saving updated user data to storage...');
         await storageService.setItem(STORAGE_KEYS.USER_DATA, updatedUser);
+        
+        console.log('🔄 [AUTH] Updating auth store with fresh user data...');
         set({ user: updatedUser });
+        
+        console.log('✅ [AUTH] User data refresh completed successfully');
       }
     } catch (error) {
-      console.error('Error refreshing user data:', error);
+      console.error('❌ [AUTH] Error refreshing user data:', error);
     }
   },
 

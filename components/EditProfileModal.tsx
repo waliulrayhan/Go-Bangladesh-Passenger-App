@@ -3,23 +3,25 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import {
-  Alert,
   Image,
   Modal,
   Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
+import { useToast } from '../hooks/useToast';
 import { apiService } from '../services/api';
 import { BORDER_RADIUS, COLORS, SPACING } from '../utils/constants';
 import { ProfileOTPVerificationModal } from './ProfileOTPVerificationModal';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Text } from './ui/Text';
+import { Toast } from './ui/Toast';
 
 const API_BASE_URL = 'https://thegobd.com';
 
@@ -51,7 +53,19 @@ export function EditProfileModal({
   onUpdate,
   userData,
 }: EditProfileModalProps) {
+  const { toast, showError, showSuccess, hideToast } = useToast();
+  
   const [formData, setFormData] = useState({
+    name: userData.name,
+    mobileNumber: userData.mobileNumber,
+    emailAddress: userData.emailAddress,
+    address: userData.address,
+    gender: userData.gender,
+    dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
+    passengerId: userData.passengerId || userData.studentId || '',
+  });
+
+  const [originalData, setOriginalData] = useState({
     name: userData.name,
     mobileNumber: userData.mobileNumber,
     emailAddress: userData.emailAddress,
@@ -65,11 +79,20 @@ export function EditProfileModal({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
+  const [isOTPSuccess, setIsOTPSuccess] = useState(false);
+  
+  // Debug showOTPModal state changes
+  useEffect(() => {
+    console.log('🔍 [EDIT PROFILE] showOTPModal state changed:', showOTPModal);
+  }, [showOTPModal]);
   const [pendingUpdateData, setPendingUpdateData] = useState<FormData | null>(null);
 
+  // Initialize form data when modal first opens
   useEffect(() => {
+    console.log('🔄 [EDIT PROFILE] Modal visibility changed:', visible);
     if (visible) {
-      setFormData({
+      console.log('🚀 [EDIT PROFILE] Initializing form data');
+      const initialData = {
         name: userData.name,
         mobileNumber: userData.mobileNumber,
         emailAddress: userData.emailAddress,
@@ -77,19 +100,51 @@ export function EditProfileModal({
         gender: userData.gender,
         dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
         passengerId: userData.passengerId || userData.studentId || '',
-      });
+      };
+      
+      setFormData(initialData);
+      setOriginalData(initialData);
       setSelectedImage(null);
       setShowOTPModal(false);
+      setIsOTPSuccess(false);
       setPendingUpdateData(null);
     }
-  }, [visible, userData]);
+  }, [visible]); // Only depend on visible, not userData
+  
+  // Update form data when userData changes but modal is already open
+  useEffect(() => {
+    if (visible) {
+      console.log('📊 [EDIT PROFILE] UserData changed, updating form data');
+      const updatedData = {
+        name: userData.name,
+        mobileNumber: userData.mobileNumber,
+        emailAddress: userData.emailAddress,
+        address: userData.address,
+        gender: userData.gender,
+        dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
+        passengerId: userData.passengerId || userData.studentId || '',
+      };
+      
+      setFormData(updatedData);
+      setOriginalData(updatedData);
+    }
+  }, [userData]); // Only depend on userData changes
+
+  // Check if there are any changes
+  const hasChanges = () => {
+    if (selectedImage) return true;
+    
+    return Object.keys(formData).some(key => {
+      return formData[key as keyof typeof formData] !== originalData[key as keyof typeof originalData];
+    });
+  };
 
   const pickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'We need camera roll permissions to change your profile picture.');
+        showError('We need camera roll permissions to change your profile picture.');
         return;
       }
 
@@ -104,7 +159,7 @@ export function EditProfileModal({
         setSelectedImage(result.assets[0].uri);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      showError('Failed to pick image. Please try again.');
     }
   };
 
@@ -118,27 +173,15 @@ export function EditProfileModal({
 
   const validateForm = () => {
     if (!formData.name.trim()) {
-      Alert.alert('Validation Error', 'Name is required');
+      showError('Name is required');
       return false;
     }
     if (!formData.mobileNumber.trim()) {
-      Alert.alert('Validation Error', 'Mobile number is required');
+      showError('Mobile number is required');
       return false;
     }
-    if (!formData.emailAddress.trim()) {
-      Alert.alert('Validation Error', 'Email address is required');
-      return false;
-    }
-    // if (!formData.address.trim()) {
-    //   Alert.alert('Validation Error', 'Address is required');
-    //   return false;
-    // }
-    // if (!formData.gender) {
-    //   Alert.alert('Validation Error', 'Gender is required');
-    //   return false;
-    // }
-    // if (!formData.dateOfBirth) {
-    //   Alert.alert('Validation Error', 'Date of birth is required');
+    // if (!formData.emailAddress.trim()) {
+    //   showError('Email address is required');
     //   return false;
     // }
     return true;
@@ -188,10 +231,11 @@ export function EditProfileModal({
       // Store the update data and show OTP modal
       setPendingUpdateData(updateFormData);
       setIsLoading(false);
+      console.log('🚀 [EDIT PROFILE] Setting showOTPModal to true');
       setShowOTPModal(true);
     } catch (error: any) {
       console.error('Error preparing profile update:', error);
-      Alert.alert('Error', error.message || 'Failed to prepare profile update');
+      showError(error.message || 'Failed to prepare profile update');
       setIsLoading(false);
     }
   };
@@ -217,10 +261,15 @@ export function EditProfileModal({
       setPendingUpdateData(null);
       
       // Call the original onUpdate callback to refresh UI
+      console.log('🔄 [PROFILE UPDATE] Calling onUpdate callback to refresh profile UI...');
       await onUpdate(pendingUpdateData);
+      console.log('✅ [PROFILE UPDATE] Profile UI refreshed successfully');
       
-      // Close the main edit profile modal
-      onClose();
+      // Mark OTP as successful
+      setIsOTPSuccess(true);
+      
+      // Return success - let the OTP modal handle the UI updates and closing
+      return { success: true };
     } catch (error: any) {
       console.error('❌ [PROFILE UPDATE] Error updating profile:', error);
       throw error; // Re-throw to be handled by OTP modal
@@ -244,6 +293,7 @@ export function EditProfileModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -282,15 +332,18 @@ export function EditProfileModal({
                   </TouchableOpacity>
                 </View>
                 <View style={styles.profileInfo}>
-                  <Text variant="h6" style={styles.profileName}>{userData.name}</Text>
-                  {userData.organization?.name && (
-                  <Text variant="caption" style={styles.profileType}>
-                    {userData.organization.name}
-                  </Text>
-                  )}
-                  <Text variant="caption" style={styles.profileType}>
-                  {userData.userType} User
-                  </Text>
+                    <Text variant="h6" style={styles.profileName}>{userData.name}</Text>
+                    <Text variant="caption" style={styles.userType}>
+                    {userData.userType.charAt(0).toUpperCase() + userData.userType.slice(1)} User
+                    </Text>
+                    {userData.organization?.name && (
+                    <View style={styles.organizationContainer}>
+                      <Ionicons name="business-outline" size={12} color={COLORS.gray[600]} style={styles.organizationIcon} />
+                      <Text variant="caption" style={styles.userType}>
+                      {userData.organization.name}
+                      </Text>
+                    </View>
+                    )}
                   <TouchableOpacity onPress={pickImage} style={styles.changePhotoButton}>
                   <Text variant="caption" style={styles.changePhotoText}>Change Photo</Text>
                   </TouchableOpacity>
@@ -423,10 +476,19 @@ export function EditProfileModal({
                 onPress={handleSubmit}
                 loading={isLoading}
                 size="medium"
+                disabled={!hasChanges()}
               />
             </View>
           </View>
         </View>
+
+        {/* Toast */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+        />
 
         {/* Date Picker */}
         {showDatePicker && (
@@ -443,8 +505,17 @@ export function EditProfileModal({
         <ProfileOTPVerificationModal
           visible={showOTPModal}
           onClose={() => {
+            console.log('🚪 [EDIT PROFILE] OTP Modal onClose called, isOTPSuccess:', isOTPSuccess);
             setShowOTPModal(false);
             setPendingUpdateData(null);
+            
+            // Always close the main modal when OTP modal closes, as it means either:
+            // 1. User cancelled (they want to exit)
+            // 2. OTP verification was successful (profile updated)
+            // This provides better UX by returning to the profile page
+            console.log('🚪 [EDIT PROFILE] Closing EditProfileModal as well for better UX');
+            setIsOTPSuccess(false);
+            onClose();
           }}
           onVerificationSuccess={handleOTPVerificationSuccess}
           mobileNumber={formData.mobileNumber}
@@ -461,7 +532,7 @@ export function EditProfileModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: COLORS.brand.background,
   },
   header: {
     flexDirection: 'row',
@@ -471,7 +542,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[200],
+    borderBottomColor: COLORS.gray[100],
   },
   headerLeft: {
     flexDirection: 'row',
@@ -479,10 +550,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary + '15',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.brand.blue_subtle,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.sm,
@@ -493,25 +564,31 @@ const styles = StyleSheet.create({
     color: COLORS.gray[900],
   },
   closeButton: {
-    padding: SPACING.xs,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.gray[100],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
   },
   section: {
-    marginTop: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.gray[700],
-    marginBottom: SPACING.sm,
+    color: COLORS.secondary,
+    marginBottom: SPACING.md,
     paddingHorizontal: SPACING.xs,
   },
   sectionContent: {
     backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.xl,
+    borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
   },
   
@@ -558,15 +635,21 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.gray[900],
+    color: COLORS.secondary,
     marginBottom: 2,
   },
-  profileType: {
-    fontSize: 12,
-    color: COLORS.gray[500],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: SPACING.xs,
+  userType: {
+    fontSize: 13,
+    color: COLORS.gray[600],
+    fontWeight: '500',
+  },
+  organizationContainer: {
+    paddingTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+    organizationIcon: {
+    marginRight: 4,
   },
   changePhotoButton: {
     paddingVertical: SPACING.xs,
@@ -686,7 +769,7 @@ const styles = StyleSheet.create({
   footer: {
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
-    borderTopColor: COLORS.gray[200],
+    borderTopColor: COLORS.gray[100],
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
   },

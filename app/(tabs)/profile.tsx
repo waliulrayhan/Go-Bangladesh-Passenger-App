@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React from 'react';
 import {
   Image,
@@ -52,6 +52,120 @@ export default function Profile() {
   const [showHelpSupportModal, setShowHelpSupportModal] = React.useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = React.useState(false);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = React.useState(false);
+
+  // Track previous modal state to detect when modal closes
+  const prevShowEditProfileModal = React.useRef(showEditProfileModal);
+
+  /**
+   * Force refresh data immediately when returning to profile page
+   */
+  const forceRefreshProfileData = React.useCallback(async () => {
+    console.log('🔄 [PROFILE] Force refreshing profile data with complete refresh...');
+    try {
+      // Get current user ID
+      const { user } = useAuthStore.getState();
+      if (!user?.id) {
+        console.error('❌ [PROFILE] No user ID available for refresh');
+        return;
+      }
+
+      console.log('🔄 [PROFILE] Fetching fresh user data from API...');
+      
+      // Import API service dynamically to avoid circular dependencies
+      const { apiService } = await import('../../services/api');
+      
+      // Fetch completely fresh user data from API
+      const freshUserData = await apiService.getUserById(user.id.toString());
+      
+      if (freshUserData) {
+        console.log('✅ [PROFILE] Fresh user data received:', {
+          name: freshUserData.name,
+          email: freshUserData.emailAddress,
+          mobile: freshUserData.mobileNumber
+        });
+
+        // Create completely new user object with fresh data from ALL available API fields
+        const completelyFreshUser = {
+          id: freshUserData.id,
+          name: freshUserData.name,
+          email: freshUserData.emailAddress,
+          emailAddress: freshUserData.emailAddress,
+          mobile: freshUserData.mobileNumber,
+          mobileNumber: freshUserData.mobileNumber,
+          sex: (freshUserData.gender?.toLowerCase() === 'female' ? 'female' : 'male') as 'female' | 'male',
+          gender: freshUserData.gender,
+          cardNumber: freshUserData.cardNumber,
+          userType: freshUserData.userType?.toLowerCase() as 'passenger' | 'public' | 'private' || user.userType,
+          isActive: user.isActive || true,
+          createdAt: user.createdAt || new Date().toISOString(),
+          profileImage: freshUserData.imageUrl,
+          imageUrl: freshUserData.imageUrl,
+          dateOfBirth: freshUserData.dateOfBirth,
+          address: freshUserData.address,
+          passengerId: freshUserData.passengerId,
+          organizationId: freshUserData.organizationId,
+          organization: freshUserData.organization?.name || freshUserData.organization,
+          balance: freshUserData.balance
+        };
+
+        console.log('✅ [PROFILE] Complete user data prepared:', {
+          name: completelyFreshUser.name,
+          email: completelyFreshUser.email,
+          mobile: completelyFreshUser.mobile,
+          address: completelyFreshUser.address,
+          dateOfBirth: completelyFreshUser.dateOfBirth,
+          gender: completelyFreshUser.gender
+        });
+
+        console.log('🔄 [PROFILE] Updating auth store with fresh data...');
+
+        // Force update the auth store with completely fresh data
+        const { storageService } = await import('../../utils/storage');
+        const { STORAGE_KEYS } = await import('../../utils/constants');
+        
+        await storageService.setItem(STORAGE_KEYS.USER_DATA, completelyFreshUser);
+        useAuthStore.setState({ user: completelyFreshUser });
+
+        console.log('✅ [PROFILE] Auth store updated with completely fresh data');
+      } else {
+        console.error('❌ [PROFILE] No fresh user data received from API');
+      }
+      
+    } catch (error) {
+      console.error('❌ [PROFILE] Error force refreshing profile data:', error);
+    }
+  }, []); // Empty dependency array but access refreshAllData directly
+
+  /**
+   * Refresh data when edit profile modal closes to show updated information
+   */
+  React.useEffect(() => {
+    // Only refresh when modal transitions from true to false (closes)
+    if (prevShowEditProfileModal.current === true && showEditProfileModal === false) {
+      console.log('🔄 [PROFILE] Edit profile modal closed, refreshing data...');
+      
+      // Use immediate refresh without timeout for faster response
+      forceRefreshProfileData();
+    }
+
+    // Update the ref to track current state for next render
+    prevShowEditProfileModal.current = showEditProfileModal;
+  }, [showEditProfileModal]); // Remove forceRefreshProfileData from dependencies
+
+  /**
+   * Also refresh data when the component gains focus (when navigating back to profile)
+   */
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔄 [PROFILE] Profile page focused, checking for fresh data...');
+      // Add a small delay to ensure any pending updates are complete
+      const timeoutId = setTimeout(() => {
+        forceRefreshProfileData();
+      }, 300);
+      
+      return () => clearTimeout(timeoutId);
+    }, []) // Empty dependency array to prevent infinite calls
+  );
 
   /**
    * Handle pull-to-refresh functionality
