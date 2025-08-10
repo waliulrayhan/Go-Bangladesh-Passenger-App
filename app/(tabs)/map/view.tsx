@@ -433,7 +433,7 @@ export default function MapViewScreen() {
               color: #87CEEB;
             }
             
-            /* User location marker styling */
+            /* User location marker styling - Google Maps Style */
             .user-location-marker {
               position: relative;
               z-index: 1000;
@@ -443,13 +443,14 @@ export default function MapViewScreen() {
             }
             
             .user-location-dot {
-              width: 12px;
-              height: 12px;
-              background: #007AFF;
-              border: 3px solid white;
+              width: 15px;
+              height: 15px;
+              background: #4285F4;
+              border: 3px solid #FFFFFF;
               border-radius: 50%;
-              box-shadow: 0 2px 8px rgba(0, 122, 255, 0.4);
+              box-shadow: 0 2px 8px rgba(66, 133, 244, 0.4);
               z-index: 2;
+              position: relative;
             }
             
             .user-location-pulse {
@@ -457,25 +458,25 @@ export default function MapViewScreen() {
               top: 50%;
               left: 50%;
               transform: translate(-50%, -50%);
-              width: 24px;
-              height: 24px;
-              background: rgba(0, 122, 255, 0.3);
+              width: 40px;
+              height: 40px;
+              background: rgba(66, 133, 244, 0.2);
               border-radius: 50%;
-              animation: userLocationPulse 2s infinite;
+              animation: userLocationPulse 2.5s infinite;
               z-index: 1;
             }
             
             @keyframes userLocationPulse {
               0% {
-                transform: translate(-50%, -50%) scale(1);
+                transform: translate(-50%, -50%) scale(0.8);
                 opacity: 0.8;
               }
               50% {
-                transform: translate(-50%, -50%) scale(1.5);
-                opacity: 0.4;
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0.3;
               }
               100% {
-                transform: translate(-50%, -50%) scale(2);
+                transform: translate(-50%, -50%) scale(1.8);
                 opacity: 0;
               }
             }
@@ -545,7 +546,7 @@ export default function MapViewScreen() {
               });
             }
             
-            // Create user location icon
+            // Create user location icon - Google Maps Style
             function createUserLocationIcon() {
               return L.divIcon({
                 html: '<div class="user-location-marker">' +
@@ -553,9 +554,9 @@ export default function MapViewScreen() {
                         '<div class="user-location-dot"></div>' +
                       '</div>',
                 className: 'custom-user-location-marker',
-                iconSize: [30, 30],
-                iconAnchor: [15, 15],
-                popupAnchor: [0, -15]
+                iconSize: [40, 40],
+                iconAnchor: [20, 20],
+                popupAnchor: [0, -20]
               });
             }
             
@@ -781,19 +782,19 @@ export default function MapViewScreen() {
         </View>
       )}
 
-      {/* My Location Button */}
+      {/* My Location Button - Google Maps Style */}
       <TouchableOpacity 
         style={styles.myLocationButton} 
         onPress={handleMyLocationPress}
         disabled={gettingLocation}
       >
         {gettingLocation ? (
-          <ActivityIndicator size="small" color={COLORS.white} />
+          <ActivityIndicator size="small" color="#1A73E8" />
         ) : (
           <Ionicons 
             name="locate" 
-            size={24} 
-            color={COLORS.white} 
+            size={20} 
+            color="#1A73E8" 
           />
         )}
       </TouchableOpacity>
@@ -925,18 +926,20 @@ const styles = StyleSheet.create({
   },
   myLocationButton: {
     position: 'absolute',
-    bottom: 120,
+    bottom: 30,
     right: 16,
-    width: 56,
-    height: 56,
-    backgroundColor: COLORS.brand.blue,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowRadius: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0,0,0,0.1)',
   },
 });
