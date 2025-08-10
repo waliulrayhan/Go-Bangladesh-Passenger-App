@@ -5,48 +5,48 @@ export const USER_TYPES = {
 } as const;
 
 export const COLORS = {
-  // Go Bangladesh brand colors (updated to match COLOUR.md)
+  // Brand colors
   primary: '#4A90E2', // Go Bangladesh Blue
-  secondary: '#FF8A00', // Go Bangladesh Orange (updated)
-  accent: '#2E5C8A', // Darker blue for accents
-  orange_light: '#FFAB4D', // Lighter orange for highlights
-  
-  // System colors (updated to match COLOUR.md)
-  success: '#00C851',
-  error: '#FF4444',
-  warning: '#FF8800',
-  info: '#4A90E2',
-  purple: '#7c3aed',
-  white: '#ffffff',
+  secondary: '#FF8A00', // Go Bangladesh Orange
+  accent: '#1E40AF', // Deep navy for accents
+  orange_light: '#FDBA74', // Warm light orange
+
+  // System status colors (accessible)
+  success: '#16A34A', // Accessible green
+  error: '#DC2626',   // Deep, clear red
+  warning: '#D97706', // Rich amber
+  info: '#0EA5E9',    // Fresh cyan-blue
+  purple: '#8B5CF6',
+  white: '#FFFFFF',
   black: '#000000',
-  
-  // Gray scale (updated to match COLOUR.md)
+
+  // Grayscale (modern, consistent)
   gray: {
-    50: '#FAFAFA',
-    100: '#F5F5F5',
-    200: '#E5E5E5',
-    300: '#D1D1D1',
-    400: '#B8B8B8',
-    500: '#8E8E8E',
-    600: '#6B6B6B',
-    700: '#4A4A4A',
-    800: '#2D2D2D',
-    900: '#1A1A1A'
+    50:  '#FAFAFA',
+    100: '#F4F4F5',
+    200: '#E4E4E7',
+    300: '#D4D4D8',
+    400: '#A1A1AA',
+    500: '#71717A',
+    600: '#52525B',
+    700: '#3F3F46',
+    800: '#27272A',
+    900: '#18181B'
   },
 
-  // Go Bangladesh specific gradients and variations (updated)
+  // Brand variations & UI backgrounds
   brand: {
     blue: '#4A90E2',
     orange: '#FF8A00',
-    blue_dark: '#2E5C8A',
-    blue_light: '#7BB3F0',
-    blue_subtle: '#E8F2FF',
-    orange_dark: '#CC6E00',
-    orange_light: '#FFAB4D',
-    orange_subtle: '#FFF4E6',
+    blue_dark: '#1E40AF',
+    blue_light: '#60A5FA',
+    blue_subtle: '#EFF6FF',
+    orange_dark: '#C2410C',
+    orange_light: '#FDBA74',
+    orange_subtle: '#FFF7ED',
     background: '#FAFAFA',
     surface: '#FFFFFF',
-    section: '#F5F5F5'
+    section: '#F9FAFB'
   }
 };
 
@@ -76,7 +76,7 @@ export const BORDER_RADIUS = {
   full: 9999,
 } as const;
 
-// Compact component sizes for mobile
+// Component sizes for mobile
 export const SIZES = {
   icon: {
     xs: 16,
