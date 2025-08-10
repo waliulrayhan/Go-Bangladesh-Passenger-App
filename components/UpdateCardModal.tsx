@@ -1,11 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef, useState } from 'react';
+import { router } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { useToast } from '../hooks/useToast';
 import { apiService } from '../services/api';
 import { COLORS, SPACING } from '../utils/constants';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Text } from './ui/Text';
+import { Toast } from './ui/Toast';
 
 interface UpdateCardModalProps {
   visible: boolean;
@@ -18,6 +21,17 @@ interface UpdateCardModalProps {
 
 type Step = 'card-input' | 'otp-verification';
 
+interface ValidationResult {
+  isValid: boolean;
+  message?: string;
+}
+
+// Constants
+const OTP_LENGTH = 6;
+const OTP_RESEND_TIMER = 60;
+const CARD_NUMBER_MIN_LENGTH = 8;
+const CARD_NUMBER_MAX_LENGTH = 16;
+
 export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
   visible,
   currentCardNumber,
@@ -26,192 +40,304 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
   onUpdate,
   onSendOTP
 }) => {
+  // State management
   const [step, setStep] = useState<Step>('card-input');
   const [cardNumber, setCardNumber] = useState('');
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState<string[]>(new Array(OTP_LENGTH).fill(''));
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [otpTimer, setOtpTimer] = useState(0);
-  const inputRefs = useRef<(TextInput | null)[]>([]);
+  
+  // Refs
+  const otpInputRefs = useRef<(TextInput | null)[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Toast hook
+  const { toast, showSuccess, showError, showWarning, hideToast } = useToast();
 
-  // Reset state when modal opens/closes
+  // Reset state when modal visibility changes
   useEffect(() => {
     if (visible) {
-      setStep('card-input');
-      setCardNumber('');
-      setOtp('');
-      setError('');
-      setOtpTimer(0);
+      resetModalState();
     }
   }, [visible]);
 
-  // OTP Timer countdown
+  // OTP Timer countdown effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
     if (otpTimer > 0) {
-      interval = setInterval(() => {
+      timerRef.current = setTimeout(() => {
         setOtpTimer((prev) => prev - 1);
       }, 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
   }, [otpTimer]);
 
-  const validateCardNumber = (input: string) => {
-    // Validation for card number (at least 8 characters, only capital letters and numbers)
-    const cardRegex = /^[A-Z0-9]{8,}$/;
-    return cardRegex.test(input.trim());
-  };
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
-  const validateOTP = (input: string) => {
-    // Validate OTP (6 digits)
+  // Utility functions
+  const resetModalState = useCallback(() => {
+    setStep('card-input');
+    setCardNumber('');
+    setOtp(new Array(OTP_LENGTH).fill(''));
+    setOtpTimer(0);
+    hideToast();
+  }, [hideToast]);
+
+  const validateCardNumber = useCallback((input: string): ValidationResult => {
+    const trimmedInput = input.trim();
+    
+    if (!trimmedInput) {
+      return { isValid: false, message: 'Card number is required' };
+    }
+    
+    if (trimmedInput.length < CARD_NUMBER_MIN_LENGTH) {
+      return { 
+        isValid: false, 
+        message: `Card number must be at least ${CARD_NUMBER_MIN_LENGTH} characters` 
+      };
+    }
+    
+    const cardRegex = /^[A-Z0-9]+$/;
+    if (!cardRegex.test(trimmedInput)) {
+      return { 
+        isValid: false, 
+        message: 'Card number should only contain letters and numbers' 
+      };
+    }
+    
+    if (trimmedInput === currentCardNumber) {
+      return { 
+        isValid: false, 
+        message: 'Please enter a different card number' 
+      };
+    }
+    
+    return { isValid: true };
+  }, [currentCardNumber]);
+
+  const validateOTP = useCallback((otpArray: string[]): ValidationResult => {
+    const otpString = otpArray.join('');
+    
+    if (otpString.length !== OTP_LENGTH) {
+      return { 
+        isValid: false, 
+        message: `Please enter the complete ${OTP_LENGTH}-digit OTP` 
+      };
+    }
+    
     const otpRegex = /^\d{6}$/;
-    return otpRegex.test(input.trim());
-  };
+    if (!otpRegex.test(otpString)) {
+      return { 
+        isValid: false, 
+        message: 'OTP should only contain numbers' 
+      };
+    }
+    
+    return { isValid: true };
+  }, []);
 
-  const handleCardNumberChange = (text: string) => {
-    // Convert to uppercase and filter only letters and numbers
+  // Event handlers
+  const handleCardNumberChange = useCallback((text: string) => {
     const filteredText = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
     setCardNumber(filteredText);
-    setError(''); // Clear error when user types
-  };
+  }, []);
 
-  const handleOtpChange = (value: string) => {
-    if (isLoading) return; // Prevent changes while loading
-    setOtp(value);
-    setError(''); // Clear error when user types
-  };
-
-  const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleSendOTP = async () => {
-    if (!validateCardNumber(cardNumber)) {
-      setError('Please enter a valid card number (at least 8 characters, letters and numbers only)');
+  const handleOtpChange = useCallback((value: string, index: number) => {
+    if (isLoading) return;
+    
+    const newOtp = [...otp];
+    
+    // Handle paste operation
+    if (value.length > 1) {
+      const pastedValue = value.replace(/[^0-9]/g, '').slice(0, OTP_LENGTH);
+      const pastedArray = pastedValue.split('');
+      
+      for (let i = 0; i < OTP_LENGTH; i++) {
+        newOtp[i] = pastedArray[i] || '';
+      }
+      
+      setOtp(newOtp);
+      
+      // Focus on the next empty input or the last input
+      const nextIndex = Math.min(pastedArray.length, OTP_LENGTH - 1);
+      setTimeout(() => {
+        otpInputRefs.current[nextIndex]?.focus();
+      }, 0);
+      
       return;
     }
+    
+    // Handle single character input
+    if (value.length <= 1 && /^[0-9]*$/.test(value)) {
+      newOtp[index] = value;
+      setOtp(newOtp);
+      
+      // Auto-focus next input
+      if (value && index < OTP_LENGTH - 1) {
+        setTimeout(() => {
+          otpInputRefs.current[index + 1]?.focus();
+        }, 0);
+      }
+    }
+  }, [otp, isLoading]);
 
-    if (cardNumber.trim() === currentCardNumber) {
-      setError('Please enter a different card number');
+  const handleOtpKeyPress = useCallback((e: any, index: number) => {
+    if (e.nativeEvent.key === 'Backspace') {
+      if (!otp[index] && index > 0) {
+        // Focus previous input on backspace if current is empty
+        setTimeout(() => {
+          otpInputRefs.current[index - 1]?.focus();
+        }, 0);
+      }
+    }
+  }, [otp]);
+
+  const handleSendOTP = useCallback(async () => {
+    const cardValidation = validateCardNumber(cardNumber);
+    
+    if (!cardValidation.isValid) {
+      showError(cardValidation.message || 'Invalid card number');
       return;
     }
 
     setIsLoading(true);
-    setError('');
 
     try {
-      // First check if the card is valid and available
+      // Validate card availability
       const cardValidationResponse = await apiService.checkCardValidity(cardNumber.trim());
       
       if (!cardValidationResponse.isSuccess) {
-        setError(cardValidationResponse.message || 'Card is not valid or not available');
+        showError(cardValidationResponse.message || 'Card is not valid or not available');
         return;
       }
 
-      // If card is valid, proceed to send OTP
+      // Send OTP
       await onSendOTP(cardNumber.trim());
+      
+      showSuccess('OTP sent successfully to your registered mobile number');
       setStep('otp-verification');
-      setOtpTimer(60); // 60 seconds countdown
+      setOtpTimer(OTP_RESEND_TIMER);
+      
+      // Focus first OTP input after a short delay
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 300);
+      
     } catch (error: any) {
-      // Handle specific error messages from card validation
-      if (error.response?.data?.data?.message) {
-        setError(error.response.data.data.message);
-      } else if (error.response?.data?.message) {
-        setError(error.response.data.message);
-      } else {
-        setError(error.message || 'Failed to validate card or send OTP');
-      }
+      const errorMessage = error.response?.data?.data?.message || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to send OTP';
+      showError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [cardNumber, validateCardNumber, onSendOTP, showError, showSuccess]);
 
-  const handleVerifyAndUpdate = async () => {
-    if (!validateOTP(otp)) {
-      setError('Please enter a valid 6-digit OTP');
+  const handleVerifyAndUpdate = useCallback(async () => {
+    const otpValidation = validateOTP(otp);
+    
+    if (!otpValidation.isValid) {
+      showError(otpValidation.message || 'Invalid OTP');
       return;
     }
 
     setIsLoading(true);
-    setError('');
 
     try {
-      await onUpdate(cardNumber.trim(), otp.trim());
-      setCardNumber('');
-      setOtp('');
-      setStep('card-input');
-      onClose();
+      const otpString = otp.join('');
+      await onUpdate(cardNumber.trim(), otpString);
+      
+      showSuccess('Card number updated successfully!');
+      
+      // Close modal and navigate back to profile after a short delay
+      setTimeout(() => {
+        resetModalState();
+        onClose();
+        router.push('/(tabs)/profile');
+      }, 1500);
+      
     } catch (error: any) {
-      setError(error.message || 'Failed to update card number');
-      // Clear OTP form on error
-      setOtp('');
+      const errorMessage = error.message || 'Failed to update card number';
+      showError(errorMessage);
+      
+      // Clear OTP on error
+      setOtp(new Array(OTP_LENGTH).fill(''));
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 100);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [otp, cardNumber, validateOTP, onUpdate, showError, showSuccess, resetModalState, onClose]);
 
-  const handleResendOTP = async () => {
+  const handleResendOTP = useCallback(async () => {
     setIsLoading(true);
-    setError('');
 
     try {
       await onSendOTP(cardNumber.trim());
-      setOtpTimer(60); // Reset countdown
+      setOtpTimer(OTP_RESEND_TIMER);
+      showSuccess('OTP resent successfully');
+      
+      // Clear current OTP and focus first input
+      setOtp(new Array(OTP_LENGTH).fill(''));
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 100);
+      
     } catch (error: any) {
-      setError(error.message || 'Failed to resend OTP');
+      const errorMessage = error.message || 'Failed to resend OTP';
+      showError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [cardNumber, onSendOTP, showError, showSuccess]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     setStep('card-input');
-    setOtp('');
-    setError('');
-  };
+    setOtp(new Array(OTP_LENGTH).fill(''));
+    hideToast();
+  }, [hideToast]);
 
-  const handleClose = () => {
-    setCardNumber('');
-    setOtp('');
-    setError('');
-    setStep('card-input');
+  const handleClose = useCallback(() => {
+    resetModalState();
     onClose();
-  };
+  }, [resetModalState, onClose]);
 
+  // Render functions
   const renderCardInputStep = () => (
     <>
-      {/* Card Information Section */}
-      <View style={styles.sectionContainer}>
-        
-        {currentCardNumber && (
+      {/* Current Card Information */}
+      {currentCardNumber && (
+        <View style={styles.sectionContainer}>
           <View style={styles.currentCardContainer}>
             <Text variant="caption" style={styles.currentCardLabel}>Current Card Number</Text>
             <Text variant="body" style={styles.currentCardNumber}>{currentCardNumber}</Text>
           </View>
-        )}
-      </View>
+        </View>
+      )}
 
-      {/* Update Section */}
+      {/* New Card Input */}
       <View style={styles.sectionContainer}>
-        {/* <View style={styles.sectionHeader}>
-          <View style={styles.sectionIconContainer}>
-            <Ionicons name="card-outline" size={18} color={COLORS.primary} />
-          </View>
-          <Text variant="body" style={styles.sectionTitle}>New Card Details</Text>
-        </View> */}
-
         <Input
           label="New Card Number"
           value={cardNumber}
           onChangeText={handleCardNumberChange}
-          placeholder="(e.g. ABCD1234)"
+          placeholder="Enter new card number (e.g. ABCD1234)"
           keyboardType="default"
           icon="card-outline"
-          maxLength={16}
+          maxLength={CARD_NUMBER_MAX_LENGTH}
           autoCapitalize="characters"
-          error={error}
         />
 
         <View style={styles.helperContainer}>
@@ -244,51 +370,65 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
 
   const renderOTPVerificationStep = () => (
     <>
-      {/* Verification Information Section */}
+      {/* OTP Information */}
       <View style={styles.sectionContainer}>
-        {/* <View style={styles.sectionHeader}>
-          <View style={styles.sectionIconContainer}>
-            <Ionicons name="shield-checkmark" size={18} color={COLORS.primary} />
-          </View>
-          <Text variant="body" style={styles.sectionTitle}>Verification Required</Text>
-        </View> */}
-        
         <View style={styles.otpInfoContainer}>
+          <View style={styles.otpIconContainer}>
+            <Ionicons name="shield-checkmark" size={32} color={COLORS.primary} />
+          </View>
           <Text variant="body" style={styles.otpInfoText}>
-            We've sent a verification code to your mobile number
+            We've sent a verification code to
           </Text>
           <Text variant="body" style={styles.mobileNumber}>{userMobile}</Text>
           <Text variant="caption" style={styles.otpSubText}>
-            Enter the 6-digit code to update your card number
+            Enter the {OTP_LENGTH}-digit code to update your card number
           </Text>
         </View>
       </View>
 
-      {/* OTP Input Section */}
+      {/* OTP Input */}
       <View style={styles.sectionContainer}>
-        {/* <View style={styles.sectionHeader}>
-          <View style={styles.sectionIconContainer}>
-            <Ionicons name="keypad" size={18} color={COLORS.primary} />
-          </View>
-          <Text variant="body" style={styles.sectionTitle}>Enter Code</Text>
-        </View> */}
+        <Text variant="body" style={styles.otpLabel}>Verification Code</Text>
+        
+        <View style={styles.otpContainer}>
+          {otp.map((digit, index) => (
+            <TextInput
+              key={index}
+              ref={(ref) => {
+                otpInputRefs.current[index] = ref;
+              }}
+              style={[
+                styles.otpInput,
+                digit && styles.otpInputFilled,
+              ]}
+              value={digit}
+              onChangeText={(value) => handleOtpChange(value, index)}
+              onKeyPress={(e) => handleOtpKeyPress(e, index)}
+              keyboardType="numeric"
+              maxLength={1}
+              textAlign="center"
+              selectTextOnFocus
+              editable={!isLoading}
+            />
+          ))}
+        </View>
 
-        <Input
-          label="Verification Code"
-          value={otp}
-          onChangeText={handleOtpChange}
-          placeholder="Enter 6-digit OTP"
-          keyboardType="numeric"
-          icon="lock-closed"
-          maxLength={6}
-          error={error}
-        />
-
+        {/* OTP Timer/Resend */}
         <View style={styles.otpTimer}>
           {otpTimer > 0 ? (
-            <Text variant="caption" style={styles.timerText}>Resend OTP in {otpTimer}s</Text>
+            <View style={styles.timerContainer}>
+              <Ionicons name="time-outline" size={16} color={COLORS.gray[500]} />
+              <Text variant="caption" style={styles.timerText}>
+                Resend OTP in {otpTimer}s
+              </Text>
+            </View>
           ) : (
-            <TouchableOpacity onPress={handleResendOTP} disabled={isLoading}>
+            <TouchableOpacity 
+              style={styles.resendButton} 
+              onPress={handleResendOTP} 
+              disabled={isLoading}
+            >
+              <Ionicons name="refresh-outline" size={16} color={COLORS.primary} />
               <Text variant="button" style={styles.resendText}>Resend OTP</Text>
             </TouchableOpacity>
           )}
@@ -306,7 +446,7 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
             title="Update Card"
             onPress={handleVerifyAndUpdate}
             loading={isLoading}
-            disabled={!otp.trim() || isLoading}
+            disabled={otp.some(digit => !digit) || isLoading}
             size="medium"
             fullWidth
           />
@@ -316,33 +456,45 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
   );
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={handleClose}
-    >
-      <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <View style={styles.iconContainer}>
-                <Ionicons name="card-outline" size={22} color={COLORS.primary} />
+    <>
+      <Modal
+        visible={visible}
+        transparent
+        animationType="slide"
+        onRequestClose={handleClose}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.modalContainer}>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.headerLeft}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name="card-outline" size={22} color={COLORS.primary} />
+                </View>
+                <Text variant="h5" style={styles.title}>
+                  {step === 'card-input' ? 'Update Card Number' : 'Verify OTP'}
+                </Text>
               </View>
-              <Text variant="h5" style={styles.title}>
-                {step === 'card-input' ? 'Update Card Number' : 'Verify OTP'}
-              </Text>
+              <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+                <Ionicons name="close-outline" size={26} color={COLORS.gray[600]} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-              <Ionicons name="close-outline" size={26} color={COLORS.gray[600]} />
-            </TouchableOpacity>
-          </View>
 
-          {step === 'card-input' ? renderCardInputStep() : renderOTPVerificationStep()}
+            {step === 'card-input' ? renderCardInputStep() : renderOTPVerificationStep()}
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+
+      {/* Toast Component */}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+        duration={3000}
+        position="top"
+      />
+    </>
   );
 };
 
@@ -405,25 +557,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     marginBottom: SPACING.lg,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  sectionIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.primary + '10',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: SPACING.xs,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.gray[800],
-  },
   currentCardContainer: {
     backgroundColor: COLORS.gray[50],
     borderRadius: 12,
@@ -447,7 +580,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginTop: SPACING.sm,
-    paddingHorizontal: SPACING.xl,
+    paddingHorizontal: SPACING.xs,
   },
   helperText: {
     fontSize: 14,
@@ -456,6 +589,115 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     flex: 1,
   },
+  // OTP Styles
+  otpInfoContainer: {
+    backgroundColor: COLORS.gray[50],
+    borderRadius: 16,
+    padding: SPACING.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.primary + '20',
+  },
+  otpIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.primary + '10',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  otpInfoText: {
+    fontSize: 15,
+    color: COLORS.gray[700],
+    textAlign: 'center',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  mobileNumber: {
+    fontSize: 17,
+    color: COLORS.primary,
+    fontWeight: '700',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  otpSubText: {
+    fontSize: 13,
+    color: COLORS.gray[600],
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  otpLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray[800],
+    marginBottom: SPACING.md,
+    textAlign: 'center',
+  },
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.sm,
+  },
+  otpInput: {
+    width: 45,
+    height: 55,
+    borderWidth: 2,
+    borderColor: COLORS.gray[300],
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.gray[900],
+    shadowColor: COLORS.gray[400],
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  otpInputFilled: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '05',
+  },
+  otpTimer: {
+    alignItems: 'center',
+    marginTop: SPACING.sm,
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.gray[100],
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: 20,
+  },
+  timerText: {
+    fontSize: 14,
+    color: COLORS.gray[600],
+    marginLeft: SPACING.xs,
+    fontWeight: '500',
+  },
+  resendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '10',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '30',
+  },
+  resendText: {
+    fontSize: 15,
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginLeft: SPACING.xs,
+  },
+  // Action Styles
   actions: {
     flexDirection: 'row',
     paddingHorizontal: SPACING.lg,
@@ -469,64 +711,17 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: COLORS.gray[100],
     borderWidth: 1,
     borderColor: COLORS.gray[200],
   },
   cancelText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: COLORS.gray[700],
   },
   updateButtonContainer: {
     flex: 1,
-  },
-  otpInfoContainer: {
-    backgroundColor: COLORS.gray[50],
-    borderRadius: 12,
-    padding: SPACING.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.primary + '20',
-  },
-  otpInfoText: {
-    fontSize: 14,
-    color: COLORS.gray[700],
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  mobileNumber: {
-    fontSize: 16,
-    color: COLORS.primary,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  otpSubText: {
-    fontSize: 12,
-    color: COLORS.gray[600],
-    textAlign: 'center',
-  },
-  otpTimer: {
-    alignItems: 'center',
-    marginTop: SPACING.md,
-    paddingHorizontal: SPACING.sm,
-  },
-  timerText: {
-    fontSize: 14,
-    color: COLORS.gray[600],
-    backgroundColor: COLORS.gray[50],
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  resendText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    fontWeight: '600',
-    backgroundColor: COLORS.primary + '10',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: 8,
   },
 });
