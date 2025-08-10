@@ -23,39 +23,73 @@ import { Input } from './ui/Input';
 import { Text } from './ui/Text';
 import { Toast } from './ui/Toast';
 
+// Constants
 const API_BASE_URL = 'https://thegobd.com';
+const GENDERS = ['Male', 'Female'] as const;
+
+// Types
+interface UserData {
+  id: string;
+  name: string;
+  mobileNumber: string;
+  emailAddress: string;
+  gender: string;
+  address: string;
+  dateOfBirth: string;
+  userType: string;
+  imageUrl?: string;
+  passengerId?: string;
+  studentId?: string;
+  organizationId?: string;
+  organization?: { name: string };
+  cardNumber?: string;
+}
+
+interface ProfileFormData {
+  name: string;
+  mobileNumber: string;
+  emailAddress: string;
+  address: string;
+  gender: string;
+  dateOfBirth: string;
+  passengerId: string;
+}
 
 interface EditProfileModalProps {
   visible: boolean;
   onClose: () => void;
   onUpdate: (updateData: FormData) => Promise<void>;
-  userData: {
-    id: string;
-    name: string;
-    mobileNumber: string;
-    emailAddress: string;
-    gender: string;
-    address: string;
-    dateOfBirth: string;
-    userType: string;
-    imageUrl?: string;
-    passengerId?: string;
-    studentId?: string;
-    organizationId?: string;
-    organization?: { name: string };
-    cardNumber?: string;
-  };
+  userData: UserData;
 }
 
+/**
+ * EditProfileModal Component
+ * 
+ * A comprehensive modal for editing user profile information including:
+ * - Profile picture upload with image picker
+ * - Personal information (name, contact, demographics)
+ * - Form validation and error handling
+ * - OTP verification workflow for security
+ * - Responsive UI with animations
+ * 
+ * Features:
+ * - Image picker with permission handling
+ * - Date picker for birth date selection
+ * - Gender selection with radio buttons
+ * - Form change detection
+ * - Two-step verification process
+ */
 export function EditProfileModal({
   visible,
   onClose,
   onUpdate,
   userData,
 }: EditProfileModalProps) {
+  // ==================== HOOKS ====================
   const { toast, showError, showSuccess, hideToast } = useToast();
-  
-  const [formData, setFormData] = useState({
+
+  // ==================== STATE ====================
+  const [formData, setFormData] = useState<ProfileFormData>({
     name: userData.name,
     mobileNumber: userData.mobileNumber,
     emailAddress: userData.emailAddress,
@@ -65,7 +99,7 @@ export function EditProfileModal({
     passengerId: userData.passengerId || userData.studentId || '',
   });
 
-  const [originalData, setOriginalData] = useState({
+  const [originalData, setOriginalData] = useState<ProfileFormData>({
     name: userData.name,
     mobileNumber: userData.mobileNumber,
     emailAddress: userData.emailAddress,
@@ -80,65 +114,72 @@ export function EditProfileModal({
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [isOTPSuccess, setIsOTPSuccess] = useState(false);
-  
-  // Debug showOTPModal state changes
-  useEffect(() => {
-    console.log('🔍 [EDIT PROFILE] showOTPModal state changed:', showOTPModal);
-  }, [showOTPModal]);
   const [pendingUpdateData, setPendingUpdateData] = useState<FormData | null>(null);
 
-  // Initialize form data when modal first opens
-  useEffect(() => {
-    console.log('🔄 [EDIT PROFILE] Modal visibility changed:', visible);
-    if (visible) {
-      console.log('🚀 [EDIT PROFILE] Initializing form data');
-      const initialData = {
-        name: userData.name,
-        mobileNumber: userData.mobileNumber,
-        emailAddress: userData.emailAddress,
-        address: userData.address,
-        gender: userData.gender,
-        dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
-        passengerId: userData.passengerId || userData.studentId || '',
-      };
-      
-      setFormData(initialData);
-      setOriginalData(initialData);
-      setSelectedImage(null);
-      setShowOTPModal(false);
-      setIsOTPSuccess(false);
-      setPendingUpdateData(null);
-    }
-  }, [visible]); // Only depend on visible, not userData
-  
-  // Update form data when userData changes but modal is already open
-  useEffect(() => {
-    if (visible) {
-      console.log('📊 [EDIT PROFILE] UserData changed, updating form data');
-      const updatedData = {
-        name: userData.name,
-        mobileNumber: userData.mobileNumber,
-        emailAddress: userData.emailAddress,
-        address: userData.address,
-        gender: userData.gender,
-        dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
-        passengerId: userData.passengerId || userData.studentId || '',
-      };
-      
-      setFormData(updatedData);
-      setOriginalData(updatedData);
-    }
-  }, [userData]); // Only depend on userData changes
+  // ==================== UTILITY FUNCTIONS ====================
+  const createInitialFormData = (): ProfileFormData => ({
+    name: userData.name,
+    mobileNumber: userData.mobileNumber,
+    emailAddress: userData.emailAddress,
+    address: userData.address,
+    gender: userData.gender,
+    dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
+    passengerId: userData.passengerId || userData.studentId || '',
+  });
 
-  // Check if there are any changes
-  const hasChanges = () => {
+  const resetForm = () => {
+    const initialData = createInitialFormData();
+    setFormData(initialData);
+    setOriginalData(initialData);
+    setSelectedImage(null);
+    setShowOTPModal(false);
+    setIsOTPSuccess(false);
+    setPendingUpdateData(null);
+  };
+
+  const hasChanges = (): boolean => {
     if (selectedImage) return true;
     
     return Object.keys(formData).some(key => {
-      return formData[key as keyof typeof formData] !== originalData[key as keyof typeof originalData];
+      const formKey = key as keyof ProfileFormData;
+      return formData[formKey] !== originalData[formKey];
     });
   };
 
+  const getProfileImageSource = () => {
+    if (selectedImage) return { uri: selectedImage };
+    if (userData.imageUrl) return { uri: `${API_BASE_URL}/${userData.imageUrl}` };
+    return null;
+  };
+
+  const validateForm = (): boolean => {
+    if (!formData.name.trim()) {
+      showError('Name is required');
+      return false;
+    }
+    if (!formData.mobileNumber.trim()) {
+      showError('Mobile number is required');
+      return false;
+    }
+    return true;
+  };
+
+  // ==================== EFFECTS ====================
+  useEffect(() => {
+    if (visible) {
+      resetForm();
+    }
+  }, [visible]);
+  
+  useEffect(() => {
+    if (visible) {
+      const updatedData = createInitialFormData();
+      setFormData(updatedData);
+      setOriginalData(updatedData);
+    }
+  }, [userData]);
+
+  // ==================== EVENT HANDLERS ====================
   const pickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -151,7 +192,7 @@ export function EditProfileModal({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [1, 1], // 1:1 aspect ratio
+        aspect: [1, 1],
         quality: 0.8,
       });
 
@@ -171,20 +212,42 @@ export function EditProfileModal({
     }
   };
 
-  const validateForm = () => {
-    if (!formData.name.trim()) {
-      showError('Name is required');
-      return false;
+  const createUpdateFormData = (): FormData => {
+    const updateFormData = new FormData();
+    
+    // Add form fields with correct API field names
+    updateFormData.append('Id', userData.id);
+    updateFormData.append('Name', formData.name);
+    updateFormData.append('DateOfBirth', formData.dateOfBirth);
+    updateFormData.append('MobileNumber', formData.mobileNumber);
+    updateFormData.append('EmailAddress', formData.emailAddress);
+    updateFormData.append('Address', formData.address);
+    updateFormData.append('Gender', formData.gender);
+    
+    // Normalize user type
+    const normalizedUserType = userData.userType.toLowerCase() === 'public' ? 'Public' : 
+                               userData.userType.toLowerCase() === 'private' ? 'Private' : 
+                               userData.userType;
+    updateFormData.append('UserType', normalizedUserType);
+    updateFormData.append('PassengerId', formData.passengerId);
+    
+    // Add optional fields
+    if (userData.organizationId) {
+      updateFormData.append('OrganizationId', userData.organizationId);
     }
-    if (!formData.mobileNumber.trim()) {
-      showError('Mobile number is required');
-      return false;
+
+    // Add profile picture if selected
+    if (selectedImage) {
+      const timestamp = Date.now();
+      const filename = `profile-${timestamp}.jpg`;
+      updateFormData.append('ProfilePicture', {
+        uri: selectedImage,
+        type: 'image/jpeg',
+        name: filename,
+      } as any);
     }
-    // if (!formData.emailAddress.trim()) {
-    //   showError('Email address is required');
-    //   return false;
-    // }
-    return true;
+
+    return updateFormData;
   };
 
   const handleSubmit = async () => {
@@ -192,46 +255,9 @@ export function EditProfileModal({
 
     setIsLoading(true);
     try {
-      const updateFormData = new FormData();
-      
-      // Add form fields with correct API field names (matching Postman)
-      updateFormData.append('Id', userData.id);
-      updateFormData.append('Name', formData.name);
-      updateFormData.append('DateOfBirth', formData.dateOfBirth);
-      updateFormData.append('MobileNumber', formData.mobileNumber);
-      updateFormData.append('EmailAddress', formData.emailAddress);
-      updateFormData.append('Address', formData.address);
-      updateFormData.append('Gender', formData.gender);
-      
-      // Ensure UserType is capitalized (Public or Private)
-      const normalizedUserType = userData.userType.toLowerCase() === 'public' ? 'Public' : 
-                                 userData.userType.toLowerCase() === 'private' ? 'Private' : 
-                                 userData.userType;
-      updateFormData.append('UserType', normalizedUserType);
-      
-      updateFormData.append('PassengerId', formData.passengerId);
-      
-      // Add OrganizationId if available
-      if (userData.organizationId) {
-        updateFormData.append('OrganizationId', userData.organizationId);
-      }
-
-      // Add profile picture if selected
-      if (selectedImage) {
-        // Create a simple, URL-safe filename
-        const timestamp = Date.now();
-        const filename = `profile-${timestamp}.jpg`;
-        updateFormData.append('ProfilePicture', {
-          uri: selectedImage,
-          type: 'image/jpeg',
-          name: filename,
-        } as any);
-      }
-
-      // Store the update data and show OTP modal
+      const updateFormData = createUpdateFormData();
       setPendingUpdateData(updateFormData);
       setIsLoading(false);
-      console.log('🚀 [EDIT PROFILE] Setting showOTPModal to true');
       setShowOTPModal(true);
     } catch (error: any) {
       console.error('Error preparing profile update:', error);
@@ -246,46 +272,84 @@ export function EditProfileModal({
     }
 
     try {
-      console.log('🔄 [PROFILE UPDATE] Calling update API after OTP verification...');
-      
-      // Call the update API using the apiService
       const result = await apiService.updatePassengerProfile(pendingUpdateData);
       
       if (!result.isSuccess) {
         throw new Error(result.message || 'Failed to update profile');
       }
       
-      console.log('✅ [PROFILE UPDATE] Profile updated successfully');
-      
-      // Clear pending data
+      // Clear pending data and refresh UI
       setPendingUpdateData(null);
-      
-      // Call the original onUpdate callback to refresh UI
-      console.log('🔄 [PROFILE UPDATE] Calling onUpdate callback to refresh profile UI...');
       await onUpdate(pendingUpdateData);
-      console.log('✅ [PROFILE UPDATE] Profile UI refreshed successfully');
-      
-      // Mark OTP as successful
       setIsOTPSuccess(true);
       
-      // Return success - let the OTP modal handle the UI updates and closing
       return { success: true };
     } catch (error: any) {
       console.error('❌ [PROFILE UPDATE] Error updating profile:', error);
-      throw error; // Re-throw to be handled by OTP modal
+      throw error;
     }
   };
 
-  const getProfileImageSource = () => {
-    if (selectedImage) {
-      return { uri: selectedImage };
-    }
-    if (userData.imageUrl) {
-      return { uri: `${API_BASE_URL}/${userData.imageUrl}` };
-    }
-    return null;
+  // ==================== RENDER HELPERS ====================
+  const renderGenderSelection = () => (
+    <View style={styles.fieldGroup}>
+      <Text variant="label" style={styles.fieldLabel}>Gender</Text>
+      <View style={styles.genderContainer}>
+        {GENDERS.map((gender) => (
+          <TouchableOpacity
+            key={gender}
+            style={[
+              styles.genderOption,
+              formData.gender === gender && styles.genderOptionSelected
+            ]}
+            onPress={() => setFormData(prev => ({ ...prev, gender }))}
+          >
+            <Ionicons 
+              name={gender === 'Male' ? 'male' : 'female'} 
+              size={18} 
+              color={formData.gender === gender ? COLORS.white : COLORS.primary} 
+            />
+            <Text style={[
+              styles.genderText,
+              formData.gender === gender && styles.genderTextSelected
+            ]}>
+              {gender}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+
+  const renderDatePicker = () => (
+    <View style={styles.fieldGroup}>
+      <Text variant="label" style={styles.fieldLabel}>Date of Birth</Text>
+      <TouchableOpacity
+        style={styles.dateButton}
+        onPress={() => setShowDatePicker(true)}
+      >
+        <View style={styles.dateButtonContent}>
+          <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
+          <Text style={[
+            styles.dateText,
+            !formData.dateOfBirth && styles.dateTextPlaceholder
+          ]}>
+            {formData.dateOfBirth || 'Select date of birth'}
+          </Text>
+        </View>
+        <Ionicons name="chevron-down" size={18} color={COLORS.gray[400]} />
+      </TouchableOpacity>
+    </View>
+  );
+
+  const handleOTPModalClose = () => {
+    setShowOTPModal(false);
+    setPendingUpdateData(null);
+    setIsOTPSuccess(false);
+    onClose(); // Always close main modal for better UX
   };
 
+  // ==================== COMPONENT RENDER ====================
   return (
     <Modal
       visible={visible}
@@ -404,52 +468,9 @@ export function EditProfileModal({
                 />
               </View>
 
-              <View style={styles.fieldGroup}>
-                <Text variant="label" style={styles.fieldLabel}>Gender</Text>
-                <View style={styles.genderContainer}>
-                  {['Male', 'Female'].map((gender) => (
-                    <TouchableOpacity
-                      key={gender}
-                      style={[
-                        styles.genderOption,
-                        formData.gender === gender && styles.genderOptionSelected
-                      ]}
-                      onPress={() => setFormData(prev => ({ ...prev, gender }))}
-                    >
-                      <Ionicons 
-                        name={gender === 'Male' ? 'male' : 'female'} 
-                        size={18} 
-                        color={formData.gender === gender ? COLORS.white : COLORS.primary} 
-                      />
-                      <Text style={[
-                        styles.genderText,
-                        formData.gender === gender && styles.genderTextSelected
-                      ]}>
-                        {gender}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+              {renderGenderSelection()}
 
-              <View style={styles.fieldGroup}>
-                <Text variant="label" style={styles.fieldLabel}>Date of Birth</Text>
-                <TouchableOpacity
-                  style={styles.dateButton}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <View style={styles.dateButtonContent}>
-                    <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
-                    <Text style={[
-                      styles.dateText,
-                      !formData.dateOfBirth && styles.dateTextPlaceholder
-                    ]}>
-                      {formData.dateOfBirth || 'Select date of birth'}
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-down" size={18} color={COLORS.gray[400]} />
-                </TouchableOpacity>
-              </View>
+              {renderDatePicker()}
 
               <View style={styles.fieldGroup}>
                 <Input
@@ -504,19 +525,7 @@ export function EditProfileModal({
         {/* OTP Verification Modal */}
         <ProfileOTPVerificationModal
           visible={showOTPModal}
-          onClose={() => {
-            console.log('🚪 [EDIT PROFILE] OTP Modal onClose called, isOTPSuccess:', isOTPSuccess);
-            setShowOTPModal(false);
-            setPendingUpdateData(null);
-            
-            // Always close the main modal when OTP modal closes, as it means either:
-            // 1. User cancelled (they want to exit)
-            // 2. OTP verification was successful (profile updated)
-            // This provides better UX by returning to the profile page
-            console.log('🚪 [EDIT PROFILE] Closing EditProfileModal as well for better UX');
-            setIsOTPSuccess(false);
-            onClose();
-          }}
+          onClose={handleOTPModalClose}
           onVerificationSuccess={handleOTPVerificationSuccess}
           mobileNumber={formData.mobileNumber}
           userData={{
@@ -528,6 +537,11 @@ export function EditProfileModal({
     </Modal>
   );
 }
+
+/**
+ * StyleSheet for EditProfileModal component
+ * Organized by UI sections with consistent spacing and colors
+ */
 
 const styles = StyleSheet.create({
   container: {
