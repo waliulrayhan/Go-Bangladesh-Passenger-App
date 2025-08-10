@@ -1485,6 +1485,7 @@ export default function History() {
         visible={toast.visible}
         message={toast.message}
         type={toast.type}
+        position="top"
         onHide={hideToast}
       />
     </SafeAreaView>

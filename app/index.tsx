@@ -94,7 +94,12 @@ export default function WelcomeScreen() {
   useEffect(() => {
     if (isInitialized && isAuthenticated) {
       console.log("🔄 [WELCOME] User is authenticated, redirecting to tabs...");
-      router.replace("/(tabs)");
+      // Add a small delay to ensure proper state synchronization
+      setTimeout(() => {
+        router.replace("/(tabs)");
+      }, 100);
+    } else if (isInitialized && !isAuthenticated) {
+      console.log("🔄 [WELCOME] User not authenticated, staying on welcome screen");
     }
   }, [isInitialized, isAuthenticated]);
 
@@ -107,9 +112,15 @@ export default function WelcomeScreen() {
       console.log("✅ [WELCOME] Authentication check completed");
     } catch (error) {
       console.error("❌ [WELCOME] Error during app initialization:", error);
+      // Force clear any corrupted auth data
+      const { handleUnauthorized } = useAuthStore.getState();
+      await handleUnauthorized();
     } finally {
-      setIsLoading(false);
-      setIsInitialized(true);
+      // Add a minimum loading time to prevent flashing
+      setTimeout(() => {
+        setIsLoading(false);
+        setIsInitialized(true);
+      }, 500);
     }
   };
 

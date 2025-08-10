@@ -125,14 +125,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Logout
   logout: async () => {
     try {
-      await storageService.clearAuthData();
+      console.log('🔄 [AUTH] Starting logout process...');
+      
+      // Clear all auth-related data from storage
+      await storageService.clearAllAppData();
+      
+      // Reset the auth state
       set({
         user: null,
         isAuthenticated: false,
-        error: null
+        error: null,
+        isLoading: false,
+        justLoggedIn: false
       });
+      
+      console.log('✅ [AUTH] Logout completed successfully');
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('❌ [AUTH] Logout error:', error);
+      
+      // Force clear state even if storage clearing fails
+      set({
+        user: null,
+        isAuthenticated: false,
+        error: null,
+        isLoading: false,
+        justLoggedIn: false
+      });
     }
   },
 

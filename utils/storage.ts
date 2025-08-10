@@ -76,13 +76,20 @@ export class StorageService {
   }
 
   async clearAuthData(): Promise<void> {
-    await Promise.all([
-      this.removeSecureItem(STORAGE_KEYS.AUTH_TOKEN),
-      this.removeSecureItem(STORAGE_KEYS.REFRESH_TOKEN),
-      this.removeItem(STORAGE_KEYS.USER_DATA),
-      this.removeItem(STORAGE_KEYS.USER_TYPE),
-      this.removeItem(STORAGE_KEYS.REGISTRATION_COMPLETE)
-    ]);
+    console.log('🧹 [STORAGE] Clearing authentication data...');
+    try {
+      await Promise.all([
+        this.removeSecureItem(STORAGE_KEYS.AUTH_TOKEN),
+        this.removeSecureItem(STORAGE_KEYS.REFRESH_TOKEN),
+        this.removeItem(STORAGE_KEYS.USER_DATA),
+        this.removeItem(STORAGE_KEYS.USER_TYPE),
+        this.removeItem(STORAGE_KEYS.REGISTRATION_COMPLETE)
+      ]);
+      console.log('✅ [STORAGE] Authentication data cleared successfully');
+    } catch (error) {
+      console.error('❌ [STORAGE] Error clearing auth data:', error);
+      throw error;
+    }
   }
 
   async clearAllAppData(): Promise<void> {

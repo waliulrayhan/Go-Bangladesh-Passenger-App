@@ -50,9 +50,13 @@ export default function RootLayout() {
     const inAuthGroup = segments[0] === "(auth)";
     const inTabsGroup = segments[0] === "(tabs)";
 
+    console.log(`🔄 [NAVIGATION] Auth: ${isAuthenticated}, Segments: ${segments.join('/')}`);
+
     if (!isAuthenticated && inTabsGroup) {
+      console.log('🔄 [NAVIGATION] User not authenticated, redirecting to welcome...');
       router.replace("/");
     } else if (isAuthenticated && !inTabsGroup && !inAuthGroup) {
+      console.log('🔄 [NAVIGATION] User authenticated, redirecting to tabs...');
       // Default to passenger tabs for authenticated users
       router.replace("/(tabs)");
     }

@@ -80,20 +80,43 @@ export default function Profile() {
    */
   const performLogout = async () => {
     try {
+      console.log('🔄 [PROFILE] Starting logout process...');
+      
+      // Show success toast immediately
+      showToast('Signing out...', 'info');
+      
+      // Perform logout
       await logout();
-      // Show success toast
-      showToast('Logged out successfully', 'success');
-      // Clean navigation stack and redirect to login
-      router.dismissAll();
-      router.replace('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-      showToast('Logout failed. Please try again.', 'error');
-      // Force navigation even if logout fails
-      router.dismissAll();
-      router.replace('/');
-    } finally {
+      
+      console.log('✅ [PROFILE] Logout completed, redirecting...');
+      
+      // Close confirmation modal
       setShowLogoutConfirmation(false);
+      
+      // Add a small delay to ensure state is cleared
+      setTimeout(() => {
+        // Show success message
+        showToast('Logged out successfully', 'success');
+        
+        // Force navigation with cleanup
+        router.dismissAll();
+        router.replace('/');
+      }, 100);
+      
+    } catch (error) {
+      console.error('❌ [PROFILE] Logout error:', error);
+      
+      // Close confirmation modal
+      setShowLogoutConfirmation(false);
+      
+      // Show error toast
+      showToast('Logout failed. Please try again.', 'error');
+      
+      // Force navigation even if logout fails to prevent stuck state
+      setTimeout(() => {
+        router.dismissAll();
+        router.replace('/');
+      }, 1000);
     }
   };
 
@@ -578,6 +601,7 @@ export default function Profile() {
         visible={toast.visible}
         message={toast.message}
         type={toast.type}
+        position="top"
         onHide={hideToast}
       />
     </SafeAreaView>
