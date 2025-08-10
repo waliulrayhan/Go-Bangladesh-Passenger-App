@@ -282,20 +282,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 type="action"
               />
             </TouchableOpacity>
-            <SettingItem
-              icon="code-slash"
-              title="App Version"
-              subtitle="v1.0.0"
-              type="action"
-            />
-            <TouchableOpacity onPress={handleResetSettings}>
-              <SettingItem
-                icon="refresh-circle"
-                title="Reset Settings"
-                subtitle="Restore default settings"
-                type="action"
-              />
-            </TouchableOpacity>
           </SettingSection>
 
           {/* Bottom padding for better scrolling */}

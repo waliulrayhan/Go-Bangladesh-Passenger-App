@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Alert, Linking, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Linking, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { COLORS, SPACING } from '../utils/constants';
 import { Text } from './ui/Text';
+import { GoBangladeshLogo } from './GoBangladeshLogo';
 
 interface AboutModalProps {
   visible: boolean;
@@ -19,9 +20,9 @@ export const AboutModal: React.FC<AboutModalProps> = ({
     lastUpdate: 'January 2025',
     developer: 'Go Bangladesh Team',
     email: 'info@thegobd.com',
-    website: 'https://gobangladesh.com',
-    privacyPolicy: 'https://gobangladesh.com/privacy',
-    termsOfService: 'https://gobangladesh.com/terms'
+    website: 'https://thegobd.com/',
+    privacyPolicy: 'https://thegobd.com/privacy',
+    termsOfService: 'https://thegobd.com/terms'
   };
 
   const handleLinkPress = (url: string) => {
@@ -85,15 +86,11 @@ export const AboutModal: React.FC<AboutModalProps> = ({
           <View style={styles.logoSection}>
             <View style={styles.logoContainer}>
               <View style={styles.logo}>
-                <Ionicons name="bus" size={40} color={COLORS.primary} />
+                <GoBangladeshLogo size={70} />
               </View>
             </View>
             <Text variant="h4" style={styles.appName}>Go Bangladesh</Text>
             <Text variant="body" style={styles.appSlogan}>One step toward a better future</Text>
-            <Text variant="body" style={styles.appDescription}>
-              Your convenient way to pay for transport with RFID card technology. 
-              Experience seamless travel across Bangladesh with our smart card system.
-            </Text>
           </View>
 
           {/* App Information */}
@@ -126,59 +123,10 @@ export const AboutModal: React.FC<AboutModalProps> = ({
             </View>
           </View>
 
-          {/* Legal Information */}
-          <View style={styles.section}>
-            <Text variant="h6" style={styles.sectionTitle}>Legal</Text>
-            <View style={styles.sectionContent}>
-              <InfoItem 
-                label="Privacy Policy" 
-                value="View Privacy Policy" 
-                isLink 
-                onPress={() => handleLinkPress(appInfo.privacyPolicy)} 
-              />
-              <InfoItem 
-                label="Terms of Service" 
-                value="View Terms of Service" 
-                isLink 
-                onPress={() => handleLinkPress(appInfo.termsOfService)} 
-              />
-            </View>
-          </View>
-
-          {/* Features */}
-          <View style={styles.section}>
-            <Text variant="h6" style={styles.sectionTitle}>Features</Text>
-            <View style={styles.sectionContent}>
-              <View style={styles.featureItem}>
-                <Ionicons name="card" size={20} color={COLORS.primary} />
-                <Text variant="body" style={styles.featureText}>RFID Card Integration</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="flash" size={20} color={COLORS.primary} />
-                <Text variant="body" style={styles.featureText}>Instant Balance Updates</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="time" size={20} color={COLORS.primary} />
-                <Text variant="body" style={styles.featureText}>Trip History Tracking</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="shield-checkmark" size={20} color={COLORS.primary} />
-                <Text variant="body" style={styles.featureText}>Secure Transactions</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="notifications" size={20} color={COLORS.primary} />
-                <Text variant="body" style={styles.featureText}>Real-time Notifications</Text>
-              </View>
-            </View>
-          </View>
-
           {/* Copyright */}
           <View style={styles.copyrightSection}>
             <Text variant="caption" style={styles.copyrightText}>
               © 2025 Go Bangladesh. All rights reserved.
-            </Text>
-            <Text variant="caption" style={styles.copyrightText}>
-              Built with ❤️ for the people of Bangladesh
             </Text>
           </View>
 

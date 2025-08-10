@@ -324,25 +324,6 @@ Best regards,
             </View>
           </View>
 
-          {/* App Information */}
-          {/* <View style={styles.section}>
-            <SectionTitle title="App Information" />
-            <View style={styles.sectionContent}>
-              <View style={styles.infoItem}>
-                <Text variant="body" style={styles.infoTitle}>Version</Text>
-                <Text variant="body" style={styles.infoValue}>1.0.0</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Text variant="body" style={styles.infoTitle}>Last Updated</Text>
-                <Text variant="body" style={styles.infoValue}>January 2025</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Text variant="body" style={styles.infoTitle}>Developer</Text>
-                <Text variant="body" style={styles.infoValue}>Go Bangladesh Team</Text>
-              </View>
-            </View>
-          </View> */}
-
           {/* Bottom padding for better scrolling */}
           <View style={styles.bottomPadding} />
         </ScrollView>
