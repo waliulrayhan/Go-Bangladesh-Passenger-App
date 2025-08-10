@@ -1091,10 +1091,11 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   logoBackground: {
-    width: 38,
-    height: 38,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: COLORS.white + "90",
+    borderColor: COLORS.gray[100] + "80",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1120,10 +1121,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     overflow: "hidden",
+    borderWidth: 2,
+    borderColor: COLORS.gray[100] + "80",
   },
   avatarImage: {
     width: 40,
@@ -1262,7 +1265,6 @@ const styles = StyleSheet.create({
   },
   balance: {
     fontSize: 28,
-    fontWeight: "700",
     lineHeight: 38,
     letterSpacing: -0.5,
     textAlign: "center",
@@ -1278,7 +1280,7 @@ const styles = StyleSheet.create({
   },
   showBalanceText: {
     fontSize: 13,
-    fontWeight: "600",
+    // fontWeight: "600",
     color: COLORS.white,
     letterSpacing: 0.3,
   },
@@ -1379,7 +1381,7 @@ const styles = StyleSheet.create({
   },
   busText: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.gray[900],
     lineHeight: 20,
     marginBottom: 2,
