@@ -1,11 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   StatusBar,
   StyleSheet,
   Text,
@@ -13,698 +11,202 @@ import {
   View,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+
 import { PulsingDot } from '../../../components/PulsingDot';
 import { Toast } from '../../../components/ui/Toast';
+import { useLocation } from '../../../hooks/useLocation';
 import { useToast } from '../../../hooks/useToast';
 import { ApiResponse, apiService } from '../../../services/api';
 import { BusInfo } from '../../../types';
 import { COLORS } from '../../../utils/constants';
 import { FONT_SIZES, FONT_WEIGHTS } from '../../../utils/fonts';
+import { generateMapHTML } from './mapHTML';
 
-const { width, height } = Dimensions.get('window');
+// Constants
+const REFRESH_INTERVAL = 10000; // 10 seconds
+const DEFAULT_COORDINATES = {
+  lat: 23.8103, // Dhaka, Bangladesh
+  lng: 90.4125,
+};
+
+// Types
+interface MapState {
+  buses: BusInfo[];
+  loading: boolean;
+  refreshing: boolean;
+  mapLoaded: boolean;
+  isInitialLoad: boolean;
+  userInteractedWithMap: boolean;
+}
 
 export default function MapViewScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const webViewRef = useRef<WebView>(null);
-  const { toast, showError, showSuccess, showInfo, hideToast } = useToast();
   
-  const [buses, setBuses] = useState<BusInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [userLocation, setUserLocation] = useState<{latitude: number; longitude: number} | null>(null);
-  const [locationPermission, setLocationPermission] = useState<Location.PermissionStatus | null>(null);
-  const [gettingLocation, setGettingLocation] = useState(false);
+  // Hooks
+  const { toast, showError, showSuccess, showInfo, hideToast } = useToast();
+  const {
+    userLocation,
+    gettingLocation,
+    getUserLocation,
+    checkLocationPermission,
+  } = useLocation({
+    onLocationSuccess: (location) => {
+      showSuccess('Your location has been added to the map');
+      setMapState(prev => ({ ...prev, userInteractedWithMap: false })); // Reset to allow centering
+      if (mapState.mapLoaded && webViewRef.current) {
+        addUserLocationToMap(location.latitude, location.longitude);
+      }
+    },
+    onLocationError: (error) => showError(error),
+    onLocationInfo: (info) => showInfo(info),
+  });
 
+  // State
+  const [mapState, setMapState] = useState<MapState>({
+    buses: [],
+    loading: true,
+    refreshing: false,
+    mapLoaded: false,
+    isInitialLoad: true,
+    userInteractedWithMap: false,
+  });
+
+  // Route params
   const organizationId = params.organizationId as string;
   const organizationName = params.organizationName as string;
   const routeId = params.routeId as string;
   const routeName = params.routeName as string;
 
+  // Effects
   useEffect(() => {
-    fetchBusData();
-    checkLocationPermission();
+    initializeMap();
     
-    // Set up interval for real-time updates every 10 seconds
     const interval = setInterval(() => {
       fetchBusData(true);
-    }, 10000);
+    }, REFRESH_INTERVAL);
 
     return () => clearInterval(interval);
   }, [organizationId, routeId]);
 
+  // Initialization
+  const initializeMap = async () => {
+    await Promise.all([
+      fetchBusData(false),
+      checkLocationPermission(),
+    ]);
+  };
+
+  // API Functions
   const fetchBusData = async (isRefresh = false) => {
     try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+      updateLoadingState(isRefresh, true);
 
-      let apiUrl = `/api/bus/getAllBusMapData?organizationId=${organizationId}`;
-      if (routeId) {
-        apiUrl += `&routeId=${routeId}`;
-      }
-
+      const apiUrl = buildApiUrl(organizationId, routeId);
       const response = await apiService.get<ApiResponse<BusInfo[]>>(apiUrl);
       
       if (response.data.data.isSuccess) {
         const busData = response.data.data.content;
-        setBuses(busData);
-        
-        // Update map with new bus locations
-        if (mapLoaded && webViewRef.current) {
-          updateBusLocations(busData);
-        }
+        updateBusData(busData, isRefresh);
       }
     } catch (error) {
-      console.error('Error fetching bus data:', error);
-      if (!isRefresh) {
-        showError('Failed to fetch bus locations');
-      }
+      handleFetchError(error, isRefresh);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      updateLoadingState(isRefresh, false);
     }
   };
 
-  const updateBusLocations = (busData: BusInfo[]) => {
-    if (webViewRef.current) {
-      const updateScript = `
-        if (typeof updateBusMarkers === 'function') {
-          updateBusMarkers(${JSON.stringify(busData)});
-        }
-        true; // Prevent console warnings
-      `;
-      webViewRef.current.postMessage(updateScript);
+  // Helper Functions
+  const buildApiUrl = (organizationId: string, routeId?: string): string => {
+    let url = `/api/bus/getAllBusMapData?organizationId=${organizationId}`;
+    if (routeId) {
+      url += `&routeId=${routeId}`;
+    }
+    return url;
+  };
+
+  const updateLoadingState = (isRefresh: boolean, loading: boolean) => {
+    setMapState(prev => ({
+      ...prev,
+      [isRefresh ? 'refreshing' : 'loading']: loading,
+    }));
+  };
+
+  const updateBusData = (busData: BusInfo[], isRefresh: boolean) => {
+    setMapState(prev => ({
+      ...prev,
+      buses: busData,
+      isInitialLoad: isRefresh ? prev.isInitialLoad : false,
+    }));
+
+    if (mapState.mapLoaded && webViewRef.current) {
+      updateBusLocationsOnMap(busData, isRefresh);
     }
   };
 
-  const checkLocationPermission = async () => {
-    try {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      setLocationPermission(status);
-      return status;
-    } catch (error) {
-      console.error('Error checking location permission:', error);
-      return Location.PermissionStatus.DENIED;
+  const handleFetchError = (error: unknown, isRefresh: boolean) => {
+    console.error('Error fetching bus data:', error);
+    if (!isRefresh) {
+      showError('Failed to fetch bus locations');
     }
   };
 
-  const requestLocationPermission = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setLocationPermission(status);
-      return status;
-    } catch (error) {
-      console.error('Error requesting location permission:', error);
-      showError('Failed to request location permission');
-      return Location.PermissionStatus.DENIED;
+  // Map Functions
+  const updateBusLocationsOnMap = (busData: BusInfo[], isRefresh: boolean) => {
+    if (!webViewRef.current) return;
+
+    const updateScript = `
+      if (typeof updateBusMarkers === 'function') {
+        updateBusMarkers(
+          ${JSON.stringify(busData)}, 
+          ${isRefresh}, 
+          ${mapState.userInteractedWithMap}, 
+          ${JSON.stringify(userLocation)}
+        );
+      }
+      true;
+    `;
+    webViewRef.current.postMessage(updateScript);
+  };
+
+  const addUserLocationToMap = (latitude: number, longitude: number) => {
+    if (!webViewRef.current) return;
+
+    const locationScript = `
+      if (typeof addUserLocation === 'function') {
+        addUserLocation(${latitude}, ${longitude});
+      }
+      true;
+    `;
+    webViewRef.current.postMessage(locationScript);
+  };
+
+  // Event Handlers
+  const handleMapMessage = (event: any) => {
+    const { data } = event.nativeEvent;
+    
+    switch (data) {
+      case 'MAP_READY':
+        handleMapReady();
+        break;
+      case 'USER_INTERACTION':
+        setMapState(prev => ({ ...prev, userInteractedWithMap: true }));
+        break;
     }
   };
 
-  const getUserLocation = async () => {
-    try {
-      setGettingLocation(true);
-      
-      // Check permission first
-      let permissionStatus = locationPermission;
-      if (!permissionStatus) {
-        permissionStatus = await checkLocationPermission();
-      }
-      
-      // Request permission if not granted
-      if (permissionStatus !== Location.PermissionStatus.GRANTED) {
-        permissionStatus = await requestLocationPermission();
-      }
-      
-      // If permission still not granted, show error
-      if (permissionStatus !== Location.PermissionStatus.GRANTED) {
-        showError('Location permission is required to show your location');
-        return;
-      }
-      
-      // Get current location
-      showInfo('Getting your location...');
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-      
-      const { latitude, longitude } = location.coords;
-      setUserLocation({ latitude, longitude });
-      
-      // Update map to show user location
-      if (mapLoaded && webViewRef.current) {
-        const locationScript = `
-          if (typeof addUserLocation === 'function') {
-            addUserLocation(${latitude}, ${longitude});
-          }
-          true;
-        `;
-        webViewRef.current.postMessage(locationScript);
-      }
-      
-      showSuccess('Your location has been added to the map');
-      
-    } catch (error) {
-      console.error('Error getting location:', error);
-      showError('Failed to get your location. Please try again.');
-    } finally {
-      setGettingLocation(false);
+  const handleMapReady = () => {
+    setMapState(prev => ({ ...prev, mapLoaded: true }));
+    
+    // Add user location if available
+    if (userLocation && webViewRef.current) {
+      addUserLocationToMap(userLocation.latitude, userLocation.longitude);
     }
   };
 
   const handleMyLocationPress = () => {
     getUserLocation();
-  };
-
-  const generateMapHTML = () => {
-    // Default center coordinates (Dhaka, Bangladesh)
-    const defaultLat = buses.length > 0 ? parseFloat(buses[0].presentLatitude) : 23.8103;
-    const defaultLng = buses.length > 0 ? parseFloat(buses[0].presentLongitude) : 90.4125;
-
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>Bus Locations</title>
-          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-          <style>
-            body { 
-              margin: 0; 
-              padding: 0; 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-              overflow: hidden;
-            }
-            #map { 
-              height: 100vh; 
-              width: 100vw; 
-              background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
-            }
-            
-            /* Custom bus marker styling */
-            .bus-marker {
-              position: relative;
-              z-index: 1000;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-            }
-            
-            .bus-marker-inner {
-              width: 24px;
-              height: 24px;
-              background: linear-gradient(135deg, #4A90E2 0%, #2E5C8A 100%);
-              border: 3px solid white;
-              border-radius: 50%;
-              box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
-              animation: busMarkerPulse 2s infinite;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              position: relative;
-            }
-            
-            .bus-marker-inner::before {
-              content: '🚌';
-              font-size: 12px;
-              position: absolute;
-            }
-            
-            .bus-marker-label {
-              background: rgba(74, 144, 226, 0.95);
-              color: white;
-              padding: 4px 8px;
-              border-radius: 12px;
-              font-size: 11px;
-              font-weight: 600;
-              margin-top: 4px;
-              white-space: nowrap;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-              backdrop-filter: blur(10px);
-              border: 1px solid rgba(255,255,255,0.3);
-              min-width: 60px;
-              text-align: center;
-            }
-            
-            .bus-marker-shadow {
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              width: 30px;
-              height: 30px;
-              background: rgba(74, 144, 226, 0.2);
-              border-radius: 50%;
-              animation: busMarkerShadow 2s infinite;
-              z-index: -1;
-            }
-            
-            @keyframes busMarkerPulse {
-              0%, 100% {
-                transform: scale(1);
-                box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
-              }
-              50% {
-                transform: scale(1.1);
-                box-shadow: 0 6px 16px rgba(74, 144, 226, 0.6);
-              }
-            }
-            
-            @keyframes busMarkerShadow {
-              0%, 100% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 0.2;
-              }
-              50% {
-                transform: translate(-50%, -50%) scale(1.3);
-                opacity: 0.1;
-              }
-            }
-            
-            /* Enhanced popup styling */
-            .bus-popup {
-              font-size: 14px;
-              line-height: 1.5;
-              min-width: 240px;
-              max-width: 300px;
-              padding: 4px 0;
-            }
-            
-            .bus-popup-header {
-              display: flex;
-              align-items: center;
-              margin-bottom: 12px;
-              padding-bottom: 8px;
-              border-bottom: 1px solid #e2e8f0;
-            }
-            
-            .bus-popup-icon {
-              font-size: 20px;
-              margin-right: 8px;
-            }
-            
-            .bus-popup h3 {
-              margin: 0;
-              color: #4A90E2;
-              font-size: 16px;
-              font-weight: 600;
-              flex: 1;
-            }
-            
-            .bus-popup-info {
-              display: grid;
-              grid-template-columns: auto 1fr;
-              gap: 8px 12px;
-              margin-bottom: 12px;
-            }
-            
-            .bus-popup-label {
-              font-weight: 600;
-              color: #64748b;
-              font-size: 12px;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-            
-            .bus-popup-value {
-              color: #1e293b;
-              font-weight: 500;
-            }
-            
-            .bus-popup-number {
-              color: #FF8A00;
-              font-weight: 600;
-              font-family: monospace;
-            }
-            
-            .bus-popup-footer {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              padding: 8px 12px;
-              background: linear-gradient(90deg, #00C851, #00a642);
-              border-radius: 20px;
-              margin-top: 8px;
-            }
-            
-            .bus-popup-live {
-              color: white;
-              font-size: 12px;
-              font-weight: 600;
-              display: flex;
-              align-items: center;
-              gap: 6px;
-            }
-            
-            .live-dot {
-              width: 6px;
-              height: 6px;
-              background: white;
-              border-radius: 50%;
-              animation: liveDotPulse 1.5s infinite;
-            }
-            
-            @keyframes liveDotPulse {
-              0%, 100% { opacity: 1; transform: scale(1); }
-              50% { opacity: 0.7; transform: scale(1.2); }
-            }
-            
-            .leaflet-popup-content-wrapper {
-              border-radius: 16px;
-              box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-              border: 1px solid rgba(255,255,255,0.2);
-              backdrop-filter: blur(10px);
-              background: rgba(255,255,255,0.95);
-            }
-            
-            .leaflet-popup-tip {
-              background: rgba(255,255,255,0.95);
-              border: 1px solid rgba(255,255,255,0.2);
-            }
-            
-            .leaflet-popup-tip-container {
-              margin-top: -1px;
-            }
-            
-            /* Map controls styling */
-            .leaflet-control-zoom {
-              border-radius: 12px;
-              overflow: hidden;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-              border: 1px solid rgba(255,255,255,0.3);
-            }
-            
-            .leaflet-control-zoom a {
-              background: rgba(255,255,255,0.95);
-              backdrop-filter: blur(10px);
-              color: #4A90E2;
-              font-weight: bold;
-              border: none;
-              transition: all 0.2s ease;
-              width: 36px;
-              height: 36px;
-              line-height: 36px;
-            }
-            
-            .leaflet-control-zoom a:hover {
-              background: #4A90E2;
-              color: white;
-              transform: scale(1.05);
-            }
-            
-            /* Improve map tile rendering */
-            .leaflet-tile {
-              filter: contrast(1.05) saturate(1.1) brightness(1.02);
-            }
-            
-            /* Custom attribution styling */
-            .leaflet-control-attribution {
-              background: rgba(0,0,0,0.7);
-              color: white;
-              font-size: 10px;
-              border-radius: 8px 8px 0 0;
-            }
-            
-            .leaflet-control-attribution a {
-              color: #87CEEB;
-            }
-            
-            /* User location marker styling - Google Maps Style */
-            .user-location-marker {
-              position: relative;
-              z-index: 1000;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            }
-            
-            .user-location-dot {
-              width: 15px;
-              height: 15px;
-              background: #4285F4;
-              border: 3px solid #FFFFFF;
-              border-radius: 50%;
-              box-shadow: 0 2px 8px rgba(66, 133, 244, 0.4);
-              z-index: 2;
-              position: relative;
-            }
-            
-            .user-location-pulse {
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              width: 40px;
-              height: 40px;
-              background: rgba(66, 133, 244, 0.2);
-              border-radius: 50%;
-              animation: userLocationPulse 2.5s infinite;
-              z-index: 1;
-            }
-            
-            @keyframes userLocationPulse {
-              0% {
-                transform: translate(-50%, -50%) scale(0.8);
-                opacity: 0.8;
-              }
-              50% {
-                transform: translate(-50%, -50%) scale(1.2);
-                opacity: 0.3;
-              }
-              100% {
-                transform: translate(-50%, -50%) scale(1.8);
-                opacity: 0;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div id="map"></div>
-          
-          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-          <script>
-            let map;
-            let busMarkers = [];
-            let userLocationMarker = null;
-            
-            // Initialize map
-            function initMap() {
-              map = L.map('map', {
-                zoomControl: true,
-                scrollWheelZoom: true,
-                doubleClickZoom: true,
-                boxZoom: true,
-                keyboard: true,
-                dragging: true,
-                touchZoom: true,
-                zoomAnimation: true,
-                fadeAnimation: true,
-                markerZoomAnimation: true,
-                preferCanvas: false,
-                renderer: L.svg({ padding: 0.5 })
-              }).setView([${defaultLat}, ${defaultLng}], 13);
-              
-              // Add tile layer with custom styling - Using higher quality tiles
-              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 20,
-                minZoom: 8,
-                tileSize: 256,
-                zoomOffset: 0,
-                updateWhenIdle: false,
-                updateWhenZooming: true,
-                keepBuffer: 2,
-              }).addTo(map);
-              
-              // Initial bus markers
-              updateBusMarkers(${JSON.stringify(buses)});
-              
-              // Send ready message to React Native
-              if (window.ReactNativeWebView) {
-                window.ReactNativeWebView.postMessage('MAP_READY');
-              }
-            }
-            
-            // Enhanced custom bus icon with full name label
-            function createBusIcon(busName, busNumber) {
-              const displayName = busName || busNumber || 'Bus';
-              
-              return L.divIcon({
-                html: '<div class="bus-marker">' +
-                        '<div class="bus-marker-shadow"></div>' +
-                        '<div class="bus-marker-inner"></div>' +
-                        '<div class="bus-marker-label">' + displayName + '</div>' +
-                      '</div>',
-                className: 'custom-bus-marker',
-                iconSize: [Math.max(120, displayName.length * 8), 60],
-                iconAnchor: [Math.max(60, displayName.length * 4), 30],
-                popupAnchor: [0, -30]
-              });
-            }
-            
-            // Create user location icon - Google Maps Style
-            function createUserLocationIcon() {
-              return L.divIcon({
-                html: '<div class="user-location-marker">' +
-                        '<div class="user-location-pulse"></div>' +
-                        '<div class="user-location-dot"></div>' +
-                      '</div>',
-                className: 'custom-user-location-marker',
-                iconSize: [40, 40],
-                iconAnchor: [20, 20],
-                popupAnchor: [0, -20]
-              });
-            }
-            
-            // Add user location to map
-            function addUserLocation(latitude, longitude) {
-              // Remove existing user location marker
-              if (userLocationMarker) {
-                map.removeLayer(userLocationMarker);
-              }
-              
-              // Add new user location marker
-              userLocationMarker = L.marker([latitude, longitude], { 
-                icon: createUserLocationIcon() 
-              })
-                .bindPopup(
-                  '<div class="bus-popup">' +
-                    '<div class="bus-popup-header">' +
-                      '<span class="bus-popup-icon">📍</span>' +
-                      '<h3>Your Location</h3>' +
-                    '</div>' +
-                    '<div class="bus-popup-info">' +
-                      '<span class="bus-popup-label">Coordinates</span>' +
-                      '<span class="bus-popup-value">' + latitude.toFixed(6) + ', ' + longitude.toFixed(6) + '</span>' +
-                    '</div>' +
-                    '<div class="bus-popup-footer">' +
-                      '<div class="bus-popup-live">' +
-                        '<div class="live-dot"></div>' +
-                        'Current Location' +
-                      '</div>' +
-                    '</div>' +
-                  '</div>',
-                  {
-                    maxWidth: 300,
-                    className: 'custom-popup'
-                  }
-                )
-                .addTo(map);
-              
-              // Center map on user location
-              map.setView([latitude, longitude], Math.max(map.getZoom(), 16), {
-                animate: true,
-                duration: 1.0
-              });
-            }
-            
-            // Update bus markers function
-            function updateBusMarkers(busData) {
-              // Clear existing markers
-              busMarkers.forEach(marker => map.removeLayer(marker));
-              busMarkers = [];
-              
-              // Add new markers
-              busData.forEach((bus, index) => {
-                const lat = parseFloat(bus.presentLatitude);
-                const lng = parseFloat(bus.presentLongitude);
-                
-                if (!isNaN(lat) && !isNaN(lng)) {
-                  const marker = L.marker([lat, lng], { 
-                    icon: createBusIcon(bus.busName, bus.busNumber) 
-                  })
-                    .bindPopup(
-                      '<div class="bus-popup">' +
-                        '<div class="bus-popup-header">' +
-                          '<span class="bus-popup-icon">🚌</span>' +
-                          '<h3>' + (bus.busName || 'Bus') + '</h3>' +
-                        '</div>' +
-                        '<div class="bus-popup-info">' +
-                          '<span class="bus-popup-label">Number</span>' +
-                          '<span class="bus-popup-value bus-popup-number">' + bus.busNumber + '</span>' +
-                          (bus.organizationName ? 
-                            '<span class="bus-popup-label">Organization</span>' +
-                            '<span class="bus-popup-value">' + bus.organizationName + '</span>' 
-                            : '') +
-                          '<span class="bus-popup-label">Coordinates</span>' +
-                          '<span class="bus-popup-value">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</span>' +
-                        '</div>' +
-                        '<div class="bus-popup-footer">' +
-                          '<div class="bus-popup-live">' +
-                            '<div class="live-dot"></div>' +
-                            'Live Location' +
-                          '</div>' +
-                        '</div>' +
-                      '</div>',
-                      {
-                        maxWidth: 300,
-                        className: 'custom-popup'
-                      }
-                    );
-                  
-                  // Add smooth animation on marker add
-                  setTimeout(() => {
-                    marker.addTo(map);
-                    busMarkers.push(marker);
-                  }, index * 100); // Stagger animations
-                }
-              });
-              
-              // Fit map to show all buses if there are multiple
-              setTimeout(() => {
-                if (busMarkers.length > 1) {
-                  const group = new L.featureGroup(busMarkers);
-                  map.fitBounds(group.getBounds().pad(0.2), {
-                    maxZoom: 16,
-                    animate: true,
-                    duration: 1.0
-                  });
-                } else if (busMarkers.length === 1) {
-                  map.setView(busMarkers[0].getLatLng(), 16, {
-                    animate: true,
-                    duration: 1.0
-                  });
-                }
-              }, busData.length * 100 + 300);
-            }
-            
-            // Handle messages from React Native
-            document.addEventListener('message', function(event) {
-              try {
-                eval(event.data);
-              } catch (e) {
-                console.error('Error executing script:', e);
-              }
-            });
-            
-            // Initialize when page loads
-            document.addEventListener('DOMContentLoaded', initMap);
-          </script>
-        </body>
-      </html>
-    `;
-  };
-
-  const handleMapMessage = (event: any) => {
-    const { data } = event.nativeEvent;
-    if (data === 'MAP_READY') {
-      setMapLoaded(true);
-      
-      // If user location is already available, add it to the map
-      if (userLocation && webViewRef.current) {
-        const locationScript = `
-          if (typeof addUserLocation === 'function') {
-            addUserLocation(${userLocation.latitude}, ${userLocation.longitude});
-          }
-          true;
-        `;
-        webViewRef.current.postMessage(locationScript);
-      }
-    }
   };
 
   const handleRefresh = () => {
@@ -715,74 +217,93 @@ export default function MapViewScreen() {
     router.back();
   };
 
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.brand.blue} />
+  // Render Functions
+  const renderHeader = () => (
+    <LinearGradient
+      colors={[COLORS.brand.blue, COLORS.brand.blue_dark]}
+      style={styles.header}
+    >
+      <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+        <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+      </TouchableOpacity>
       
-      {/* Header */}
-      <LinearGradient
-        colors={[COLORS.brand.blue, COLORS.brand.blue_dark]}
-        style={styles.header}
-      >
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-        </TouchableOpacity>
-        
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>{organizationName}</Text>
-          {routeName && (
-            <Text style={styles.headerSubtitle}>{routeName}</Text>
-          )}
-          <Text style={styles.busCount}>
-            {buses.length} bus{buses.length !== 1 ? 'es' : ''} active
-          </Text>
-        </View>
-      </LinearGradient>
-
-      {/* Map Container */}
-      <View style={styles.mapContainer}>
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.brand.blue} />
-            <Text style={styles.loadingText}>Loading bus locations...</Text>
-          </View>
-        ) : buses.length === 0 ? (
-          <View style={styles.noBusesContainer}>
-            <Ionicons name="bus" size={64} color={COLORS.gray[400]} />
-            <Text style={styles.noBusesTitle}>No Active Buses</Text>
-            <Text style={styles.noBusesText}>
-              No buses are currently active for {organizationName}
-              {routeName && ` on route ${routeName}`}
-            </Text>
-            <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
-              <Text style={styles.retryButtonText}>Try Again</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <WebView
-            ref={webViewRef}
-            source={{ html: generateMapHTML() }}
-            style={styles.webView}
-            onMessage={handleMapMessage}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            startInLoadingState={false}
-            scalesPageToFit={true}
-            allowsInlineMediaPlayback={true}
-            mediaPlaybackRequiresUserAction={false}
-          />
+      <View style={styles.headerContent}>
+        <Text style={styles.headerTitle}>{organizationName}</Text>
+        {routeName && (
+          <Text style={styles.headerSubtitle}>{routeName}</Text>
         )}
+        <Text style={styles.busCount}>
+          {mapState.buses.length} bus{mapState.buses.length !== 1 ? 'es' : ''} active
+        </Text>
       </View>
+    </LinearGradient>
+  );
 
-      {/* Real-time indicator */}
-      {buses.length > 0 && (
-        <View style={styles.realTimeIndicator}>
-          <PulsingDot color={COLORS.success} size={6} />
-          <Text style={styles.realTimeText}>Live Updates</Text>
-        </View>
+  const renderMapContainer = () => (
+    <View style={styles.mapContainer}>
+      {mapState.loading ? (
+        renderLoadingState()
+      ) : mapState.buses.length === 0 ? (
+        renderEmptyState()
+      ) : (
+        renderMap()
       )}
+    </View>
+  );
 
-      {/* My Location Button - Google Maps Style */}
+  const renderLoadingState = () => (
+    <View style={styles.centeredContainer}>
+      <ActivityIndicator size="large" color={COLORS.brand.blue} />
+      <Text style={styles.loadingText}>Loading bus locations...</Text>
+    </View>
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.centeredContainer}>
+      <Ionicons name="bus" size={64} color={COLORS.gray[400]} />
+      <Text style={styles.emptyTitle}>No Active Buses</Text>
+      <Text style={styles.emptyText}>
+        No buses are currently active for {organizationName}
+        {routeName && ` on route ${routeName}`}
+      </Text>
+      <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
+        <Text style={styles.retryButtonText}>Try Again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderMap = () => (
+    <WebView
+      ref={webViewRef}
+      source={{ 
+        html: generateMapHTML({
+          buses: mapState.buses,
+          defaultLat: DEFAULT_COORDINATES.lat,
+          defaultLng: DEFAULT_COORDINATES.lng,
+        })
+      }}
+      style={styles.webView}
+      onMessage={handleMapMessage}
+      javaScriptEnabled={true}
+      domStorageEnabled={true}
+      startInLoadingState={false}
+      scalesPageToFit={true}
+      allowsInlineMediaPlayback={true}
+      mediaPlaybackRequiresUserAction={false}
+    />
+  );
+
+  const renderRealTimeIndicator = () => (
+    mapState.buses.length > 0 && (
+      <View style={styles.realTimeIndicator}>
+        <PulsingDot color={COLORS.success} size={6} />
+        <Text style={styles.realTimeText}>Live Updates</Text>
+      </View>
+    )
+  );
+
+  const renderMyLocationButton = () => (
+    mapState.buses.length > 0 && (
       <TouchableOpacity 
         style={styles.myLocationButton} 
         onPress={handleMyLocationPress}
@@ -791,26 +312,37 @@ export default function MapViewScreen() {
         {gettingLocation ? (
           <ActivityIndicator size="small" color="#1A73E8" />
         ) : (
-          <Ionicons 
-            name="locate" 
-            size={20} 
-            color="#1A73E8" 
-          />
+          <Ionicons name="locate" size={20} color="#1A73E8" />
         )}
       </TouchableOpacity>
+    )
+  );
 
-      {/* Toast */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-        position="top"
-      />
+  const renderToast = () => (
+    <Toast
+      visible={toast.visible}
+      message={toast.message}
+      type={toast.type}
+      onHide={hideToast}
+      position="top"
+    />
+  );
+
+  // Main Render
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.brand.blue} />
+      
+      {renderHeader()}
+      {renderMapContainer()}
+      {renderRealTimeIndicator()}
+      {renderMyLocationButton()}
+      {renderToast()}
     </View>
   );
 }
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -848,17 +380,13 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     marginTop: 4,
   },
-  refreshButton: {
-    padding: 8,
-    marginLeft: 8,
-  },
   mapContainer: {
     flex: 1,
   },
   webView: {
     flex: 1,
   },
-  loadingContainer: {
+  centeredContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -870,20 +398,14 @@ const styles = StyleSheet.create({
     color: COLORS.gray[600],
     marginTop: 16,
   },
-  noBusesContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  noBusesTitle: {
+  emptyTitle: {
     fontSize: FONT_SIZES.xl,
     fontFamily: FONT_WEIGHTS.bold,
     color: COLORS.gray[700],
     marginTop: 16,
     marginBottom: 8,
   },
-  noBusesText: {
+  emptyText: {
     fontSize: FONT_SIZES.base,
     fontFamily: FONT_WEIGHTS.regular,
     color: COLORS.gray[600],
@@ -904,7 +426,7 @@ const styles = StyleSheet.create({
   },
   realTimeIndicator: {
     position: 'absolute',
-    top: 100, // Adjusted since we're removing the header
+    top: 100,
     right: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -926,7 +448,7 @@ const styles = StyleSheet.create({
   },
   myLocationButton: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 20,
     right: 16,
     width: 48,
     height: 48,
