@@ -8,16 +8,17 @@ interface CardState {
   card: Card | null;
   tripTransactions: TripTransaction[];
   rechargeTransactions: RechargeTransaction[];
+  recentActivity: TripTransaction[];
   currentTrip: Trip | null;
   tripStatus: 'idle' | 'active' | 'completed';
   isLoading: boolean;
   error: string | null;
-  
+
   // Trip pagination
   tripPage: number;
   tripHasMore: boolean;
   tripPagination: PaginationState;
-  
+
   // Recharge pagination
   rechargePage: number;
   rechargeHasMore: boolean;
@@ -27,6 +28,7 @@ interface CardState {
   loadCardDetails: () => Promise<void>;
   loadTripHistory: (pageNo?: number, reset?: boolean) => Promise<void>;
   loadRechargeHistory: (pageNo?: number, reset?: boolean) => Promise<void>;
+  loadRecentActivity: () => Promise<void>;
   loadMoreTripHistory: () => Promise<void>;
   loadMoreRechargeHistory: () => Promise<void>;
   checkOngoingTrip: () => Promise<void>;
@@ -50,6 +52,7 @@ export const useCardStore = create<CardState>((set, get) => ({
   card: null,
   tripTransactions: [],
   rechargeTransactions: [],
+  recentActivity: [],
   currentTrip: null,
   tripStatus: 'idle',
   isLoading: false,
@@ -79,7 +82,7 @@ export const useCardStore = create<CardState>((set, get) => ({
   loadCardDetails: async () => {
     // This is mainly for refreshing user data, which is handled by auth store
     await useAuthStore.getState().refreshUserData();
-    
+
     // Create card from user data for compatibility
     const user = useAuthStore.getState().user;
     if (user) {
@@ -98,12 +101,12 @@ export const useCardStore = create<CardState>((set, get) => ({
   // Load trip history
   loadTripHistory: async (pageNo = 1, reset = false) => {
     const { tripTransactions, tripPage, tripPagination } = get();
-    
+
     if (reset) {
-      set({ 
-        isLoading: true, 
-        error: null, 
-        tripPage: 1, 
+      set({
+        isLoading: true,
+        error: null,
+        tripPage: 1,
         tripHasMore: true,
         tripTransactions: [],
         tripPagination: {
@@ -123,25 +126,25 @@ export const useCardStore = create<CardState>((set, get) => ({
         }
       });
     }
-    
+
     try {
       const user = useAuthStore.getState().user;
       if (!user?.id) {
         throw new Error('User not logged in');
       }
-      
+
       const pageToLoad = reset ? 1 : (pageNo || tripPage);
       const response = await apiService.getPassengerTripHistory(
-        user.id.toString(), 
-        pageToLoad, 
+        user.id.toString(),
+        pageToLoad,
         10
       );
-      
+
       const newTransactions = response.data || [];
       const totalCount = response.rowCount || 0;
       const hasMore = newTransactions.length === 10;
       const currentTotal = reset ? newTransactions.length : tripPagination.totalLoaded + newTransactions.length;
-      
+
       set({
         tripTransactions: reset ? newTransactions : [...tripTransactions, ...newTransactions],
         tripPage: pageToLoad,
@@ -171,12 +174,12 @@ export const useCardStore = create<CardState>((set, get) => ({
   // Load recharge history
   loadRechargeHistory: async (pageNo = 1, reset = false) => {
     const { rechargeTransactions, rechargePage, rechargePagination } = get();
-    
+
     if (reset) {
-      set({ 
-        isLoading: true, 
-        error: null, 
-        rechargePage: 1, 
+      set({
+        isLoading: true,
+        error: null,
+        rechargePage: 1,
         rechargeHasMore: true,
         rechargeTransactions: [],
         rechargePagination: {
@@ -196,25 +199,25 @@ export const useCardStore = create<CardState>((set, get) => ({
         }
       });
     }
-    
+
     try {
       const user = useAuthStore.getState().user;
       if (!user?.id) {
         throw new Error('User not logged in');
       }
-      
+
       const pageToLoad = reset ? 1 : (pageNo || rechargePage);
       const response = await apiService.getPassengerRechargeHistory(
-        user.id.toString(), 
-        pageToLoad, 
+        user.id.toString(),
+        pageToLoad,
         10
       );
-      
+
       const newTransactions = response.data || [];
       const totalCount = response.rowCount || 0;
       const hasMore = newTransactions.length === 10;
       const currentTotal = reset ? newTransactions.length : rechargePagination.totalLoaded + newTransactions.length;
-      
+
       set({
         rechargeTransactions: reset ? newTransactions : [...rechargeTransactions, ...newTransactions],
         rechargePage: pageToLoad,
@@ -241,12 +244,32 @@ export const useCardStore = create<CardState>((set, get) => ({
     }
   },
 
+  // Load recent activity
+  loadRecentActivity: async () => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const recentActivity = await apiService.getRecentActivity();
+
+      set({
+        recentActivity,
+        isLoading: false
+      });
+    } catch (error: any) {
+      set({
+        isLoading: false,
+        error: formatError(error),
+        recentActivity: []
+      });
+    }
+  },
+
   // Load more trip history
   loadMoreTripHistory: async () => {
     const { tripHasMore, isLoading, tripPage, tripPagination } = get();
-    
+
     if (!tripHasMore || isLoading || tripPagination.isLoadingMore) return;
-    
+
     set({ tripPage: tripPage + 1 });
     await get().loadTripHistory(tripPage + 1, false);
   },
@@ -254,9 +277,9 @@ export const useCardStore = create<CardState>((set, get) => ({
   // Load more recharge history
   loadMoreRechargeHistory: async () => {
     const { rechargeHasMore, isLoading, rechargePage, rechargePagination } = get();
-    
+
     if (!rechargeHasMore || isLoading || rechargePagination.isLoadingMore) return;
-    
+
     set({ rechargePage: rechargePage + 1 });
     await get().loadRechargeHistory(rechargePage + 1, false);
   },
@@ -265,7 +288,7 @@ export const useCardStore = create<CardState>((set, get) => ({
   checkOngoingTrip: async () => {
     try {
       const ongoingTrip = await apiService.getOnGoingTrip();
-      
+
       set({
         currentTrip: ongoingTrip && ongoingTrip.isRunning ? ongoingTrip : null,
         tripStatus: ongoingTrip && ongoingTrip.isRunning ? 'active' : 'idle'
@@ -279,22 +302,22 @@ export const useCardStore = create<CardState>((set, get) => ({
   // Regular tap out
   tapOut: async () => {
     set({ isLoading: true, error: null });
-    
+
     try {
       const success = await apiService.tapOutTrip();
-      
+
       if (success) {
         set({
           currentTrip: null,
           tripStatus: 'idle',
           isLoading: false
         });
-        
+
         // Refresh data after tap out
         await get().refreshData();
         return true;
       }
-      
+
       throw new Error('Tap out failed');
     } catch (error: any) {
       set({
@@ -308,33 +331,33 @@ export const useCardStore = create<CardState>((set, get) => ({
   // Force tap out
   forceTapOut: async () => {
     const { currentTrip } = get();
-    
+
     if (!currentTrip) {
       set({ error: 'No active trip found' });
       return false;
     }
-    
+
     set({ isLoading: true, error: null });
-    
+
     try {
       const result = await apiService.forceTripStop(
         currentTrip.cardId,
         currentTrip.tripId,
         currentTrip.sessionId
       );
-      
+
       if (result.success) {
         set({
           currentTrip: null,
           tripStatus: 'idle',
           isLoading: false
         });
-        
+
         // Refresh data after force tap out
         await get().refreshData();
         return true;
       }
-      
+
       throw new Error(result.message || 'Force tap out failed');
     } catch (error: any) {
       set({
@@ -352,7 +375,7 @@ export const useCardStore = create<CardState>((set, get) => ({
       get().loadRechargeHistory(1, true),
       get().checkOngoingTrip()
     ]);
-    
+
     // Also refresh user data in auth store
     await useAuthStore.getState().refreshUserData();
   },
@@ -368,6 +391,7 @@ export const useCardStore = create<CardState>((set, get) => ({
       card: null,
       tripTransactions: [],
       rechargeTransactions: [],
+      recentActivity: [],
       currentTrip: null,
       tripStatus: 'idle',
       error: null,

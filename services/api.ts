@@ -3,6 +3,10 @@ import { Transaction as TransactionType } from '../types';
 import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
 import { storageService } from '../utils/storage';
 
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
 export interface AuthTokenResponse {
   token: string;
   refreshToken?: string;
@@ -31,6 +35,22 @@ export interface PaginatedApiResponse<T> {
   };
 }
 
+export interface Organization {
+  name: string;
+  code: string;
+  focalPerson: string;
+  designation: string;
+  email: string;
+  mobileNumber: string;
+  organizationType: string;
+  id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
+}
+
 export interface CardValidationResponse {
   isSuccess: boolean;
   content: {
@@ -38,21 +58,7 @@ export interface CardValidationResponse {
     status: string;
     balance: number;
     organizationId: string;
-    organization: {
-      name: string;
-      code: string;
-      focalPerson: string;
-      designation: string;
-      email: string;
-      mobileNumber: string;
-      organizationType: string;
-      id: string;
-      createTime: string;
-      lastModifiedTime: string;
-      createdBy: string;
-      lastModifiedBy: string;
-      isDeleted: boolean;
-    };
+    organization: Organization;
     id: string;
     createTime: string;
     lastModifiedTime: string;
@@ -71,12 +77,12 @@ export interface RegistrationData {
   EmailAddress?: string;
   Gender?: string;
   Address?: string;
-  DateOfBirth?: string; // Format: 2001-11-03 00:00:00.0000000
+  DateOfBirth?: string;
   Password: string;
-  UserType?: string; // Made optional
-  OrganizationId?: string; // Made optional
+  UserType?: string;
+  OrganizationId?: string;
   CardNumber: string;
-  PassengerId?: string; // For private organizations (educational institutes)
+  PassengerId?: string;
 }
 
 export interface UserResponse {
@@ -91,19 +97,7 @@ export interface UserResponse {
   imageUrl?: string;
   passengerId: string;
   organizationId?: string;
-  organization?: {
-    name: string;
-    code: string;
-    focalPerson: string;
-    email: string;
-    mobileNumber: string;
-    id: string;
-    createTime: string;
-    lastModifiedTime: string;
-    createdBy: string;
-    lastModifiedBy: string;
-    isDeleted: boolean;
-  };
+  organization?: Organization;
   cardNumber: string;
   balance: number;
 }
@@ -124,7 +118,92 @@ export interface Trip {
   penaltyAmount: number;
 }
 
-// Legacy Trip interface for backward compatibility
+export interface RouteInfo {
+  tripStartPlace: string;
+  tripEndPlace: string;
+  organizationId: string;
+  perKmFare: number;
+  baseFare: number;
+  minimumBalance: number;
+  penaltyAmount: number;
+  organization: any;
+  id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
+}
+
+export interface BusInfo {
+  busNumber: string;
+  busName: string;
+  routeId: string;
+  route: RouteInfo;
+  organizationId: string;
+  organization: any;
+  presentLatitude: string;
+  presentLongitude: string;
+  id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
+}
+
+export interface SessionInfo {
+  busId: string;
+  userId: string;
+  startTime: string;
+  endTime: string;
+  isRunning: boolean;
+  serial: number;
+  sessionCode: string;
+  startingLatitude: string | null;
+  startingLongitude: string | null;
+  endingLatitude: string | null;
+  endingLongitude: string | null;
+  user: any;
+  bus: BusInfo;
+  id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
+}
+
+export interface PassengerInfo {
+  isSuperAdmin: boolean;
+  name: string;
+  emailAddress: string;
+  passwordHash: string;
+  imageUrl: string;
+  isApproved: boolean;
+  isActive: boolean;
+  roleId: string | null;
+  dateOfBirth: string;
+  mobileNumber: string;
+  address: string;
+  gender: string;
+  userType: string;
+  passengerId: string;
+  organizationId: string;
+  organization: any;
+  serial: number;
+  code: string | null;
+  cardNumber: string;
+  designation: string | null;
+  balance: number;
+  id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
+}
+
 export interface LegacyTrip {
   passengerId: string;
   sessionId: string;
@@ -137,82 +216,8 @@ export interface LegacyTrip {
   amount: number;
   isRunning: boolean;
   distance: number;
-  session: {
-    busId: string;
-    userId: string;
-    startTime: string;
-    endTime: string;
-    isRunning: boolean;
-    serial: number;
-    sessionCode: string;
-    user: any;
-    bus: {
-      busNumber: string;
-      busName: string;
-      routeId: string;
-      route: {
-        tripStartPlace: string;
-        tripEndPlace: string;
-        organizationId: string;
-        perKmFare: number;
-        baseFare: number;
-        minimumBalance: number;
-        penaltyAmount: number;
-        organization: any;
-        id: string;
-        createTime: string;
-        lastModifiedTime: string;
-        createdBy: string;
-        lastModifiedBy: string;
-        isDeleted: boolean;
-      };
-      organizationId: string;
-      organization: any;
-      presentLatitude: string;
-      presentLongitude: string;
-      id: string;
-      createTime: string;
-      lastModifiedTime: string;
-      createdBy: string;
-      lastModifiedBy: string;
-      isDeleted: boolean;
-    };
-    id: string;
-    createTime: string;
-    lastModifiedTime: string;
-    createdBy: string;
-    lastModifiedBy: string;
-    isDeleted: boolean;
-  };
-  passenger: {
-    isSuperAdmin: boolean;
-    name: string;
-    emailAddress: string;
-    passwordHash: string;
-    imageUrl: string;
-    isApproved: boolean;
-    isActive: boolean;
-    roleId: string | null;
-    dateOfBirth: string;
-    mobileNumber: string;
-    address: string;
-    gender: string;
-    userType: string;
-    passengerId: string;
-    organizationId: string;
-    organization: any;
-    serial: number;
-    code: string | null;
-    cardNumber: string;
-    designation: string | null;
-    balance: number;
-    id: string;
-    createTime: string;
-    lastModifiedTime: string;
-    createdBy: string;
-    lastModifiedBy: string;
-    isDeleted: boolean;
-  };
+  session: SessionInfo;
+  passenger: PassengerInfo;
   id: string;
   createTime: string;
   lastModifiedTime: string;
@@ -253,57 +258,7 @@ export interface TripTransaction {
     distance: number;
     tapInType: string | null;
     tapOutStatus: string | null;
-    session: {
-      busId: string;
-      userId: string;
-      startTime: string;
-      endTime: string;
-      isRunning: boolean;
-      serial: number;
-      sessionCode: string;
-      startingLatitude: string | null;
-      startingLongitude: string | null;
-      endingLatitude: string | null;
-      endingLongitude: string | null;
-      user: null;
-      bus: {
-        busNumber: string;
-        busName: string;
-        routeId: string;
-        route: {
-          tripStartPlace: string;
-          tripEndPlace: string;
-          organizationId: string;
-          perKmFare: number;
-          baseFare: number;
-          minimumBalance: number;
-          penaltyAmount: number;
-          organization: null;
-          id: string;
-          createTime: string;
-          lastModifiedTime: string;
-          createdBy: string;
-          lastModifiedBy: string;
-          isDeleted: boolean;
-        } | null;
-        organizationId: string;
-        organization: null;
-        presentLatitude: string;
-        presentLongitude: string;
-        id: string;
-        createTime: string;
-        lastModifiedTime: string;
-        createdBy: string;
-        lastModifiedBy: string;
-        isDeleted: boolean;
-      };
-      id: string;
-      createTime: string;
-      lastModifiedTime: string;
-      createdBy: string;
-      lastModifiedBy: string;
-      isDeleted: boolean;
-    };
+    session: SessionInfo;
     card: null;
     passenger: null;
     passengerId: null;
@@ -324,6 +279,34 @@ export interface TripTransaction {
   isDeleted: boolean;
 }
 
+export interface AgentInfo {
+  isSuperAdmin: boolean;
+  name: string;
+  emailAddress: string | null;
+  passwordHash: string;
+  imageUrl: string | null;
+  isApproved: boolean;
+  isActive: boolean;
+  roleId: null;
+  dateOfBirth: string | null;
+  mobileNumber: string;
+  address: string | null;
+  gender: string;
+  userType: string;
+  passengerId: null;
+  organizationId: string;
+  organization: Organization;
+  serial: number;
+  code: string;
+  designation: string | null;
+  id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string;
+  lastModifiedBy: string;
+  isDeleted: boolean;
+}
+
 export interface RechargeTransaction {
   transactionType: 'Recharge' | 'Return';
   amount: number;
@@ -333,47 +316,7 @@ export interface RechargeTransaction {
   medium: null;
   transactionId: string;
   card: null;
-  agent: {
-    isSuperAdmin: boolean;
-    name: string;
-    emailAddress: string | null;
-    passwordHash: string;
-    imageUrl: string | null;
-    isApproved: boolean;
-    isActive: boolean;
-    roleId: null;
-    dateOfBirth: string | null;
-    mobileNumber: string;
-    address: string | null;
-    gender: string;
-    userType: string;
-    passengerId: null;
-    organizationId: string;
-    organization: {
-      name: string;
-      code: string;
-      focalPerson: string;
-      designation: string;
-      email: string;
-      mobileNumber: string;
-      organizationType: string;
-      id: string;
-      createTime: string;
-      lastModifiedTime: string;
-      createdBy: string;
-      lastModifiedBy: string;
-      isDeleted: boolean;
-    };
-    serial: number;
-    code: string;
-    designation: string | null;
-    id: string;
-    createTime: string;
-    lastModifiedTime: string;
-    createdBy: string;
-    lastModifiedBy: string;
-    isDeleted: boolean;
-  };
+  agent: AgentInfo;
   trip: null;
   passenger: null;
   passengerId: null;
@@ -412,76 +355,148 @@ export interface UpdateCardNumberResponse {
   message: string;
 }
 
-class ApiService {
-  private api: AxiosInstance;
-  private isHandlingUnauthorized = false; // Prevent multiple concurrent logout attempts
+export interface ProfileUpdateData {
+  Id: string;
+  Name?: string;
+  MobileNumber?: string;
+  EmailAddress?: string;
+  Gender?: string;
+  Address?: string;
+  DateOfBirth?: string;
+  UserType?: string;
+  OrganizationId?: string;
+  PassengerId?: string;
+  ProfilePicture?: File;
+}
+
+export interface ApiError {
+  status?: number;
+  message: string;
+  data?: any;
+}
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const API_TIMEOUT = 10000;
+const REFRESH_TIMEOUT = 8000;
+const UNAUTHORIZED_RETRY_DELAY = 2000;
+
+// ============================================================================
+// UTILITIES
+// ============================================================================
+
+class ApiLogger {
+  static log(context: string, message: string, data?: any): void {
+    console.log(`🔧 [${context}] ${message}`, data ? data : '');
+  }
+
+  static error(context: string, message: string, error?: any): void {
+    console.error(`💥 [${context}] ${message}`, error ? error : '');
+  }
+
+  static success(context: string, message: string, data?: any): void {
+    console.log(`✅ [${context}] ${message}`, data ? data : '');
+  }
+
+  static warn(context: string, message: string, data?: any): void {
+    console.warn(`⚠️ [${context}] ${message}`, data ? data : '');
+  }
+
+  static info(context: string, message: string, data?: any): void {
+    console.log(`ℹ️ [${context}] ${message}`, data ? data : '');
+  }
+}
+
+class ApiErrorHandler {
+  static createError(message: string, status?: number, data?: any): ApiError {
+    return { message, status, data };
+  }
+
+  static extractErrorMessage(error: any): string {
+    if (error.response?.data?.data?.message) {
+      return error.response.data.data.message;
+    }
+    if (error.response?.data?.message) {
+      return error.response.data.message;
+    }
+    if (error.message) {
+      return error.message;
+    }
+    return 'An unexpected error occurred';
+  }
+
+  static isUnauthorized(error: any): boolean {
+    return error.response?.status === 401;
+  }
+
+  static isNotFound(error: any): boolean {
+    return error.response?.status === 404;
+  }
+
+  static isTimeout(error: any): boolean {
+    return error.code === 'ECONNABORTED';
+  }
+}
+
+class FormDataBuilder {
+  private formData: FormData;
 
   constructor() {
-    this.api = axios.create({
+    this.formData = new FormData();
+  }
+
+  append(key: string, value: string | File): FormDataBuilder {
+    this.formData.append(key, value);
+    return this;
+  }
+
+  appendIfExists(key: string, value: string | File | undefined): FormDataBuilder {
+    if (value !== undefined && value !== null) {
+      this.formData.append(key, value);
+    }
+    return this;
+  }
+
+  build(): FormData {
+    return this.formData;
+  }
+}
+
+// ============================================================================
+// API SERVICE
+// ============================================================================
+
+class ApiService {
+  private api: AxiosInstance;
+  private isHandlingUnauthorized = false;
+
+  constructor() {
+    this.api = this.createAxiosInstance();
+    this.setupInterceptors();
+  }
+
+  // ========================================================================
+  // PRIVATE METHODS - Setup & Configuration
+  // ========================================================================
+
+  private createAxiosInstance(): AxiosInstance {
+    return axios.create({
       baseURL: API_BASE_URL,
-      timeout: 10000,
+      timeout: API_TIMEOUT,
       headers: {
         'Content-Type': 'application/json',
       },
     });
-
-    this.setupInterceptors();
   }
 
-  /**
-   * Handle 401 unauthorized responses consistently
-   * This method ensures we don't have multiple concurrent logout attempts
-   */
-  private async handleUnauthorizedResponse(error: any) {
-    if (this.isHandlingUnauthorized) {
-      console.log('🔄 [API] Already handling unauthorized response, skipping...');
-      return;
-    }
-
-    this.isHandlingUnauthorized = true;
-    console.log('🚫 [API] Handling 401 Unauthorized - Token completely invalid');
-
-    try {
-      // Import auth store dynamically to avoid circular dependency
-      const { useAuthStore } = await import('../stores/authStore');
-      const authStore = useAuthStore.getState();
-
-      console.log('🧹 [API] Triggering complete session cleanup...');
-      await authStore.handleUnauthorized();
-
-      // Add a small delay to ensure state is cleared
-      setTimeout(async () => {
-        try {
-          // Import router dynamically
-          const { router } = await import('expo-router');
-          
-          console.log('🔄 [API] Redirecting to login screen...');
-          router.dismissAll();
-          router.replace('/');
-        } catch (navError) {
-          console.warn('⚠️ [API] Navigation error during unauthorized redirect:', navError);
-        }
-      }, 100);
-      
-    } catch (logoutError) {
-      console.error('💥 [API] Error during forced logout:', logoutError);
-      
-      // Last resort: clear storage manually
-      try {
-        await storageService.clearAllAppData();
-        console.log('🧹 [API] Manual storage cleanup completed');
-      } catch (storageError) {
-        console.error('💥 [API] Failed to clear storage manually:', storageError);
-      }
-    } finally {
-      // Reset the flag after a delay to allow for state changes
-      setTimeout(() => {
-        this.isHandlingUnauthorized = false;
-      }, 2000);
-    }
+  private setupInterceptors(): void {
+    this.setupRequestInterceptor();
+    this.setupResponseInterceptor();
   }
 
-  private setupInterceptors() {
+  private setupRequestInterceptor(): void {
     this.api.interceptors.request.use(
       async (config) => {
         const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
@@ -492,233 +507,399 @@ class ApiService {
       },
       (error) => Promise.reject(error)
     );
+  }
 
+  private setupResponseInterceptor(): void {
     this.api.interceptors.response.use(
       (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-
-        if (error.response?.status === 401) {
-          console.log('🚫 [API] 401 Unauthorized response received - Token expired or invalid');
-          console.log('🚫 [API] Request URL:', originalRequest?.url);
-
-          // Prevent infinite retry loops
-          if (!originalRequest._retry) {
-            originalRequest._retry = true;
-
-            try {
-              const refreshToken = await storageService.getSecureItem(STORAGE_KEYS.REFRESH_TOKEN);
-              if (refreshToken) {
-                console.log('🔄 [API] Attempting token refresh...');
-                const response = await this.refreshToken(refreshToken);
-                
-                if (response.data.token) {
-                  await storageService.setSecureItem(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
-                  console.log('✅ [API] Token refreshed successfully');
-                  
-                  // Retry the original request with new token
-                  originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
-                  return this.api(originalRequest);
-                } else {
-                  throw new Error('No token in refresh response');
-                }
-              } else {
-                console.log('🚫 [API] No refresh token available');
-              }
-            } catch (refreshError) {
-              console.log('❌ [API] Token refresh failed:', refreshError);
-            }
-          }
-
-          // If we reach here, token refresh failed or wasn't possible
-          console.log('🔓 [API] Token completely invalid - Forcing automatic logout...');
-          await this.handleUnauthorizedResponse(error);
-        }
-
-        return Promise.reject(error);
-      }
+      async (error) => this.handleResponseError(error)
     );
   }
 
-  /**
-   * Check if an API response indicates unauthorized access
-   * This catches cases where the interceptor might not catch 401s properly
-   */
-  private async checkUnauthorizedResponse(response: any, methodName: string) {
+  // ========================================================================
+  // PRIVATE METHODS - Error Handling
+  // ========================================================================
+
+  private async handleResponseError(error: any): Promise<any> {
+    const originalRequest = error.config;
+
+    if (ApiErrorHandler.isUnauthorized(error)) {
+      return this.handleUnauthorizedError(error, originalRequest);
+    }
+
+    return Promise.reject(error);
+  }
+
+  private async handleUnauthorizedError(error: any, originalRequest: any): Promise<any> {
+    ApiLogger.error('AUTH', '401 Unauthorized response received', {
+      url: originalRequest?.url,
+      hasRetry: !!originalRequest._retry
+    });
+
+    if (!originalRequest._retry) {
+      originalRequest._retry = true;
+
+      const refreshSuccess = await this.attemptTokenRefresh();
+      if (refreshSuccess) {
+        const newToken = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return this.api(originalRequest);
+      }
+    }
+
+    await this.handleCompleteUnauthorized(error);
+    return Promise.reject(error);
+  }
+
+  private async attemptTokenRefresh(): Promise<boolean> {
     try {
-      // Check for 401 status in response
-      if (response?.status === 401) {
-        console.log(`🚫 [${methodName}] Direct 401 response detected`);
-        await this.handleUnauthorizedResponse(response);
+      const refreshToken = await storageService.getSecureItem(STORAGE_KEYS.REFRESH_TOKEN);
+      if (!refreshToken) {
+        ApiLogger.warn('AUTH', 'No refresh token available');
+        return false;
+      }
+
+      ApiLogger.log('AUTH', 'Attempting token refresh...');
+      const response = await this.refreshTokenRequest(refreshToken);
+
+      if (response.data.token) {
+        await storageService.setSecureItem(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
+        ApiLogger.success('AUTH', 'Token refreshed successfully');
         return true;
       }
 
-      // Check for unauthorized messages in API response data
-      if (response?.data?.data?.message?.toLowerCase().includes('unauthorized') ||
-          response?.data?.data?.message?.toLowerCase().includes('token') ||
-          response?.data?.message?.toLowerCase().includes('unauthorized')) {
-        console.log(`🚫 [${methodName}] Unauthorized message in response:`, response.data?.data?.message || response.data?.message);
-        await this.handleUnauthorizedResponse(response);
+      return false;
+    } catch (refreshError) {
+      ApiLogger.error('AUTH', 'Token refresh failed', refreshError);
+      return false;
+    }
+  }
+
+  private async refreshTokenRequest(refreshToken: string) {
+    return this.api.post('/api/Auth/refresh-token', { refreshToken });
+  }
+
+  private async handleCompleteUnauthorized(error: any): Promise<void> {
+    if (this.isHandlingUnauthorized) {
+      ApiLogger.log('AUTH', 'Already handling unauthorized response, skipping...');
+      return;
+    }
+
+    this.isHandlingUnauthorized = true;
+    ApiLogger.error('AUTH', 'Token completely invalid - triggering session cleanup');
+
+    try {
+      const { useAuthStore } = await import('../stores/authStore');
+      const authStore = useAuthStore.getState();
+
+      await authStore.handleUnauthorized();
+
+      setTimeout(async () => {
+        await this.redirectToLogin();
+      }, 100);
+
+    } catch (logoutError) {
+      ApiLogger.error('AUTH', 'Error during forced logout', logoutError);
+      await this.fallbackStorageCleanup();
+    } finally {
+      setTimeout(() => {
+        this.isHandlingUnauthorized = false;
+      }, UNAUTHORIZED_RETRY_DELAY);
+    }
+  }
+
+  private async redirectToLogin(): Promise<void> {
+    try {
+      const { router } = await import('expo-router');
+      ApiLogger.log('AUTH', 'Redirecting to login screen...');
+      router.dismissAll();
+      router.replace('/');
+    } catch (navError) {
+      ApiLogger.warn('AUTH', 'Navigation error during unauthorized redirect', navError);
+    }
+  }
+
+  private async fallbackStorageCleanup(): Promise<void> {
+    try {
+      await storageService.clearAllAppData();
+      ApiLogger.success('AUTH', 'Manual storage cleanup completed');
+    } catch (storageError) {
+      ApiLogger.error('AUTH', 'Failed to clear storage manually', storageError);
+    }
+  }
+
+  private async checkUnauthorizedResponse(response: any, methodName: string): Promise<boolean> {
+    try {
+      if (response?.status === 401) {
+        ApiLogger.error(methodName, 'Direct 401 response detected');
+        await this.handleCompleteUnauthorized(response);
+        return true;
+      }
+
+      const message = response?.data?.data?.message || response?.data?.message || '';
+      if (message.toLowerCase().includes('unauthorized') || message.toLowerCase().includes('token')) {
+        ApiLogger.error(methodName, 'Unauthorized message in response', message);
+        await this.handleCompleteUnauthorized(response);
         return true;
       }
 
       return false;
     } catch (error) {
-      console.error(`💥 [${methodName}] Error checking unauthorized response:`, error);
+      ApiLogger.error(methodName, 'Error checking unauthorized response', error);
       return false;
     }
   }
 
-  private async refreshToken(refreshToken: string) {
-    return this.api.post('/api/Auth/refresh-token', { refreshToken });
+  // ========================================================================
+  // PRIVATE METHODS - Validation & Utilities
+  // ========================================================================
+
+  private validateApiResponse<T>(response: any, context: string): T | null {
+    if (!response.data?.data?.isSuccess) {
+      ApiLogger.warn(context, 'API returned unsuccessful response', response.data?.data?.message);
+      return null;
+    }
+
+    if (!response.data.data.content) {
+      ApiLogger.warn(context, 'No content in response');
+      return null;
+    }
+
+    return response.data.data.content;
   }
 
-  // Auth API methods
+  private createFormData(data: RegistrationData | ProfileUpdateData): FormData {
+    const builder = new FormDataBuilder();
+
+    if ('Name' in data) {
+      // Registration data
+      const regData = data as RegistrationData;
+      builder
+        .append('Name', regData.Name)
+        .append('MobileNumber', regData.MobileNumber)
+        .append('Password', regData.Password)
+        .append('CardNumber', regData.CardNumber)
+        .appendIfExists('EmailAddress', regData.EmailAddress)
+        .appendIfExists('Gender', regData.Gender)
+        .appendIfExists('Address', regData.Address)
+        .appendIfExists('DateOfBirth', regData.DateOfBirth)
+        .appendIfExists('UserType', regData.UserType)
+        .appendIfExists('OrganizationId', regData.OrganizationId)
+        .appendIfExists('PassengerId', regData.PassengerId);
+    } else {
+      // Profile update data
+      const profileData = data as ProfileUpdateData;
+      builder
+        .append('Id', profileData.Id)
+        .appendIfExists('Name', profileData.Name)
+        .appendIfExists('MobileNumber', profileData.MobileNumber)
+        .appendIfExists('EmailAddress', profileData.EmailAddress)
+        .appendIfExists('Gender', profileData.Gender)
+        .appendIfExists('Address', profileData.Address)
+        .appendIfExists('DateOfBirth', profileData.DateOfBirth)
+        .appendIfExists('UserType', profileData.UserType)
+        .appendIfExists('OrganizationId', profileData.OrganizationId)
+        .appendIfExists('PassengerId', profileData.PassengerId);
+
+      if (profileData.ProfilePicture) {
+        builder.append('ProfilePicture', profileData.ProfilePicture);
+      }
+    }
+
+    return builder.build();
+  }
+
+  private getEmailPayload(identifier: string, password: string) {
+    return { email: identifier, password };
+  }
+
+  private getMobilePayload(identifier: string, password: string) {
+    return { mobileNumber: identifier, password };
+  }
+
+  private isEmail(identifier: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(identifier);
+  }
+
+  // ========================================================================
+  // PUBLIC METHODS - Authentication
+  // ========================================================================
+
   async getAuthToken(identifier: string, password: string = '123456'): Promise<AuthTokenResponse> {
-    console.log('🔐 [AUTH] Starting authentication request...');
-    console.log('📱 [AUTH] Identifier:', identifier);
-    console.log('🔑 [AUTH] Password:', password ? '***' : 'No password');
+    ApiLogger.log('AUTH', 'Starting authentication request', {
+      identifier,
+      hasPassword: !!password
+    });
 
     try {
-      // Determine if identifier is email or mobile and format payload accordingly
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const isEmail = emailRegex.test(identifier);
-
+      const isEmail = this.isEmail(identifier);
       const payload = isEmail
-        ? { email: identifier, password: password }
-        : { mobileNumber: identifier, password: password };
+        ? this.getEmailPayload(identifier, password)
+        : this.getMobilePayload(identifier, password);
 
-      console.log('📤 [AUTH] Request payload:', {
+      ApiLogger.log('AUTH', 'Request payload', {
         type: isEmail ? 'email' : 'mobile',
-        identifier: identifier,
-        hasPassword: !!password
+        identifier
       });
 
       const response = await this.api.post<ApiResponse<AuthTokenResponse>>('/api/Auth/token', payload);
 
-      console.log('📥 [AUTH] Response received:', {
+      ApiLogger.log('AUTH', 'Response received', {
         status: response.status,
         isSuccess: response.data.data.isSuccess,
-        message: response.data.data.message,
         hasToken: !!response.data.data.content?.token
       });
 
-      // Check if the API response indicates success
       if (!response.data.data.isSuccess) {
-        console.error('❌ [AUTH] Authentication failed:', response.data.data.message);
-        throw new Error(response.data.data.message || 'Authentication failed');
+        throw ApiErrorHandler.createError(
+          response.data.data.message || 'Authentication failed'
+        );
       }
 
-      // Return the content if successful
       if (!response.data.data.content) {
-        console.error('❌ [AUTH] No token content received');
-        throw new Error('No authentication token received');
+        throw ApiErrorHandler.createError('No authentication token received');
       }
 
-      console.log('✅ [AUTH] Authentication successful! Token received.');
+      ApiLogger.success('AUTH', 'Authentication successful');
       return response.data.data.content;
     } catch (error: any) {
-      console.error('💥 [AUTH] Authentication error:', error.response?.data || error.message);
+      ApiLogger.error('AUTH', 'Authentication error', error.response?.data || error.message);
       throw error;
     }
   }
 
+  // ========================================================================
+  // PUBLIC METHODS - User Management
+  // ========================================================================
+
   async getUserById(userId: string): Promise<UserResponse | null> {
-    console.log('👤 [USER] Fetching user details...');
-    console.log('🆔 [USER] User ID:', userId);
-    console.log('🌐 [USER] API URL:', `${API_BASE_URL}/api/passenger/getById?id=${userId}`);
+    ApiLogger.log('USER', 'Fetching user details', { userId });
 
     try {
-      const response = await this.api.get<ApiResponse<UserResponse>>(`/api/passenger/getById?id=${userId}`);
+      const response = await this.api.get<ApiResponse<UserResponse>>(
+        `/api/passenger/getById?id=${userId}`
+      );
 
-      // Check for unauthorized response
       if (await this.checkUnauthorizedResponse(response, 'USER')) {
         return null;
       }
 
-      console.log('📥 [USER] Response received:', {
-        status: response.status,
-        isSuccess: response.data.data.isSuccess,
-        message: response.data.data.message,
-        hasContent: !!response.data.data.content
-      });
+      const userData = this.validateApiResponse<UserResponse>(response, 'USER');
 
-      console.log('📊 [USER] Full response data:', JSON.stringify(response.data, null, 2));
-
-      // Check if the API response indicates success
-      if (!response.data.data.isSuccess) {
-        console.warn('⚠️ [USER] API returned unsuccessful response:', response.data.data.message);
-        return null; // API returned unsuccessful response
-      }
-
-      // Return the content if successful
-      if (!response.data.data.content) {
-        console.warn('⚠️ [USER] No user data in response content');
-        return null; // No user data received
-      }
-
-      const userData = response.data.data.content;
-      console.log('✅ [USER] User data retrieved successfully:');
-      console.log('📋 [USER] User Details:', {
-        id: userData.id,
-        name: userData.name,
-        mobileNumber: userData.mobileNumber,
-        emailAddress: userData.emailAddress,
-        address: userData.address,
-        gender: userData.gender,
-        passengerId: userData.passengerId,
-        cardNumber: userData.cardNumber,
-        balance: userData.balance,
-        hasImageUrl: !!userData.imageUrl,
-        imageUrl: userData.imageUrl?.substring(0, 50) + '...' || 'None',
-        organizationId: userData.organizationId,
-        organizationName: userData.organization?.name || 'None',
-        userType: userData.userType
-      });
-
-      return userData;
-    } catch (error: any) {
-      console.error('💥 [USER] API call failed with error:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-        url: error.config?.url
-      });
-
-      // Check if this is a 401 error that wasn't caught by interceptor
-      if (error.response?.status === 401) {
-        console.log('🚫 [USER] 401 error in catch block - triggering logout');
-        await this.handleUnauthorizedResponse(error);
-        return null;
-      }
-
-      // Handle 404 errors silently as this endpoint may not be available
-      if (error.response?.status === 404) {
-        console.warn('⚠️ [USER] User not found (404) - endpoint may not be available');
-        return null;
-      }
-
-      // Only log non-404 errors to avoid spam in production
-      if (error.response?.status !== 404) {
-        console.error('💥 [USER] Error fetching user details:', {
-          status: error.response?.status,
-          message: error.response?.data || error.message
+      if (userData) {
+        ApiLogger.success('USER', 'User data retrieved successfully', {
+          id: userData.id,
+          name: userData.name,
+          cardNumber: userData.cardNumber,
+          balance: userData.balance
         });
       }
 
-      return null; // Return null instead of throwing for graceful degradation
+      return userData;
+    } catch (error: any) {
+      if (ApiErrorHandler.isUnauthorized(error)) {
+        await this.handleCompleteUnauthorized(error);
+        return null;
+      }
+
+      if (ApiErrorHandler.isNotFound(error)) {
+        ApiLogger.warn('USER', 'User not found (404)');
+        return null;
+      }
+
+      ApiLogger.error('USER', 'Error fetching user details', {
+        status: error.response?.status,
+        message: error.response?.data || error.message
+      });
+
+      return null;
     }
   }
 
+  async registerPassenger(registrationData: RegistrationData): Promise<boolean> {
+    ApiLogger.log('REGISTRATION', 'Registering passenger', { name: registrationData.Name });
+
+    try {
+      const formData = this.createFormData(registrationData);
+
+      const response = await this.api.post<ApiResponse<null>>(
+        '/api/passenger/registration',
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
+
+      ApiLogger.log('REGISTRATION', 'Response received', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message
+      });
+
+      if (!response.data.data.isSuccess) {
+        throw ApiErrorHandler.createError(
+          response.data.data.message || 'Registration failed'
+        );
+      }
+
+      ApiLogger.success('REGISTRATION', 'Registration successful');
+      return true;
+    } catch (error: any) {
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('REGISTRATION', 'Registration error', errorMessage);
+      throw ApiErrorHandler.createError(errorMessage);
+    }
+  }
+
+  async updatePassengerProfile(updateData: FormData | ProfileUpdateData): Promise<{ isSuccess: boolean; message: string }> {
+    ApiLogger.log('UPDATE PROFILE', 'Updating passenger profile');
+
+    try {
+      let formData: FormData;
+
+      if (updateData instanceof FormData) {
+        formData = updateData;
+        ApiLogger.log('UPDATE PROFILE', 'Using provided FormData directly');
+      } else {
+        formData = this.createFormData(updateData);
+      }
+
+      const response = await this.api.put<ApiResponse<null>>(
+        '/api/passenger/update',
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
+
+      ApiLogger.log('UPDATE PROFILE', 'Response received', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message
+      });
+
+      return {
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message || 'Profile updated successfully!'
+      };
+    } catch (error: any) {
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('UPDATE PROFILE', 'Update profile error', errorMessage);
+      throw ApiErrorHandler.createError(errorMessage);
+    }
+  }
+
+  // ========================================================================
+  // PUBLIC METHODS - Trip Management
+  // ========================================================================
+
   async getOnGoingTrip(): Promise<Trip | null> {
-    console.log('🚌 [TRIP] Fetching ongoing trip...');
+    ApiLogger.log('TRIP', 'Fetching ongoing trip');
 
     try {
       const response = await this.api.get<ApiResponse<Trip>>('/api/passenger/getOnGoingTrip', {
-        // Add a shorter timeout for real-time checks
-        timeout: 8000,
-        // Add cache control headers to ensure fresh data
+        timeout: REFRESH_TIMEOUT,
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
@@ -726,80 +907,60 @@ class ApiService {
         }
       });
 
-      console.log('📥 [TRIP] Response received:', {
-        status: response.status,
-        isSuccess: response.data.data.isSuccess,
-        hasContent: !!response.data.data.content
-      });
+      const tripData = this.validateApiResponse<Trip>(response, 'TRIP');
 
-      // Check if the API response indicates success
-      if (!response.data.data.isSuccess) {
-        console.log('ℹ️ [TRIP] No ongoing trip found:', response.data.data.message);
-        return null;
+      if (tripData) {
+        ApiLogger.success('TRIP', 'Ongoing trip found', {
+          tripId: tripData.tripId,
+          busName: tripData.busName,
+          route: `${tripData.tripStartPlace} → ${tripData.tripEndPlace}`
+        });
+      } else {
+        ApiLogger.info('TRIP', 'No ongoing trip found');
       }
-
-      // Return the content if successful
-      if (!response.data.data.content) {
-        console.log('ℹ️ [TRIP] No ongoing trip data in response');
-        return null;
-      }
-
-      const tripData = response.data.data.content;
-      console.log('✅ [TRIP] Ongoing trip found:', {
-        tripId: tripData.tripId,
-        cardId: tripData.cardId,
-        cardNumber: tripData.cardNumber,
-        busName: tripData.busName,
-        busNumber: tripData.busNumber,
-        route: `${tripData.tripStartPlace} → ${tripData.tripEndPlace}`,
-        penaltyAmount: tripData.penaltyAmount
-      });
 
       return tripData;
     } catch (error: any) {
-      console.error('💥 [TRIP] Error fetching ongoing trip:', {
+      if (ApiErrorHandler.isNotFound(error)) {
+        ApiLogger.info('TRIP', 'No ongoing trip found (404)');
+        return null;
+      }
+
+      if (ApiErrorHandler.isTimeout(error)) {
+        ApiLogger.warn('TRIP', 'Request timed out');
+        return null;
+      }
+
+      ApiLogger.error('TRIP', 'Error fetching ongoing trip', {
         status: error.response?.status,
         message: error.response?.data || error.message
       });
-
-      // Handle specific error cases silently
-      if (error.response?.status === 404) {
-        console.log('ℹ️ [TRIP] No ongoing trip found (404)');
-        return null;
-      }
-
-      // Handle timeout errors specifically for real-time polling
-      if (error.code === 'ECONNABORTED') {
-        console.log('⏱️ [TRIP] Request timed out');
-        return null;
-      }
 
       return null;
     }
   }
 
   async tapOutTrip(): Promise<boolean> {
-    console.log('🚌 [TRIP] Attempting to tap out...');
+    ApiLogger.log('TRIP', 'Attempting to tap out');
 
     try {
       const response = await this.api.post('/api/passenger/tapOut');
 
-      console.log('📥 [TRIP] Tap out response received:', {
+      ApiLogger.log('TRIP', 'Tap out response received', {
         status: response.status,
         isSuccess: response.data.data?.isSuccess,
         message: response.data.data?.message
       });
 
-      // Check if the API response indicates success
       if (response.data.data?.isSuccess) {
-        console.log('✅ [TRIP] Tap out successful');
+        ApiLogger.success('TRIP', 'Tap out successful');
         return true;
       } else {
-        console.log('❌ [TRIP] Tap out failed:', response.data.data?.message);
+        ApiLogger.error('TRIP', 'Tap out failed', response.data.data?.message);
         return false;
       }
     } catch (error: any) {
-      console.error('💥 [TRIP] Error during tap out:', {
+      ApiLogger.error('TRIP', 'Error during tap out', {
         status: error.response?.status,
         message: error.response?.data || error.message
       });
@@ -808,60 +969,34 @@ class ApiService {
   }
 
   async forceTripStop(cardId: string, tripId: string, sessionId: string): Promise<{ success: boolean; message: string }> {
-    console.log('🚌 [FORCE TAP OUT] Attempting force trip stop...');
-    console.log('📋 [FORCE TAP OUT] Request payload:', { cardId, tripId, sessionId });
+    ApiLogger.log('FORCE TAP OUT', 'Attempting force trip stop', { cardId, tripId, sessionId });
 
     try {
-      const payload = {
-        cardId,
-        tripId,
-        sessionId
-      };
-
-      console.log('🌐 [FORCE TAP OUT] Sending request to: /api/transaction/ForceTripStop');
-      console.log('📤 [FORCE TAP OUT] Full payload:', JSON.stringify(payload, null, 2));
+      const payload = { cardId, tripId, sessionId };
 
       const response = await this.api.post<ApiResponse<null>>('/api/transaction/ForceTripStop', payload);
 
-      console.log('📥 [FORCE TAP OUT] Force trip stop response received:', {
+      ApiLogger.log('FORCE TAP OUT', 'Response received', {
         status: response.status,
         isSuccess: response.data.data?.isSuccess,
-        message: response.data.data?.message,
-        fullResponse: JSON.stringify(response.data, null, 2)
+        message: response.data.data?.message
       });
 
-      // Check if the API response indicates success
       if (response.data.data?.isSuccess) {
-        console.log('✅ [FORCE TAP OUT] Force trip stop successful');
+        ApiLogger.success('FORCE TAP OUT', 'Force trip stop successful');
         return {
           success: true,
           message: response.data.data.message || 'Bus fare deduction has been successful!'
         };
       } else {
-        console.log('❌ [FORCE TAP OUT] Force trip stop failed:', response.data.data?.message);
         return {
           success: false,
           message: response.data.data?.message || 'Force trip stop failed'
         };
       }
     } catch (error: any) {
-      console.error('💥 [FORCE TAP OUT] Error during force trip stop:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-
-      // Check if there's a specific error message from the API
-      let errorMessage = 'Network error occurred';
-
-      if (error.response?.data?.data?.message) {
-        errorMessage = error.response.data.data.message;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('FORCE TAP OUT', 'Error during force trip stop', errorMessage);
 
       return {
         success: false,
@@ -870,133 +1005,138 @@ class ApiService {
     }
   }
 
-    // OTP API methods
+  // ========================================================================
+  // PUBLIC METHODS - OTP Management
+  // ========================================================================
+
   async sendOTP(mobileNumber: string): Promise<boolean> {
-    console.log('📱 [OTP] Sending OTP to:', mobileNumber);
+    ApiLogger.log('OTP', 'Sending OTP', { mobileNumber });
 
     try {
       const response = await this.api.get<ApiResponse<null>>(
         `/api/otp/SendOtp?mobileNumber=${mobileNumber}`
       );
 
-      console.log('📥 [OTP] Send response:', {
-        status: response.status,
-        isSuccess: response.data.data.isSuccess,
-        message: response.data.data.message
-      });
-
       if (!response.data.data.isSuccess) {
-        console.error('❌ [OTP] Send failed:', response.data.data.message);
-        throw new Error(response.data.data.message || 'Failed to send OTP');
+        throw ApiErrorHandler.createError(
+          response.data.data.message || 'Failed to send OTP'
+        );
       }
 
-      console.log('✅ [OTP] OTP sent successfully');
+      ApiLogger.success('OTP', 'OTP sent successfully');
       return true;
     } catch (error: any) {
-      console.error('💥 [OTP] Send error:', error.response?.data || error.message);
+      ApiLogger.error('OTP', 'Send OTP error', error.response?.data || error.message);
       throw error;
     }
   }
 
-  // OTP API methods
   async sendOTPForForgotPassword(mobileNumber: string): Promise<boolean> {
-    console.log('📱 [OTP] Sending OTP to:', mobileNumber);
+    ApiLogger.log('OTP', 'Sending OTP for forgot password', { mobileNumber });
 
     try {
       const response = await this.api.get<ApiResponse<null>>(
         `/api/otp/SendOtpForForgotPassword?mobileNumber=${mobileNumber}`
       );
 
-      console.log('📥 [OTP] Send response:', {
-        status: response.status,
-        isSuccess: response.data.data.isSuccess,
-        message: response.data.data.message
-      });
-
       if (!response.data.data.isSuccess) {
-        console.error('❌ [OTP] Send failed:', response.data.data.message);
-        throw new Error(response.data.data.message || 'Failed to send OTP');
+        throw ApiErrorHandler.createError(
+          response.data.data.message || 'Failed to send OTP'
+        );
       }
 
-      console.log('✅ [OTP] OTP sent successfully');
+      ApiLogger.success('OTP', 'OTP sent successfully');
       return true;
     } catch (error: any) {
-      console.error('💥 [OTP] Send error:', error.response?.data || error.message);
+      ApiLogger.error('OTP', 'Send OTP error', error.response?.data || error.message);
       throw error;
     }
   }
 
   async verifyOTP(mobileNumber: string, otp: string): Promise<boolean> {
-    console.log('🔐 [OTP] Verifying OTP for:', mobileNumber);
+    ApiLogger.log('OTP', 'Verifying OTP', { mobileNumber });
 
     try {
       const response = await this.api.get<ApiResponse<null>>(
         `/api/otp/VerifyOtp?mobileNumber=${mobileNumber}&otp=${otp}`
       );
 
-      console.log('📥 [OTP] Verify response:', {
-        status: response.status,
-        isSuccess: response.data.data.isSuccess,
-        message: response.data.data.message
-      });
-
       if (!response.data.data.isSuccess) {
-        console.error('❌ [OTP] Verification failed:', response.data.data.message);
-        throw new Error(response.data.data.message || 'OTP verification failed');
+        throw ApiErrorHandler.createError(
+          response.data.data.message || 'OTP verification failed'
+        );
       }
 
-      console.log('✅ [OTP] OTP verified successfully');
+      ApiLogger.success('OTP', 'OTP verified successfully');
       return true;
     } catch (error: any) {
-      console.error('💥 [OTP] Verify error:', error.response?.data || error.message);
+      ApiLogger.error('OTP', 'Verify OTP error', error.response?.data || error.message);
       throw error;
     }
   }
 
   async resetPassword(mobileNumber: string, newPassword: string, confirmNewPassword: string): Promise<boolean> {
-    console.log('🔑 [PASSWORD] Resetting password for:', mobileNumber);
+    ApiLogger.log('PASSWORD', 'Resetting password', { mobileNumber });
 
     try {
-      const payload = {
-        mobileNumber,
-        newPassword,
-        confirmNewPassword
-      };
+      const payload = { mobileNumber, newPassword, confirmNewPassword };
 
-      const response = await this.api.post<ApiResponse<null>>(
-        '/api/user/ForgotPassword',
-        payload
-      );
+      const response = await this.api.post<ApiResponse<null>>('/api/user/ForgotPassword', payload);
 
-      console.log('📥 [PASSWORD] Reset response:', {
+      if (!response.data.data.isSuccess) {
+        throw ApiErrorHandler.createError(
+          response.data.data.message || 'Password reset failed'
+        );
+      }
+
+      ApiLogger.success('PASSWORD', 'Password reset successfully');
+      return true;
+    } catch (error: any) {
+      ApiLogger.error('PASSWORD', 'Reset password error', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  async changePassword(changePasswordData: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+    ApiLogger.log('PASSWORD', 'Attempting to change password');
+
+    try {
+      const response = await this.api.post<ApiResponse<null>>('/api/user/changePassword', changePasswordData);
+
+      ApiLogger.log('PASSWORD', 'Change password response received', {
         status: response.status,
         isSuccess: response.data.data.isSuccess,
         message: response.data.data.message
       });
 
-      if (!response.data.data.isSuccess) {
-        console.error('❌ [PASSWORD] Reset failed:', response.data.data.message);
-        throw new Error(response.data.data.message || 'Password reset failed');
+      return response.data.data;
+    } catch (error: any) {
+      ApiLogger.error('PASSWORD', 'Error changing password', {
+        status: error.response?.status,
+        message: error.response?.data?.data?.message || error.message
+      });
+
+      if (error.response?.data?.data) {
+        return error.response.data.data;
       }
 
-      console.log('✅ [PASSWORD] Password reset successfully');
-      return true;
-    } catch (error: any) {
-      console.error('💥 [PASSWORD] Reset error:', error.response?.data || error.message);
       throw error;
     }
   }
 
-  // Card validation API methods
+  // ========================================================================
+  // PUBLIC METHODS - Card Management
+  // ========================================================================
+
   async checkCardValidity(cardNumber: string): Promise<CardValidationResponse> {
-    console.log('🃏 [CARD] Checking card validity for:', cardNumber);
+    ApiLogger.log('CARD', 'Checking card validity', { cardNumber });
 
     try {
       const response = await this.api.get<ApiResponse<null>>(
         `/api/card/CheckCardValidity?cardNumber=${cardNumber}`
       );
 
-      console.log('📥 [CARD] Validation response:', {
+      ApiLogger.log('CARD', 'Validation response received', {
         status: response.status,
         isSuccess: response.data.data.isSuccess,
         message: response.data.data.message
@@ -1004,21 +1144,20 @@ class ApiService {
 
       return response.data.data;
     } catch (error: any) {
-      console.error('💥 [CARD] Validation error:', error.response?.data || error.message);
+      ApiLogger.error('CARD', 'Card validation error', error.response?.data || error.message);
       throw error;
     }
   }
 
-    // Card validation API methods
   async checkCardValidityRegistration(cardNumber: string): Promise<CardValidationResponse> {
-    console.log('🃏 [CARD] Checking card validity for:', cardNumber);
+    ApiLogger.log('CARD', 'Checking card validity for registration', { cardNumber });
 
     try {
       const response = await this.api.get<ApiResponse<null>>(
         `/api/card/CheckCardValidityForRegistration?cardNumber=${cardNumber}`
       );
 
-      console.log('📥 [CARD] Validation response:', {
+      ApiLogger.log('CARD', 'Validation response received', {
         status: response.status,
         isSuccess: response.data.data.isSuccess,
         message: response.data.data.message
@@ -1026,254 +1165,23 @@ class ApiService {
 
       return response.data.data;
     } catch (error: any) {
-      console.error('💥 [CARD] Validation error:', error.response?.data || error.message);
+      ApiLogger.error('CARD', 'Card validation error', error.response?.data || error.message);
       throw error;
     }
   }
 
-  // Registration API methods
-  async registerPassenger(registrationData: RegistrationData): Promise<boolean> {
-    console.log('👤 [REGISTRATION] Registering passenger:', registrationData.Name);
-    console.log('📋 [REGISTRATION] Full payload:', JSON.stringify(registrationData, null, 2));
-
-    try {
-      // Create FormData to match Postman's form-data format
-      const formData = new FormData();
-
-      // Add all fields to FormData
-      formData.append('Name', registrationData.Name);
-      formData.append('MobileNumber', registrationData.MobileNumber);
-      if (registrationData.EmailAddress) {
-        formData.append('EmailAddress', registrationData.EmailAddress);
-      }
-      if (registrationData.Gender) {
-        formData.append('Gender', registrationData.Gender);
-      }
-      if (registrationData.Address) {
-        formData.append('Address', registrationData.Address);
-      }
-      if (registrationData.DateOfBirth) {
-        formData.append('DateOfBirth', registrationData.DateOfBirth);
-      }
-      formData.append('Password', registrationData.Password);
-      if (registrationData.UserType) {
-        formData.append('UserType', registrationData.UserType);
-      }
-      if (registrationData.OrganizationId) {
-        formData.append('OrganizationId', registrationData.OrganizationId);
-      }
-      formData.append('CardNumber', registrationData.CardNumber);
-      if (registrationData.PassengerId) {
-        formData.append('PassengerId', registrationData.PassengerId);
-      }
-
-      console.log('📤 [REGISTRATION] Sending as FormData...');
-
-      const response = await this.api.post<ApiResponse<null>>(
-        '/api/passenger/registration',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      console.log('📥 [REGISTRATION] Response:', {
-        status: response.status,
-        isSuccess: response.data.data.isSuccess,
-        message: response.data.data.message,
-        fullResponse: response.data
-      });
-
-      if (!response.data.data.isSuccess) {
-        console.error('❌ [REGISTRATION] Failed:', response.data.data.message);
-        throw new Error(response.data.data.message || 'Registration failed');
-      }
-
-      console.log('✅ [REGISTRATION] Registration successful');
-      return true;
-    } catch (error: any) {
-      console.error('💥 [REGISTRATION] Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-
-      // Handle specific error cases
-      if (error.response?.data?.data?.message) {
-        throw new Error(error.response.data.data.message);
-      } else if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      } else if (error.message) {
-        throw new Error(error.message);
-      } else {
-        throw new Error('Registration failed. Please try again.');
-      }
-    }
-  }
-
-  /**
-   * Fetch passenger trip history
-   */
-  async getPassengerTripHistory(passengerId: string, pageNo: number = 1, pageSize: number = 10): Promise<{ data: TripTransaction[]; rowCount: number }> {
-    try {
-      console.log(`🚌 [API] Fetching trip history for: ${passengerId}`);
-
-      const response = await this.api.get<PaginatedApiResponse<TripTransaction>>(
-        `/api/history/passengerTrip?id=${passengerId}&pageNo=${pageNo}&pageSize=${pageSize}`
-      );
-
-      console.log('✅ [API] Trip history loaded:', response.data?.data?.content?.data?.length || 0, 'trips');
-      console.log('📊 [API] Total trips count:', response.data?.data?.content?.rowCount || 0);
-
-      // Check if the API response indicates success
-      if (!response.data.data.isSuccess) {
-        console.error('❌ [API] Trip history request failed:', response.data.data.message);
-        throw new Error(response.data.data.message || 'Failed to fetch trip history');
-      }
-
-      return {
-        data: response.data.data.content.data || [],
-        rowCount: response.data.data.content.rowCount || 0
-      };
-    } catch (error: any) {
-      console.error('❌ [API] Trip history error:', error.response?.status || error.message);
-
-      if (error.response?.data?.data?.message) {
-        throw new Error(error.response.data.data.message);
-      } else if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      } else if (error.message) {
-        throw new Error(error.message);
-      } else {
-        throw new Error('Failed to fetch trip history. Please try again.');
-      }
-    }
-  }
-
-  /**
-   * Fetch passenger recharge history
-   */
-  async getPassengerRechargeHistory(passengerId: string, pageNo: number = 1, pageSize: number = 10): Promise<{ data: RechargeTransaction[]; rowCount: number }> {
-    try {
-      console.log(`💳 [API] Fetching recharge history for: ${passengerId}`);
-
-      const response = await this.api.get<PaginatedApiResponse<RechargeTransaction>>(
-        `/api/history/passengerRecharge?id=${passengerId}&pageNo=${pageNo}&pageSize=${pageSize}`
-      );
-
-      console.log('✅ [API] Recharge history loaded:', response.data?.data?.content?.data?.length || 0, 'recharges');
-      console.log('📊 [API] Total recharges count:', response.data?.data?.content?.rowCount || 0);
-
-      // Check if the API response indicates success
-      if (!response.data.data.isSuccess) {
-        console.error('❌ [API] Recharge history request failed:', response.data.data.message);
-        throw new Error(response.data.data.message || 'Failed to fetch recharge history');
-      }
-
-      return {
-        data: response.data.data.content.data || [],
-        rowCount: response.data.data.content.rowCount || 0
-      };
-    } catch (error: any) {
-      console.error('❌ [API] Recharge history error:', error.response?.status || error.message);
-
-      if (error.response?.data?.data?.message) {
-        throw new Error(error.response.data.data.message);
-      } else if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      } else if (error.message) {
-        throw new Error(error.message);
-      } else {
-        throw new Error('Failed to fetch recharge history. Please try again.');
-      }
-    }
-  }
-
-  /**
-   * Fetch passenger transaction history (legacy - kept for backward compatibility)
-   * @deprecated Use getPassengerTripHistory and getPassengerRechargeHistory instead
-   */
-  async getPassengerHistory(passengerId: string, pageNo: number = 1, pageSize: number = 100): Promise<ApiResponse<TransactionType[]>> {
-    try {
-      console.log(`🔄 [API] Fetching legacy history for: ${passengerId}`);
-
-      const response = await this.api.get<ApiResponse<TransactionType[]>>(
-        `/api/history/passenger?id=${passengerId}&pageNo=${pageNo}&pageSize=${pageSize}`
-      );
-
-      console.log('✅ [API] Legacy history loaded:', response.data?.data?.content?.length || 0, 'items');
-      return response.data;
-    } catch (error: any) {
-      console.error('❌ [API] Legacy history error:', error.response?.status || error.message);
-
-      // Handle specific error cases
-      if (error.response?.data?.data?.message) {
-        throw new Error(error.response.data.data.message);
-      } else if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      } else if (error.message) {
-        throw new Error(error.message);
-      } else {
-        throw new Error('Failed to fetch history. Please try again.');
-      }
-    }
-  }
-
-  async changePassword(changePasswordData: ChangePasswordRequest): Promise<ChangePasswordResponse> {
-    console.log('🔑 [PASSWORD] Attempting to change password...');
-
-    try {
-      const response = await this.api.post<ApiResponse<null>>('/api/user/changePassword', changePasswordData);
-
-      console.log('📥 [PASSWORD] Change password response received:', {
-        status: response.status,
-        isSuccess: response.data.data.isSuccess,
-        message: response.data.data.message
-      });
-
-      // Return the API response data
-      return response.data.data;
-    } catch (error: any) {
-      console.error('💥 [PASSWORD] Error changing password:', {
-        status: error.response?.status,
-        message: error.response?.data?.data?.message || error.message
-      });
-
-      // If the API returned an error response with data, return it
-      if (error.response?.data?.data) {
-        return error.response.data.data;
-      }
-
-      // Otherwise, throw the error
-      throw error;
-    }
-  }
-
-  /**
-   * Update card number for public users
-   */
   async updateCardNumber(userId: string, cardNumber: string): Promise<UpdateCardNumberResponse> {
-    console.log('🔄 [UPDATE CARD] Updating card number for user:', userId);
-    console.log('🆔 [UPDATE CARD] New card number:', cardNumber);
+    ApiLogger.log('UPDATE CARD', 'Updating card number', { userId, cardNumber });
 
     try {
-      const requestData: UpdateCardNumberRequest = {
-        userId,
-        cardNumber
-      };
-
-      console.log('📤 [UPDATE CARD] Sending request:', requestData);
-      console.log('🌐 [UPDATE CARD] API URL:', `${API_BASE_URL}/api/passenger/updateCardNumber`);
+      const requestData: UpdateCardNumberRequest = { userId, cardNumber };
 
       const response = await this.api.put<ApiResponse<null>>(
         '/api/passenger/updateCardNumber',
         requestData
       );
 
-      console.log('📥 [UPDATE CARD] Response received:', {
+      ApiLogger.log('UPDATE CARD', 'Response received', {
         status: response.status,
         isSuccess: response.data.data.isSuccess,
         message: response.data.data.message
@@ -1287,137 +1195,156 @@ class ApiService {
         message: response.data.data.message
       };
     } catch (error: any) {
-      console.error('💥 [UPDATE CARD] Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('UPDATE CARD', 'Update card number error', errorMessage);
+      throw ApiErrorHandler.createError(errorMessage);
+    }
+  }
+
+  // ========================================================================
+  // PUBLIC METHODS - History Management
+  // ========================================================================
+
+  async getRecentActivity(): Promise<TripTransaction[]> {
+    ApiLogger.log('RECENT_ACTIVITY', 'Fetching recent activity');
+
+    try {
+      const response = await this.api.get<ApiResponse<TripTransaction[]>>('/api/passenger/recentActivity');
+
+      ApiLogger.log('RECENT_ACTIVITY', 'Response received', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        itemCount: response.data.data.content?.length || 0
       });
 
-      // Handle specific error cases
-      if (error.response?.data?.data?.message) {
-        throw new Error(error.response.data.data.message);
-      } else if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      } else if (error.message) {
-        throw new Error(error.message);
-      } else {
-        throw new Error('Failed to update card number. Please try again.');
+      if (await this.checkUnauthorizedResponse(response, 'RECENT_ACTIVITY')) {
+        return [];
       }
+
+      const activityData = this.validateApiResponse<TripTransaction[]>(response, 'RECENT_ACTIVITY');
+
+      if (activityData) {
+        ApiLogger.success('RECENT_ACTIVITY', `Recent activity loaded: ${activityData.length} items`);
+        return activityData;
+      }
+
+      return [];
+    } catch (error: any) {
+      if (ApiErrorHandler.isUnauthorized(error)) {
+        ApiLogger.warn('RECENT_ACTIVITY', 'Unauthorized access - token may be expired');
+        return [];
+      }
+
+      if (ApiErrorHandler.isNotFound(error)) {
+        ApiLogger.log('RECENT_ACTIVITY', 'No recent activity found');
+        return [];
+      }
+
+      if (ApiErrorHandler.isTimeout(error)) {
+        ApiLogger.warn('RECENT_ACTIVITY', 'Request timeout while fetching recent activity');
+        return [];
+      }
+
+      ApiLogger.error('RECENT_ACTIVITY', 'Error fetching recent activity', {
+        status: error.response?.status,
+        message: error.response?.data || error.message
+      });
+
+      return [];
+    }
+  }
+
+  async getPassengerTripHistory(passengerId: string, pageNo: number = 1, pageSize: number = 10): Promise<{ data: TripTransaction[]; rowCount: number }> {
+    ApiLogger.log('HISTORY', 'Fetching trip history', { passengerId, pageNo, pageSize });
+
+    try {
+      const response = await this.api.get<PaginatedApiResponse<TripTransaction>>(
+        `/api/history/passengerTrip?id=${passengerId}&pageNo=${pageNo}&pageSize=${pageSize}`
+      );
+
+      if (!response.data.data.isSuccess) {
+        throw ApiErrorHandler.createError(
+          response.data.data.message || 'Failed to fetch trip history'
+        );
+      }
+
+      const result = {
+        data: response.data.data.content.data || [],
+        rowCount: response.data.data.content.rowCount || 0
+      };
+
+      ApiLogger.success('HISTORY', 'Trip history loaded', {
+        count: result.data.length,
+        total: result.rowCount
+      });
+
+      return result;
+    } catch (error: any) {
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('HISTORY', 'Trip history error', errorMessage);
+      throw ApiErrorHandler.createError(errorMessage);
+    }
+  }
+
+  async getPassengerRechargeHistory(passengerId: string, pageNo: number = 1, pageSize: number = 10): Promise<{ data: RechargeTransaction[]; rowCount: number }> {
+    ApiLogger.log('HISTORY', 'Fetching recharge history', { passengerId, pageNo, pageSize });
+
+    try {
+      const response = await this.api.get<PaginatedApiResponse<RechargeTransaction>>(
+        `/api/history/passengerRecharge?id=${passengerId}&pageNo=${pageNo}&pageSize=${pageSize}`
+      );
+
+      if (!response.data.data.isSuccess) {
+        throw ApiErrorHandler.createError(
+          response.data.data.message || 'Failed to fetch recharge history'
+        );
+      }
+
+      const result = {
+        data: response.data.data.content.data || [],
+        rowCount: response.data.data.content.rowCount || 0
+      };
+
+      ApiLogger.success('HISTORY', 'Recharge history loaded', {
+        count: result.data.length,
+        total: result.rowCount
+      });
+
+      return result;
+    } catch (error: any) {
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('HISTORY', 'Recharge history error', errorMessage);
+      throw ApiErrorHandler.createError(errorMessage);
     }
   }
 
   /**
-   * Update passenger profile information
+   * @deprecated Use getPassengerTripHistory and getPassengerRechargeHistory instead
    */
-  async updatePassengerProfile(updateData: FormData | {
-    Id: string;
-    Name?: string;
-    MobileNumber?: string;
-    EmailAddress?: string;
-    Gender?: string;
-    Address?: string;
-    DateOfBirth?: string;
-    UserType?: string;
-    OrganizationId?: string;
-    PassengerId?: string;
-    ProfilePicture?: File;
-  }): Promise<{ isSuccess: boolean; message: string }> {
-    console.log('🔄 [UPDATE PROFILE] Updating passenger profile...');
+  async getPassengerHistory(passengerId: string, pageNo: number = 1, pageSize: number = 100): Promise<ApiResponse<TransactionType[]>> {
+    ApiLogger.warn('HISTORY', 'Using deprecated getPassengerHistory method');
 
     try {
-      let formData: FormData;
-
-      // If already FormData, use it directly. Otherwise, create FormData from object
-      if (updateData instanceof FormData) {
-        formData = updateData;
-        console.log('📤 [UPDATE PROFILE] Using provided FormData directly');
-      } else {
-        console.log('🔄 [UPDATE PROFILE] Creating FormData from object for user:', updateData.Id);
-
-        // Create FormData to match the API's multipart/form-data requirement
-        formData = new FormData();
-
-        // Add all fields to FormData
-        formData.append('Id', updateData.Id);
-
-        if (updateData.Name) {
-          formData.append('Name', updateData.Name);
-        }
-        if (updateData.MobileNumber) {
-          formData.append('MobileNumber', updateData.MobileNumber);
-        }
-        if (updateData.EmailAddress) {
-          formData.append('EmailAddress', updateData.EmailAddress);
-        }
-        if (updateData.Gender) {
-          formData.append('Gender', updateData.Gender);
-        }
-        if (updateData.Address) {
-          formData.append('Address', updateData.Address);
-        }
-        if (updateData.DateOfBirth) {
-          formData.append('DateOfBirth', updateData.DateOfBirth);
-        }
-        if (updateData.UserType) {
-          formData.append('UserType', updateData.UserType);
-        }
-        if (updateData.OrganizationId) {
-          formData.append('OrganizationId', updateData.OrganizationId);
-        }
-        if (updateData.PassengerId) {
-          formData.append('PassengerId', updateData.PassengerId);
-        }
-        if (updateData.ProfilePicture) {
-          formData.append('ProfilePicture', updateData.ProfilePicture);
-        }
-      }
-
-      console.log('📤 [UPDATE PROFILE] Sending as FormData...');
-
-      const response = await this.api.put<ApiResponse<null>>(
-        '/api/passenger/update',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
+      const response = await this.api.get<ApiResponse<TransactionType[]>>(
+        `/api/history/passenger?id=${passengerId}&pageNo=${pageNo}&pageSize=${pageSize}`
       );
 
-      console.log('📥 [UPDATE PROFILE] Response:', {
-        status: response.status,
-        isSuccess: response.data.data.isSuccess,
-        message: response.data.data.message,
-        fullResponse: response.data
+      ApiLogger.success('HISTORY', 'Legacy history loaded', {
+        count: response.data?.data?.content?.length || 0
       });
 
-      return {
-        isSuccess: response.data.data.isSuccess,
-        message: response.data.data.message || 'Profile updated successfully!'
-      };
+      return response.data;
     } catch (error: any) {
-      console.error('💥 [UPDATE PROFILE] Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-
-      // Handle specific error cases
-      if (error.response?.data?.data?.message) {
-        throw new Error(error.response.data.data.message);
-      } else if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      } else if (error.message) {
-        throw new Error(error.message);
-      } else {
-        throw new Error('Failed to update profile. Please try again.');
-      }
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('HISTORY', 'Legacy history error', errorMessage);
+      throw ApiErrorHandler.createError(errorMessage);
     }
   }
 
-  // Generic HTTP methods
+  // ========================================================================
+  // PUBLIC METHODS - Generic HTTP Methods
+  // ========================================================================
+
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.api.get<T>(url, config);
   }
@@ -1435,4 +1362,10 @@ class ApiService {
   }
 }
 
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
 export const apiService = new ApiService();
+export { ApiErrorHandler, ApiLogger, FormDataBuilder };
+

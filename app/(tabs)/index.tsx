@@ -32,6 +32,7 @@ import { Toast } from "../../components/ui/Toast";
 import { useRealtimeTrip } from "../../hooks/useRealtimeTrip";
 import { useToast } from "../../hooks/useToast";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
+import { TripTransaction } from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
 import { API_BASE_URL, COLORS } from "../../utils/constants";
@@ -56,7 +57,7 @@ const DASHBOARD_CONFIG = {
   },
   PULSE_ANIMATION_DURATION: 1500,
   LOADING_ANIMATION_DURATION: 1000,
-  RECENT_TRANSACTIONS_LIMIT: 3,
+  RECENT_TRANSACTIONS_LIMIT: 4,
 } as const;
 
 // UI text constants
@@ -86,7 +87,6 @@ const UI_TEXTS = {
   ACTIVITY: {
     SECTION_TITLE: "Recent Activity",
     VIEW_ALL: "View All",
-    BUS_FARE: "Bus Fare",
     TOP_UP: "Top Up",
     LOADING: "Loading activity...",
     LOADING_SUBTITLE: "Fetching your latest transactions",
@@ -173,10 +173,8 @@ export default function Dashboard() {
     isLoading,
     tripStatus,
     currentTrip,
-    tripTransactions,
-    rechargeTransactions,
-    loadTripHistory,
-    loadRechargeHistory,
+    recentActivity,
+    loadRecentActivity,
     checkOngoingTrip,
     forceTapOut,
     forceRefreshData,
@@ -249,8 +247,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (user && !hasLoadedData) {
       loadCardDetails();
-      loadTripHistory(1, true);
-      loadRechargeHistory(1, true);
+      loadRecentActivity();
       checkOngoingTrip();
       setHasLoadedData(true);
     }
@@ -295,6 +292,7 @@ export default function Dashboard() {
       await Promise.all([
         useAuthStore.getState().refreshBalance(), // Just balance
         checkOngoingTrip(), // Just ongoing trip status
+        loadRecentActivity(), // Recent activity
       ]);
 
       setHasLoadedData(true);
@@ -775,10 +773,31 @@ export default function Dashboard() {
     }
   };
 
-  const getActivityTitle = (transactionType: string) => {
-    return transactionType === "BusFare"
-      ? UI_TEXTS.ACTIVITY.BUS_FARE
-      : UI_TEXTS.ACTIVITY.TOP_UP;
+  const getActivityTitle = (transaction: TripTransaction) => {
+    if (transaction.transactionType === "BusFare") {
+      // Use bus information from the trip
+      const busName =
+        transaction.trip?.session?.bus?.busNumber ||
+        transaction.trip?.session?.bus?.busName ||
+        UI_TEXTS.FALLBACKS.BUS_NAME;
+      return busName;
+    } else {
+      return UI_TEXTS.ACTIVITY.TOP_UP;
+    }
+  };
+
+  const getActivitySubtitle = (transaction: TripTransaction) => {
+    if (transaction.transactionType === "BusFare") {
+      return "Bus Fare";
+    } else if (transaction.transactionType === "Recharge") {
+      return "Recharge";
+    } else if (transaction.transactionType === "Return") {
+      return "Return";
+    } else if (transaction.transactionType === "Penalty") {
+      return "Penalty";
+    } else {
+      return "Unknown";
+    }
   };
 
   const getActivityAmount = (transactionType: string, amount: number) => {
@@ -791,14 +810,10 @@ export default function Dashboard() {
   };
 
   const getCombinedTransactions = () => {
-    return [...tripTransactions, ...rechargeTransactions]
+    return recentActivity
       .sort((a, b) => {
-        const aDate = new Date(
-          a.createTime || (a as any).trip?.tripStartTime || 0
-        );
-        const bDate = new Date(
-          b.createTime || (b as any).trip?.tripStartTime || 0
-        );
+        const aDate = new Date(a.createTime || 0);
+        const bDate = new Date(b.createTime || 0);
         return bDate.getTime() - aDate.getTime();
       })
       .slice(0, DASHBOARD_CONFIG.RECENT_TRANSACTIONS_LIMIT);
@@ -883,7 +898,7 @@ export default function Dashboard() {
                       color={COLORS.gray[900]}
                       style={styles.activityTitle}
                     >
-                      {getActivityTitle(transaction.transactionType)}
+                      {getActivitySubtitle(transaction)}
                     </Text>
                     <Text
                       variant="caption"
