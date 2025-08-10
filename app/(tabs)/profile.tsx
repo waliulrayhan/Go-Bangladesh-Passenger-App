@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Image,
   RefreshControl,
@@ -31,236 +31,215 @@ import { apiService } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 import { API_BASE_URL, COLORS } from '../../utils/constants';
 
+// Types
+interface UserProfileData {
+  id: string;
+  name: string;
+  mobileNumber: string;
+  emailAddress: string;
+  gender: string;
+  address: string;
+  dateOfBirth: string;
+  userType: string;
+  imageUrl: string;
+  passengerId: string;
+  studentId: string;
+  organizationId: string;
+  organization?: { name: string } | undefined;
+}
+
+// Constants
+const REFRESH_DELAY = 300;
+const LOGOUT_REDIRECT_DELAY = 100;
+const LOGOUT_ERROR_REDIRECT_DELAY = 1000;
+
 /**
  * Profile Screen Component
- * Displays user profile information, balance, account details, and quick actions
+ * 
+ * This component displays comprehensive user profile information including:
+ * - User avatar, name, type, and organization
+ * - Current balance and card information
+ * - Account details (contact info, demographics, etc.)
+ * - Quick actions (settings, password change, help, logout)
+ * 
+ * Features:
+ * - Pull-to-refresh data synchronization
+ * - Auto-refresh on focus and modal close
+ * - Modal-based editing workflows
+ * - Error handling with toast notifications
+ * - Responsive UI with animations
  */
 export default function Profile() {
-  // Auth store hooks
+  // ==================== HOOKS ====================
   const { user, logout } = useAuthStore();
-  
-  // Token refresh hook for data synchronization
   const { refreshAllData } = useTokenRefresh();
-  
-  // Toast hook for notifications
   const { toast, showToast, hideToast } = useToast();
-  
-  // Modal state management
-  const [refreshing, setRefreshing] = React.useState(false);
-  const [showUpdateCardModal, setShowUpdateCardModal] = React.useState(false);
-  const [showSettingsModal, setShowSettingsModal] = React.useState(false);
-  const [showHelpSupportModal, setShowHelpSupportModal] = React.useState(false);
-  const [showEditProfileModal, setShowEditProfileModal] = React.useState(false);
-  const [showLogoutConfirmation, setShowLogoutConfirmation] = React.useState(false);
 
-  // Track previous modal state to detect when modal closes
-  const prevShowEditProfileModal = React.useRef(showEditProfileModal);
+  // ==================== STATE ====================
+  const [refreshing, setRefreshing] = useState(false);
+  const [showUpdateCardModal, setShowUpdateCardModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showHelpSupportModal, setShowHelpSupportModal] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
 
+  // ==================== REFS ====================
+  const prevShowEditProfileModal = useRef(showEditProfileModal);
+
+  // ==================== UTILITY FUNCTIONS ====================
+  const createFreshUserObject = (freshUserData: any, currentUser: any) => ({
+    id: freshUserData.id,
+    name: freshUserData.name,
+    email: freshUserData.emailAddress,
+    emailAddress: freshUserData.emailAddress,
+    mobile: freshUserData.mobileNumber,
+    mobileNumber: freshUserData.mobileNumber,
+    sex: (freshUserData.gender?.toLowerCase() === 'female' ? 'female' : 'male') as 'female' | 'male',
+    gender: freshUserData.gender,
+    cardNumber: freshUserData.cardNumber,
+    userType: freshUserData.userType?.toLowerCase() as 'passenger' | 'public' | 'private' || currentUser.userType,
+    isActive: currentUser.isActive || true,
+    createdAt: currentUser.createdAt || new Date().toISOString(),
+    profileImage: freshUserData.imageUrl,
+    imageUrl: freshUserData.imageUrl,
+    dateOfBirth: freshUserData.dateOfBirth,
+    address: freshUserData.address,
+    passengerId: freshUserData.passengerId,
+    organizationId: freshUserData.organizationId,
+    organization: freshUserData.organization?.name || freshUserData.organization,
+    balance: freshUserData.balance
+  });
+
+  const updateUserInStorage = async (userData: any) => {
+    const { storageService } = await import('../../utils/storage');
+    const { STORAGE_KEYS } = await import('../../utils/constants');
+    
+    await storageService.setItem(STORAGE_KEYS.USER_DATA, userData);
+    useAuthStore.setState({ user: userData });
+  };
+
+  // ==================== DATA REFRESH ====================
   /**
-   * Force refresh data immediately when returning to profile page
+   * Force refresh profile data from API
    */
-  const forceRefreshProfileData = React.useCallback(async () => {
-    console.log('🔄 [PROFILE] Force refreshing profile data with complete refresh...');
+  const forceRefreshProfileData = useCallback(async () => {
     try {
-      // Get current user ID
-      const { user } = useAuthStore.getState();
-      if (!user?.id) {
+      const { user: currentUser } = useAuthStore.getState();
+      if (!currentUser?.id) {
         console.error('❌ [PROFILE] No user ID available for refresh');
         return;
       }
 
-      console.log('🔄 [PROFILE] Fetching fresh user data from API...');
-      
-      // Import API service dynamically to avoid circular dependencies
       const { apiService } = await import('../../services/api');
-      
-      // Fetch completely fresh user data from API
-      const freshUserData = await apiService.getUserById(user.id.toString());
+      const freshUserData = await apiService.getUserById(currentUser.id.toString());
       
       if (freshUserData) {
-        console.log('✅ [PROFILE] Fresh user data received:', {
-          name: freshUserData.name,
-          email: freshUserData.emailAddress,
-          mobile: freshUserData.mobileNumber
-        });
-
-        // Create completely new user object with fresh data from ALL available API fields
-        const completelyFreshUser = {
-          id: freshUserData.id,
-          name: freshUserData.name,
-          email: freshUserData.emailAddress,
-          emailAddress: freshUserData.emailAddress,
-          mobile: freshUserData.mobileNumber,
-          mobileNumber: freshUserData.mobileNumber,
-          sex: (freshUserData.gender?.toLowerCase() === 'female' ? 'female' : 'male') as 'female' | 'male',
-          gender: freshUserData.gender,
-          cardNumber: freshUserData.cardNumber,
-          userType: freshUserData.userType?.toLowerCase() as 'passenger' | 'public' | 'private' || user.userType,
-          isActive: user.isActive || true,
-          createdAt: user.createdAt || new Date().toISOString(),
-          profileImage: freshUserData.imageUrl,
-          imageUrl: freshUserData.imageUrl,
-          dateOfBirth: freshUserData.dateOfBirth,
-          address: freshUserData.address,
-          passengerId: freshUserData.passengerId,
-          organizationId: freshUserData.organizationId,
-          organization: freshUserData.organization?.name || freshUserData.organization,
-          balance: freshUserData.balance
-        };
-
-        console.log('✅ [PROFILE] Complete user data prepared:', {
-          name: completelyFreshUser.name,
-          email: completelyFreshUser.email,
-          mobile: completelyFreshUser.mobile,
-          address: completelyFreshUser.address,
-          dateOfBirth: completelyFreshUser.dateOfBirth,
-          gender: completelyFreshUser.gender
-        });
-
-        console.log('🔄 [PROFILE] Updating auth store with fresh data...');
-
-        // Force update the auth store with completely fresh data
-        const { storageService } = await import('../../utils/storage');
-        const { STORAGE_KEYS } = await import('../../utils/constants');
-        
-        await storageService.setItem(STORAGE_KEYS.USER_DATA, completelyFreshUser);
-        useAuthStore.setState({ user: completelyFreshUser });
-
-        console.log('✅ [PROFILE] Auth store updated with completely fresh data');
+        const completelyFreshUser = createFreshUserObject(freshUserData, currentUser);
+        await updateUserInStorage(completelyFreshUser);
+        console.log('✅ [PROFILE] Profile data refreshed successfully');
       } else {
         console.error('❌ [PROFILE] No fresh user data received from API');
       }
-      
     } catch (error) {
-      console.error('❌ [PROFILE] Error force refreshing profile data:', error);
+      console.error('❌ [PROFILE] Error refreshing profile data:', error);
     }
-  }, []); // Empty dependency array but access refreshAllData directly
+  }, []);
 
+  // ==================== EFFECTS ====================
   /**
-   * Refresh data when edit profile modal closes to show updated information
+   * Effects for data refresh management
    */
-  React.useEffect(() => {
-    // Only refresh when modal transitions from true to false (closes)
+  useEffect(() => {
+    // Refresh when edit profile modal closes
     if (prevShowEditProfileModal.current === true && showEditProfileModal === false) {
-      console.log('🔄 [PROFILE] Edit profile modal closed, refreshing data...');
-      
-      // Use immediate refresh without timeout for faster response
       forceRefreshProfileData();
     }
-
-    // Update the ref to track current state for next render
     prevShowEditProfileModal.current = showEditProfileModal;
-  }, [showEditProfileModal]); // Remove forceRefreshProfileData from dependencies
+  }, [showEditProfileModal, forceRefreshProfileData]);
 
-  /**
-   * Also refresh data when the component gains focus (when navigating back to profile)
-   */
   useFocusEffect(
-    React.useCallback(() => {
-      console.log('🔄 [PROFILE] Profile page focused, checking for fresh data...');
-      // Add a small delay to ensure any pending updates are complete
+    useCallback(() => {
       const timeoutId = setTimeout(() => {
         forceRefreshProfileData();
-      }, 300);
+      }, REFRESH_DELAY);
       
       return () => clearTimeout(timeoutId);
-    }, []) // Empty dependency array to prevent infinite calls
+    }, [forceRefreshProfileData])
   );
 
+  // ==================== EVENT HANDLERS ====================
   /**
    * Handle pull-to-refresh functionality
-   * Refreshes user data and card information
    */
-  const onRefresh = React.useCallback(async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await refreshAllData(true); // Force refresh
+      await refreshAllData(true);
     } catch (error) {
-      // Silently handle refresh errors to avoid disrupting user experience
+      console.error('❌ [PROFILE] Refresh error:', error);
     } finally {
       setRefreshing(false);
     }
   }, [refreshAllData]);
 
   /**
-   * Handle user logout with confirmation dialog
+   * Logout handlers
    */
-  const handleLogout = () => {
-    setShowLogoutConfirmation(true);
+  const handleLogout = () => setShowLogoutConfirmation(true);
+
+  const redirectToLogin = () => {
+    router.dismissAll();
+    router.replace('/');
   };
 
-  /**
-   * Perform actual logout after confirmation
-   */
   const performLogout = async () => {
     try {
-      console.log('🔄 [PROFILE] Starting logout process...');
-      
-      // Show success toast immediately
       showToast('Signing out...', 'info');
-      
-      // Perform logout
       await logout();
-      
-      console.log('✅ [PROFILE] Logout completed, redirecting...');
-      
-      // Close confirmation modal
       setShowLogoutConfirmation(false);
       
-      // Add a small delay to ensure state is cleared
       setTimeout(() => {
-        // Show success message
         showToast('Logged out successfully', 'success');
-        
-        // Force navigation with cleanup
-        router.dismissAll();
-        router.replace('/');
-      }, 100);
-      
+        redirectToLogin();
+      }, LOGOUT_REDIRECT_DELAY);
     } catch (error) {
       console.error('❌ [PROFILE] Logout error:', error);
-      
-      // Close confirmation modal
       setShowLogoutConfirmation(false);
-      
-      // Show error toast
       showToast('Logout failed. Please try again.', 'error');
       
-      // Force navigation even if logout fails to prevent stuck state
-      setTimeout(() => {
-        router.dismissAll();
-        router.replace('/');
-      }, 1000);
+      setTimeout(redirectToLogin, LOGOUT_ERROR_REDIRECT_DELAY);
     }
   };
 
+  // ==================== DISPLAY UTILITIES ====================
   /**
-   * Get organization display text with proper fallbacks
+   * Utility functions for user data display
    */
   const getOrganizationText = () => {
     if (!user?.organization) return 'Not Provided';
-    if (typeof user.organization === 'string') {
-      return user.organization;
-    } else if (typeof user.organization === 'object' && user.organization?.name) {
-      return user.organization.name;
-    }
+    if (typeof user.organization === 'string') return user.organization;
+    if (typeof user.organization === 'object' && user.organization?.name) return user.organization.name;
     return 'Not Provided';
   };
 
-  /**
-   * Get gender display text with proper formatting
-   */
   const getGenderText = () => {
     const gender = user?.gender || user?.sex;
     if (!gender) return 'Not Provided';
     return gender.charAt(0).toUpperCase() + gender.slice(1);
   };
 
+  const getUserTypeText = () => {
+    const gender = user?.gender || user?.sex;
+    const genderText = gender ? (gender.charAt(0).toUpperCase() + gender.slice(1)) : '';
+    const userTypeText = user?.userType ? (user.userType.charAt(0).toUpperCase() + user.userType.slice(1)) : 'Passenger';
+    return genderText ? `${userTypeText} User` : userTypeText;
+  };
+
+  // ==================== RENDER FUNCTIONS ====================
   /**
    * Render profile header with user avatar, name, type, and organization
    */
   const renderProfileHeader = () => {
-    // Show loading state if user data is not available
     if (!user) {
       return (
         <Animated.View entering={FadeInUp.duration(600)} style={styles.headerContainer}>
@@ -279,17 +258,8 @@ export default function Profile() {
       );
     }
 
-    // Generate profile image URL and unique key for re-rendering
     const profileImageUrl = user?.imageUrl ? `${API_BASE_URL}/${user.imageUrl}` : null;
     const imageKey = `profile-${user?.id || 'default'}-${user?.imageUrl || 'no-image'}`;
-
-    // Helper to format user type display text
-    const getUserTypeText = () => {
-      const gender = user?.gender || user?.sex;
-      const genderText = gender ? (gender.charAt(0).toUpperCase() + gender.slice(1)) : '';
-      const userTypeText = user?.userType ? (user.userType.charAt(0).toUpperCase() + user.userType.slice(1)) : 'Passenger';
-      return genderText ? `${userTypeText} User` : userTypeText;
-    };
 
     return (
       <Animated.View entering={FadeInUp.duration(600)} style={styles.headerContainer}>
@@ -297,7 +267,7 @@ export default function Profile() {
           <View style={styles.avatarSection}>
             {profileImageUrl ? (
               <Image 
-                key={imageKey} // Force re-render when URL changes
+                key={imageKey}
                 source={{ uri: profileImageUrl }} 
                 style={styles.profileImage}
               />
@@ -323,11 +293,11 @@ export default function Profile() {
       </Animated.View>
     );
   };
+
   /**
    * Render balance card showing current balance and card information
    */
   const renderBalanceCard = () => {
-    // Don't show balance card if user data is not available
     if (!user) {
       return null;
     }
@@ -540,77 +510,81 @@ export default function Profile() {
     </Animated.View>
   );
 
+  // ==================== API HANDLERS ====================
   /**
-   * Send OTP for card number update verification
+   * API handlers for card and profile updates
    */
   const handleSendOTPForCardUpdate = async (newCardNumber: string) => {
     const mobileNumber = user?.mobileNumber || user?.mobile;
-    if (!mobileNumber) {
-      throw new Error('Mobile number not found');
-    }
-
-    try {
-      await apiService.sendOTP(mobileNumber);
-    } catch (error: any) {
-      throw error;
-    }
+    if (!mobileNumber) throw new Error('Mobile number not found');
+    
+    await apiService.sendOTP(mobileNumber);
   };
 
-  /**
-   * Update user card number after OTP verification
-   */
   const handleUpdateCard = async (newCardNumber: string, otp: string) => {
-    if (!user?.id) {
-      throw new Error('User ID not found');
-    }
-
+    if (!user?.id) throw new Error('User ID not found');
+    
     const mobileNumber = user?.mobileNumber || user?.mobile;
-    if (!mobileNumber) {
-      throw new Error('Mobile number not found');
-    }
+    if (!mobileNumber) throw new Error('Mobile number not found');
 
-    try {
-      // First verify OTP
-      await apiService.verifyOTP(mobileNumber, otp);
-      
-      // Then update card number
-      const response = await apiService.updateCardNumber(user.id.toString(), newCardNumber);
-      
-      if (response.isSuccess) {
-        showToast(response.message || 'Card number updated successfully!', 'success');
-        // Refresh user data to get the updated card number
-        await refreshAllData();
-      } else {
-        throw new Error(response.message || 'Failed to update card number');
-      }
-    } catch (error: any) {
-      throw error;
+    await apiService.verifyOTP(mobileNumber, otp);
+    const response = await apiService.updateCardNumber(user.id.toString(), newCardNumber);
+    
+    if (response.isSuccess) {
+      showToast(response.message || 'Card number updated successfully!', 'success');
+      await refreshAllData();
+    } else {
+      throw new Error(response.message || 'Failed to update card number');
+    }
+  };
+
+  const handleUpdateProfile = async (updateData: any) => {
+    if (!user?.id) throw new Error('User ID not found');
+
+    const response = await apiService.updatePassengerProfile(updateData);
+    
+    if (response.isSuccess) {
+      showToast(response.message || 'Profile updated successfully!', 'success');
+      await refreshAllData();
+    } else {
     }
   };
 
   /**
-   * Update user profile information
+   * Create user data object for EditProfileModal
    */
-  const handleUpdateProfile = async (updateData: any) => {
-    if (!user?.id) {
-      throw new Error('User ID not found');
-    }
-
-    try {
-      const response = await apiService.updatePassengerProfile(updateData);
-      
-      if (response.isSuccess) {
-        showToast(response.message || 'Profile updated successfully!', 'success');
-        // Refresh user data to get the updated information
-        await refreshAllData();
-      } else {
-        throw new Error(response.message || 'Failed to update profile');
+  const createUserDataForModal = (): UserProfileData => {
+    if (!user) throw new Error('User data not available');
+    
+    const getOrganizationObject = () => {
+      if (!user.organization) return undefined;
+      if (typeof user.organization === 'object' && user.organization.name) {
+        return { name: user.organization.name };
       }
-    } catch (error: any) {
-      throw error;
-    }
+      if (typeof user.organization === 'string') {
+        return { name: user.organization };
+      }
+      return undefined;
+    };
+    
+    return {
+      id: user.id.toString(),
+      name: user.name,
+      mobileNumber: user.mobileNumber || user.mobile || '',
+      emailAddress: user.emailAddress || user.email || '',
+      gender: user.gender || user.sex || '',
+      address: user.address || '',
+      dateOfBirth: user.dateOfBirth || '',
+      userType: user.userType || 'public',
+      imageUrl: user.imageUrl || '',
+      passengerId: user.passengerId || '',
+      studentId: user.studentId || '',
+      organizationId: user.organizationId || '',
+      organization: getOrganizationObject(),
+    };
   };
 
+  // ==================== COMPONENT RENDER ====================
   return (
     <SafeAreaView style={styles.container}>
       {/* Brand gradient background */}
@@ -672,27 +646,7 @@ export default function Profile() {
           visible={showEditProfileModal}
           onClose={() => setShowEditProfileModal(false)}
           onUpdate={handleUpdateProfile}
-          userData={{
-            id: user.id.toString(),
-            name: user.name,
-            mobileNumber: user.mobileNumber || user.mobile || '',
-            emailAddress: user.emailAddress || user.email || '',
-            gender: user.gender || user.sex || '',
-            address: user.address || '',
-            dateOfBirth: user.dateOfBirth || '',
-            userType: user.userType || 'public',
-            imageUrl: user.imageUrl || '',
-            passengerId: user.passengerId || '',
-            studentId: user.studentId || '',
-            organizationId: user.organizationId || '',
-            organization: user.organization ? 
-              (typeof user.organization === 'object' && user.organization.name 
-                ? { name: user.organization.name }
-                : typeof user.organization === 'string' 
-                  ? { name: user.organization }
-                  : undefined)
-              : undefined,
-          }}
+          userData={createUserDataForModal()}
         />
       )}
 
