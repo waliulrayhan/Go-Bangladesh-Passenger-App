@@ -414,6 +414,7 @@ export interface UpdateCardNumberResponse {
 
 class ApiService {
   private api: AxiosInstance;
+  private isHandlingUnauthorized = false; // Prevent multiple concurrent logout attempts
 
   constructor() {
     this.api = axios.create({
@@ -425,6 +426,59 @@ class ApiService {
     });
 
     this.setupInterceptors();
+  }
+
+  /**
+   * Handle 401 unauthorized responses consistently
+   * This method ensures we don't have multiple concurrent logout attempts
+   */
+  private async handleUnauthorizedResponse(error: any) {
+    if (this.isHandlingUnauthorized) {
+      console.log('🔄 [API] Already handling unauthorized response, skipping...');
+      return;
+    }
+
+    this.isHandlingUnauthorized = true;
+    console.log('🚫 [API] Handling 401 Unauthorized - Token completely invalid');
+
+    try {
+      // Import auth store dynamically to avoid circular dependency
+      const { useAuthStore } = await import('../stores/authStore');
+      const authStore = useAuthStore.getState();
+
+      console.log('🧹 [API] Triggering complete session cleanup...');
+      await authStore.handleUnauthorized();
+
+      // Add a small delay to ensure state is cleared
+      setTimeout(async () => {
+        try {
+          // Import router dynamically
+          const { router } = await import('expo-router');
+          
+          console.log('🔄 [API] Redirecting to login screen...');
+          router.dismissAll();
+          router.replace('/');
+        } catch (navError) {
+          console.warn('⚠️ [API] Navigation error during unauthorized redirect:', navError);
+        }
+      }, 100);
+      
+    } catch (logoutError) {
+      console.error('💥 [API] Error during forced logout:', logoutError);
+      
+      // Last resort: clear storage manually
+      try {
+        await storageService.clearAllAppData();
+        console.log('🧹 [API] Manual storage cleanup completed');
+      } catch (storageError) {
+        console.error('💥 [API] Failed to clear storage manually:', storageError);
+      }
+    } finally {
+      // Reset the flag after a delay to allow for state changes
+      setTimeout(() => {
+        this.isHandlingUnauthorized = false;
+      }, 2000);
+    }
   }
 
   private setupInterceptors() {
@@ -445,8 +499,10 @@ class ApiService {
         const originalRequest = error.config;
 
         if (error.response?.status === 401) {
-          console.log('🚫 [API] 401 Unauthorized response received');
+          console.log('🚫 [API] 401 Unauthorized response received - Token expired or invalid');
+          console.log('🚫 [API] Request URL:', originalRequest?.url);
 
+          // Prevent infinite retry loops
           if (!originalRequest._retry) {
             originalRequest._retry = true;
 
@@ -455,38 +511,62 @@ class ApiService {
               if (refreshToken) {
                 console.log('🔄 [API] Attempting token refresh...');
                 const response = await this.refreshToken(refreshToken);
-                await storageService.setSecureItem(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
-                console.log('✅ [API] Token refreshed successfully');
-                return this.api(originalRequest);
+                
+                if (response.data.token) {
+                  await storageService.setSecureItem(STORAGE_KEYS.AUTH_TOKEN, response.data.token);
+                  console.log('✅ [API] Token refreshed successfully');
+                  
+                  // Retry the original request with new token
+                  originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
+                  return this.api(originalRequest);
+                } else {
+                  throw new Error('No token in refresh response');
+                }
+              } else {
+                console.log('🚫 [API] No refresh token available');
               }
             } catch (refreshError) {
-              console.log('❌ [API] Token refresh failed');
+              console.log('❌ [API] Token refresh failed:', refreshError);
             }
           }
 
           // If we reach here, token refresh failed or wasn't possible
-          console.log('🔓 [API] Clearing auth data and triggering logout...');
-
-          // Trigger logout by calling the auth store method
-          const { useAuthStore } = await import('../stores/authStore');
-          const authStore = useAuthStore.getState();
-
-          console.log('🔓 [API] Triggering automatic logout due to 401...');
-          await authStore.handleUnauthorized();
-
-          // Redirect to login screen with proper navigation handling
-          const { router } = await import('expo-router');
-          try {
-            router.dismissAll();
-            router.replace('/');
-          } catch (navError) {
-            console.warn('⚠️ [API] Navigation error during unauthorized redirect:', navError);
-          }
+          console.log('🔓 [API] Token completely invalid - Forcing automatic logout...');
+          await this.handleUnauthorizedResponse(error);
         }
 
         return Promise.reject(error);
       }
     );
+  }
+
+  /**
+   * Check if an API response indicates unauthorized access
+   * This catches cases where the interceptor might not catch 401s properly
+   */
+  private async checkUnauthorizedResponse(response: any, methodName: string) {
+    try {
+      // Check for 401 status in response
+      if (response?.status === 401) {
+        console.log(`🚫 [${methodName}] Direct 401 response detected`);
+        await this.handleUnauthorizedResponse(response);
+        return true;
+      }
+
+      // Check for unauthorized messages in API response data
+      if (response?.data?.data?.message?.toLowerCase().includes('unauthorized') ||
+          response?.data?.data?.message?.toLowerCase().includes('token') ||
+          response?.data?.message?.toLowerCase().includes('unauthorized')) {
+        console.log(`🚫 [${methodName}] Unauthorized message in response:`, response.data?.data?.message || response.data?.message);
+        await this.handleUnauthorizedResponse(response);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error(`💥 [${methodName}] Error checking unauthorized response:`, error);
+      return false;
+    }
   }
 
   private async refreshToken(refreshToken: string) {
@@ -551,6 +631,11 @@ class ApiService {
     try {
       const response = await this.api.get<ApiResponse<UserResponse>>(`/api/passenger/getById?id=${userId}`);
 
+      // Check for unauthorized response
+      if (await this.checkUnauthorizedResponse(response, 'USER')) {
+        return null;
+      }
+
       console.log('📥 [USER] Response received:', {
         status: response.status,
         isSuccess: response.data.data.isSuccess,
@@ -600,6 +685,13 @@ class ApiService {
         message: error.message,
         url: error.config?.url
       });
+
+      // Check if this is a 401 error that wasn't caught by interceptor
+      if (error.response?.status === 401) {
+        console.log('🚫 [USER] 401 error in catch block - triggering logout');
+        await this.handleUnauthorizedResponse(error);
+        return null;
+      }
 
       // Handle 404 errors silently as this endpoint may not be available
       if (error.response?.status === 404) {

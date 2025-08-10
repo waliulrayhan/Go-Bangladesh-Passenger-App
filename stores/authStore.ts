@@ -159,16 +159,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     
     try {
+      console.log('🔍 [AUTH] Loading user data from storage...');
+      
       const token = await storageService.getSecureItem(STORAGE_KEYS.AUTH_TOKEN);
       const userData = await storageService.getItem<User>(STORAGE_KEYS.USER_DATA);
       
       if (token && userData) {
+        console.log('📱 [AUTH] Token and user data found in storage');
+        
+        // Import JWT utilities to check token expiration
+        const { isTokenExpired } = await import('../utils/jwt');
+        
+        // Check if token is expired
+        if (isTokenExpired(token)) {
+          console.log('⏰ [AUTH] Token has expired - triggering automatic logout');
+          
+          // Token is expired, clear everything and reset state
+          await get().handleUnauthorized();
+          return;
+        }
+        
+        console.log('✅ [AUTH] Token is valid - restoring user session');
         set({
           user: userData,
           isAuthenticated: true,
           isLoading: false
         });
       } else {
+        console.log('ℹ️ [AUTH] No valid session found in storage');
         set({
           user: null,
           isAuthenticated: false,
@@ -176,7 +194,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
       }
     } catch (error) {
-      console.error('Error loading user from storage:', error);
+      console.error('💥 [AUTH] Error loading user from storage:', error);
+      
+      // Clear potentially corrupted data
+      try {
+        await get().handleUnauthorized();
+      } catch (cleanupError) {
+        console.error('💥 [AUTH] Error during cleanup:', cleanupError);
+      }
+      
       set({
         user: null,
         isAuthenticated: false,
@@ -351,10 +377,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // Handle unauthorized access
   handleUnauthorized: async () => {
-    console.log('Handling unauthorized access - clearing session...');
+    console.log('🚫 [AUTH] Handling unauthorized access - session expired');
     
     try {
-      await storageService.clearAuthData();
+      console.log('🧹 [AUTH] Clearing all application data...');
+      
+      // Use clearAllAppData instead of just clearAuthData for complete cleanup
+      await storageService.clearAllAppData();
+      
+      console.log('🔄 [AUTH] Resetting authentication state...');
+      
+      // Reset all auth state
       set({
         user: null,
         isAuthenticated: false,
@@ -362,8 +395,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: 'Session expired. Please login again.',
         justLoggedIn: false
       });
+      
+      console.log('✅ [AUTH] Session cleanup completed successfully');
+      
     } catch (error) {
-      console.error('Error clearing session:', error);
+      console.error('💥 [AUTH] Error during session cleanup:', error);
+      
+      // Force reset state even if storage clearing fails
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: 'Session expired. Please login again.',
+        justLoggedIn: false
+      });
     }
   },
 

@@ -2,6 +2,7 @@ import { useFonts } from "expo-font";
 import { Slot, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { useTokenExpirationCheck } from "../hooks/useTokenExpirationCheck";
 import { useAuthStore } from "../stores/authStore";
 import { plusJakartaSansFonts } from "../utils/fonts";
 
@@ -17,6 +18,9 @@ export default function RootLayout() {
   const { isAuthenticated, loadUserFromStorage } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
+
+  // Initialize token expiration monitoring
+  useTokenExpirationCheck();
 
   // Load user from storage with token-based refresh
   useEffect(() => {
