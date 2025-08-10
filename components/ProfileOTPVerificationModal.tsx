@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { useToast } from '../hooks/useToast';
 import { apiService } from '../services/api';
@@ -23,11 +24,30 @@ import { Text } from './ui/Text';
 import { Toast } from './ui/Toast';
 
 // Constants
-const TIMING_CONFIG = {
-  OTP_LENGTH: 6,
-  COUNTDOWN_DURATION: 60,
-  AUTO_VERIFY_DELAY: 100,
+const OTP_CONSTRAINTS = {
+  LENGTH: 6,
+  TIMER_DURATION: 60,
+  AUTO_FILL_TIMEOUT: 100,
+  RAPID_INPUT_THRESHOLD: 100,
+  VERIFICATION_DELAY: 200,
+  FOCUS_DELAY: 50,
+  FIRST_INPUT_DELAY: 30,
   SUCCESS_CLOSE_DELAY: 1500,
+} as const;
+
+const ANIMATION_DELAYS = {
+  HEADER: 300,
+  FORM: 500,
+} as const;
+
+const MESSAGES = {
+  COMPLETE_OTP: "Please enter the complete 6-digit OTP.",
+  VERIFICATION_FAILED: "OTP verification failed. Please check the code and try again.",
+  INVALID_OTP: "Invalid OTP. Please try again.",
+  RESEND_SUCCESS: "A new OTP has been sent to your mobile number.",
+  RESEND_FAILED: "Failed to resend OTP. Please try again.",
+  UPDATE_SUCCESS: "Your profile has been updated successfully.",
+  UPDATE_FAILED: "Failed to update profile. Please try again.",
 } as const;
 
 // Types
@@ -42,6 +62,72 @@ interface ProfileOTPVerificationModalProps {
   };
 }
 
+/**
+ * Custom hook for managing OTP autofill logic
+ */
+const useOTPAutofill = () => {
+  const isHandlingAutofill = useRef(false);
+  const lastOtpInputTime = useRef(0);
+  const autofillDigits = useRef<string[]>([]);
+  const autofillTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const resetAutofill = () => {
+    isHandlingAutofill.current = false;
+    lastOtpInputTime.current = 0;
+    autofillDigits.current = [];
+    if (autofillTimeout.current) {
+      clearTimeout(autofillTimeout.current);
+      autofillTimeout.current = null;
+    }
+  };
+
+  const cleanup = () => {
+    if (autofillTimeout.current) {
+      clearTimeout(autofillTimeout.current);
+    }
+  };
+
+  return {
+    isHandlingAutofill,
+    lastOtpInputTime,
+    autofillDigits,
+    autofillTimeout,
+    resetAutofill,
+    cleanup,
+  };
+};
+
+/**
+ * Custom hook for managing countdown timer
+ */
+const useCountdownTimer = (visible: boolean) => {
+  const [countdown, setCountdown] = useState<number>(OTP_CONSTRAINTS.TIMER_DURATION);
+  const [canResend, setCanResend] = useState(false);
+
+  useEffect(() => {
+    if (!visible || canResend) return;
+    
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          setCanResend(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [visible, canResend]);
+
+  const resetTimer = () => {
+    setCountdown(OTP_CONSTRAINTS.TIMER_DURATION);
+    setCanResend(false);
+  };
+
+  return { countdown, canResend, resetTimer };
+};
+
 export function ProfileOTPVerificationModal({
   visible,
   onClose,
@@ -49,11 +135,12 @@ export function ProfileOTPVerificationModal({
   mobileNumber,
   userData,
 }: ProfileOTPVerificationModalProps) {
+  // External hooks and stores
   const { toast, showError, showSuccess, hideToast } = useToast();
   const { refreshUserData } = useAuthStore();
   
-  // Form state
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  // State management
+  const [otp, setOtp] = useState<string[]>(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
   
   // UI state
   const [isLoading, setIsLoading] = useState(false);
@@ -61,11 +148,11 @@ export function ProfileOTPVerificationModal({
   const [showVerifyingText, setShowVerifyingText] = useState(false);
   const [isProcessingOTP, setIsProcessingOTP] = useState(false);
   const [isOtpReady, setIsOtpReady] = useState(false);
-  
-  // Resend OTP state
   const [isResending, setIsResending] = useState(false);
-  const [countdown, setCountdown] = useState<number>(TIMING_CONFIG.COUNTDOWN_DURATION);
-  const [canResend, setCanResend] = useState(false);
+  
+  // Custom hooks
+  const { countdown, canResend, resetTimer } = useCountdownTimer(visible);
+  const otpAutofill = useOTPAutofill();
   
   // Refs for input management
   const inputRefs = useRef<(TextInput | null)[]>([]);
@@ -75,18 +162,27 @@ export function ProfileOTPVerificationModal({
 
   // Helper functions
   const resetState = useCallback(() => {
-    setOtp(['', '', '', '', '', '']);
+    setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
     setIsResending(false);
-    setCountdown(TIMING_CONFIG.COUNTDOWN_DURATION);
-    setCanResend(false);
     setIsLoading(false);
     setIsAutoVerifying(false);
     setShowVerifyingText(false);
     setIsProcessingOTP(false);
-  }, []);
+    resetTimer();
+  }, [resetTimer]);
 
   const resetAutofillFlags = useCallback(() => {
-    // No autofill flags to reset in simplified implementation
+    otpAutofill.resetAutofill();
+  }, []);
+
+  const resetOTPForm = useCallback(() => {
+    setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
+    setIsAutoVerifying(false);
+    setShowVerifyingText(false);
+    otpAutofill.resetAutofill();
+    setTimeout(() => {
+      inputRefs.current[0]?.focus();
+    }, 100);
   }, []);
 
   const handleSendInitialOTP = useCallback(async () => {
@@ -119,8 +215,8 @@ export function ProfileOTPVerificationModal({
 
     const otpString = otpCode || otp.join('');
     
-    if (otpString.length !== TIMING_CONFIG.OTP_LENGTH) {
-      showError('Please enter the complete 6-digit OTP.');
+    if (otpString.length !== OTP_CONSTRAINTS.LENGTH) {
+      showError(MESSAGES.COMPLETE_OTP);
       setIsAutoVerifying(false);
       setShowVerifyingText(false);
       return;
@@ -165,12 +261,12 @@ export function ProfileOTPVerificationModal({
           setIsAutoVerifying(false);
           setShowVerifyingText(false);
           
-          showSuccess('Your profile has been updated successfully.');
+          showSuccess(MESSAGES.UPDATE_SUCCESS);
           
           setTimeout(() => {
             console.log('🚪 [PROFILE OTP] Closing modal after successful update');
             onClose();
-          }, TIMING_CONFIG.SUCCESS_CLOSE_DELAY);
+          }, OTP_CONSTRAINTS.SUCCESS_CLOSE_DELAY);
         } catch (updateError: any) {
           console.error('❌ [PROFILE OTP] Profile update error:', updateError);
           setIsLoading(false);
@@ -180,7 +276,7 @@ export function ProfileOTPVerificationModal({
           
           const errorMessage = updateError.message || 
             updateError.response?.data?.data?.message || 
-            'Failed to update profile. Please try again.';
+            MESSAGES.UPDATE_FAILED;
           
           showError(errorMessage);
         }
@@ -190,18 +286,11 @@ export function ProfileOTPVerificationModal({
       setIsProcessingOTP(false);
       console.error('❌ [PROFILE OTP] OTP verification error:', error);
       
-      setOtp(['', '', '', '', '', '']);
-      setIsAutoVerifying(false);
-      setShowVerifyingText(false);
-      setIsProcessingOTP(false);
-      
-      setTimeout(() => {
-        inputRefs.current[0]?.focus();
-      }, 100);
+      resetOTPForm();
       
       const errorMessage = error.message || 
         error.response?.data?.data?.message || 
-        'Invalid OTP. Please try again.';
+        MESSAGES.INVALID_OTP;
       
       showError(errorMessage);
     }
@@ -236,23 +325,6 @@ export function ProfileOTPVerificationModal({
     }
   }, [visible, mobileNumber]);
 
-  // Countdown timer effect
-  useEffect(() => {
-    if (!visible || canResend) return;
-    
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          setCanResend(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [visible, canResend]);
-
   // OTP ready state for autofill
   useEffect(() => {
     if (visible) {
@@ -268,31 +340,37 @@ export function ProfileOTPVerificationModal({
   useEffect(() => {
     if (isOtpReady && visible) {
       // Only clear OTP if not already initialized to prevent triggering main effect
-      setOtp(prev => prev.every(digit => digit === '') ? prev : ['', '', '', '', '', '']);
+      setOtp(prev => prev.every(digit => digit === '') ? prev : Array(OTP_CONSTRAINTS.LENGTH).fill(""));
       setIsAutoVerifying(false);
       setShowVerifyingText(false);
+      otpAutofill.resetAutofill();
     }
   }, [isOtpReady, visible]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => otpAutofill.cleanup();
+  }, []);
 
   // Helper functions for OTP handling
   const handlePastedOTP = useCallback((pastedOtp: string): boolean => {
     const cleanOtp = pastedOtp.replace(/\D/g, '');
     
-    if (cleanOtp.length >= TIMING_CONFIG.OTP_LENGTH) {
+    if (cleanOtp.length >= OTP_CONSTRAINTS.LENGTH) {
       setIsAutoVerifying(true);
       setShowVerifyingText(true);
 
-      const newOtp = cleanOtp.slice(0, TIMING_CONFIG.OTP_LENGTH).split('');
+      const newOtp = cleanOtp.slice(0, OTP_CONSTRAINTS.LENGTH).split('');
       setOtp(newOtp);
 
       setTimeout(() => {
-        inputRefs.current[TIMING_CONFIG.OTP_LENGTH - 1]?.focus();
-        inputRefs.current[TIMING_CONFIG.OTP_LENGTH - 1]?.blur();
+        inputRefs.current[OTP_CONSTRAINTS.LENGTH - 1]?.focus();
+        inputRefs.current[OTP_CONSTRAINTS.LENGTH - 1]?.blur();
       }, 100);
 
       setTimeout(() => {
         handleVerify(newOtp.join(''));
-      }, TIMING_CONFIG.AUTO_VERIFY_DELAY);
+      }, OTP_CONSTRAINTS.VERIFICATION_DELAY);
 
       return true;
     }
@@ -304,7 +382,7 @@ export function ProfileOTPVerificationModal({
     
     // Handle pasted OTP (multiple characters at once)
     if (value.length > 1) {
-      const pastedOtp = value.replace(/\D/g, '').slice(0, TIMING_CONFIG.OTP_LENGTH);
+      const pastedOtp = value.replace(/\D/g, '').slice(0, OTP_CONSTRAINTS.LENGTH);
       if (handlePastedOTP(pastedOtp)) return;
     }
 
@@ -340,12 +418,12 @@ export function ProfileOTPVerificationModal({
         newOtp[index] = value.slice(-1);
         
         // Auto-verify when all digits are entered manually
-        if (newOtp.every((digit) => digit !== "") && newOtp.length === TIMING_CONFIG.OTP_LENGTH) {
+        if (newOtp.every((digit) => digit !== "") && newOtp.length === OTP_CONSTRAINTS.LENGTH) {
           setIsAutoVerifying(true);
           setShowVerifyingText(true);
           setTimeout(() => {
             handleVerify(newOtp.join(''));
-          }, TIMING_CONFIG.AUTO_VERIFY_DELAY);
+          }, OTP_CONSTRAINTS.VERIFICATION_DELAY);
         }
         
         return newOtp;
@@ -384,19 +462,15 @@ export function ProfileOTPVerificationModal({
       resetAutofillFlags();
       
       inputRefs.current[0]?.focus();
-      showSuccess('A new OTP has been sent to your mobile number.');
+      showSuccess(MESSAGES.RESEND_SUCCESS);
     } catch (error: any) {
       console.error('❌ [PROFILE OTP] Resend OTP error:', error);
       
-      // Clear form and reset flags
-      setOtp(['', '', '', '', '', '']);
-      setIsAutoVerifying(false);
-      setShowVerifyingText(false);
-      setIsProcessingOTP(false);
+      resetOTPForm();
       
       const errorMessage = error.message || 
         error.response?.data?.data?.message || 
-        'Failed to resend OTP. Please try again.';
+        MESSAGES.RESEND_FAILED;
       
       showError(errorMessage);
     } finally {
@@ -426,7 +500,7 @@ export function ProfileOTPVerificationModal({
 
   // Render functions
   const renderHeader = () => (
-    <View style={styles.header}>
+    <Animated.View entering={FadeInUp.duration(ANIMATION_DELAYS.HEADER)} style={styles.header}>
       <View style={styles.iconContainer}>
         <Ionicons name="shield-checkmark" size={32} color={COLORS.primary} />
       </View>
@@ -446,45 +520,7 @@ export function ProfileOTPVerificationModal({
           <Text style={styles.cardInfo}>Card: {userData.cardNumber}</Text>
         )}
       </View>
-    </View>
-  );
-
-  const renderOTPInputs = () => (
-    <View style={styles.otpInputContainer} key={`otp-container-${isOtpReady}`}>
-      {otp.map((digit, index) => (
-        <TouchableOpacity
-          key={`otp-input-wrapper-${index}-${isOtpReady}`}
-          style={styles.otpInputWrapper}
-          onPress={() => {
-            inputRefs.current[index]?.focus();
-          }}
-        >
-          <TextInput
-            ref={(ref) => { inputRefs.current[index] = ref; }}
-            style={[
-              styles.otpInput,
-              digit && styles.otpInputFilled,
-              (isLoading || isAutoVerifying) && styles.otpInputDisabled
-            ]}
-            value={digit}
-            onChangeText={(value) => !isAutoVerifying && handleOtpChange(value, index)}
-            onKeyPress={(e) => !isAutoVerifying && handleKeyPress(e, index)}
-            keyboardType="numeric"
-            maxLength={index === 0 ? TIMING_CONFIG.OTP_LENGTH : 1}
-            autoFocus={index === 0 && !isAutoVerifying}
-            selectTextOnFocus
-            editable={!isLoading && !isAutoVerifying}
-            textContentType={index === 0 ? "oneTimeCode" : "none"}
-            autoComplete={index === 0 ? "sms-otp" : "off"}
-            importantForAutofill={index === 0 ? "yes" : "no"}
-            blurOnSubmit={false}
-            contextMenuHidden={index !== 0}
-            autoCorrect={false}
-            spellCheck={false}
-          />
-        </TouchableOpacity>
-      ))}
-    </View>
+    </Animated.View>
   );
 
   const renderResendSection = () => (
@@ -508,16 +544,56 @@ export function ProfileOTPVerificationModal({
   );
 
   const renderOTPForm = () => (
-    <View style={styles.cardWrapper}>
+    <Animated.View entering={FadeInDown.duration(ANIMATION_DELAYS.FORM).delay(200)}>
       <Card variant="elevated">
         <View style={styles.otpContainer}>
-          <View style={styles.otpLabelContainer}>
-            <Text style={styles.otpLabel}>
-              {showVerifyingText ? 'Verifying...' : 'Enter OTP'}
-            </Text>
+          {!showVerifyingText && (
+            <Animated.View entering={FadeInDown.duration(300)}>
+              <Text style={styles.otpLabel}>Enter OTP</Text>
+            </Animated.View>
+          )}
+
+          <View style={styles.otpInputContainer} key={`otp-container-${isOtpReady}`}>
+            {showVerifyingText && (
+              <Animated.View 
+                style={styles.loadingContainer}
+                entering={FadeInDown.duration(300)}
+              >
+                <Text style={styles.loadingText}>Verifying...</Text>
+              </Animated.View>
+            )}
+            
+            {otp.map((digit, index) => (
+              <Animated.View
+                key={`otp-input-wrapper-${index}-${isOtpReady}`}
+                style={styles.otpInputWrapper}
+              >
+                <TextInput
+                  ref={(ref) => { inputRefs.current[index] = ref; }}
+                  style={[
+                    styles.otpInput,
+                    digit && styles.otpInputFilled,
+                    (isLoading || isAutoVerifying) && styles.otpInputDisabled
+                  ]}
+                  value={digit}
+                  onChangeText={(value) => !isAutoVerifying && handleOtpChange(value, index)}
+                  onKeyPress={(e) => !isAutoVerifying && handleKeyPress(e, index)}
+                  keyboardType="numeric"
+                  maxLength={index === 0 ? OTP_CONSTRAINTS.LENGTH : 1}
+                  autoFocus={index === 0 && !isAutoVerifying}
+                  selectTextOnFocus
+                  editable={!isLoading && !isAutoVerifying}
+                  textContentType={index === 0 ? "oneTimeCode" : "none"}
+                  autoComplete={index === 0 ? "sms-otp" : "off"}
+                  importantForAutofill={index === 0 ? "yes" : "no"}
+                  blurOnSubmit={false}
+                  contextMenuHidden={index !== 0}
+                  autoCorrect={false}
+                  spellCheck={false}
+                />
+              </Animated.View>
+            ))}
           </View>
-          
-          {renderOTPInputs()}
           {renderResendSection()}
 
           <Text style={styles.helpText}>
@@ -528,7 +604,7 @@ export function ProfileOTPVerificationModal({
           </Text>
         </View>
       </Card>
-    </View>
+    </Animated.View>
   );
 
   return (
@@ -682,23 +758,14 @@ const styles = StyleSheet.create({
   },
   
   // Card and form styles
-  cardWrapper: {
-    width: '100%',
-    minHeight: 300,
-  },
   otpContainer: {
     padding: SPACING.md,
-  },
-  otpLabelContainer: {
-    height: 24,
-    marginBottom: SPACING.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   otpLabel: {
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.gray[900],
+    marginBottom: SPACING.sm,
     textAlign: 'center',
   },
   
@@ -708,13 +775,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.sm,
-    minHeight: 48,
   },
   otpInputWrapper: {
-    width: 40,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
+    // Wrapper for individual input animations
   },
   otpInput: {
     width: 40,
@@ -764,5 +827,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: SPACING.sm,
     lineHeight: 16,
+  },
+  
+  // Loading styles for verifying text
+  loadingContainer: {
+    paddingTop: 5,
+    position: 'absolute',
+    top: -30,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
 });
