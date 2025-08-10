@@ -207,49 +207,6 @@ export interface LegacyTrip {
   isDeleted: boolean;
 }
 
-export interface Bus {
-  id: string;
-  busNumber: string;
-  organizationId: string;
-  capacity?: number;
-  route: string;
-  currentDriverId?: number;
-  currentHelperId?: number;
-  isActive: boolean;
-}
-
-// Removed duplicate Organization interface
-
-export interface TapTransaction {
-  id: number;
-  cardId: number;
-  cardNumber: string;
-  busId: number;
-  busNumber: string;
-  type: 'tap_in' | 'tap_out';
-  amount: number;
-  balance: number;
-  timestamp: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
-  driverId?: number;
-  helperId?: number;
-  passengerName?: string;
-}
-
-// API Response Types
-export interface ApiResponse<T> {
-  data: {
-    isSuccess: boolean;
-    content: T[];
-    timeStamp: string;
-    payloadType: string;
-    message: string | null;
-  };
-}
-
 export interface PaginationState {
   currentPage: number;
   pageSize: number;

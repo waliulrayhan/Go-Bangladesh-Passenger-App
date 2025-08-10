@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { Transaction as TransactionType } from '../types';
+import { BusInfo, Organization, Transaction as TransactionType } from '../types';
 import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
 import { storageService } from '../utils/storage';
 
@@ -33,22 +33,6 @@ export interface PaginatedApiResponse<T> {
     payloadType: string;
     message: string;
   };
-}
-
-export interface Organization {
-  name: string;
-  code: string;
-  focalPerson: string;
-  designation: string;
-  email: string;
-  mobileNumber: string;
-  organizationType: string;
-  id: string;
-  createTime: string;
-  lastModifiedTime: string;
-  createdBy: string;
-  lastModifiedBy: string;
-  isDeleted: boolean;
 }
 
 export interface CardValidationResponse {
@@ -127,23 +111,6 @@ export interface RouteInfo {
   minimumBalance: number;
   penaltyAmount: number;
   organization: any;
-  id: string;
-  createTime: string;
-  lastModifiedTime: string;
-  createdBy: string;
-  lastModifiedBy: string;
-  isDeleted: boolean;
-}
-
-export interface BusInfo {
-  busNumber: string;
-  busName: string;
-  routeId: string;
-  route: RouteInfo;
-  organizationId: string;
-  organization: any;
-  presentLatitude: string;
-  presentLongitude: string;
   id: string;
   createTime: string;
   lastModifiedTime: string;

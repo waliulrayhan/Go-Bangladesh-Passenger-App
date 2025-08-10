@@ -15,26 +15,18 @@ import {
 import { WebView } from 'react-native-webview';
 import { PulsingDot } from '../../../components/PulsingDot';
 import { ApiResponse, apiService } from '../../../services/api';
+import { BusInfo } from '../../../types';
 import { COLORS } from '../../../utils/constants';
 import { FONT_SIZES, FONT_WEIGHTS } from '../../../utils/fonts';
 
 const { width, height } = Dimensions.get('window');
-
-interface Bus {
-  id: string;
-  busNumber: string;
-  busName: string;
-  organizationName: string | null;
-  presentLatitude: string;
-  presentLongitude: string;
-}
 
 export default function MapViewScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const webViewRef = useRef<WebView>(null);
   
-  const [buses, setBuses] = useState<Bus[]>([]);
+  const [buses, setBuses] = useState<BusInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -68,7 +60,7 @@ export default function MapViewScreen() {
         apiUrl += `&routeId=${routeId}`;
       }
 
-      const response = await apiService.get<ApiResponse<Bus[]>>(apiUrl);
+      const response = await apiService.get<ApiResponse<BusInfo[]>>(apiUrl);
       
       if (response.data.data.isSuccess) {
         const busData = response.data.data.content;
@@ -90,7 +82,7 @@ export default function MapViewScreen() {
     }
   };
 
-  const updateBusLocations = (busData: Bus[]) => {
+  const updateBusLocations = (busData: BusInfo[]) => {
     if (webViewRef.current) {
       const updateScript = `
         if (typeof updateBusMarkers === 'function') {

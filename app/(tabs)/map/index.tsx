@@ -14,16 +14,11 @@ import {
 import { DropdownSkeleton } from '../../../components/Skeleton';
 import { ApiResponse, apiService } from '../../../services/api';
 import { useAuthStore } from '../../../stores/authStore';
+import { Organization } from '../../../types';
 import { COLORS, STORAGE_KEYS } from '../../../utils/constants';
 import { FONT_SIZES, FONT_WEIGHTS } from '../../../utils/fonts';
 import { decodeJWT } from '../../../utils/jwt';
 import { storageService } from '../../../utils/storage';
-interface Organization {
-  id: string;
-  name: string;
-  code: string;
-  organizationType: 'Public' | 'Private';
-}
 
 interface Route {
   value: string;
