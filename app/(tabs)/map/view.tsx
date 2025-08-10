@@ -1,19 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { PulsingDot } from '../../../components/PulsingDot';
+import { Toast } from '../../../components/ui/Toast';
+import { useToast } from '../../../hooks/useToast';
 import { ApiResponse, apiService } from '../../../services/api';
 import { BusInfo } from '../../../types';
 import { COLORS } from '../../../utils/constants';
@@ -25,11 +27,15 @@ export default function MapViewScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const webViewRef = useRef<WebView>(null);
+  const { toast, showError, showSuccess, showInfo, hideToast } = useToast();
   
   const [buses, setBuses] = useState<BusInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [userLocation, setUserLocation] = useState<{latitude: number; longitude: number} | null>(null);
+  const [locationPermission, setLocationPermission] = useState<Location.PermissionStatus | null>(null);
+  const [gettingLocation, setGettingLocation] = useState(false);
 
   const organizationId = params.organizationId as string;
   const organizationName = params.organizationName as string;
@@ -38,6 +44,7 @@ export default function MapViewScreen() {
 
   useEffect(() => {
     fetchBusData();
+    checkLocationPermission();
     
     // Set up interval for real-time updates every 10 seconds
     const interval = setInterval(() => {
@@ -74,7 +81,7 @@ export default function MapViewScreen() {
     } catch (error) {
       console.error('Error fetching bus data:', error);
       if (!isRefresh) {
-        Alert.alert('Error', 'Failed to fetch bus locations');
+        showError('Failed to fetch bus locations');
       }
     } finally {
       setLoading(false);
@@ -92,6 +99,84 @@ export default function MapViewScreen() {
       `;
       webViewRef.current.postMessage(updateScript);
     }
+  };
+
+  const checkLocationPermission = async () => {
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      setLocationPermission(status);
+      return status;
+    } catch (error) {
+      console.error('Error checking location permission:', error);
+      return Location.PermissionStatus.DENIED;
+    }
+  };
+
+  const requestLocationPermission = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setLocationPermission(status);
+      return status;
+    } catch (error) {
+      console.error('Error requesting location permission:', error);
+      showError('Failed to request location permission');
+      return Location.PermissionStatus.DENIED;
+    }
+  };
+
+  const getUserLocation = async () => {
+    try {
+      setGettingLocation(true);
+      
+      // Check permission first
+      let permissionStatus = locationPermission;
+      if (!permissionStatus) {
+        permissionStatus = await checkLocationPermission();
+      }
+      
+      // Request permission if not granted
+      if (permissionStatus !== Location.PermissionStatus.GRANTED) {
+        permissionStatus = await requestLocationPermission();
+      }
+      
+      // If permission still not granted, show error
+      if (permissionStatus !== Location.PermissionStatus.GRANTED) {
+        showError('Location permission is required to show your location');
+        return;
+      }
+      
+      // Get current location
+      showInfo('Getting your location...');
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      
+      const { latitude, longitude } = location.coords;
+      setUserLocation({ latitude, longitude });
+      
+      // Update map to show user location
+      if (mapLoaded && webViewRef.current) {
+        const locationScript = `
+          if (typeof addUserLocation === 'function') {
+            addUserLocation(${latitude}, ${longitude});
+          }
+          true;
+        `;
+        webViewRef.current.postMessage(locationScript);
+      }
+      
+      showSuccess('Your location has been added to the map');
+      
+    } catch (error) {
+      console.error('Error getting location:', error);
+      showError('Failed to get your location. Please try again.');
+    } finally {
+      setGettingLocation(false);
+    }
+  };
+
+  const handleMyLocationPress = () => {
+    getUserLocation();
   };
 
   const generateMapHTML = () => {
@@ -331,20 +416,6 @@ export default function MapViewScreen() {
               transform: scale(1.05);
             }
             
-            .leaflet-control-layers {
-              border-radius: 12px;
-              background: rgba(255,255,255,0.95);
-              backdrop-filter: blur(10px);
-              border: 1px solid rgba(255,255,255,0.3);
-              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            }
-            
-            .leaflet-control-layers-toggle {
-              background: rgba(255,255,255,0.95);
-              width: 36px;
-              height: 36px;
-            }
-            
             /* Improve map tile rendering */
             .leaflet-tile {
               filter: contrast(1.05) saturate(1.1) brightness(1.02);
@@ -361,6 +432,53 @@ export default function MapViewScreen() {
             .leaflet-control-attribution a {
               color: #87CEEB;
             }
+            
+            /* User location marker styling */
+            .user-location-marker {
+              position: relative;
+              z-index: 1000;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            
+            .user-location-dot {
+              width: 12px;
+              height: 12px;
+              background: #007AFF;
+              border: 3px solid white;
+              border-radius: 50%;
+              box-shadow: 0 2px 8px rgba(0, 122, 255, 0.4);
+              z-index: 2;
+            }
+            
+            .user-location-pulse {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 24px;
+              height: 24px;
+              background: rgba(0, 122, 255, 0.3);
+              border-radius: 50%;
+              animation: userLocationPulse 2s infinite;
+              z-index: 1;
+            }
+            
+            @keyframes userLocationPulse {
+              0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.8;
+              }
+              50% {
+                transform: translate(-50%, -50%) scale(1.5);
+                opacity: 0.4;
+              }
+              100% {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+              }
+            }
           </style>
         </head>
         <body>
@@ -370,6 +488,7 @@ export default function MapViewScreen() {
           <script>
             let map;
             let busMarkers = [];
+            let userLocationMarker = null;
             
             // Initialize map
             function initMap() {
@@ -400,24 +519,6 @@ export default function MapViewScreen() {
                 keepBuffer: 2,
               }).addTo(map);
               
-              // Add high-quality satellite layer as alternative
-              const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-                maxZoom: 20,
-                minZoom: 8,
-              });
-              
-              // Layer control to switch between map types
-              const baseMaps = {
-                "Street Map": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                  attribution: '&copy; OpenStreetMap contributors',
-                  maxZoom: 20,
-                }),
-                "Satellite": satelliteLayer
-              };
-              
-              L.control.layers(baseMaps).addTo(map);
-              
               // Initial bus markers
               updateBusMarkers(${JSON.stringify(buses)});
               
@@ -441,6 +542,62 @@ export default function MapViewScreen() {
                 iconSize: [Math.max(120, displayName.length * 8), 60],
                 iconAnchor: [Math.max(60, displayName.length * 4), 30],
                 popupAnchor: [0, -30]
+              });
+            }
+            
+            // Create user location icon
+            function createUserLocationIcon() {
+              return L.divIcon({
+                html: '<div class="user-location-marker">' +
+                        '<div class="user-location-pulse"></div>' +
+                        '<div class="user-location-dot"></div>' +
+                      '</div>',
+                className: 'custom-user-location-marker',
+                iconSize: [30, 30],
+                iconAnchor: [15, 15],
+                popupAnchor: [0, -15]
+              });
+            }
+            
+            // Add user location to map
+            function addUserLocation(latitude, longitude) {
+              // Remove existing user location marker
+              if (userLocationMarker) {
+                map.removeLayer(userLocationMarker);
+              }
+              
+              // Add new user location marker
+              userLocationMarker = L.marker([latitude, longitude], { 
+                icon: createUserLocationIcon() 
+              })
+                .bindPopup(
+                  '<div class="bus-popup">' +
+                    '<div class="bus-popup-header">' +
+                      '<span class="bus-popup-icon">📍</span>' +
+                      '<h3>Your Location</h3>' +
+                    '</div>' +
+                    '<div class="bus-popup-info">' +
+                      '<span class="bus-popup-label">Coordinates</span>' +
+                      '<span class="bus-popup-value">' + latitude.toFixed(6) + ', ' + longitude.toFixed(6) + '</span>' +
+                    '</div>' +
+                    '<div class="bus-popup-footer">' +
+                      '<div class="bus-popup-live">' +
+                        '<div class="live-dot"></div>' +
+                        'Current Location' +
+                      '</div>' +
+                    '</div>' +
+                  '</div>',
+                  {
+                    maxWidth: 300,
+                    className: 'custom-popup'
+                  }
+                )
+                .addTo(map);
+              
+              // Center map on user location
+              map.setView([latitude, longitude], Math.max(map.getZoom(), 16), {
+                animate: true,
+                duration: 1.0
               });
             }
             
@@ -535,6 +692,17 @@ export default function MapViewScreen() {
     const { data } = event.nativeEvent;
     if (data === 'MAP_READY') {
       setMapLoaded(true);
+      
+      // If user location is already available, add it to the map
+      if (userLocation && webViewRef.current) {
+        const locationScript = `
+          if (typeof addUserLocation === 'function') {
+            addUserLocation(${userLocation.latitude}, ${userLocation.longitude});
+          }
+          true;
+        `;
+        webViewRef.current.postMessage(locationScript);
+      }
     }
   };
 
@@ -612,6 +780,32 @@ export default function MapViewScreen() {
           <Text style={styles.realTimeText}>Live Updates</Text>
         </View>
       )}
+
+      {/* My Location Button */}
+      <TouchableOpacity 
+        style={styles.myLocationButton} 
+        onPress={handleMyLocationPress}
+        disabled={gettingLocation}
+      >
+        {gettingLocation ? (
+          <ActivityIndicator size="small" color={COLORS.white} />
+        ) : (
+          <Ionicons 
+            name="locate" 
+            size={24} 
+            color={COLORS.white} 
+          />
+        )}
+      </TouchableOpacity>
+
+      {/* Toast */}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+        position="top"
+      />
     </View>
   );
 }
@@ -709,7 +903,7 @@ const styles = StyleSheet.create({
   },
   realTimeIndicator: {
     position: 'absolute',
-    top: 50, // Adjusted since we're removing the header
+    top: 100, // Adjusted since we're removing the header
     right: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -728,5 +922,21 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     fontFamily: FONT_WEIGHTS.semiBold,
     color: COLORS.gray[700],
+  },
+  myLocationButton: {
+    position: 'absolute',
+    bottom: 120,
+    right: 16,
+    width: 56,
+    height: 56,
+    backgroundColor: COLORS.brand.blue,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
   },
 });
