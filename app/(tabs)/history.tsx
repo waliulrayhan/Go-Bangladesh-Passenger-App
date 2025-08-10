@@ -568,140 +568,144 @@ export default function History() {
         </View>
 
         <View style={styles.tripDetails}>
-          <View style={styles.singleRowContainer}>
+            <View style={styles.singleRowContainer}>
             <View style={styles.singleRowItem}>
               <Text
-                variant="caption"
-                color={COLORS.gray[600]}
-                style={styles.timeLabel}
+              variant="caption"
+              color={COLORS.gray[600]}
+              style={styles.timeLabel}
               >
-                {UI_TEXTS.LABELS.TAP_IN}
+              {UI_TEXTS.LABELS.TAP_IN}
               </Text>
               <TouchableOpacity
-                style={styles.tapInButton}
-                onPress={() => {
-                  if (trip.startingLatitude && trip.startingLongitude) {
-                    openMapLocation(
-                      parseFloat(trip.startingLatitude),
-                      parseFloat(trip.startingLongitude),
-                      "Tap In Location"
-                    );
-                  }
-                }}
-                disabled={!trip.startingLatitude || !trip.startingLongitude}
+              style={styles.tapInButton}
+              onPress={() => {
+                if (trip.startingLatitude && trip.startingLongitude) {
+                openMapLocation(
+                  parseFloat(trip.startingLatitude),
+                  parseFloat(trip.startingLongitude),
+                  "Tap In Location"
+                );
+                }
+              }}
+              disabled={!trip.startingLatitude || !trip.startingLongitude}
               >
-                <Ionicons name="time-outline" size={14} color={COLORS.success} />
-                <Text
-                  variant="bodySmall"
-                  color={COLORS.white}
-                  style={styles.timeText}
-                >
-                  {tripStartTime ? formatTimeString(tripStartTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
-                </Text>
+              <Ionicons name="time-outline" size={14} color={COLORS.success} />
+              <Text
+                variant="bodySmall"
+                color={COLORS.white}
+                style={styles.timeText}
+              >
+                {tripStartTime ? formatTimeString(tripStartTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
+              </Text>
+              {trip.startingLatitude && trip.startingLongitude && (
                 <Ionicons name="location-outline" size={14} color={COLORS.success} />
+              )}
               </TouchableOpacity>
             </View>
 
             {tripEndTime && (
               <View style={styles.singleRowItem}>
-                <Text
-                  variant="caption"
-                  color={COLORS.gray[600]}
-                  style={styles.timeLabel}
-                >
-                  {UI_TEXTS.LABELS.TAP_OUT}
-                </Text>
-                <TouchableOpacity
-                  style={styles.tapOutButton}
-                  onPress={() => {
-                    if (trip.endingLatitude && trip.endingLongitude) {
-                      openMapLocation(
-                        parseFloat(trip.endingLatitude),
-                        parseFloat(trip.endingLongitude),
-                        "Tap Out Location"
-                      );
-                    }
-                  }}
-                  disabled={!trip.endingLatitude || !trip.endingLongitude}
-                >
-                  <Ionicons name="time-outline" size={14} color={COLORS.error} />
-                  <Text
-                    variant="bodySmall"
-                    color={COLORS.white}
-                    style={styles.timeText}
-                  >
-                    {tripEndTime ? formatTimeString(tripEndTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
-                  </Text>
-                  <Ionicons name="location-outline" size={14} color={COLORS.error} />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            <View style={styles.singleRowItem}>
               <Text
                 variant="caption"
                 color={COLORS.gray[600]}
                 style={styles.timeLabel}
               >
-                {UI_TEXTS.LABELS.DISTANCE}
+                {UI_TEXTS.LABELS.TAP_OUT}
               </Text>
               <TouchableOpacity
-                style={styles.distanceButton}
+                style={styles.tapOutButton}
                 onPress={() => {
-                  if (
-                    distance > 0 &&
-                    trip.startingLatitude &&
-                    trip.startingLongitude &&
-                    trip.endingLatitude &&
-                    trip.endingLongitude
-                  ) {
-                    openRouteMap(
-                      parseFloat(trip.startingLatitude),
-                      parseFloat(trip.startingLongitude),
-                      parseFloat(trip.endingLatitude),
-                      parseFloat(trip.endingLongitude)
-                    );
-                  }
-                }}
-                disabled={
-                  distance === 0 ||
-                  !trip.startingLatitude ||
-                  !trip.startingLongitude ||
-                  !trip.endingLatitude ||
-                  !trip.endingLongitude
+                if (trip.endingLatitude && trip.endingLongitude) {
+                  openMapLocation(
+                  parseFloat(trip.endingLatitude),
+                  parseFloat(trip.endingLongitude),
+                  "Tap Out Location"
+                  );
                 }
+                }}
+                disabled={!trip.endingLatitude || !trip.endingLongitude}
               >
-                <Ionicons
-                  name="map-outline"
-                  size={14}
-                  color={
-                    distance > 0 &&
-                    trip.startingLatitude &&
-                    trip.startingLongitude &&
-                    trip.endingLatitude &&
-                    trip.endingLongitude
-                      ? COLORS.primary
-                      : COLORS.primary
-                  }
-                />
+                <Ionicons name="time-outline" size={14} color={COLORS.error} />
                 <Text
-                  variant="bodySmall"
-                  color={
-                    distance > 0 &&
-                    trip.startingLatitude &&
-                    trip.startingLongitude &&
-                    trip.endingLatitude &&
-                    trip.endingLongitude
-                      ? COLORS.primary
-                      : COLORS.gray[600]
-                  }
-                  style={styles.distanceText}
+                variant="bodySmall"
+                color={COLORS.white}
+                style={styles.timeText}
                 >
-                  {distance.toFixed(2)} km
+                {tripEndTime ? formatTimeString(tripEndTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
+                {trip.endingLatitude && trip.endingLongitude && (
+                <Ionicons name="location-outline" size={14} color={COLORS.error} />
+                )}
+              </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={styles.singleRowItem}>
+              <Text
+              variant="caption"
+              color={COLORS.gray[600]}
+              style={styles.timeLabel}
+              >
+              {UI_TEXTS.LABELS.DISTANCE}
+              </Text>
+              <TouchableOpacity
+              style={styles.distanceButton}
+              onPress={() => {
+                if (
+                distance > 0 &&
+                trip.startingLatitude &&
+                trip.startingLongitude &&
+                trip.endingLatitude &&
+                trip.endingLongitude
+                ) {
+                openRouteMap(
+                  parseFloat(trip.startingLatitude),
+                  parseFloat(trip.startingLongitude),
+                  parseFloat(trip.endingLatitude),
+                  parseFloat(trip.endingLongitude)
+                );
+                }
+              }}
+              disabled={
+                distance === 0 ||
+                !trip.startingLatitude ||
+                !trip.startingLongitude ||
+                !trip.endingLatitude ||
+                !trip.endingLongitude
+              }
+              >
+              <Ionicons
+                name="map-outline"
+                size={14}
+                color={
+                distance > 0 &&
+                trip.startingLatitude &&
+                trip.startingLongitude &&
+                trip.endingLatitude &&
+                trip.endingLongitude
+                  ? COLORS.primary
+                  : COLORS.primary
+                }
+              />
+              <Text
+                variant="bodySmall"
+                color={
+                distance > 0 &&
+                trip.startingLatitude &&
+                trip.startingLongitude &&
+                trip.endingLatitude &&
+                trip.endingLongitude
+                  ? COLORS.primary
+                  : COLORS.gray[600]
+                }
+                style={styles.distanceText}
+              >
+                {distance.toFixed(2)} km
+              </Text>
               </TouchableOpacity>
             </View>
-          </View>
+            </View>
 
           {/* Tap In By and Tap Out By Section */}
           <View style={styles.singleRowContainer}>

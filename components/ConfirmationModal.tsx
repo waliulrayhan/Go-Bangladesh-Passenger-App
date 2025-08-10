@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
-    Modal,
-    StyleSheet,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Modal,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import Animated, { FadeIn, SlideInUp } from "react-native-reanimated";
 import { COLORS } from "../utils/constants";
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "700",
+    fontWeight: "600",
     color: COLORS.gray[900],
   },
   closeButton: {
@@ -241,7 +241,6 @@ const styles = StyleSheet.create({
   },
   penaltyAmount: {
     color: COLORS.error,
-    fontWeight: "700",
   },
   penaltyNotice: {
     backgroundColor: COLORS.error + "10",
@@ -258,17 +257,17 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   buttonContainer: {
-    flexDirection: "row",
+    flexDirection: "column",
     gap: 12,
   },
   button: {
-    flex: 1,
-    paddingVertical: 14,
+    width: "100%",
+    paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 48,
+    minHeight: 40,
     flexDirection: "row",
   },
   cancelButton: {
