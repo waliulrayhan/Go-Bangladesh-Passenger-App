@@ -61,6 +61,15 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
     }
   }, [visible]);
 
+  // Auto-focus first OTP input when step changes to verification
+  useEffect(() => {
+    if (step === 'otp-verification' && visible) {
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 300);
+    }
+  }, [step, visible]);
+
   // OTP Timer countdown effect
   useEffect(() => {
     if (otpTimer > 0) {
@@ -156,55 +165,86 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
   const handleOtpChange = useCallback((value: string, index: number) => {
     if (isLoading) return;
     
-    const newOtp = [...otp];
-    
-    // Handle paste operation (autofill from SMS)
+    // Handle pasted OTP (multiple characters at once)
     if (value.length > 1) {
       const pastedValue = value.replace(/[^0-9]/g, '').slice(0, OTP_LENGTH);
-      const pastedArray = pastedValue.split('');
+      if (handlePastedOTP(pastedValue)) return;
+    }
+
+    // For first input, handle SMS autofill specially
+    if (index === 0) {
+      const cleanValue = value.replace(/[^0-9]/g, '');
       
-      for (let i = 0; i < OTP_LENGTH; i++) {
-        newOtp[i] = pastedArray[i] || '';
+      // If we get multiple digits in first input (SMS autofill), handle as paste
+      if (cleanValue.length > 1) {
+        if (handlePastedOTP(cleanValue)) return;
       }
       
-      setOtp(newOtp);
+      // Store the first digit immediately
+      setOtp((prevOtp) => {
+        const newOtp = [...prevOtp];
+        newOtp[0] = cleanValue.slice(-1);
+        return newOtp;
+      });
       
-      // Focus on the last input and blur to complete autofill
-      setTimeout(() => {
-        otpInputRefs.current[OTP_LENGTH - 1]?.focus();
-        otpInputRefs.current[OTP_LENGTH - 1]?.blur();
-      }, 100);
-      
-      // Auto-verify when complete OTP is pasted
-      if (pastedArray.length === OTP_LENGTH) {
+      // Focus next input for manual entry
+      if (cleanValue && !isLoading) {
         setTimeout(() => {
-          handleVerifyAndUpdate(newOtp);
-        }, 200);
+          otpInputRefs.current[1]?.focus();
+        }, 10);
       }
-      
       return;
     }
     
-    // Handle single character input
+    // Handle single character input (manual typing)
     if (value.length <= 1 && /^[0-9]*$/.test(value)) {
-      newOtp[index] = value;
-      setOtp(newOtp);
+      setOtp((prevOtp) => {
+        const newOtp = [...prevOtp];
+        newOtp[index] = value.slice(-1);
+        
+        // Auto-verify when all digits are filled manually
+        if (newOtp.every(digit => digit !== '') && newOtp.length === OTP_LENGTH) {
+          setTimeout(() => {
+            handleVerifyAndUpdate(newOtp);
+          }, 200);
+        }
+        
+        return newOtp;
+      });
       
       // Auto-focus next input
-      if (value && index < OTP_LENGTH - 1) {
+      if (value && index < OTP_LENGTH - 1 && !isLoading) {
         setTimeout(() => {
           otpInputRefs.current[index + 1]?.focus();
         }, 10);
       }
-      
-      // Auto-verify when all digits are filled manually
-      if (newOtp.every(digit => digit !== '') && newOtp.length === OTP_LENGTH) {
-        setTimeout(() => {
-          handleVerifyAndUpdate(newOtp);
-        }, 200);
-      }
     }
-  }, [otp, isLoading]);
+  }, [isLoading]);
+
+  const handlePastedOTP = useCallback((pastedOtp: string): boolean => {
+    const cleanOtp = pastedOtp.replace(/[^0-9]/g, '');
+    
+    if (cleanOtp.length >= OTP_LENGTH) {
+      setIsLoading(true);
+      
+      const newOtp = cleanOtp.slice(0, OTP_LENGTH).split('');
+      setOtp(newOtp);
+
+      // Focus and blur the last input to complete autofill
+      setTimeout(() => {
+        otpInputRefs.current[OTP_LENGTH - 1]?.focus();
+        otpInputRefs.current[OTP_LENGTH - 1]?.blur();
+      }, 100);
+
+      // Auto-verify the pasted/autofilled OTP
+      setTimeout(() => {
+        handleVerifyAndUpdate(newOtp);
+      }, 200);
+
+      return true;
+    }
+    return false;
+  }, []);
 
   const handleOtpKeyPress = useCallback((e: any, index: number) => {
     if (e.nativeEvent.key === 'Backspace') {
@@ -450,11 +490,16 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
               value={digit}
               onChangeText={(value) => handleOtpChange(value, index)}
               onKeyPress={(e) => handleOtpKeyPress(e, index)}
-              keyboardType="numeric"
+              keyboardType="number-pad"
               maxLength={index === 0 ? OTP_LENGTH : 1} // Allow paste on first input
               textAlign="center"
               selectTextOnFocus
               editable={!isLoading}
+              textContentType={index === 0 ? "oneTimeCode" : "none"}
+              autoComplete={index === 0 ? "sms-otp" : "off"}
+              autoFocus={index === 0 && step === 'otp-verification'}
+              returnKeyType="done"
+              blurOnSubmit={false}
             />
           ))}
         </View>
