@@ -315,12 +315,19 @@ export default function Profile() {
             </View>
             <View style={styles.balanceInfo}>
               <Text style={styles.balanceLabel}>Current Balance</Text>
-              <Text style={[
+                <Text style={[
                 styles.balanceAmount,
-                !hasBalance && { color: COLORS.gray[500] }
-              ]}>
+                !hasBalance && { color: COLORS.gray[500] },
+                hasBalance && {
+                  color: (user.balance ?? 0) >= 200 
+                    ? COLORS.success 
+                    : (user.balance ?? 0) >= 50 
+                    ? COLORS.warning 
+                    : COLORS.error
+                }
+                ]}>
                 {hasBalance ? `${displayBalance} BDT` : displayBalance}
-              </Text>
+                </Text>
             </View>
               <TouchableOpacity 
                 style={styles.updateCardButton}
@@ -420,9 +427,13 @@ export default function Profile() {
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Date of Birth</Text>
-              <Text style={styles.infoValue}>
-                {user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'Not Provided'}
-              </Text>
+                <Text style={styles.infoValue}>
+                {user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString('en-GB', { 
+                  day: 'numeric', 
+                  month: 'short', 
+                  year: 'numeric' 
+                }) : 'Not Provided'}
+                </Text>
             </View>
           </View>
 
@@ -827,8 +838,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   balanceAmount: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 18,
     color: COLORS.primary,
     letterSpacing: 0.3,
   },
