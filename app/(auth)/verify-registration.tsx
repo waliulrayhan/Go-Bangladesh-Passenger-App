@@ -527,9 +527,9 @@ export default function VerifyRegistration() {
           </View>
 
           <Text style={styles.helpText}>
-            {Platform.OS === 'ios' 
-              ? 'Tap the SMS suggestion to auto-fill all 6 digits, or enter them manually for automatic verification.'
-              : 'The OTP will auto-fill from SMS when available. Enter all 6 digits for automatic verification.'
+            {Platform.OS === "ios"
+              ? "Didn't receive the code? Check your SMS or try resending."
+              : "Didn't receive the code? Check your SMS or try resending."
             }
           </Text>
         </View>

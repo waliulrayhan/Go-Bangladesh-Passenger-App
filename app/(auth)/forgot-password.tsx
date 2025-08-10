@@ -712,8 +712,8 @@ export default function ForgotPassword() {
 
           <Text style={styles.helpText}>
             {Platform.OS === "ios"
-              ? "Tap the SMS suggestion to auto-fill all 6 digits, or enter them manually for automatic verification."
-              : "The OTP will auto-fill from SMS when available."
+              ? "Didn't receive the code? Check your SMS or try resending."
+              : "Didn't receive the code? Check your SMS or try resending."
             }
           </Text>
         </View>
