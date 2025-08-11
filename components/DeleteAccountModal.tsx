@@ -29,6 +29,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   onConfirmDelete,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isChecked, setIsChecked] = useState(false);
 
   const handleConfirmDelete = async () => {
     setIsLoading(true);
@@ -108,11 +109,22 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
 
                 {/* User Confirmation */}
                 <Animated.View entering={FadeIn.delay(300)} style={styles.confirmationSection}>
-                  <Text style={styles.confirmationText}>
-                    I, <Text style={styles.userName}>{userName}</Text>, confirm deletion of my account. My balance of{" "}
-                    <Text style={styles.balanceAmount}>৳{userBalance.toFixed(2)}</Text>{" "}
-                    and all data will be permanently lost after 7 days.
-                  </Text>
+                  <View style={styles.checkboxContainer}>
+                    <TouchableOpacity 
+                      style={[styles.checkbox, isChecked && styles.checkboxChecked]}
+                      onPress={() => setIsChecked(!isChecked)}
+                      activeOpacity={0.7}
+                    >
+                      {isChecked && (
+                        <Ionicons name="checkmark" size={14} color={COLORS.white} />
+                      )}
+                    </TouchableOpacity>
+                    <Text style={styles.confirmationText}>
+                      I, <Text style={styles.userName}>{userName}</Text>, confirm deletion of my account. My balance of{" "}
+                      <Text style={styles.balanceAmount}>৳{userBalance.toFixed(2)}</Text>{" "}
+                      and all data will be permanently lost after 7 days.
+                    </Text>
+                  </View>
                 </Animated.View>
 
                 {/* Note */}
@@ -137,9 +149,9 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                   </TouchableOpacity>
 
                   <TouchableOpacity 
-                    style={[styles.deleteButton, isLoading && styles.deleteButtonDisabled]} 
+                    style={[styles.deleteButton, (isLoading || !isChecked) && styles.deleteButtonDisabled]} 
                     onPress={handleConfirmDelete}
-                    disabled={isLoading}
+                    disabled={isLoading || !isChecked}
                   >
                     {isLoading ? (
                       <ActivityIndicator size="small" color={COLORS.white} />
@@ -252,15 +264,39 @@ const styles = StyleSheet.create({
   },
   confirmationSection: {
     backgroundColor: COLORS.gray[50],
-    padding: 16,
+    borderRadius: 12,
+    paddingRight: 10,
+    paddingLeft: 4,
     marginBottom: 10,
     borderLeftColor: COLORS.warning,
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: COLORS.gray[400],
+    backgroundColor: COLORS.white,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+    marginTop: 2,
+    flexShrink: 0,
+  },
+  checkboxChecked: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   confirmationText: {
     fontSize: 14,
     lineHeight: 20,
     color: COLORS.gray[700],
     textAlign: "justify",
+    flex: 1,
   },
   userName: {
     fontWeight: "600",
