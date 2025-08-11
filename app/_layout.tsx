@@ -1,9 +1,13 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { Slot, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useRef } from "react";
+import { StyleSheet, View } from "react-native";
+import Animated, { FadeInUp, FadeOut } from "react-native-reanimated";
 import { useTokenExpirationCheck } from "../hooks/useTokenExpirationCheck";
 import { useAuthStore } from "../stores/authStore";
+import { COLORS } from "../utils/constants";
 import { plusJakartaSansFonts } from "../utils/fonts";
 
 // Polyfill for buffer in React Native
@@ -15,7 +19,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts(plusJakartaSansFonts);
-  const { isAuthenticated, loadUserFromStorage } = useAuthStore();
+  const { isAuthenticated, loadUserFromStorage, isLoggingOut } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
   const isNavigatingRef = useRef(false);
@@ -124,5 +128,81 @@ export default function RootLayout() {
     return null;
   }
 
-  return <Slot />;
+  return (
+    <>
+      <Slot />
+      
+      {/* Global logout overlay to prevent flash of empty data */}
+      {isLoggingOut && (
+        <Animated.View 
+          entering={FadeInUp.duration(300)}
+          exiting={FadeOut.duration(200)}
+          style={styles.globalLogoutOverlay}
+        >
+          <View style={styles.logoutContent}>
+            <Animated.View 
+              style={styles.logoutSpinner}
+              entering={FadeInUp.duration(400).delay(200)}
+            >
+              <Ionicons name="log-out-outline" size={40} color={COLORS.primary} />
+            </Animated.View>
+            <Animated.Text 
+              entering={FadeInUp.duration(400).delay(400)}
+              style={styles.logoutText}
+            >
+              Signing you out...
+            </Animated.Text>
+            <Animated.Text 
+              entering={FadeInUp.duration(400).delay(600)}
+              style={styles.logoutSubtext}
+            >
+              Please wait a moment
+            </Animated.Text>
+          </View>
+        </Animated.View>
+      )}
+    </>
+  );
 }
+
+const styles = StyleSheet.create({
+  globalLogoutOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    zIndex: 9999, // Highest z-index to cover everything
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoutContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  logoutSpinner: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: COLORS.primary + '20',
+  },
+  logoutText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.secondary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  logoutSubtext: {
+    fontSize: 16,
+    color: COLORS.gray[600],
+    textAlign: 'center',
+  },
+});

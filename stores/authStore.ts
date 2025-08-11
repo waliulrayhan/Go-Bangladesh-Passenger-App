@@ -13,6 +13,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   justLoggedIn: boolean;
+  isLoggingOut: boolean; // Global logout state
 
   // Actions
   login: (identifier: string, password: string) => Promise<boolean>;
@@ -89,6 +90,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   error: null,
   justLoggedIn: false,
+  isLoggingOut: false, // Initialize global logout state
 
   // Login with identifier and password
   login: async (identifier: string, password: string) => {
@@ -166,28 +168,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       console.log('🔄 [AUTH] Starting logout process...');
       
+      // Set global logout state immediately
+      set({ isLoggingOut: true });
+      
       // Clear all auth-related data from storage
       await storageService.clearAllAppData();
       
-      // Reset the auth state
+      // Reset the auth state (but keep isLoggingOut true until navigation completes)
       set({
         user: null,
         isAuthenticated: false,
         error: null,
         isLoading: false,
-        justLoggedIn: false
+        justLoggedIn: false,
+        // Keep isLoggingOut: true to prevent flash
       });
       
       console.log('✅ [AUTH] Logout completed successfully');
       
-      // Use safe navigation for logout redirect
+      // Use safe navigation for logout redirect with longer delay to prevent flash
       setTimeout(async () => {
         try {
           await safeNavigateToWelcome();
+          // Clear logout state after navigation
+          setTimeout(() => {
+            set({ isLoggingOut: false });
+          }, 500); // Additional delay to ensure new screen has loaded
         } catch (navError) {
           console.error('❌ [AUTH] Navigation error during logout:', navError);
+          // Clear logout state even if navigation fails
+          set({ isLoggingOut: false });
         }
-      }, 100);
+      }, 200); // Increased from 100ms to 200ms
       
     } catch (error) {
       console.error('❌ [AUTH] Logout error:', error);
@@ -198,17 +210,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: false,
         error: null,
         isLoading: false,
-        justLoggedIn: false
+        justLoggedIn: false,
+        isLoggingOut: true // Set logout state even on error
       });
       
-      // Still attempt navigation
+      // Still attempt navigation with longer delay
       setTimeout(async () => {
         try {
           await safeNavigateToWelcome();
+          // Clear logout state after navigation
+          setTimeout(() => {
+            set({ isLoggingOut: false });
+          }, 500);
         } catch (navError) {
           console.error('❌ [AUTH] Fallback navigation also failed:', navError);
+          // Clear logout state even if navigation fails
+          set({ isLoggingOut: false });
         }
-      }, 100);
+      }, 200); // Increased from 100ms to 200ms
     }
   },
 

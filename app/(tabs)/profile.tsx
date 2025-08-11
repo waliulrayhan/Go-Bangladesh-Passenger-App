@@ -11,7 +11,15 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  FadeOut,
+  SlideInRight,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming
+} from 'react-native-reanimated';
 
 // Components
 import { ConfirmationModal } from '../../components/ConfirmationModal';
@@ -53,6 +61,8 @@ interface UserProfileData {
 const REFRESH_DELAY = 300;
 const LOGOUT_REDIRECT_DELAY = 100;
 const LOGOUT_ERROR_REDIRECT_DELAY = 1000;
+const LOGOUT_ANIMATION_DELAY = 1500; // Increased delay to prevent flash of empty data
+const LOGOUT_TOAST_DURATION = 1500; // How long to show "Signing out..." toast
 
 /**
  * Profile Screen Component
@@ -69,21 +79,30 @@ const LOGOUT_ERROR_REDIRECT_DELAY = 1000;
  * - Modal-based editing workflows
  * - Error handling with toast notifications
  * - Responsive UI with animations
+ * - Smooth logout experience with loading states
  */
 export default function Profile() {
   // ==================== HOOKS ====================
-  const { user, logout } = useAuthStore();
+  const { user, logout, isLoggingOut: globalIsLoggingOut } = useAuthStore();
   const { refreshAllData } = useTokenRefresh();
-  const { toast, showToast, hideToast } = useToast();
+  const { toast, showToast, showSuccess, showError, hideToast } = useToast();
 
   // ==================== STATE ====================
   const [refreshing, setRefreshing] = useState(false);
+  const [localIsLoggingOut, setLocalIsLoggingOut] = useState(false);
   const [showUpdateCardModal, setShowUpdateCardModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showHelpSupportModal, setShowHelpSupportModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+
+  // Combined logout state (either global or local)
+  const isLoggingOut = globalIsLoggingOut || localIsLoggingOut;
+
+  // ==================== ANIMATION VALUES ====================
+  const fadeOpacity = useSharedValue(1);
+  const slideTransform = useSharedValue(0);
 
   // ==================== REFS ====================
   const prevShowEditProfileModal = useRef(showEditProfileModal);
@@ -185,25 +204,51 @@ export default function Profile() {
   }, [refreshAllData]);
 
   /**
-   * Logout handlers
+   * Logout handlers with improved UX
    */
   const handleLogout = () => setShowLogoutConfirmation(true);
 
   const performLogout = async () => {
     try {
-      showToast('Signing out...', 'info');
+      setLocalIsLoggingOut(true);
       setShowLogoutConfirmation(false);
       
-      // The logout function now handles navigation internally
+      // Start logout animation - fade content
+      fadeOpacity.value = withTiming(0.1, { duration: 400 });
+      slideTransform.value = withTiming(-15, { duration: 400 });
+      
+      // Show signing out toast
+      showToast('Signing out...', 'info');
+      
+      // Wait longer to show the loading state and prevent flash of empty data
+      await new Promise(resolve => setTimeout(resolve, LOGOUT_ANIMATION_DELAY));
+      
+      // Hide the toast before navigation
+      hideToast();
+      
+      // Complete fade out - this will keep the overlay visible during navigation
+      fadeOpacity.value = withTiming(0, { duration: 200 });
+      slideTransform.value = withTiming(-30, { duration: 200 });
+      
+      // Wait for fade out animation to complete
+      await new Promise(resolve => setTimeout(resolve, 250));
+      
+      // Now perform the actual logout (this will navigate)
+      // The logout overlay will remain visible until the new screen loads
       await logout();
       
-      setTimeout(() => {
-        showToast('Logged out successfully', 'success');
-      }, LOGOUT_REDIRECT_DELAY);
+      // Note: No need to reset localIsLoggingOut here since the component will unmount
+      
     } catch (error) {
       console.error('❌ [PROFILE] Logout error:', error);
+      setLocalIsLoggingOut(false);
       setShowLogoutConfirmation(false);
-      showToast('Logout failed. Please try again.', 'error');
+      
+      // Reset animations on error
+      fadeOpacity.value = withTiming(1, { duration: 300 });
+      slideTransform.value = withTiming(0, { duration: 300 });
+      
+      showError('Logout failed. Please try again.');
       
       // Fallback navigation if logout fails
       setTimeout(() => {
@@ -215,6 +260,18 @@ export default function Profile() {
       }, LOGOUT_ERROR_REDIRECT_DELAY);
     }
   };
+
+  // ==================== ANIMATION STYLES ====================
+  const containerAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: fadeOpacity.value,
+      transform: [
+        {
+          translateY: slideTransform.value,
+        },
+      ],
+    };
+  });
 
   // ==================== DISPLAY UTILITIES ====================
   /**
@@ -255,8 +312,12 @@ export default function Profile() {
               </View>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.name}>Loading...</Text>
-              <Text style={styles.userType}>Please wait...</Text>
+              <Text style={styles.name}>
+                {isLoggingOut ? 'Signing out...' : 'Loading...'}
+              </Text>
+              <Text style={styles.userType}>
+                {isLoggingOut ? 'Please wait...' : 'Please wait...'}
+              </Text>
             </View>
           </View>
         </Animated.View>
@@ -517,9 +578,25 @@ export default function Profile() {
 
       </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={16} color={COLORS.white} />
-        <Text style={styles.logoutText}>Sign Out</Text>
+      <TouchableOpacity 
+        style={[
+          styles.logoutButton, 
+          isLoggingOut && styles.logoutButtonDisabled
+        ]} 
+        onPress={handleLogout}
+        disabled={isLoggingOut}
+      >
+        <Ionicons 
+          name="log-out-outline" 
+          size={16} 
+          color={isLoggingOut ? COLORS.gray[400] : COLORS.white} 
+        />
+        <Text style={[
+          styles.logoutText,
+          isLoggingOut && styles.logoutTextDisabled
+        ]}>
+          {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -616,24 +693,58 @@ export default function Profile() {
         end={{ x: 0.5, y: 1 }}
       />
       
-      <ScrollView 
-        style={styles.content} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
-          />
-        }
-      >
-        {renderProfileHeader()}
-        {renderBalanceCard()}
-        {renderAccountInfo()}
-        {renderActions()}
-      </ScrollView>
+      {/* Main Content with Animation */}
+      <Animated.View style={[styles.mainContent, containerAnimatedStyle]}>
+        <ScrollView 
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+              enabled={!isLoggingOut} // Disable refresh during logout
+            />
+          }
+        >
+          {renderProfileHeader()}
+          {renderBalanceCard()}
+          {renderAccountInfo()}
+          {renderActions()}
+        </ScrollView>
+      </Animated.View>
+
+      {/* Logout Loading Overlay */}
+      {isLoggingOut && (
+        <Animated.View 
+          entering={FadeInUp.duration(300)}
+          exiting={FadeOut.duration(200)}
+          style={styles.logoutOverlay}
+        >
+          <View style={styles.logoutContent}>
+            <Animated.View 
+              style={styles.logoutSpinner}
+              entering={FadeInUp.duration(400).delay(200)}
+            >
+              <Ionicons name="log-out-outline" size={32} color={COLORS.primary} />
+            </Animated.View>
+            <Animated.Text 
+              entering={FadeInUp.duration(400).delay(400)}
+              style={styles.logoutOverlayText}
+            >
+              Signing you out...
+            </Animated.Text>
+            <Animated.Text 
+              entering={FadeInUp.duration(400).delay(600)}
+              style={styles.logoutSubtext}
+            >
+              Please wait a moment
+            </Animated.Text>
+          </View>
+        </Animated.View>
+      )}
 
       {/* Modals */}
       <UpdateCardModal
@@ -722,6 +833,11 @@ const styles = StyleSheet.create({
     zIndex: -1,
   },
   
+  // Main content wrapper for animations
+  mainContent: {
+    flex: 1,
+  },
+  
   // Content container styles
   content: {
     flex: 1,
@@ -733,6 +849,47 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 16,
     marginBottom: 16,
+  },
+  
+  // Logout overlay styles
+  logoutOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)', // More opaque to prevent flash
+    zIndex: 1000,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoutContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  logoutSpinner: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '20',
+  },
+  logoutOverlayText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.secondary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  logoutSubtext: {
+    fontSize: 14,
+    color: COLORS.gray[600],
+    textAlign: 'center',
   },
   
   // Profile header styles
@@ -1009,11 +1166,18 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 14,
   },
+  logoutButtonDisabled: {
+    backgroundColor: COLORS.gray[300],
+    opacity: 0.7,
+  },
   logoutText: {
     fontSize: 14,
     fontWeight: '700',
     color: COLORS.white,
     marginLeft: 6,
     letterSpacing: 0.2,
+  },
+  logoutTextDisabled: {
+    color: COLORS.gray[500],
   },
 });
