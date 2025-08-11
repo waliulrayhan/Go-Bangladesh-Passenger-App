@@ -1061,6 +1061,13 @@ export default function History() {
             <View style={styles.filterInfo}>
               <Text variant="bodySmall" color={COLORS.gray[600]}>
                 {filteredData.length} result{filteredData.length !== 1 ? 's' : ''} 
+                {(() => {
+                  const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
+                  if (currentPagination.totalCount && currentPagination.totalCount > 0) {
+                    return ` • ${currentPagination.totalCount} total`;
+                  }
+                  return '';
+                })()}
                 {filters.dateFilter !== "all" && ` • ${filters.dateFilter}`}
                 {filters.sortOrder !== "newest" && ` • ${filters.sortOrder}`}
                 {(filters.minAmount !== undefined || filters.maxAmount !== undefined) && ' • amount filtered'}
