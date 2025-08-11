@@ -168,14 +168,15 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   globalLogoutOverlay: {
     position: 'absolute',
-    top: 0,
+    top: -50, // Extend above to cover status bar
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
-    zIndex: 9999, // Highest z-index to cover everything
+    backgroundColor: '#FFFFFF', // Completely opaque white
+    zIndex: 99999, // Even higher z-index
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 1000, // For Android
   },
   logoutContent: {
     alignItems: 'center',

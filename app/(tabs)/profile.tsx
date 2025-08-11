@@ -212,20 +212,14 @@ export default function Profile() {
       setLocalIsLoggingOut(true);
       setShowLogoutConfirmation(false);
       
-      // Simple fade out animation for the content
-      fadeOpacity.value = withTiming(0.3, { duration: 600 });
-      slideTransform.value = withTiming(-10, { duration: 600 });
+      // Very subtle fade out animation for the content only
+      fadeOpacity.value = withTiming(0.7, { duration: 300 });
+      slideTransform.value = withTiming(-3, { duration: 300 });
       
-      // Show brief toast before global overlay takes over
-      showToast('Signing out...', 'info');
+      // Minimal delay for smooth transition to global overlay
+      await new Promise(resolve => setTimeout(resolve, 200));
       
-      // Short delay to show the toast, then let global overlay handle the rest
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Hide toast before global overlay takes over
-      hideToast();
-      
-      // Now perform the actual logout - global overlay will show during this
+      // Now perform the actual logout - global overlay will take over immediately
       await logout();
       
       // Note: Component will unmount, so no need to reset local state
@@ -763,14 +757,16 @@ export default function Profile() {
         onCancel={() => setShowLogoutConfirmation(false)}
       />
 
-      {/* Toast Component */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        position="top"
-        onHide={hideToast}
-      />
+      {/* Toast Component - Hidden during logout to prevent overlap with global overlay */}
+      {!isLoggingOut && (
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          position="top"
+          onHide={hideToast}
+        />
+      )}
     </SafeAreaView>
   );
 }
