@@ -14,7 +14,6 @@ import {
 import Animated, {
   FadeInDown,
   FadeInUp,
-  FadeOut,
   SlideInRight,
   useAnimatedStyle,
   useSharedValue,
@@ -61,7 +60,7 @@ interface UserProfileData {
 const REFRESH_DELAY = 300;
 const LOGOUT_REDIRECT_DELAY = 100;
 const LOGOUT_ERROR_REDIRECT_DELAY = 1000;
-const LOGOUT_ANIMATION_DELAY = 1500; // Increased delay to prevent flash of empty data
+const LOGOUT_ANIMATION_DELAY = 800; // Reduced since we're using global overlay
 const LOGOUT_TOAST_DURATION = 1500; // How long to show "Signing out..." toast
 
 /**
@@ -213,31 +212,23 @@ export default function Profile() {
       setLocalIsLoggingOut(true);
       setShowLogoutConfirmation(false);
       
-      // Start logout animation - fade content
-      fadeOpacity.value = withTiming(0.1, { duration: 400 });
-      slideTransform.value = withTiming(-15, { duration: 400 });
+      // Simple fade out animation for the content
+      fadeOpacity.value = withTiming(0.3, { duration: 600 });
+      slideTransform.value = withTiming(-10, { duration: 600 });
       
-      // Show signing out toast
+      // Show brief toast before global overlay takes over
       showToast('Signing out...', 'info');
       
-      // Wait longer to show the loading state and prevent flash of empty data
-      await new Promise(resolve => setTimeout(resolve, LOGOUT_ANIMATION_DELAY));
+      // Short delay to show the toast, then let global overlay handle the rest
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Hide the toast before navigation
+      // Hide toast before global overlay takes over
       hideToast();
       
-      // Complete fade out - this will keep the overlay visible during navigation
-      fadeOpacity.value = withTiming(0, { duration: 200 });
-      slideTransform.value = withTiming(-30, { duration: 200 });
-      
-      // Wait for fade out animation to complete
-      await new Promise(resolve => setTimeout(resolve, 250));
-      
-      // Now perform the actual logout (this will navigate)
-      // The logout overlay will remain visible until the new screen loads
+      // Now perform the actual logout - global overlay will show during this
       await logout();
       
-      // Note: No need to reset localIsLoggingOut here since the component will unmount
+      // Note: Component will unmount, so no need to reset local state
       
     } catch (error) {
       console.error('❌ [PROFILE] Logout error:', error);
@@ -716,35 +707,8 @@ export default function Profile() {
         </ScrollView>
       </Animated.View>
 
-      {/* Logout Loading Overlay */}
-      {isLoggingOut && (
-        <Animated.View 
-          entering={FadeInUp.duration(300)}
-          exiting={FadeOut.duration(200)}
-          style={styles.logoutOverlay}
-        >
-          <View style={styles.logoutContent}>
-            <Animated.View 
-              style={styles.logoutSpinner}
-              entering={FadeInUp.duration(400).delay(200)}
-            >
-              <Ionicons name="log-out-outline" size={32} color={COLORS.primary} />
-            </Animated.View>
-            <Animated.Text 
-              entering={FadeInUp.duration(400).delay(400)}
-              style={styles.logoutOverlayText}
-            >
-              Signing you out...
-            </Animated.Text>
-            <Animated.Text 
-              entering={FadeInUp.duration(400).delay(600)}
-              style={styles.logoutSubtext}
-            >
-              Please wait a moment
-            </Animated.Text>
-          </View>
-        </Animated.View>
-      )}
+      {/* Logout Loading Overlay - Removed: Using global overlay in root layout instead */}
+      {/* The global logout overlay in _layout.tsx will handle the loading state */}
 
       {/* Modals */}
       <UpdateCardModal
@@ -851,46 +815,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   
-  // Logout overlay styles
-  logoutOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.98)', // More opaque to prevent flash
-    zIndex: 1000,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoutContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-  },
-  logoutSpinner: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.primary + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: COLORS.primary + '20',
-  },
-  logoutOverlayText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.secondary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  logoutSubtext: {
-    fontSize: 14,
-    color: COLORS.gray[600],
-    textAlign: 'center',
-  },
+  // Logout overlay styles - Removed: Using global overlay in root layout instead
   
   // Profile header styles
   headerContainer: {
