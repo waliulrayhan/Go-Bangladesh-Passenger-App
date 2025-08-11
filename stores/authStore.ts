@@ -34,6 +34,7 @@ interface AuthState {
   refreshUserFromToken: () => Promise<boolean>;
   handleUnauthorized: () => Promise<void>;
   clearJustLoggedIn: () => void;
+  deactivateAccount: () => Promise<{ success: boolean; message: string }>;
 }
 
 const formatError = (error: any): string => {
@@ -467,5 +468,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   clearError: () => set({ error: null }),
 
   // Clear just logged in flag
-  clearJustLoggedIn: () => set({ justLoggedIn: false })
+  clearJustLoggedIn: () => set({ justLoggedIn: false }),
+
+  // Deactivate account
+  deactivateAccount: async () => {
+    const { user } = get();
+    if (!user?.id) {
+      return { success: false, message: 'User ID not found' };
+    }
+
+    set({ isLoading: true, error: null });
+    
+    try {
+      const response = await apiService.deactivateAccount(user.id.toString());
+      
+      if (response.isSuccess) {
+        // Clear all data and redirect to home
+        await get().logout();
+        
+        set({ isLoading: false });
+        return { success: true, message: response.message };
+      } else {
+        set({ isLoading: false });
+        return { success: false, message: response.message };
+      }
+    } catch (error: any) {
+      const errorMessage = formatError(error);
+      set({
+        isLoading: false,
+        error: errorMessage
+      });
+      return { success: false, message: errorMessage };
+    }
+  }
 }));

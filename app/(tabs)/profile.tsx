@@ -15,6 +15,7 @@ import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reani
 
 // Components
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import { DeleteAccountModal } from '../../components/DeleteAccountModal';
 import { EditProfileModal } from '../../components/EditProfileModal';
 import { HelpSupportModal } from '../../components/HelpSupportModal';
 import { SettingsModal } from '../../components/SettingsModal';
@@ -71,7 +72,7 @@ const LOGOUT_ERROR_REDIRECT_DELAY = 1000;
  */
 export default function Profile() {
   // ==================== HOOKS ====================
-  const { user, logout } = useAuthStore();
+  const { user, logout, deactivateAccount } = useAuthStore();
   const { refreshAllData } = useTokenRefresh();
   const { toast, showToast, hideToast } = useToast();
 
@@ -82,6 +83,7 @@ export default function Profile() {
   const [showHelpSupportModal, setShowHelpSupportModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
   // ==================== REFS ====================
   const prevShowEditProfileModal = useRef(showEditProfileModal);
@@ -208,6 +210,32 @@ export default function Profile() {
       showToast('Logout failed. Please try again.', 'error');
       
       setTimeout(redirectToLogin, LOGOUT_ERROR_REDIRECT_DELAY);
+    }
+  };
+
+  /**
+   * Handle account deletion
+   */
+  const handleDeleteAccount = async () => {
+    try {
+      showToast('Deleting account...', 'info');
+      const result = await deactivateAccount();
+      
+      if (result.success) {
+        setShowDeleteAccountModal(false);
+        showToast(result.message, 'success');
+        
+        // Redirect to home page after successful deletion
+        setTimeout(() => {
+          router.dismissAll();
+          router.replace('/');
+        }, 1500);
+      } else {
+        showToast(result.message || 'Failed to delete account', 'error');
+      }
+    } catch (error) {
+      console.error('❌ [PROFILE] Delete account error:', error);
+      showToast('Failed to delete account. Please try again.', 'error');
     }
   };
 
@@ -499,9 +527,7 @@ export default function Profile() {
 
         <TouchableOpacity 
           style={styles.actionItem}
-          onPress={() => {
-            showToast('Account deletion feature coming soon', 'info');
-          }}
+          onPress={() => setShowDeleteAccountModal(true)}
         >
           <View style={styles.actionLeft}>
             <View style={[styles.actionIconContainer, { backgroundColor: COLORS.error + '15' }]}>
@@ -658,6 +684,17 @@ export default function Profile() {
           onClose={() => setShowEditProfileModal(false)}
           onUpdate={handleUpdateProfile}
           userData={createUserDataForModal()}
+        />
+      )}
+
+      {/* Delete Account Modal */}
+      {user && (
+        <DeleteAccountModal
+          visible={showDeleteAccountModal}
+          userName={user.name}
+          userBalance={user.balance || 0}
+          onClose={() => setShowDeleteAccountModal(false)}
+          onConfirmDelete={handleDeleteAccount}
         />
       )}
 

@@ -869,6 +869,42 @@ class ApiService {
     }
   }
 
+  async deactivateAccount(userId: string): Promise<{ isSuccess: boolean; message: string }> {
+    ApiLogger.log('DEACTIVATE ACCOUNT', 'Deactivating user account', { userId });
+
+    try {
+      const response = await this.api.post<ApiResponse<null>>(
+        '/api/user/DeactivateAccount',
+        { userId },
+        {
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      ApiLogger.log('DEACTIVATE ACCOUNT', 'Response received', {
+        status: response.status,
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message
+      });
+
+      if (!response.data.data.isSuccess) {
+        throw ApiErrorHandler.createError(
+          response.data.data.message || 'Account deactivation failed'
+        );
+      }
+
+      ApiLogger.success('DEACTIVATE ACCOUNT', 'Account deactivated successfully');
+      return {
+        isSuccess: response.data.data.isSuccess,
+        message: response.data.data.message || 'User account has been deactivated successfully!'
+      };
+    } catch (error: any) {
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('DEACTIVATE ACCOUNT', 'Account deactivation error', errorMessage);
+      throw ApiErrorHandler.createError(errorMessage);
+    }
+  }
+
   // ========================================================================
   // PUBLIC METHODS - Trip Management
   // ========================================================================
