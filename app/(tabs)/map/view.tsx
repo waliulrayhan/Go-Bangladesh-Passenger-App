@@ -48,6 +48,21 @@ export default function MapViewScreen() {
   // Hooks
   const { user } = useAuthStore();
   const { toast, showError, showSuccess, showInfo, hideToast } = useToast();
+  
+  // Debug logging for profile image (only log once)
+  const profilePhotoDebugRef = useRef<string>('');
+  const profilePhoto = user?.profileImage || user?.imageUrl;
+  
+  if (profilePhotoDebugRef.current !== profilePhoto) {
+    profilePhotoDebugRef.current = profilePhoto || '';
+    console.log('🖼️ [MAP] User profile image data:', {
+      profileImage: user?.profileImage,
+      imageUrl: user?.imageUrl,
+      userName: user?.name,
+      finalProfilePhoto: profilePhoto
+    });
+  }
+  
   const {
     userLocation,
     gettingLocation,
@@ -176,9 +191,36 @@ export default function MapViewScreen() {
   const addUserLocationToMap = (latitude: number, longitude: number, username: string = user?.name || 'You', focusOnly: boolean = false) => {
     if (!webViewRef.current) return;
 
+    const profilePhotoUrl = user?.profileImage || user?.imageUrl;
+    
+    // Construct full URL for profile photo if it's a relative path
+    let fullProfilePhotoUrl = null;
+    if (profilePhotoUrl) {
+      if (profilePhotoUrl.startsWith('http://') || profilePhotoUrl.startsWith('https://')) {
+        // Already a full URL
+        fullProfilePhotoUrl = profilePhotoUrl;
+      } else {
+        // Relative path, construct full URL
+        fullProfilePhotoUrl = `https://thegobd.com/${profilePhotoUrl}`;
+      }
+    }
+    
+    // For testing: Use a test image if no profile photo is available
+    const testProfilePhotoUrl = fullProfilePhotoUrl || 'https://via.placeholder.com/100x100/4285F4/FFFFFF?text=Test';
+    
+    console.log('🖼️ [MAP] Adding user location with profile photo:', { 
+      username, 
+      original: profilePhotoUrl,
+      fullUrl: fullProfilePhotoUrl,
+      final: testProfilePhotoUrl 
+    });
+
+    // Escape the profile photo URL properly for JavaScript
+    const escapedProfilePhotoUrl = testProfilePhotoUrl ? testProfilePhotoUrl.replace(/"/g, '\\"').replace(/'/g, "\\'") : null;
+
     const locationScript = `
       if (typeof addUserLocation === 'function') {
-        addUserLocation(${latitude}, ${longitude}, "${username}", ${focusOnly});
+        addUserLocation(${latitude}, ${longitude}, "${username}", ${focusOnly}, ${escapedProfilePhotoUrl ? `"${escapedProfilePhotoUrl}"` : 'null'});
       }
       true;
     `;
@@ -201,12 +243,21 @@ export default function MapViewScreen() {
   const handleMapMessage = (event: any) => {
     const { data } = event.nativeEvent;
     
+    // Log all messages from WebView for debugging
+    console.log('📨 [MAP] WebView message:', data);
+    
     switch (data) {
       case 'MAP_READY':
         handleMapReady();
         break;
       case 'USER_INTERACTION':
         setMapState(prev => ({ ...prev, userInteractedWithMap: true }));
+        break;
+      default:
+        // Handle other messages (like console logs from WebView)
+        if (typeof data === 'string' && data.startsWith('🖼️')) {
+          console.log(data);
+        }
         break;
     }
   };
@@ -296,27 +347,53 @@ export default function MapViewScreen() {
     </View>
   );
 
-  const renderMap = () => (
-    <WebView
-      ref={webViewRef}
-      source={{ 
-        html: generateMapHTML({
-          buses: mapState.buses,
-          defaultLat: DEFAULT_COORDINATES.lat,
-          defaultLng: DEFAULT_COORDINATES.lng,
-          userName: user?.name || 'You',
-        })
-      }}
-      style={styles.webView}
-      onMessage={handleMapMessage}
-      javaScriptEnabled={true}
-      domStorageEnabled={true}
-      startInLoadingState={false}
-      scalesPageToFit={true}
-      allowsInlineMediaPlayback={true}
-      mediaPlaybackRequiresUserAction={false}
-    />
-  );
+  const renderMap = () => {
+    const profilePhoto = user?.profileImage || user?.imageUrl;
+    
+    // Construct full URL for profile photo if it's a relative path
+    let fullProfilePhotoUrl = null;
+    if (profilePhoto) {
+      if (profilePhoto.startsWith('http://') || profilePhoto.startsWith('https://')) {
+        // Already a full URL
+        fullProfilePhotoUrl = profilePhoto;
+      } else {
+        // Relative path, construct full URL
+        fullProfilePhotoUrl = `https://thegobd.com/${profilePhoto}`;
+      }
+    }
+    
+    // For testing: Use a test image if no profile photo is available
+    const testProfilePhoto = fullProfilePhotoUrl || 'https://via.placeholder.com/100x100/4285F4/FFFFFF?text=Test';
+    
+    console.log('🖼️ [MAP] Rendering map with profile photo:', {
+      original: profilePhoto,
+      fullUrl: fullProfilePhotoUrl,
+      final: testProfilePhoto
+    });
+    
+    return (
+      <WebView
+        ref={webViewRef}
+        source={{ 
+          html: generateMapHTML({
+            buses: mapState.buses,
+            defaultLat: DEFAULT_COORDINATES.lat,
+            defaultLng: DEFAULT_COORDINATES.lng,
+            userName: user?.name || 'You',
+            userProfilePhoto: testProfilePhoto,
+          })
+        }}
+        style={styles.webView}
+        onMessage={handleMapMessage}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        startInLoadingState={false}
+        scalesPageToFit={true}
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+      />
+    );
+  };
 
   const renderRealTimeIndicator = () => (
     mapState.buses.length > 0 && (

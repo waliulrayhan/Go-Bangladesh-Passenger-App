@@ -5,12 +5,16 @@ interface MapHTMLParams {
   defaultLat: number;
   defaultLng: number;
   userName?: string;
+  userProfilePhoto?: string;
 }
 
-export const generateMapHTML = ({ buses, defaultLat, defaultLng, userName = 'You' }: MapHTMLParams): string => {
+export const generateMapHTML = ({ buses, defaultLat, defaultLng, userName = 'You', userProfilePhoto }: MapHTMLParams): string => {
   // Use first bus location if available, otherwise use default
   const centerLat = buses.length > 0 ? parseFloat(buses[0].presentLatitude) : defaultLat;
   const centerLng = buses.length > 0 ? parseFloat(buses[0].presentLongitude) : defaultLng;
+
+  // Escape the profile photo URL for safe JavaScript embedding
+  const escapedProfilePhoto = userProfilePhoto ? userProfilePhoto.replace(/"/g, '\\"').replace(/'/g, "\\'") : null;
 
   return `
     <!DOCTYPE html>
@@ -28,7 +32,7 @@ export const generateMapHTML = ({ buses, defaultLat, defaultLng, userName = 'You
         <div id="map"></div>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <script>
-          ${getMapScript(buses, centerLat, centerLng, userName)}
+          ${getMapScript(buses, centerLat, centerLng, userName, escapedProfilePhoto || undefined)}
         </script>
       </body>
     </html>
@@ -139,8 +143,8 @@ const getMapStyles = (): string => `
   }
   
   .user-location-marker-inner {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     background: linear-gradient(135deg, #4285F4 0%, #1A73E8 100%);
     border: 3px solid white;
     border-radius: 50%;
@@ -150,12 +154,42 @@ const getMapStyles = (): string => `
     align-items: center;
     justify-content: center;
     position: relative;
+    overflow: hidden;
   }
   
   .user-location-marker-inner::before {
     content: '👤';
-    font-size: 12px;
+    font-size: 16px;
     position: absolute;
+    z-index: 1;
+  }
+  
+  .user-location-marker-inner.has-photo::before {
+    display: none;
+  }
+  
+  .user-location-marker-inner.has-photo {
+    background: none;
+    padding: 0;
+  }
+  
+  .user-location-marker-inner.photo-error {
+    background: linear-gradient(135deg, #4285F4 0%, #1A73E8 100%);
+  }
+  
+  .user-location-marker-inner.photo-error::before {
+    display: block !important;
+  }
+  
+  .user-profile-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
   }
   
   .user-location-label {
@@ -352,7 +386,10 @@ const getMapStyles = (): string => `
   }
 `;
 
-const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, userName: string = 'You'): string => `
+const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, userName: string = 'You', userProfilePhoto?: string): string => {
+  const escapedProfilePhoto = userProfilePhoto ? userProfilePhoto.replace(/"/g, '\\"').replace(/'/g, "\\'") : null;
+  
+  return `
   let map;
   let busMarkers = [];
   let userLocationMarker = null;
@@ -420,22 +457,33 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
   }
   
   // Create user location icon
-  function createUserLocationIcon(username = 'You') {
+  function createUserLocationIcon(username = 'You', profilePhotoUrl = null) {
+    const logMessage = '🖼️ [MAP] Creating user location icon: ' + JSON.stringify({ username, profilePhotoUrl });
+    if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(logMessage);
+    }
+    
+    const hasPhoto = profilePhotoUrl && profilePhotoUrl.trim() !== '' && profilePhotoUrl !== 'null';
+    const markerClass = hasPhoto ? 'user-location-marker-inner has-photo' : 'user-location-marker-inner';
+    const innerContent = hasPhoto 
+      ? '<img src="' + profilePhotoUrl + '" class="user-profile-photo" alt="Profile" onerror="if(window.ReactNativeWebView) window.ReactNativeWebView.postMessage(\\'🖼️ Profile image failed to load: \\' + this.src); this.style.display=\\'none\\'; this.parentElement.classList.remove(\\'has-photo\\'); this.parentElement.classList.add(\\'photo-error\\');" onload="if(window.ReactNativeWebView) window.ReactNativeWebView.postMessage(\\'🖼️ Profile image loaded successfully: \\' + this.src);" />'
+      : '';
+    
     return L.divIcon({
       html: '<div class="user-location-marker">' +
               '<div class="user-location-shadow"></div>' +
-              '<div class="user-location-marker-inner"></div>' +
+              '<div class="' + markerClass + '">' + innerContent + '</div>' +
               '<div class="user-location-label">' + username + '</div>' +
             '</div>',
       className: 'custom-user-location-marker',
-      iconSize: [Math.max(120, username.length * 8), 60],
-      iconAnchor: [Math.max(60, username.length * 4), 30],
-      popupAnchor: [0, -30]
+      iconSize: [Math.max(120, username.length * 8), 70],
+      iconAnchor: [Math.max(60, username.length * 4), 35],
+      popupAnchor: [0, -35]
     });
   }
   
   // Add user location to map
-  function addUserLocation(latitude, longitude, username = '${userName}', focusOnly = false) {
+  function addUserLocation(latitude, longitude, username = '${userName}', focusOnly = false, profilePhotoUrl = ${escapedProfilePhoto ? `'${escapedProfilePhoto}'` : 'null'}) {
     // Remove existing user location marker
     if (userLocationMarker) {
       map.removeLayer(userLocationMarker);
@@ -443,7 +491,7 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
     
     // Add new user location marker
     userLocationMarker = L.marker([latitude, longitude], { 
-      icon: createUserLocationIcon(username) 
+      icon: createUserLocationIcon(username, profilePhotoUrl) 
     })
       .bindPopup(
         '<div class="bus-popup">' +
@@ -585,3 +633,4 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
   // Initialize when page loads
   document.addEventListener('DOMContentLoaded', initMap);
 `;
+};
