@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { create } from 'zustand';
 import { apiService } from '../services/api';
 import { User } from '../types';
@@ -42,6 +43,43 @@ const formatError = (error: any): string => {
     return error.response.data.data.message;
   }
   return error.message || 'An error occurred';
+};
+
+// Simple navigation helper to avoid import issues
+const safeNavigateToWelcome = async (): Promise<boolean> => {
+  try {
+    console.log('🔄 [NAV] Attempting safe navigation to welcome screen...');
+    
+    // Strategy 1: Simple replace (no dismissAll to avoid POP_TO_TOP)
+    router.replace('/');
+    console.log('✅ [NAV] Navigation successful');
+    return true;
+  } catch (error1) {
+    console.warn('⚠️ [NAV] Strategy 1 failed, trying push:', error1);
+    
+    try {
+      // Strategy 2: Push to root
+      router.push('/');
+      console.log('✅ [NAV] Navigation Strategy 2 successful');
+      return true;
+    } catch (error2) {
+      console.warn('⚠️ [NAV] Strategy 2 failed, trying navigate:', error2);
+      
+      try {
+        // Strategy 3: Navigate to login
+        router.navigate('/(auth)/passenger-login');
+        console.log('✅ [NAV] Navigation Strategy 3 successful');
+        return true;
+      } catch (error3) {
+        console.error('💥 [NAV] All navigation strategies failed:', {
+          strategy1: error1,
+          strategy2: error2,
+          strategy3: error3
+        });
+        return false;
+      }
+    }
+  }
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -141,6 +179,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       
       console.log('✅ [AUTH] Logout completed successfully');
+      
+      // Use safe navigation for logout redirect
+      setTimeout(async () => {
+        try {
+          await safeNavigateToWelcome();
+        } catch (navError) {
+          console.error('❌ [AUTH] Navigation error during logout:', navError);
+        }
+      }, 100);
+      
     } catch (error) {
       console.error('❌ [AUTH] Logout error:', error);
       
@@ -152,6 +200,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         justLoggedIn: false
       });
+      
+      // Still attempt navigation
+      setTimeout(async () => {
+        try {
+          await safeNavigateToWelcome();
+        } catch (navError) {
+          console.error('❌ [AUTH] Fallback navigation also failed:', navError);
+        }
+      }, 100);
     }
   },
 
@@ -419,19 +476,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       console.log('✅ [AUTH] Session cleanup completed successfully');
       
-      // Use navigation service for robust redirect
+      // Use safe navigation for robust redirect
       setTimeout(async () => {
         try {
-          const { navigationService } = await import('../utils/navigationService');
-          const success = await navigationService.forceRedirectToWelcome();
+          const success = await safeNavigateToWelcome();
           
           if (success) {
             console.log('✅ [AUTH] Navigation service redirect successful');
           } else {
-            console.log('❌ [AUTH] Navigation service redirect failed, trying manual redirect');
+            console.log('❌ [AUTH] Navigation service redirect failed, trying dismissAll fallback');
             
-            // Fallback to manual navigation
-            const { router } = await import('expo-router');
+            // Fallback to manual navigation with dismissAll
             router.dismissAll();
             router.replace('/');
           }
@@ -455,8 +510,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Still try to navigate even if cleanup failed
       setTimeout(async () => {
         try {
-          const { navigationService } = await import('../utils/navigationService');
-          await navigationService.forceRedirectToWelcome();
+          await safeNavigateToWelcome();
         } catch (navError) {
           console.error('💥 [AUTH] Final navigation attempt failed:', navError);
         }

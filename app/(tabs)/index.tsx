@@ -377,8 +377,19 @@ export default function Dashboard() {
     setShowTapOutConfirmation(false);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    try {
+      // The logout function now handles navigation internally
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Fallback navigation if something goes wrong
+      try {
+        router.replace("/");
+      } catch (navError) {
+        console.error("Navigation fallback also failed:", navError);
+      }
+    }
   };
 
   // Balance visibility toggle with loading and auto-hide

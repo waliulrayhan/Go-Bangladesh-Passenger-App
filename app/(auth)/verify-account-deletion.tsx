@@ -4,16 +4,16 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
-    BackHandler,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  BackHandler,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { Card } from "../../components/ui/Card";
@@ -336,14 +336,11 @@ export default function VerifyAccountDeletion() {
       // Perform logout to clear all user data
       await logout();
       
-      // Navigate to the index page (login screen)
-      router.dismissAll();
-      router.replace("/");
+      console.log('✅ [ACCOUNT_DELETION] User data cleared successfully');
     } catch (logoutError) {
       console.error("❌ Logout error during account deletion:", logoutError);
-      // Even if logout fails, still redirect to login
-      router.dismissAll();
-      router.replace("/");
+      // The logout function now handles navigation internally,
+      // so we don't need manual navigation here
     }
   };
 

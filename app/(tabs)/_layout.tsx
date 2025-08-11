@@ -12,14 +12,16 @@ export default function TabsLayout() {
 
   const handleLogout = async () => {
     try {
+      // The logout function now handles navigation internally
       await logout();
-      router.dismissAll();
-      router.replace("/");
     } catch (error) {
       console.error("Logout error:", error);
-      // Force navigation even if logout fails
-      router.dismissAll();
-      router.replace("/");
+      // Fallback navigation if something goes wrong
+      try {
+        router.replace("/");
+      } catch (navError) {
+        console.error("Navigation fallback also failed:", navError);
+      }
     }
   };
 

@@ -154,11 +154,10 @@ export default function WelcomeScreen() {
             <BubbleAnimation bubbleCount={20} />
           </View>
           <View style={styles.loadingContainer}>
-            <Animated.View
-              entering={FadeInUp.duration(500)}
-              style={[animatedPulseStyle]}
-            >
-              <GoBangladeshLogo size={100} />
+            <Animated.View entering={FadeInUp.duration(500)}>
+              <Animated.View style={[animatedPulseStyle]}>
+                <GoBangladeshLogo size={100} />
+              </Animated.View>
             </Animated.View>
           </View>
         </SafeAreaView>
@@ -197,9 +196,11 @@ export default function WelcomeScreen() {
               entering={FadeInUp.duration(800).delay(200)}
               style={styles.header}
             >
-              <Animated.View style={[styles.logoContainer, animatedLogoStyle]}>
-                <GoBangladeshLogo size={80} />
-              </Animated.View>
+              <View style={[styles.logoContainer]}>
+                <Animated.View style={[animatedLogoStyle]}>
+                  <GoBangladeshLogo size={80} />
+                </Animated.View>
+              </View>
               <Text variant="h2" color={COLORS.primary} style={styles.title}>
                 Go Bangladesh
               </Text>

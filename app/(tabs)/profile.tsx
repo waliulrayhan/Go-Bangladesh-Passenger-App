@@ -189,27 +189,30 @@ export default function Profile() {
    */
   const handleLogout = () => setShowLogoutConfirmation(true);
 
-  const redirectToLogin = () => {
-    router.dismissAll();
-    router.replace('/');
-  };
-
   const performLogout = async () => {
     try {
       showToast('Signing out...', 'info');
-      await logout();
       setShowLogoutConfirmation(false);
+      
+      // The logout function now handles navigation internally
+      await logout();
       
       setTimeout(() => {
         showToast('Logged out successfully', 'success');
-        redirectToLogin();
       }, LOGOUT_REDIRECT_DELAY);
     } catch (error) {
       console.error('❌ [PROFILE] Logout error:', error);
       setShowLogoutConfirmation(false);
       showToast('Logout failed. Please try again.', 'error');
       
-      setTimeout(redirectToLogin, LOGOUT_ERROR_REDIRECT_DELAY);
+      // Fallback navigation if logout fails
+      setTimeout(() => {
+        try {
+          router.replace('/');
+        } catch (navError) {
+          console.error('Navigation fallback also failed:', navError);
+        }
+      }, LOGOUT_ERROR_REDIRECT_DELAY);
     }
   };
 
