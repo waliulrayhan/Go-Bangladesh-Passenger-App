@@ -39,13 +39,6 @@ export default function AuthLayout() {
         }} 
       />
       <Stack.Screen 
-        name="organization-contacts" 
-        options={{ 
-          title: 'Organization Contacts',
-          headerShown: false 
-        }} 
-      />
-      <Stack.Screen 
         name="reset-password" 
         options={{ 
           headerShown: false,
@@ -53,6 +46,13 @@ export default function AuthLayout() {
           gestureEnabled: false, // Disable swipe gestures
           headerBackVisible: false, // Hide back button if header was shown
         }} 
+      />
+      <Stack.Screen 
+        name="verify-account-deletion" 
+        options={{ 
+          headerShown: false,
+          title: "Verify Account Deletion"
+        }}
       />
       <Stack.Screen 
         name="change-password" 

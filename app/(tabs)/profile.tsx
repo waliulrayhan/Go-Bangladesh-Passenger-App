@@ -72,7 +72,7 @@ const LOGOUT_ERROR_REDIRECT_DELAY = 1000;
  */
 export default function Profile() {
   // ==================== HOOKS ====================
-  const { user, logout, deactivateAccount } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { refreshAllData } = useTokenRefresh();
   const { toast, showToast, hideToast } = useToast();
 
@@ -210,32 +210,6 @@ export default function Profile() {
       showToast('Logout failed. Please try again.', 'error');
       
       setTimeout(redirectToLogin, LOGOUT_ERROR_REDIRECT_DELAY);
-    }
-  };
-
-  /**
-   * Handle account deletion
-   */
-  const handleDeleteAccount = async () => {
-    try {
-      showToast('Deleting account...', 'info');
-      const result = await deactivateAccount();
-      
-      if (result.success) {
-        setShowDeleteAccountModal(false);
-        showToast(result.message, 'success');
-        
-        // Redirect to home page after successful deletion
-        setTimeout(() => {
-          router.dismissAll();
-          router.replace('/');
-        }, 1500);
-      } else {
-        showToast(result.message || 'Failed to delete account', 'error');
-      }
-    } catch (error) {
-      console.error('❌ [PROFILE] Delete account error:', error);
-      showToast('Failed to delete account. Please try again.', 'error');
     }
   };
 
@@ -694,7 +668,6 @@ export default function Profile() {
           userName={user.name}
           userBalance={user.balance || 0}
           onClose={() => setShowDeleteAccountModal(false)}
-          onConfirmDelete={handleDeleteAccount}
         />
       )}
 

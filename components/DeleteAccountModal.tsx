@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -10,6 +11,9 @@ import {
     View,
 } from "react-native";
 import Animated, { FadeIn, SlideInUp } from "react-native-reanimated";
+import { useToast } from "../hooks/useToast";
+import { apiService } from "../services/api";
+import { useAuthStore } from "../stores/authStore";
 import { COLORS } from "../utils/constants";
 import { Text } from "./ui/Text";
 
@@ -18,7 +22,6 @@ interface DeleteAccountModalProps {
   userName: string;
   userBalance: number;
   onClose: () => void;
-  onConfirmDelete: () => Promise<void>;
 }
 
 export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
@@ -26,20 +29,60 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   userName,
   userBalance,
   onClose,
-  onConfirmDelete,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  
+  const { user } = useAuthStore();
+  const { showError, showSuccess } = useToast();
+
+  // Reset form when modal is closed
+  React.useEffect(() => {
+    if (!visible) {
+      setIsChecked(false);
+      setIsLoading(false);
+    }
+  }, [visible]);
 
   const handleConfirmDelete = async () => {
+    if (!user?.mobileNumber && !user?.mobile) {
+      showError("Mobile number not found. Please update your profile.");
+      return;
+    }
+
     setIsLoading(true);
+    
     try {
-      await onConfirmDelete();
-      setIsLoading(false);
+      const mobileNumber = user.mobileNumber || user.mobile;
+      console.log("🔄 Sending OTP for account deletion to:", mobileNumber);
+      
+      // Send OTP for account deletion verification
+      await apiService.sendOTP(mobileNumber);
+      
+      console.log("✅ OTP sent successfully for account deletion");
+      showSuccess("OTP sent to your mobile number for verification.");
+      
+      // Close the modal and navigate to OTP verification page
       onClose();
-    } catch (error) {
+      
+      // Navigate to OTP verification page with required parameters
+      router.push({
+        pathname: "/(auth)/verify-account-deletion",
+        params: {
+          phone: mobileNumber,
+          userName: userName,
+        },
+      });
+      
+    } catch (error: any) {
+      console.error("❌ Error sending OTP for account deletion:", error);
+      
+      const errorMessage = error.message || 
+        error.response?.data?.data?.message || 
+        "Failed to send OTP. Please try again.";
+      showError(errorMessage);
+    } finally {
       setIsLoading(false);
-      // Error handling is done in the parent component
     }
   };
 
