@@ -4,9 +4,10 @@ interface MapHTMLParams {
   buses: BusInfo[];
   defaultLat: number;
   defaultLng: number;
+  userName?: string;
 }
 
-export const generateMapHTML = ({ buses, defaultLat, defaultLng }: MapHTMLParams): string => {
+export const generateMapHTML = ({ buses, defaultLat, defaultLng, userName = 'You' }: MapHTMLParams): string => {
   // Use first bus location if available, otherwise use default
   const centerLat = buses.length > 0 ? parseFloat(buses[0].presentLatitude) : defaultLat;
   const centerLng = buses.length > 0 ? parseFloat(buses[0].presentLongitude) : defaultLng;
@@ -27,7 +28,7 @@ export const generateMapHTML = ({ buses, defaultLat, defaultLng }: MapHTMLParams
         <div id="map"></div>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <script>
-          ${getMapScript(buses, centerLat, centerLng)}
+          ${getMapScript(buses, centerLat, centerLng, userName)}
         </script>
       </body>
     </html>
@@ -133,46 +134,78 @@ const getMapStyles = (): string => `
     position: relative;
     z-index: 1000;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
   }
   
-  .user-location-dot {
-    width: 15px;
-    height: 15px;
-    background: #4285F4;
-    border: 3px solid #FFFFFF;
+  .user-location-marker-inner {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #4285F4 0%, #1A73E8 100%);
+    border: 3px solid white;
     border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.4);
-    z-index: 2;
+    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
+    animation: userLocationPulse 2s infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     position: relative;
   }
   
-  .user-location-pulse {
+  .user-location-marker-inner::before {
+    content: '👤';
+    font-size: 12px;
+    position: absolute;
+  }
+  
+  .user-location-label {
+    background: rgba(66, 133, 244, 0.95);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+    min-width: 60px;
+    text-align: center;
+  }
+  
+  .user-location-shadow {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     background: rgba(66, 133, 244, 0.2);
     border-radius: 50%;
-    animation: userLocationPulse 2.5s infinite;
-    z-index: 1;
+    animation: userLocationShadow 2s infinite;
+    z-index: -1;
   }
   
   @keyframes userLocationPulse {
-    0% {
-      transform: translate(-50%, -50%) scale(0.8);
-      opacity: 0.8;
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
     }
     50% {
-      transform: translate(-50%, -50%) scale(1.2);
-      opacity: 0.3;
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(66, 133, 244, 0.6);
     }
-    100% {
-      transform: translate(-50%, -50%) scale(1.8);
-      opacity: 0;
+  }
+  
+  @keyframes userLocationShadow {
+    0%, 100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0.2;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.3);
+      opacity: 0.1;
     }
   }
   
@@ -319,7 +352,7 @@ const getMapStyles = (): string => `
   }
 `;
 
-const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number): string => `
+const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, userName: string = 'You'): string => `
   let map;
   let busMarkers = [];
   let userLocationMarker = null;
@@ -387,21 +420,22 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number): s
   }
   
   // Create user location icon
-  function createUserLocationIcon() {
+  function createUserLocationIcon(username = 'You') {
     return L.divIcon({
       html: '<div class="user-location-marker">' +
-              '<div class="user-location-pulse"></div>' +
-              '<div class="user-location-dot"></div>' +
+              '<div class="user-location-shadow"></div>' +
+              '<div class="user-location-marker-inner"></div>' +
+              '<div class="user-location-label">' + username + '</div>' +
             '</div>',
       className: 'custom-user-location-marker',
-      iconSize: [40, 40],
-      iconAnchor: [20, 20],
-      popupAnchor: [0, -20]
+      iconSize: [Math.max(120, username.length * 8), 60],
+      iconAnchor: [Math.max(60, username.length * 4), 30],
+      popupAnchor: [0, -30]
     });
   }
   
   // Add user location to map
-  function addUserLocation(latitude, longitude) {
+  function addUserLocation(latitude, longitude, username = '${userName}', focusOnly = false) {
     // Remove existing user location marker
     if (userLocationMarker) {
       map.removeLayer(userLocationMarker);
@@ -409,13 +443,13 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number): s
     
     // Add new user location marker
     userLocationMarker = L.marker([latitude, longitude], { 
-      icon: createUserLocationIcon() 
+      icon: createUserLocationIcon(username) 
     })
       .bindPopup(
         '<div class="bus-popup">' +
           '<div class="bus-popup-header">' +
-            '<span class="bus-popup-icon">📍</span>' +
-            '<h3>Your Location</h3>' +
+            '<span class="bus-popup-icon">�</span>' +
+            '<h3>' + username + '</h3>' +
           '</div>' +
           '<div class="bus-popup-info">' +
             '<span class="bus-popup-label">Coordinates</span>' +
@@ -435,11 +469,38 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number): s
       )
       .addTo(map);
     
-    // Center map on user location
-    map.setView([latitude, longitude], Math.max(map.getZoom(), 16), {
-      animate: true,
-      duration: 1.0
-    });
+    if (focusOnly) {
+      // Focus only on user location
+      map.setView([latitude, longitude], Math.max(map.getZoom(), 16), {
+        animate: true,
+        duration: 1.0
+      });
+    } else {
+      // Include everything in view (user location + buses)
+      fitAllMarkersInView();
+    }
+  }
+  
+  // Fit all markers (buses + user location) in view
+  function fitAllMarkersInView() {
+    const allMarkers = [...busMarkers];
+    if (userLocationMarker) {
+      allMarkers.push(userLocationMarker);
+    }
+    
+    if (allMarkers.length > 1) {
+      const group = new L.featureGroup(allMarkers);
+      map.fitBounds(group.getBounds().pad(0.2), {
+        maxZoom: 16,
+        animate: true,
+        duration: 1.0
+      });
+    } else if (allMarkers.length === 1) {
+      map.setView(allMarkers[0].getLatLng(), 16, {
+        animate: true,
+        duration: 1.0
+      });
+    }
   }
   
   // Update bus markers function
@@ -502,21 +563,14 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number): s
     // Only auto-fit map bounds on initial load AND if user hasn't interacted with map
     setTimeout(() => {
       if (!isRefresh && !userInteracted) {
-        if (busMarkers.length > 1) {
-          const group = new L.featureGroup(busMarkers);
-          map.fitBounds(group.getBounds().pad(0.2), {
-            maxZoom: 16,
-            animate: true,
-            duration: 1.0
-          });
-        } else if (busMarkers.length === 1) {
-          map.setView(busMarkers[0].getLatLng(), 16, {
-            animate: true,
-            duration: 1.0
-          });
-        }
+        fitAllMarkersInView();
       }
     }, busData.length * 100 + 300);
+  }
+  
+  // Handle messages from React Native
+  function fitAllMarkersFromReactNative() {
+    fitAllMarkersInView();
   }
   
   // Handle messages from React Native

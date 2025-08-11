@@ -17,6 +17,7 @@ import { Toast } from '../../../components/ui/Toast';
 import { useLocation } from '../../../hooks/useLocation';
 import { useToast } from '../../../hooks/useToast';
 import { ApiResponse, apiService } from '../../../services/api';
+import { useAuthStore } from '../../../stores/authStore';
 import { BusInfo } from '../../../types';
 import { COLORS } from '../../../utils/constants';
 import { FONT_SIZES, FONT_WEIGHTS } from '../../../utils/fonts';
@@ -45,6 +46,7 @@ export default function MapViewScreen() {
   const webViewRef = useRef<WebView>(null);
   
   // Hooks
+  const { user } = useAuthStore();
   const { toast, showError, showSuccess, showInfo, hideToast } = useToast();
   const {
     userLocation,
@@ -53,10 +55,11 @@ export default function MapViewScreen() {
     checkLocationPermission,
   } = useLocation({
     onLocationSuccess: (location) => {
+      const userName = user?.name || 'You';
       showSuccess('Your location has been added to the map');
       setMapState(prev => ({ ...prev, userInteractedWithMap: false })); // Reset to allow centering
       if (mapState.mapLoaded && webViewRef.current) {
-        addUserLocationToMap(location.latitude, location.longitude);
+        addUserLocationToMap(location.latitude, location.longitude, userName, false);
       }
     },
     onLocationError: (error) => showError(error),
@@ -170,16 +173,28 @@ export default function MapViewScreen() {
     webViewRef.current.postMessage(updateScript);
   };
 
-  const addUserLocationToMap = (latitude: number, longitude: number) => {
+  const addUserLocationToMap = (latitude: number, longitude: number, username: string = user?.name || 'You', focusOnly: boolean = false) => {
     if (!webViewRef.current) return;
 
     const locationScript = `
       if (typeof addUserLocation === 'function') {
-        addUserLocation(${latitude}, ${longitude});
+        addUserLocation(${latitude}, ${longitude}, "${username}", ${focusOnly});
       }
       true;
     `;
     webViewRef.current.postMessage(locationScript);
+  };
+
+  const fitAllMarkersInView = () => {
+    if (!webViewRef.current) return;
+
+    const fitScript = `
+      if (typeof fitAllMarkersFromReactNative === 'function') {
+        fitAllMarkersFromReactNative();
+      }
+      true;
+    `;
+    webViewRef.current.postMessage(fitScript);
   };
 
   // Event Handlers
@@ -201,12 +216,21 @@ export default function MapViewScreen() {
     
     // Add user location if available
     if (userLocation && webViewRef.current) {
-      addUserLocationToMap(userLocation.latitude, userLocation.longitude);
+      const userName = user?.name || 'You';
+      addUserLocationToMap(userLocation.latitude, userLocation.longitude, userName, false);
     }
   };
 
   const handleMyLocationPress = () => {
-    getUserLocation();
+    const userName = user?.name || 'You';
+    if (userLocation) {
+      // Focus only on user location if we already have it
+      addUserLocationToMap(userLocation.latitude, userLocation.longitude, userName, true);
+      showInfo('Focused on your location');
+    } else {
+      // Get new location
+      getUserLocation();
+    }
   };
 
   const handleRefresh = () => {
@@ -280,6 +304,7 @@ export default function MapViewScreen() {
           buses: mapState.buses,
           defaultLat: DEFAULT_COORDINATES.lat,
           defaultLng: DEFAULT_COORDINATES.lng,
+          userName: user?.name || 'You',
         })
       }}
       style={styles.webView}
@@ -304,17 +329,26 @@ export default function MapViewScreen() {
 
   const renderMyLocationButton = () => (
     mapState.buses.length > 0 && (
-      <TouchableOpacity 
-        style={styles.myLocationButton} 
-        onPress={handleMyLocationPress}
-        disabled={gettingLocation}
-      >
-        {gettingLocation ? (
-          <ActivityIndicator size="small" color="#1A73E8" />
-        ) : (
-          <Ionicons name="locate" size={20} color="#1A73E8" />
-        )}
-      </TouchableOpacity>
+      <View style={styles.floatingButtons}>
+        <TouchableOpacity 
+          style={styles.myLocationButton} 
+          onPress={handleMyLocationPress}
+          disabled={gettingLocation}
+        >
+          {gettingLocation ? (
+            <ActivityIndicator size="small" color="#1A73E8" />
+          ) : (
+            <Ionicons name="locate" size={20} color="#1A73E8" />
+          )}
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.centerAllButton} 
+          onPress={fitAllMarkersInView}
+        >
+          <Ionicons name="apps" size={20} color="#1A73E8" />
+        </TouchableOpacity>
+      </View>
     )
   );
 
@@ -446,10 +480,28 @@ const styles = StyleSheet.create({
     fontFamily: FONT_WEIGHTS.semiBold,
     color: COLORS.gray[700],
   },
-  myLocationButton: {
+  floatingButtons: {
     position: 'absolute',
     bottom: 20,
     right: 16,
+    gap: 12,
+  },
+  myLocationButton: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  centerAllButton: {
     width: 48,
     height: 48,
     backgroundColor: '#FFFFFF',
