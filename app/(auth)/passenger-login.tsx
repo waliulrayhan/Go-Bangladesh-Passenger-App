@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
+  Linking,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -64,6 +65,13 @@ export default function PassengerLogin() {
   const navigateBack = () => router.back();
   const navigateToRegistration = () =>
     router.push("/(auth)/passenger-registration");
+
+  const handleEmailPress = () => {
+    const email = 'info@thegobd.com';
+    Linking.openURL(`mailto:${email}`).catch(() => {
+      showError('Unable to open email client');
+    });
+  };
 
   const getIndicatorColor = () => {
     if (inputType === "email") {
@@ -248,7 +256,10 @@ export default function PassengerLogin() {
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.organizationButton}>
+      <TouchableOpacity 
+        style={styles.organizationButton}
+        onPress={handleEmailPress}
+      >
         <Text style={styles.organizationText}>Need help?</Text>
         <Text style={styles.organizationEmail}>info@thegobd.com</Text>
       </TouchableOpacity>
