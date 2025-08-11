@@ -775,7 +775,7 @@ export default function History() {
                   color={COLORS.gray[500]}
                   style={styles.cardSubtitle}
                 >
-                  {UI_TEXTS.FALLBACKS.ORGANIZATION_INFO}
+                  {organization.name || UI_TEXTS.FALLBACKS.ORGANIZATION_INFO}
                 </Text>
               )}
             </View>
