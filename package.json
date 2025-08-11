@@ -38,7 +38,7 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
-    "react-native-webview": "^13.15.0",
+    "react-native-webview": "13.13.5",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
@@ -50,7 +50,8 @@
     "doctor": {
       "reactNativeDirectoryCheck": {
         "exclude": [
-          "buffer"
+          "buffer",
+          "react-native-leaflet-view"
         ]
       }
     }
