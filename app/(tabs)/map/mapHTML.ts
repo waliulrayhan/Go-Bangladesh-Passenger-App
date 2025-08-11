@@ -13,9 +13,6 @@ export const generateMapHTML = ({ buses, defaultLat, defaultLng, userName = 'You
   const centerLat = buses.length > 0 ? parseFloat(buses[0].presentLatitude) : defaultLat;
   const centerLng = buses.length > 0 ? parseFloat(buses[0].presentLongitude) : defaultLng;
 
-  // Escape the profile photo URL for safe JavaScript embedding
-  const escapedProfilePhoto = userProfilePhoto ? userProfilePhoto.replace(/"/g, '\\"').replace(/'/g, "\\'") : null;
-
   return `
     <!DOCTYPE html>
     <html>
@@ -32,7 +29,7 @@ export const generateMapHTML = ({ buses, defaultLat, defaultLng, userName = 'You
         <div id="map"></div>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <script>
-          ${getMapScript(buses, centerLat, centerLng, userName, escapedProfilePhoto || undefined)}
+          ${getMapScript(buses, centerLat, centerLng, userName, userProfilePhoto)}
         </script>
       </body>
     </html>
@@ -387,6 +384,7 @@ const getMapStyles = (): string => `
 `;
 
 const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, userName: string = 'You', userProfilePhoto?: string): string => {
+  // Escape the profile photo URL for safe JavaScript embedding
   const escapedProfilePhoto = userProfilePhoto ? userProfilePhoto.replace(/"/g, '\\"').replace(/'/g, "\\'") : null;
   
   return `
@@ -458,15 +456,10 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
   
   // Create user location icon
   function createUserLocationIcon(username = 'You', profilePhotoUrl = null) {
-    const logMessage = '🖼️ [MAP] Creating user location icon: ' + JSON.stringify({ username, profilePhotoUrl });
-    if (window.ReactNativeWebView) {
-      window.ReactNativeWebView.postMessage(logMessage);
-    }
-    
     const hasPhoto = profilePhotoUrl && profilePhotoUrl.trim() !== '' && profilePhotoUrl !== 'null';
     const markerClass = hasPhoto ? 'user-location-marker-inner has-photo' : 'user-location-marker-inner';
     const innerContent = hasPhoto 
-      ? '<img src="' + profilePhotoUrl + '" class="user-profile-photo" alt="Profile" onerror="if(window.ReactNativeWebView) window.ReactNativeWebView.postMessage(\\'🖼️ Profile image failed to load: \\' + this.src); this.style.display=\\'none\\'; this.parentElement.classList.remove(\\'has-photo\\'); this.parentElement.classList.add(\\'photo-error\\');" onload="if(window.ReactNativeWebView) window.ReactNativeWebView.postMessage(\\'🖼️ Profile image loaded successfully: \\' + this.src);" />'
+      ? '<img src="' + profilePhotoUrl + '" class="user-profile-photo" alt="Profile" onerror="this.style.display=\\'none\\'; this.parentElement.classList.remove(\\'has-photo\\'); this.parentElement.classList.add(\\'photo-error\\');" />'
       : '';
     
     return L.divIcon({
@@ -496,7 +489,7 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
       .bindPopup(
         '<div class="bus-popup">' +
           '<div class="bus-popup-header">' +
-            '<span class="bus-popup-icon">�</span>' +
+            '<span class="bus-popup-icon">📍</span>' +
             '<h3>' + username + '</h3>' +
           '</div>' +
           '<div class="bus-popup-info">' +
