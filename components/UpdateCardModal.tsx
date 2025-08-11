@@ -477,30 +477,31 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
         
         <View style={styles.otpContainer}>
           {otp.map((digit, index) => (
-            <TextInput
-              key={index}
-              ref={(ref) => {
-                otpInputRefs.current[index] = ref;
-              }}
-              style={[
-                styles.otpInput,
-                digit && styles.otpInputFilled,
-                isLoading && styles.otpInputDisabled,
-              ]}
-              value={digit}
-              onChangeText={(value) => handleOtpChange(value, index)}
-              onKeyPress={(e) => handleOtpKeyPress(e, index)}
-              keyboardType="number-pad"
-              maxLength={index === 0 ? OTP_LENGTH : 1} // Allow paste on first input
-              textAlign="center"
-              selectTextOnFocus
-              editable={!isLoading}
-              textContentType={index === 0 ? "oneTimeCode" : "none"}
-              autoComplete={index === 0 ? "sms-otp" : "off"}
-              autoFocus={index === 0 && step === 'otp-verification'}
-              returnKeyType="done"
-              blurOnSubmit={false}
-            />
+            <View key={index} style={styles.otpInputWrapper}>
+              <TextInput
+                ref={(ref) => {
+                  otpInputRefs.current[index] = ref;
+                }}
+                style={[
+                  styles.otpInput,
+                  digit && styles.otpInputFilled,
+                  isLoading && styles.otpInputDisabled,
+                ]}
+                value={digit}
+                onChangeText={(value) => handleOtpChange(value, index)}
+                onKeyPress={(e) => handleOtpKeyPress(e, index)}
+                keyboardType="number-pad"
+                maxLength={index === 0 ? OTP_LENGTH : 1} // Allow paste on first input
+                textAlign="center"
+                selectTextOnFocus
+                editable={!isLoading}
+                textContentType={index === 0 ? "oneTimeCode" : "none"}
+                autoComplete={index === 0 ? "sms-otp" : "off"}
+                autoFocus={index === 0 && step === 'otp-verification'}
+                returnKeyType="done"
+                blurOnSubmit={false}
+              />
+            </View>
           ))}
         </View>
 
@@ -718,28 +719,24 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
     paddingHorizontal: SPACING.sm,
   },
+  otpInputWrapper: {
+    // Wrapper for individual input animations
+  },
   otpInput: {
-    width: 45,
-    height: 55,
+    width: 40,
+    height: 48,
     borderWidth: 2,
     borderColor: COLORS.gray[300],
-    borderRadius: 12,
-    backgroundColor: COLORS.white,
-    fontSize: 20,
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.gray[900],
-    shadowColor: COLORS.gray[400],
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: COLORS.white,
   },
   otpInputFilled: {
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + '05',
+    backgroundColor: COLORS.primary + '08',
   },
   otpInputDisabled: {
     opacity: 0.5,
