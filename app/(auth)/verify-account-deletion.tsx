@@ -5,12 +5,14 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
     BackHandler,
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
     StyleSheet,
     TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     View,
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
@@ -100,6 +102,7 @@ export default function VerifyAccountDeletion() {
   const [isAutoVerifying, setIsAutoVerifying] = useState(false);
   const [showVerifyingText, setShowVerifyingText] = useState(false);
   const [isOtpReady, setIsOtpReady] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Custom hooks
   const { countdown, canResend, resetTimer } = useCountdownTimer();
@@ -118,7 +121,14 @@ export default function VerifyAccountDeletion() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const navigateBack = () => router.back();
+  const navigateBack = () => {
+    // Dismiss keyboard before navigation to prevent UI issues
+    Keyboard.dismiss();
+    // Small delay to ensure keyboard is fully dismissed
+    setTimeout(() => {
+      router.back();
+    }, 100);
+  };
 
   // Effects
   useEffect(() => {
@@ -146,6 +156,28 @@ export default function VerifyAccountDeletion() {
 
     const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
     return () => backHandler.remove();
+  }, []);
+
+  // Keyboard event listeners to handle Android keyboard behavior
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    const keyboardWillHideListener = Keyboard.addListener('keyboardWillHide', () => {
+      // Pre-emptively set keyboard height to 0 for smoother transition
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+      keyboardWillHideListener?.remove();
+    };
   }, []);
 
   const handlePastedOTP = (pastedOtp: string): boolean => {
@@ -333,10 +365,15 @@ export default function VerifyAccountDeletion() {
   };
 
   const resetOTPForm = () => {
+    // Dismiss keyboard first to prevent UI issues
+    Keyboard.dismiss();
     setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
     setIsAutoVerifying(false);
     setShowVerifyingText(false);
-    inputRefs.current[0]?.focus();
+    // Focus after keyboard is dismissed
+    setTimeout(() => {
+      inputRefs.current[0]?.focus();
+    }, 150);
   };
 
   const handleResendOTP = async () => {
@@ -363,6 +400,8 @@ export default function VerifyAccountDeletion() {
       setIsResending(false);
       console.error("❌ Resend OTP error:", error);
 
+      // Dismiss keyboard on error to prevent UI issues
+      Keyboard.dismiss();
       setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
       setIsAutoVerifying(false);
       setShowVerifyingText(false);
@@ -424,12 +463,26 @@ export default function VerifyAccountDeletion() {
                   value={otp[index]}
                   onChangeText={(value) => handleOtpChange(value, index)}
                   onKeyPress={(e) => handleKeyPress(e, index)}
+                  onBlur={() => {
+                    // Handle blur event to prevent UI issues on Android
+                    if (Platform.OS === "android") {
+                      // Small delay to ensure proper cleanup
+                      setTimeout(() => {
+                        setKeyboardHeight(0);
+                      }, 100);
+                    }
+                  }}
                   keyboardType="numeric"
                   maxLength={index === 0 ? OTP_CONSTRAINTS.LENGTH : 1}
                   textContentType="oneTimeCode"
                   autoComplete="sms-otp"
                   editable={!isLoading && !isAutoVerifying}
                   selectTextOnFocus
+                  returnKeyType="done"
+                  onSubmitEditing={() => {
+                    // Handle submit to dismiss keyboard properly
+                    Keyboard.dismiss();
+                  }}
                 />
               </View>
             ))}
@@ -483,16 +536,21 @@ export default function VerifyAccountDeletion() {
           <Ionicons name="arrow-back" size={24} color={COLORS.gray[700]} />
         </TouchableOpacity>
 
-        <KeyboardAvoidingView
-          style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={0}
-        >
-          <View style={styles.content}>
-            {renderHeader()}
-            {renderOTPForm()}
-          </View>
-        </KeyboardAvoidingView>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView
+            style={styles.keyboardAvoidingView}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+            enabled={Platform.OS === "ios"}
+          >
+            <View style={[styles.content, Platform.OS === "android" && keyboardHeight > 0 && {
+              paddingBottom: keyboardHeight * 0.1, // Minimal adjustment for Android
+            }]}>
+              {renderHeader()}
+              {renderOTPForm()}
+            </View>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
 
         <Toast
           visible={toast.visible}
@@ -519,6 +577,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     justifyContent: "center",
     zIndex: 1,
+    // Prevent layout shifts on Android
+    minHeight: Platform.OS === "android" ? "100%" : undefined,
   },
   header: {
     alignItems: "center",
