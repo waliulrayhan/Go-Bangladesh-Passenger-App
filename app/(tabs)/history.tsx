@@ -1,15 +1,13 @@
 // React Native and Expo imports
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Clipboard,
   FlatList,
   Linking,
-  Modal,
   RefreshControl,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -18,6 +16,7 @@ import {
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 // Custom components and utilities
+import FilterModal, { FilterOptions } from "../../components/FilterModal";
 import { Card } from "../../components/ui/Card";
 import { Text } from "../../components/ui/Text";
 import { Toast } from "../../components/ui/Toast";
@@ -159,7 +158,7 @@ const formatTimeString = (dateString: string): string => {
   return `${hours12}:${minutes} ${ampm}`;
 };
 
-const openMapLocation = (latitude: number, longitude: number, label: string): void => {
+const openMapLocation = (latitude: number, longitude: number): void => {
   const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
   Linking.openURL(url);
 };
@@ -209,36 +208,25 @@ const getTapTypeIcon = (tapType: string): any => {
 
 // Type definitions
 type HistoryTab = "trips" | "recharge";
-type DateFilter = "all" | "today" | "week" | "month" | "custom";
-type SortOrder = "newest" | "oldest" | "amount_high" | "amount_low";
-
-interface FilterOptions {
-  dateFilter: DateFilter;
-  sortOrder: SortOrder;
-  customStartDate?: Date;
-  customEndDate?: Date;
-  minAmount?: number;
-  maxAmount?: number;
-}
 
 /**
  * History Component - Displays trip and wallet transaction history
  * with filtering, searching, and pagination capabilities
  */
 export default function History() {
-  // Store data and functions
-  const {
-    tripTransactions,
-    rechargeTransactions,
-    loadTripHistory,
-    loadRechargeHistory,
-    loadMoreTripHistory,
-    loadMoreRechargeHistory,
-    isLoading,
-    error,
-    tripPagination,
-    rechargePagination,
-  } = useCardStore();
+  // Selective store subscriptions to prevent unnecessary re-renders
+  const tripTransactions = useCardStore((state) => state.tripTransactions);
+  const rechargeTransactions = useCardStore((state) => state.rechargeTransactions);
+  const tripPagination = useCardStore((state) => state.tripPagination);
+  const rechargePagination = useCardStore((state) => state.rechargePagination);
+  const isLoading = useCardStore((state) => state.isLoading);
+  const error = useCardStore((state) => state.error);
+  
+  // Store actions (these are stable and won't cause re-renders)
+  const loadTripHistory = useCardStore((state) => state.loadTripHistory);
+  const loadRechargeHistory = useCardStore((state) => state.loadRechargeHistory);
+  const loadMoreTripHistory = useCardStore((state) => state.loadMoreTripHistory);
+  const loadMoreRechargeHistory = useCardStore((state) => state.loadMoreRechargeHistory);
 
   // Custom hooks
   const { refreshAllData } = useTokenRefresh();
@@ -250,6 +238,7 @@ export default function History() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
+  const [isFilteringInProgress, setIsFilteringInProgress] = useState(false);
   
   // Filter state
   const [filters, setFilters] = useState<FilterOptions>({
@@ -257,24 +246,9 @@ export default function History() {
     sortOrder: "newest",
   });
   
-  // Derived state
-  const [filteredData, setFilteredData] = useState<
-    (TripTransaction | RechargeTransaction)[]
-  >([]);
-
-  // Effects
-  
-  // Load initial data when component mounts
-  useEffect(() => {
-    if (!hasInitialLoad) {
-      loadTripHistory(1, true);
-      loadRechargeHistory(1, true);
-      setHasInitialLoad(true);
-    }
-  }, [hasInitialLoad]);
-
   // Filter and sort data whenever dependencies change
-  useEffect(() => {
+  // Using useMemo to prevent unnecessary recalculations
+  const filteredData = useMemo(() => {
     let data: (TripTransaction | RechargeTransaction)[] =
       activeTab === "trips" ? tripTransactions : rechargeTransactions;
 
@@ -390,14 +364,30 @@ export default function History() {
       }
     });
 
-    setFilteredData(data);
     console.log("📊 [HISTORY COMPONENT] Filtered data:", data.length);
+    return data;
   }, [tripTransactions, rechargeTransactions, activeTab, filters, searchQuery]);
+
+  // Effects
+  
+  // Load initial data when component mounts
+  useEffect(() => {
+    if (!hasInitialLoad) {
+      loadTripHistory(1, true);
+      loadRechargeHistory(1, true);
+      setHasInitialLoad(true);
+    }
+  }, [hasInitialLoad]);
 
   // Event handlers
 
   // Pull-to-refresh handler with error feedback
   const onRefresh = useCallback(async () => {
+    // Prevent refresh if modal is open or filtering is in progress
+    if (showFilterModal || isFilteringInProgress) {
+      return;
+    }
+    
     setRefreshing(true);
     try {
       await refreshAllData(true);
@@ -407,13 +397,11 @@ export default function History() {
     } finally {
       setRefreshing(false);
     }
-  }, [refreshAllData, showToast]);
+  }, [refreshAllData, showToast, showFilterModal, isFilteringInProgress]);
 
   // Handle tab switching
   const handleTabChange = (tab: HistoryTab) => {
     setActiveTab(tab);
-    // Optional: Only reload data if we don't have enough data for the specific tab
-    // This prevents unnecessary API calls when just switching tabs
   };
 
   // Load more data with error handling
@@ -442,38 +430,6 @@ export default function History() {
     showToast,
   ]);
 
-  // Helper functions
-
-  // Get user-friendly date filter label
-  const getDateFilterLabel = (filter: DateFilter): string => {
-    switch (filter) {
-      case "today":
-        return UI_TEXTS.FILTER_LABELS.DATE_RANGES.TODAY;
-      case "week":
-        return UI_TEXTS.FILTER_LABELS.DATE_RANGES.WEEK;
-      case "month":
-        return UI_TEXTS.FILTER_LABELS.DATE_RANGES.MONTH;
-      case "custom":
-        return UI_TEXTS.FILTER_LABELS.DATE_RANGES.CUSTOM;
-      default:
-        return UI_TEXTS.FILTER_LABELS.DATE_RANGES.ALL;
-    }
-  };
-
-  // Get user-friendly sort order label
-  const getSortOrderLabel = (sort: SortOrder): string => {
-    switch (sort) {
-      case "oldest":
-        return UI_TEXTS.FILTER_LABELS.SORT_OPTIONS.OLDEST;
-      case "amount_high":
-        return UI_TEXTS.FILTER_LABELS.SORT_OPTIONS.AMOUNT_HIGH;
-      case "amount_low":
-        return UI_TEXTS.FILTER_LABELS.SORT_OPTIONS.AMOUNT_LOW;
-      default:
-        return UI_TEXTS.FILTER_LABELS.SORT_OPTIONS.NEWEST;
-    }
-  };
-
   // Copy transaction ID to clipboard with toast feedback
   const copyTransactionId = async (transactionId: string): Promise<void> => {
     try {
@@ -486,22 +442,39 @@ export default function History() {
 
   // Filter management functions
   
-  // Reset filters to default values
-  const resetFilters = (): void => {
-    setFilters({
-      dateFilter: "all",
-      sortOrder: "newest",
-    });
-  };
+  // Safe filter modal handler - prevents opening during refresh or ongoing operations
+  const handleFilterModalOpen = useCallback((): void => {
+    // Prevent modal from opening if refresh is in progress or filtering is ongoing
+    if (refreshing || isFilteringInProgress || isLoading) {
+      return;
+    }
+    setShowFilterModal(true);
+  }, [refreshing, isFilteringInProgress, isLoading]);
 
-  // Apply new filters and close modal
-  const applyFilters = (newFilters: FilterOptions): void => {
-    setFilters(newFilters);
-    setShowFilterModal(false);
-  };
-
-  // Render functions
+  // Safe filter modal close handler
+  const handleFilterModalClose = useCallback((): void => {
+    if (!isFilteringInProgress) {
+      setShowFilterModal(false);
+    }
+  }, [isFilteringInProgress]);
   
+  // Apply new filters with debouncing and state protection
+  const applyFilters = useCallback(async (newFilters: FilterOptions): Promise<void> => {
+    if (isFilteringInProgress) return; // Prevent multiple simultaneous applications
+    
+    setIsFilteringInProgress(true);
+    
+    try {
+      // Small delay to prevent rapid successive calls
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      setFilters(newFilters);
+      setShowFilterModal(false);
+    } finally {
+      setIsFilteringInProgress(false);
+    }
+  }, [isFilteringInProgress]);
+
   // Render individual trip transaction item
   const renderTripItem = ({ item }: { item: TripTransaction }) => {
     const trip = item.trip;
@@ -535,15 +508,6 @@ export default function History() {
               >
                 {busNumber}
               </Text>
-              {/* {busName && busName !== "" && (
-                <Text
-                  variant="caption"
-                  color={COLORS.gray[600]}
-                  style={styles.cardSubtitle}
-                >
-                  {busName}
-                </Text>
-              )} */}
               {organization && (
                 <Text
                   variant="caption"
@@ -568,144 +532,128 @@ export default function History() {
         </View>
 
         <View style={styles.tripDetails}>
-            <View style={styles.singleRowContainer}>
+          <View style={styles.singleRowContainer}>
             <View style={styles.singleRowItem}>
-              <Text
-              variant="caption"
-              color={COLORS.gray[600]}
-              style={styles.timeLabel}
-              >
-              {UI_TEXTS.LABELS.TAP_IN}
-              </Text>
-              <TouchableOpacity
-              style={styles.tapInButton}
-              onPress={() => {
-                if (trip.startingLatitude && trip.startingLongitude) {
-                openMapLocation(
-                  parseFloat(trip.startingLatitude),
-                  parseFloat(trip.startingLongitude),
-                  "Tap In Location"
-                );
-                }
-              }}
-              disabled={!trip.startingLatitude || !trip.startingLongitude}
-              >
-              <Ionicons name="time-outline" size={14} color={COLORS.success} />
-              <Text
-                variant="bodySmall"
-                color={COLORS.white}
-                style={styles.timeText}
-              >
-                {tripStartTime ? formatTimeString(tripStartTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
-              </Text>
-              {trip.startingLatitude && trip.startingLongitude && (
-                <Ionicons name="location-outline" size={14} color={COLORS.success} />
-              )}
-              </TouchableOpacity>
-            </View>
-
-            {tripEndTime && (
-              <View style={styles.singleRowItem}>
               <Text
                 variant="caption"
                 color={COLORS.gray[600]}
                 style={styles.timeLabel}
               >
-                {UI_TEXTS.LABELS.TAP_OUT}
+                {UI_TEXTS.LABELS.TAP_IN}
               </Text>
               <TouchableOpacity
-                style={styles.tapOutButton}
+                style={styles.tapInButton}
                 onPress={() => {
-                if (trip.endingLatitude && trip.endingLongitude) {
-                  openMapLocation(
-                  parseFloat(trip.endingLatitude),
-                  parseFloat(trip.endingLongitude),
-                  "Tap Out Location"
-                  );
-                }
+                  if (trip.startingLatitude && trip.startingLongitude) {
+                    openMapLocation(+trip.startingLatitude, +trip.startingLongitude);
+                  }
                 }}
-                disabled={!trip.endingLatitude || !trip.endingLongitude}
+                disabled={!trip.startingLatitude || !trip.startingLongitude}
               >
-                <Ionicons name="time-outline" size={14} color={COLORS.error} />
+                <Ionicons name="time-outline" size={14} color={COLORS.success} />
                 <Text
-                variant="bodySmall"
-                color={COLORS.white}
-                style={styles.timeText}
+                  variant="bodySmall"
+                  color={COLORS.white}
+                  style={styles.timeText}
                 >
-                {tripEndTime ? formatTimeString(tripEndTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
+                  {tripStartTime ? formatTimeString(tripStartTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
-                {trip.endingLatitude && trip.endingLongitude && (
-                <Ionicons name="location-outline" size={14} color={COLORS.error} />
+                {trip.startingLatitude && trip.startingLongitude && (
+                  <Ionicons name="location-outline" size={14} color={COLORS.success} />
                 )}
               </TouchableOpacity>
+            </View>
+
+            {tripEndTime && (
+              <View style={styles.singleRowItem}>
+                <Text
+                  variant="caption"
+                  color={COLORS.gray[600]}
+                  style={styles.timeLabel}
+                >
+                  {UI_TEXTS.LABELS.TAP_OUT}
+                </Text>
+                <TouchableOpacity
+                  style={styles.tapOutButton}
+                  onPress={() => {
+                    if (trip.endingLatitude && trip.endingLongitude) {
+                      openMapLocation(+trip.endingLatitude, +trip.endingLongitude);
+                    }
+                  }}
+                  disabled={!trip.endingLatitude || !trip.endingLongitude}
+                >
+                  <Ionicons name="time-outline" size={14} color={COLORS.error} />
+                  <Text
+                    variant="bodySmall"
+                    color={COLORS.white}
+                    style={styles.timeText}
+                  >
+                    {formatTimeString(tripEndTime)}
+                  </Text>
+                  {trip.endingLatitude && trip.endingLongitude && (
+                    <Ionicons name="location-outline" size={14} color={COLORS.error} />
+                  )}
+                </TouchableOpacity>
               </View>
             )}
 
             <View style={styles.singleRowItem}>
               <Text
-              variant="caption"
-              color={COLORS.gray[600]}
-              style={styles.timeLabel}
+                variant="caption"
+                color={COLORS.gray[600]}
+                style={styles.timeLabel}
               >
-              {UI_TEXTS.LABELS.DISTANCE}
+                {UI_TEXTS.LABELS.DISTANCE}
               </Text>
               <TouchableOpacity
-              style={styles.distanceButton}
-              onPress={() => {
-                if (
-                distance > 0 &&
-                trip.startingLatitude &&
-                trip.startingLongitude &&
-                trip.endingLatitude &&
-                trip.endingLongitude
-                ) {
-                openRouteMap(
-                  parseFloat(trip.startingLatitude),
-                  parseFloat(trip.startingLongitude),
-                  parseFloat(trip.endingLatitude),
-                  parseFloat(trip.endingLongitude)
-                );
+                style={styles.distanceButton}
+                onPress={() => {
+                  if (
+                    distance > 0 &&
+                    trip.startingLatitude &&
+                    trip.startingLongitude &&
+                    trip.endingLatitude &&
+                    trip.endingLongitude
+                  ) {
+                    openRouteMap(
+                      +trip.startingLatitude,
+                      +trip.startingLongitude,
+                      +trip.endingLatitude,
+                      +trip.endingLongitude
+                    );
+                  }
+                }}
+                disabled={
+                  distance === 0 ||
+                  !trip.startingLatitude ||
+                  !trip.startingLongitude ||
+                  !trip.endingLatitude ||
+                  !trip.endingLongitude
                 }
-              }}
-              disabled={
-                distance === 0 ||
-                !trip.startingLatitude ||
-                !trip.startingLongitude ||
-                !trip.endingLatitude ||
-                !trip.endingLongitude
-              }
               >
-              <Ionicons
-                name="map-outline"
-                size={14}
-                color={
-                distance > 0 &&
-                trip.startingLatitude &&
-                trip.startingLongitude &&
-                trip.endingLatitude &&
-                trip.endingLongitude
-                  ? COLORS.primary
-                  : COLORS.primary
-                }
-              />
-              <Text
-                variant="bodySmall"
-                color={
-                distance > 0 &&
-                trip.startingLatitude &&
-                trip.startingLongitude &&
-                trip.endingLatitude &&
-                trip.endingLongitude
-                  ? COLORS.primary
-                  : COLORS.gray[600]
-                }
-                style={styles.distanceText}
-              >
-                {distance.toFixed(2)} km
-              </Text>
+                <Ionicons
+                  name="map-outline"
+                  size={14}
+                  color={
+                    distance > 0 &&
+                    trip.startingLatitude &&
+                    trip.startingLongitude &&
+                    trip.endingLatitude &&
+                    trip.endingLongitude
+                      ? COLORS.primary
+                      : COLORS.primary
+                  }
+                />
+                <Text
+                  variant="bodySmall"
+                  color={COLORS.white}
+                  style={styles.distanceText}
+                >
+                  {distance.toFixed(2)} km
+                </Text>
               </TouchableOpacity>
             </View>
-            </View>
+          </View>
 
           {/* Tap In By and Tap Out By Section */}
           <View style={styles.singleRowContainer}>
@@ -758,8 +706,7 @@ export default function History() {
                     tapOutStatus === "Card" && styles.tapCardButton,
                     tapOutStatus === "Time-Out" && styles.tapTimeOutButton,
                     tapOutStatus === "Staff" && styles.tapStaffButton,
-                    tapOutStatus === "Session-Out" &&
-                      styles.tapSessionOutButton,
+                    tapOutStatus === "Session-Out" && styles.tapSessionOutButton,
                     tapOutStatus === "Mobile App" && styles.tapMobileAppButton,
                     tapOutStatus === "Penalty" && styles.tapPenaltyButton,
                   ]}
@@ -828,7 +775,7 @@ export default function History() {
                   color={COLORS.gray[500]}
                   style={styles.cardSubtitle}
                 >
-                  {organization.name} ({organization.code})
+                  {UI_TEXTS.FALLBACKS.ORGANIZATION_INFO}
                 </Text>
               )}
             </View>
@@ -871,9 +818,7 @@ export default function History() {
                   color={COLORS.gray[600]}
                   style={styles.detailText}
                 >
-                  {item.createTime
-                    ? formatDateString(new Date(item.createTime))
-                    : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
+                  {item.createTime ? formatDateString(new Date(item.createTime)) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
               </View>
               <View style={styles.TimeItem}>
@@ -892,6 +837,7 @@ export default function History() {
       </Card>
     );
   };
+
   const renderTabContent = () => {
     const renderItem = ({
       item,
@@ -917,6 +863,7 @@ export default function History() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             colors={[COLORS.primary]}
+            enabled={!showFilterModal && !isFilteringInProgress} // Disable refresh when modal is open or filtering
           />
         }
         onEndReached={onLoadMore}
@@ -1019,13 +966,14 @@ export default function History() {
                   style={styles.clearFiltersButton}
                   onPress={() => {
                     setSearchQuery("");
-                    resetFilters();
+                    setFilters({
+                      dateFilter: "all",
+                      sortOrder: "newest",
+                    });
                   }}
                 >
                   <Text variant="labelSmall" color={COLORS.primary}>
-                    {searchQuery 
-                      ? UI_TEXTS.BUTTONS.CLEAR_SEARCH_AND_FILTERS 
-                      : UI_TEXTS.BUTTONS.CLEAR_FILTERS}
+                    {UI_TEXTS.BUTTONS.CLEAR_SEARCH_AND_FILTERS}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -1033,245 +981,6 @@ export default function History() {
           </Card>
         }
       />
-    );
-  };
-
-  const FilterModal = () => {
-    const [tempFilters, setTempFilters] = useState<FilterOptions>(filters);
-
-    return (
-      <Modal
-        visible={showFilterModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowFilterModal(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowFilterModal(false)}>
-              <Ionicons name="close" size={24} color={COLORS.gray[700]} />
-            </TouchableOpacity>
-            <Text
-              variant="h6"
-              color={COLORS.gray[900]}
-              style={styles.modalTitle}
-            >
-              {activeTab === "trips" 
-                ? `${UI_TEXTS.BUTTONS.FILTER} ${UI_TEXTS.TABS.TRIPS}` 
-                : `${UI_TEXTS.BUTTONS.FILTER} ${UI_TEXTS.TABS.WALLET}`}
-            </Text>
-            <TouchableOpacity onPress={resetFilters}>
-              <Text variant="labelSmall" color={COLORS.primary}>
-                {UI_TEXTS.BUTTONS.RESET}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.modalContent}>
-            {/* Date Filter */}
-            <View style={styles.filterSection}>
-              <Text
-                variant="label"
-                color={COLORS.gray[700]}
-                style={styles.sectionTitle}
-              >
-                {UI_TEXTS.FILTER_LABELS.SECTIONS.DATE_RANGE}
-              </Text>
-              <View style={styles.filterOptions}>
-                {(["all", "today", "week", "month"] as DateFilter[]).map(
-                  (option) => (
-                    <TouchableOpacity
-                      key={option}
-                      style={[
-                        styles.filterOption,
-                        tempFilters.dateFilter === option &&
-                          styles.filterOptionActive,
-                      ]}
-                      onPress={() =>
-                        setTempFilters({ ...tempFilters, dateFilter: option })
-                      }
-                    >
-                      <Text
-                        variant="bodySmall"
-                        color={
-                          tempFilters.dateFilter === option
-                            ? COLORS.white
-                            : COLORS.gray[700]
-                        }
-                      >
-                        {getDateFilterLabel(option)}
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                )}
-              </View>
-            </View>
-
-            {/* Sort Order */}
-            <View style={styles.filterSection}>
-              <Text
-                variant="label"
-                color={COLORS.gray[700]}
-                style={styles.sectionTitle}
-              >
-                {UI_TEXTS.FILTER_LABELS.SECTIONS.SORT_BY}
-              </Text>
-              <View style={styles.filterOptions}>
-                {(
-                  [
-                    "newest",
-                    "oldest",
-                    "amount_high",
-                    "amount_low",
-                  ] as SortOrder[]
-                ).map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    style={[
-                      styles.filterOption,
-                      tempFilters.sortOrder === option &&
-                        styles.filterOptionActive,
-                    ]}
-                    onPress={() =>
-                      setTempFilters({ ...tempFilters, sortOrder: option })
-                    }
-                  >
-                    <Text
-                      variant="bodySmall"
-                      color={
-                        tempFilters.sortOrder === option
-                          ? COLORS.white
-                          : COLORS.gray[700]
-                      }
-                    >
-                      {getSortOrderLabel(option)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Amount Range */}
-            <View style={styles.filterSection}>
-              <Text
-                variant="label"
-                color={COLORS.gray[700]}
-                style={styles.sectionTitle}
-              >
-                {UI_TEXTS.FILTER_LABELS.SECTIONS.AMOUNT_RANGE}
-              </Text>
-              <View style={styles.amountInputs}>
-                <View style={styles.amountInput}>
-                  <Text variant="bodySmall" color={COLORS.gray[600]}>
-                    {UI_TEXTS.LABELS.MIN}
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.amountButton}
-                    onPress={() => {
-                      // For now, just clear the min amount
-                      setTempFilters({ ...tempFilters, minAmount: undefined });
-                    }}
-                  >
-                    <Text variant="bodySmall" color={COLORS.gray[700]}>
-                      {tempFilters.minAmount || "Any"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.amountInput}>
-                  <Text variant="bodySmall" color={COLORS.gray[600]}>
-                    {UI_TEXTS.LABELS.MAX}
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.amountButton}
-                    onPress={() => {
-                      // For now, just clear the max amount
-                      setTempFilters({ ...tempFilters, maxAmount: undefined });
-                    }}
-                  >
-                    <Text variant="bodySmall" color={COLORS.gray[700]}>
-                      {tempFilters.maxAmount || "Any"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Quick amount filters */}
-              <View style={styles.quickFilters}>
-                <Text
-                  variant="caption"
-                  color={COLORS.gray[600]}
-                  style={styles.quickFiltersLabel}
-                >
-                  {UI_TEXTS.FILTER_LABELS.SECTIONS.QUICK_FILTERS}
-                </Text>
-                <View style={styles.filterOptions}>
-                  <TouchableOpacity
-                    style={styles.filterOption}
-                    onPress={() =>
-                      setTempFilters({
-                        ...tempFilters,
-                        minAmount: undefined,
-                        maxAmount: 50,
-                      })
-                    }
-                  >
-                    <Text variant="bodySmall" color={COLORS.gray[700]}>
-                      Under ৳50
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.filterOption}
-                    onPress={() =>
-                      setTempFilters({
-                        ...tempFilters,
-                        minAmount: 50,
-                        maxAmount: 100,
-                      })
-                    }
-                  >
-                    <Text variant="bodySmall" color={COLORS.gray[700]}>
-                      ৳50-100
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.filterOption}
-                    onPress={() =>
-                      setTempFilters({
-                        ...tempFilters,
-                        minAmount: 100,
-                        maxAmount: undefined,
-                      })
-                    }
-                  >
-                    <Text variant="bodySmall" color={COLORS.gray[700]}>
-                      Over ৳100
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </ScrollView>
-
-          <View style={styles.modalFooter}>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton]}
-              onPress={() => setShowFilterModal(false)}
-            >
-              <Text variant="labelSmall" color={COLORS.gray[700]}>
-                {UI_TEXTS.MODAL.FOOTER.CANCEL}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.applyButton]}
-              onPress={() => applyFilters(tempFilters)}
-            >
-              <Text variant="labelSmall" color={COLORS.white}>
-                {UI_TEXTS.MODAL.FOOTER.APPLY_FILTERS}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </Modal>
     );
   };
 
@@ -1338,11 +1047,7 @@ export default function History() {
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery("")}>
-                  <Ionicons
-                    name="close-circle"
-                    size={20}
-                    color={COLORS.gray[500]}
-                  />
+                  <Ionicons name="close-circle" size={20} color={COLORS.gray[400]} />
                 </TouchableOpacity>
               )}
             </View>
@@ -1355,41 +1060,10 @@ export default function History() {
           >
             <View style={styles.filterInfo}>
               <Text variant="bodySmall" color={COLORS.gray[600]}>
-                {filteredData.length}{" "}
-                {activeTab === "trips" ? "trips" : "transactions"}
-                {/* Show total count if different from filtered count */}
-                {(() => {
-                  const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
-                  const totalCount = currentPagination.totalCount || 0;
-                  const originalDataLength = activeTab === "trips" ? tripTransactions.length : rechargeTransactions.length;
-                  
-                  // Show total if we have filtering applied or if we have pagination info
-                  if (searchQuery || filters.dateFilter !== "all" || 
-                      filters.minAmount !== undefined || filters.maxAmount !== undefined) {
-                    return (
-                      <Text variant="bodySmall" color={COLORS.gray[500]}>
-                        {" "}of {originalDataLength} loaded
-                      </Text>
-                    );
-                  }
-                    return (
-                      <Text variant="bodySmall" color={COLORS.gray[500]}>
-                        {" "}• {totalCount} total
-                      </Text>
-                    );
-                })()}
-                {searchQuery && (
-                  <Text variant="bodySmall" color={COLORS.primary}>
-                    {" "}
-                    • "{searchQuery}"
-                  </Text>
-                )}
-                {filters.dateFilter !== "all" && (
-                  <Text variant="bodySmall" color={COLORS.primary}>
-                    {" "}
-                    • {getDateFilterLabel(filters.dateFilter)}
-                  </Text>
-                )}
+                {filteredData.length} result{filteredData.length !== 1 ? 's' : ''} 
+                {filters.dateFilter !== "all" && ` • ${filters.dateFilter}`}
+                {filters.sortOrder !== "newest" && ` • ${filters.sortOrder}`}
+                {(filters.minAmount !== undefined || filters.maxAmount !== undefined) && ' • amount filtered'}
               </Text>
             </View>
             <TouchableOpacity
@@ -1399,8 +1073,11 @@ export default function History() {
                   filters.minAmount !== undefined ||
                   filters.maxAmount !== undefined) &&
                   styles.filterButtonActive,
+                // Add visual feedback when disabled during refresh or filtering
+                (refreshing || isFilteringInProgress) && styles.filterButtonDisabled,
               ]}
-              onPress={() => setShowFilterModal(true)}
+              onPress={handleFilterModalOpen}
+              disabled={refreshing || isFilteringInProgress} // Disable during refresh or filtering
             >
               <Ionicons
                 name="funnel"
@@ -1445,7 +1122,7 @@ export default function History() {
                 }}
               >
                 <Text variant="labelSmall" color={COLORS.primary}>
-                  Retry
+                  {UI_TEXTS.BUTTONS.RETRY}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1482,7 +1159,12 @@ export default function History() {
         )}
       </View>
 
-      <FilterModal />
+      <FilterModal
+        visible={showFilterModal}
+        filters={filters}
+        onClose={handleFilterModalClose}
+        onApply={applyFilters}
+      />
       
       {/* Toast notification */}
       <Toast
@@ -1583,6 +1265,11 @@ const styles = StyleSheet.create({
   filterInfo: {
     flex: 1,
   },
+  filteringIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   filterButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1594,6 +1281,10 @@ const styles = StyleSheet.create({
   },
   filterButtonActive: {
     backgroundColor: COLORS.primary,
+  },
+  filterButtonDisabled: {
+    opacity: 0.6,
+    backgroundColor: COLORS.gray[50],
   },
   
   // Transaction card styles
@@ -1697,16 +1388,16 @@ const styles = StyleSheet.create({
   timeLabel: {
     marginBottom: 4,
     // Font properties handled by Text component
-    },
-    timeButton: {
+  },
+  timeButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     padding: SPACING.xs,
     backgroundColor: COLORS.gray[50],
     borderRadius: 6,
-    },
-    tapInButton: {
+  },
+  tapInButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
@@ -1715,8 +1406,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     justifyContent: "center",
     minHeight: 32,
-    },
-    tapOutButton: {
+  },
+  tapOutButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
@@ -1725,8 +1416,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     justifyContent: "center",
     minHeight: 32,
-    },
-    timeText: {
+  },
+  timeText: {
     color: COLORS.gray[700],
     // Font properties handled by Text component
   },
@@ -1857,11 +1548,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   TimeItem: {
-  paddingLeft: 8,
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 4,
-  flex: 1,
+    paddingLeft: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    flex: 1,
   },
   detailText: {
     // Font properties handled by Text component
@@ -1933,92 +1624,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + "20",
     borderWidth: 1,
     borderColor: COLORS.primary,
-  },
-  // Modal styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[100],
-  },
-  modalTitle: {
-    flex: 1,
-    textAlign: "center",
-  },
-  modalContent: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  filterSection: {
-    marginTop: 24,
-  },
-  sectionTitle: {
-    marginBottom: 12,
-  },
-  filterOptions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  filterOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    backgroundColor: COLORS.gray[100],
-    borderWidth: 1,
-    borderColor: COLORS.gray[200],
-  },
-  filterOptionActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  amountInputs: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  amountInput: {
-    flex: 1,
-  },
-  amountButton: {
-    marginTop: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    backgroundColor: COLORS.gray[50],
-    borderWidth: 1,
-    borderColor: COLORS.gray[200],
-  },
-  quickFilters: {
-    marginTop: 12,
-  },
-  quickFiltersLabel: {
-    marginBottom: 8,
-  },
-  modalFooter: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.gray[100],
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  cancelButton: {
-    backgroundColor: COLORS.gray[100],
-  },
-  applyButton: {
-    backgroundColor: COLORS.primary,
   },
 });
