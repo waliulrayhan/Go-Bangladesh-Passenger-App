@@ -71,8 +71,8 @@ export default function RootLayout() {
       // Use navigation service for robust redirect
       setTimeout(async () => {
         try {
-          const { navigationService } = await import('../utils/navigationService');
-          const success = await navigationService.forceRedirectToWelcome();
+          const navigationModule = await import('../utils/navigationService');
+          const success = await navigationModule.navigationService.forceRedirectToWelcome();
           
           if (success) {
             console.log('✅ [NAVIGATION] Navigation service redirect successful');
