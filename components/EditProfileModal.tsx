@@ -250,19 +250,58 @@ export function EditProfileModal({
     return updateFormData;
   };
 
+  const requiresOTPVerification = (): boolean => {
+    return (
+      formData.name !== originalData.name ||
+      formData.mobileNumber !== originalData.mobileNumber
+    );
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
     try {
       const updateFormData = createUpdateFormData();
-      setPendingUpdateData(updateFormData);
-      setIsLoading(false);
-      setShowOTPModal(true);
+      
+      if (requiresOTPVerification()) {
+        // Changes to name or mobile number require OTP verification
+        setPendingUpdateData(updateFormData);
+        setIsLoading(false);
+        setShowOTPModal(true);
+      } else {
+        // Other changes can be updated directly
+        await handleDirectUpdate(updateFormData);
+      }
     } catch (error: any) {
       console.error('Error preparing profile update:', error);
       showError(error.message || 'Failed to prepare profile update');
       setIsLoading(false);
+    }
+  };
+
+  const handleDirectUpdate = async (updateFormData: FormData) => {
+    try {
+      const result = await apiService.updatePassengerProfile(updateFormData);
+      
+      if (!result.isSuccess) {
+        throw new Error(result.message || 'Failed to update profile');
+      }
+      
+      // Update successful
+      await onUpdate(updateFormData);
+      setIsLoading(false);
+      showSuccess('Your profile has been updated successfully.');
+      
+      // Close modal after a short delay
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+      
+    } catch (error: any) {
+      console.error('❌ [PROFILE UPDATE] Error updating profile:', error);
+      setIsLoading(false);
+      showError(error.message || 'Failed to update profile. Please try again.');
     }
   };
 
@@ -419,13 +458,32 @@ export function EditProfileModal({
           {/* Personal Information Section */}
           <Animated.View entering={FadeInDown.duration(600).delay(200)} style={styles.section}>
             <Text variant="h6" style={styles.sectionTitle}>Personal Information</Text>
+            
+            {/* Security Notice */}
+            {requiresOTPVerification() && (
+              <View style={styles.securityNotice}>
+                <Ionicons name="shield-checkmark" size={16} color={COLORS.primary} />
+                <Text style={styles.securityNoticeText}>
+                  Changes to name or mobile number require OTP verification for security
+                </Text>
+              </View>
+            )}
+            
             <View style={styles.sectionContent}>
               <View style={styles.fieldGroup}>
                 <Input
                   label={
-                    <Text>
-                      Full Name <Text style={{ color: COLORS.error }}>*</Text>
-                    </Text>
+                    <View style={styles.labelContainer}>
+                      <Text>
+                        Full Name <Text style={{ color: COLORS.error }}>*</Text>
+                      </Text>
+                      {formData.name !== originalData.name && (
+                        <View style={styles.otpBadge}>
+                          <Ionicons name="shield-checkmark" size={12} color={COLORS.primary} />
+                          <Text style={styles.otpBadgeText}>OTP Required</Text>
+                        </View>
+                      )}
+                    </View>
                   }
                   value={formData.name}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
@@ -437,10 +495,18 @@ export function EditProfileModal({
               <View style={styles.fieldGroup}>
                 <Input
                   label={
-                    <Text>
-                      Mobile Number{" "}
-                      <Text style={{ color: COLORS.error }}>*</Text>
-                    </Text>
+                    <View style={styles.labelContainer}>
+                      <Text>
+                        Mobile Number{" "}
+                        <Text style={{ color: COLORS.error }}>*</Text>
+                      </Text>
+                      {formData.mobileNumber !== originalData.mobileNumber && (
+                        <View style={styles.otpBadge}>
+                          <Ionicons name="shield-checkmark" size={12} color={COLORS.primary} />
+                          <Text style={styles.otpBadgeText}>OTP Required</Text>
+                        </View>
+                      )}
+                    </View>
                   }
                   value={formData.mobileNumber}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
@@ -503,7 +569,7 @@ export function EditProfileModal({
             </TouchableOpacity>
             <View style={styles.saveButtonContainer}>
               <Button
-                title="Save Changes"
+                title={requiresOTPVerification() ? "Verify & Save" : "Save Changes"}
                 onPress={handleSubmit}
                 loading={isLoading}
                 size="medium"
@@ -610,6 +676,23 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.xs,
   },
+  securityNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.brand.blue_subtle,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
+    gap: SPACING.xs,
+  },
+  securityNoticeText: {
+    flex: 1,
+    fontSize: 12,
+    color: COLORS.primary,
+    fontWeight: '500',
+    lineHeight: 16,
+  },
   sectionContent: {
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
@@ -693,6 +776,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.gray[700],
     marginBottom: SPACING.sm,
+  },
+  labelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  otpBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.brand.blue_subtle,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: 10,
+    gap: 2,
+  },
+  otpBadgeText: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: COLORS.primary,
   },
   
   // Gender Selection
