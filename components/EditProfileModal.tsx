@@ -59,6 +59,7 @@ interface EditProfileModalProps {
   visible: boolean;
   onClose: () => void;
   onUpdate: (updateData: FormData) => Promise<void>;
+  onUpdateSuccess?: () => void; // Callback for successful updates
   userData: UserData;
 }
 
@@ -83,6 +84,7 @@ export function EditProfileModal({
   visible,
   onClose,
   onUpdate,
+  onUpdateSuccess,
   userData,
 }: EditProfileModalProps) {
   // ==================== HOOKS ====================
@@ -291,12 +293,14 @@ export function EditProfileModal({
       // Update successful
       await onUpdate(updateFormData);
       setIsLoading(false);
-      showSuccess('Your profile has been updated successfully.');
       
-      // Close modal after a short delay
-      setTimeout(() => {
-        onClose();
-      }, 1500);
+      // Close modal first
+      onClose();
+      
+      // Trigger success callback if provided
+      if (onUpdateSuccess) {
+        onUpdateSuccess();
+      }
       
     } catch (error: any) {
       console.error('❌ [PROFILE UPDATE] Error updating profile:', error);
@@ -385,7 +389,12 @@ export function EditProfileModal({
     setShowOTPModal(false);
     setPendingUpdateData(null);
     setIsOTPSuccess(false);
-    onClose(); // Always close main modal for better UX
+    onClose(); // Close main modal
+    
+    // If OTP was successful, trigger success callback
+    if (isOTPSuccess && onUpdateSuccess) {
+      onUpdateSuccess();
+    }
   };
 
   // ==================== COMPONENT RENDER ====================
@@ -457,17 +466,15 @@ export function EditProfileModal({
 
           {/* Personal Information Section */}
           <Animated.View entering={FadeInDown.duration(600).delay(200)} style={styles.section}>
-            <Text variant="h6" style={styles.sectionTitle}>Personal Information</Text>
             
-            {/* Security Notice */}
-            {requiresOTPVerification() && (
-              <View style={styles.securityNotice}>
-                <Ionicons name="shield-checkmark" size={16} color={COLORS.primary} />
-                <Text style={styles.securityNoticeText}>
-                  Changes to name or mobile number require OTP verification for security
-                </Text>
-              </View>
-            )}
+            {/* Info Section - Always visible */}
+            <View style={styles.infoSection}>
+              <Ionicons name="information-circle-outline" size={16} color={COLORS.gray[600]} />
+              <Text style={styles.infoSectionText}>
+                Changing your name or mobile number will require OTP verification for security purposes.
+              </Text>
+            </View>
+            <Text variant="h6" style={styles.sectionTitle}>Personal Information</Text>
             
             <View style={styles.sectionContent}>
               <View style={styles.fieldGroup}>
@@ -670,11 +677,28 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.secondary,
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.xs,
+  },
+  infoSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.gray[50],
+    // paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
+    gap: SPACING.xs,
+  },
+  infoSectionText: {
+    flex: 1,
+    fontSize: 12,
+    color: COLORS.gray[600],
+    fontWeight: '400',
+    lineHeight: 16,
   },
   securityNotice: {
     flexDirection: 'row',

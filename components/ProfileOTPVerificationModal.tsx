@@ -313,12 +313,11 @@ export function ProfileOTPVerificationModal({
       setIsAutoVerifying(false);
       setShowVerifyingText(false);
       
-      showSuccess(MESSAGES.UPDATE_SUCCESS);
-      
+      // Don't show success toast here - it's handled by parent component
       setTimeout(() => {
         console.log("🚪 [PROFILE OTP] Closing modal after successful update");
         onClose();
-      }, 1500);
+      }, 100); // Reduced delay since no toast to show
     } catch (updateError: any) {
       console.error("❌ [PROFILE OTP] Profile update error:", updateError);
       setIsLoading(false);

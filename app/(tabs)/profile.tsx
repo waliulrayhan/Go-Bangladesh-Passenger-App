@@ -620,10 +620,15 @@ export default function Profile() {
     const response = await apiService.updatePassengerProfile(updateData);
     
     if (response.isSuccess) {
-      showToast(response.message || 'Profile updated successfully!', 'success');
       await refreshAllData();
     } else {
+      throw new Error(response.message || 'Failed to update profile');
     }
+  };
+
+  const handleUpdateSuccess = () => {
+    // Show success toast when profile is successfully updated
+    showSuccess('Profile updated successfully!');
   };
 
   /**
@@ -729,6 +734,7 @@ export default function Profile() {
           visible={showEditProfileModal}
           onClose={() => setShowEditProfileModal(false)}
           onUpdate={handleUpdateProfile}
+          onUpdateSuccess={handleUpdateSuccess}
           userData={createUserDataForModal()}
         />
       )}
