@@ -40,7 +40,7 @@ export const Toast: React.FC<ToastProps> = ({
 
   // Calculate dynamic height based on message length and estimated line breaks
   const calculateToastHeight = (text: string) => {
-    const baseHeight = 60; // Minimum height for icon and padding
+    const baseHeight = 0; // Minimum height for icon and padding
     const charactersPerLine = 35; // Approximate characters per line based on toast width
     const lineHeight = 18; // Line height from styles
     const extraPadding = 16; // Additional padding for comfortable spacing
