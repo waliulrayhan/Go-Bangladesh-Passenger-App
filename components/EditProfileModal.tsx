@@ -163,6 +163,10 @@ export function EditProfileModal({
       showError('Mobile number is required');
       return false;
     }
+    if (formData.mobileNumber.trim().length !== 11) {
+      showError('Phone number must be 11 digits');
+      return false;
+    }
     return true;
   };
 
