@@ -425,7 +425,7 @@ export default function VerifyAccountDeletion() {
         <Text style={styles.phoneNumber}>{params.phone}</Text>
       </Text>
       <Text style={styles.warningText}>
-        This action will permanently delete your account for{" "}
+        This action will permanently delete your account for{"\n"}
         <Text style={styles.userName}>{params.userName}</Text>
       </Text>
     </Animated.View>

@@ -416,7 +416,7 @@ export function ProfileOTPVerificationModal({
       </Text>
 
       <View style={styles.userInfo}>
-        <Text style={styles.infoLabel}>Updating Profile for:</Text>
+        <Text style={styles.infoLabel}>Updating Profile for</Text>
         <Text style={styles.infoValue}>{userData.name}</Text>
         {userData.cardNumber && (
           <Text style={styles.cardInfo}>Card: {userData.cardNumber}</Text>
