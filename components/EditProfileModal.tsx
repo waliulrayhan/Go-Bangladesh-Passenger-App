@@ -422,7 +422,11 @@ export function EditProfileModal({
             <View style={styles.sectionContent}>
               <View style={styles.fieldGroup}>
                 <Input
-                  label="Full Name"
+                  label={
+                    <Text>
+                      Full Name <Text style={{ color: COLORS.error }}>*</Text>
+                    </Text>
+                  }
                   value={formData.name}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
                   placeholder="Enter your full name"
@@ -432,12 +436,18 @@ export function EditProfileModal({
 
               <View style={styles.fieldGroup}>
                 <Input
-                  label="Mobile Number"
+                  label={
+                    <Text>
+                      Mobile Number{" "}
+                      <Text style={{ color: COLORS.error }}>*</Text>
+                    </Text>
+                  }
                   value={formData.mobileNumber}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
                   placeholder="Enter your mobile number"
                   keyboardType="phone-pad"
                   icon="call-outline"
+                  maxLength={11}
                 />
               </View>
 
