@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
+  Linking,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -547,7 +548,10 @@ export default function ForgotPassword() {
   };
 
   const handleContactOrganization = () => {
-    showInfo(MESSAGES.HELP_INFO);
+    const email = 'info@thegobd.com';
+    Linking.openURL(`mailto:${email}`).catch(() => {
+      showError('Unable to open email client');
+    });
   };
 
   // Render functions
