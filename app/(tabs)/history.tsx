@@ -509,15 +509,6 @@ export default function History() {
               >
                 {busNumber}
               </Text>
-              {organization && (
-                <Text
-                  variant="caption"
-                  color={COLORS.gray[500]}
-                  style={styles.cardSubtitle}
-                >
-                  Organization Info
-                </Text>
-              )}
               <Text
                 variant="caption"
                 color={COLORS.gray[500]}
