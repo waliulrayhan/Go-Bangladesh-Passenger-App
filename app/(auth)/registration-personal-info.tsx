@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Dimensions,
   KeyboardAvoidingView,
@@ -71,6 +71,33 @@ export default function RegistrationPersonalInfo() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const { toast, showError, showSuccess, hideToast } = useToast();
+
+  // Clear form when screen comes into focus (user navigates back)
+  useFocusEffect(
+    useCallback(() => {
+      // Clear any existing error state and toast when screen is focused
+      hideToast();
+      
+      return () => {
+        // Cleanup: Clear form when navigating away
+        setForm({
+          name: "",
+          phone: "",
+          email: "",
+          gender: "",
+          address: "",
+          dateOfBirth: "",
+          password: "",
+          confirmPassword: "",
+          passengerId: "",
+        });
+        setErrors({});
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+        setSelectedDate(null);
+      };
+    }, []) // Empty dependencies to prevent infinite loops
+  );
 
   const handleGoBack = () => {
     router.back();
@@ -320,6 +347,12 @@ export default function RegistrationPersonalInfo() {
             removeClippedSubviews={false}
             scrollEventThrottle={16}
             nestedScrollEnabled={false}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+              autoscrollToTopThreshold: 0,
+            }}
+            automaticallyAdjustContentInsets={false}
+            contentInsetAdjustmentBehavior="never"
           >
           <Animated.View
             entering={FadeInUp.duration(600).delay(100)}

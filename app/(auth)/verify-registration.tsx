@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BackHandler,
   KeyboardAvoidingView,
@@ -162,6 +162,24 @@ export default function VerifyRegistration() {
   // Refs
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const containerRef = useRef<View>(null);
+
+  // Clear form when screen comes into focus (user navigates back)
+  useFocusEffect(
+    useCallback(() => {
+      // Clear any existing error state and toast when screen is focused
+      hideToast();
+      
+      return () => {
+        // Cleanup: Clear form when navigating away
+        setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
+        setIsResending(false);
+        setIsLoading(false);
+        setIsAutoVerifying(false);
+        setShowVerifyingText(false);
+        setIsOtpReady(false);
+      };
+    }, []) // Empty dependencies to prevent infinite loops
+  );
 
   // Helper functions
   const formatTime = (seconds: number): string => {
@@ -390,6 +408,8 @@ export default function VerifyRegistration() {
         showSuccess(MESSAGES.REGISTRATION_SUCCESS);
         
         setTimeout(() => {
+          // Use dismissAll to clear navigation stack before going to tabs
+          router.dismissAll();
           router.replace("/(tabs)");
         }, 2000);
       } else {
@@ -401,6 +421,7 @@ export default function VerifyRegistration() {
         showError(errorMessage);
         
         setTimeout(() => {
+          router.dismissAll();
           router.replace("/(auth)/passenger-login");
         }, 3000);
       }
@@ -408,6 +429,7 @@ export default function VerifyRegistration() {
       setIsLoading(false);
       showError(MESSAGES.LOGIN_FAILED);
       setTimeout(() => {
+        router.dismissAll();
         router.replace("/(auth)/passenger-login");
       }, 3000);
     }
@@ -605,8 +627,8 @@ export default function VerifyRegistration() {
 
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={0}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
           <ScrollView
             contentContainerStyle={styles.scrollContent}
@@ -614,6 +636,14 @@ export default function VerifyRegistration() {
             showsVerticalScrollIndicator={false}
             bounces={false}
             overScrollMode="never"
+            scrollEventThrottle={16}
+            removeClippedSubviews={false}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+              autoscrollToTopThreshold: 0,
+            }}
+            automaticallyAdjustContentInsets={false}
+            contentInsetAdjustmentBehavior="never"
           >
             {renderHeader()}
             {renderOTPForm()}
@@ -644,7 +674,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: SPACING.md,
     justifyContent: "center",
-    paddingTop: SPACING.xl + 80, // Extra padding for status bar
   },
   content: {
     flex: 1,

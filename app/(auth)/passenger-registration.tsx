@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   cardContent: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
     alignItems: "center",
     gap: SPACING.md,
   },
@@ -357,7 +357,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.brand.blue_subtle,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: SPACING.sm,
   },
   inputContainer: {
     width: "100%",
@@ -367,7 +366,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.gray[600],
     textAlign: "center",
-    marginVertical: SPACING.xs,
     lineHeight: 18,
   },
   bottomSection: {
@@ -376,7 +374,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: SPACING.md,
+    marginVertical: SPACING["xl"],
     paddingHorizontal: SPACING.md,
   },
   dividerLine: {

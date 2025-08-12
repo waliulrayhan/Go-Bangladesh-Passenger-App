@@ -419,6 +419,7 @@ const styles = StyleSheet.create({
   helpSection: {
     alignItems: "center",
     paddingTop: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
   warningContainer: {
     flexDirection: "row",

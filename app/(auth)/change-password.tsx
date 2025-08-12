@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Dimensions,
   KeyboardAvoidingView,
@@ -36,6 +36,25 @@ export default function ChangePassword() {
 
   const { changePassword, isLoading, error, clearError } = useAuthStore();
   const { toast, showError, showSuccess, hideToast } = useToast();
+
+  // Clear form when screen comes into focus (user navigates back)
+  useFocusEffect(
+    useCallback(() => {
+      // Clear any existing error state and toast when screen is focused
+      clearError();
+      hideToast();
+      
+      return () => {
+        // Cleanup: Clear form when navigating away
+        setOldPassword("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setShowOldPassword(false);
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
+      };
+    }, []) // Empty dependencies to prevent infinite loops
+  );
 
   const handleGoBack = () => {
     router.back();
@@ -131,7 +150,7 @@ export default function ChangePassword() {
 
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
           <ScrollView
@@ -140,6 +159,14 @@ export default function ChangePassword() {
             showsVerticalScrollIndicator={false}
             bounces={false}
             overScrollMode="never"
+            scrollEventThrottle={16}
+            removeClippedSubviews={false}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+              autoscrollToTopThreshold: 0,
+            }}
+            automaticallyAdjustContentInsets={false}
+            contentInsetAdjustmentBehavior="never"
           >
             <Animated.View
               entering={FadeInUp.duration(800)}
