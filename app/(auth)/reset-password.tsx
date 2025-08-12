@@ -241,7 +241,7 @@ export default function ResetPassword() {
                           At least 8 characters
                         </Text>
                       </View>
-                      <View style={styles.requirement}>
+                      {/* <View style={styles.requirement}>
                         <Ionicons
                           name={
                             newPassword === confirmPassword && newPassword
@@ -265,7 +265,7 @@ export default function ResetPassword() {
                         >
                           Passwords match
                         </Text>
-                      </View>
+                      </View> */}
                     </View>
                   </View>
 

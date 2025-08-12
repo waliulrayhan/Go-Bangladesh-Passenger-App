@@ -225,10 +225,10 @@ export default function ChangePassword() {
                             },
                           ]}
                         >
-                          8+ characters
+                          At least 8 characters
                         </Text>
                       </View>
-                      <View style={styles.requirement}>
+                      {/* <View style={styles.requirement}>
                         <Ionicons
                           name={
                             newPassword === confirmNewPassword && newPassword
@@ -255,7 +255,7 @@ export default function ChangePassword() {
                         >
                           Passwords match
                         </Text>
-                      </View>
+                      </View> */}
                     </View>
                   </View>
 
@@ -263,13 +263,13 @@ export default function ChangePassword() {
                     title="Change Password"
                     onPress={handleChangePassword}
                     loading={isLoading}
-                    disabled={
-                      !oldPassword ||
-                      !newPassword ||
-                      !confirmNewPassword ||
-                      newPassword !== confirmNewPassword ||
-                      newPassword.length < 8
-                    }
+                    // disabled={
+                    //   !oldPassword ||
+                    //   !newPassword ||
+                    //   !confirmNewPassword ||
+                    //   newPassword !== confirmNewPassword ||
+                    //   newPassword.length < 8
+                    // }
                     icon="checkmark-outline"
                     size="medium"
                     fullWidth
