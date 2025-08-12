@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -132,6 +133,8 @@ export default function ForgotPassword() {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isAutoVerifying, setIsAutoVerifying] = useState(false);
   const [showVerifyingText, setShowVerifyingText] = useState(false);
+  const [isOtpReady, setIsOtpReady] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Custom hooks
   const { timer, startTimer } = useOTPTimer();
@@ -183,7 +186,13 @@ export default function ForgotPassword() {
       setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
       setIsAutoVerifying(false);
       setShowVerifyingText(false);
+      setIsOtpReady(false);
       otpAutofill.resetAutofill();
+      
+      // Trigger OTP ready state after a small delay
+      setTimeout(() => {
+        setIsOtpReady(true);
+      }, 100);
       
       setTimeout(() => {
         inputRefs.current[0]?.focus();
@@ -194,6 +203,45 @@ export default function ForgotPassword() {
   useEffect(() => {
     return () => {
       otpAutofill.cleanup();
+    };
+  }, []);
+
+  // Trigger OTP ready state for autofill
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsOtpReady(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (isOtpReady) {
+      setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
+      setIsAutoVerifying(false);
+      setShowVerifyingText(false);
+    }
+  }, [isOtpReady]);
+
+  // Keyboard event listeners to handle Android keyboard behavior
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    const keyboardWillHideListener = Keyboard.addListener('keyboardWillHide', () => {
+      // Pre-emptively set keyboard height to 0 for smoother transition
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+      keyboardWillHideListener?.remove();
     };
   }, []);
 
@@ -413,53 +461,62 @@ export default function ForgotPassword() {
   const handleOtpChange = (value: string, index: number) => {
     if (isLoading || isAutoVerifying) return;
 
-    console.log(`handleOtpChange called - index: ${index}, value: "${value}", length: ${value.length}`);
-
     // Handle pasted OTP (multiple characters at once)
     if (value.length > 1) {
-      const pastedOtp = value.replace(/\D/g, "");
-      console.log(`Multi-character input detected - cleaned: "${pastedOtp}"`);
+      const pastedOtp = value.replace(/\D/g, "").slice(0, OTP_CONSTRAINTS.LENGTH);
       if (handlePastedOTP(pastedOtp)) return;
     }
 
     // For first input, handle SMS autofill specially
     if (index === 0) {
-      // Extract the clean digit(s)
       const cleanValue = value.replace(/\D/g, "");
-      console.log(`First input - original: "${value}", cleaned: "${cleanValue}"`);
       
-      // If we get 6 digits in first input (SMS autofill), handle as complete OTP
-      if (cleanValue.length === OTP_CONSTRAINTS.LENGTH) {
-        console.log("Full 6-digit OTP detected in first input - handling as complete autofill");
+      // If we get multiple digits in first input (SMS autofill), handle as paste
+      if (cleanValue.length > 1) {
         if (handlePastedOTP(cleanValue)) return;
       }
       
-      // If we get multiple digits (but not exactly 6), handle as paste
-      if (cleanValue.length > 1 && cleanValue.length < OTP_CONSTRAINTS.LENGTH) {
-        console.log("Partial multi-digit input detected");
-        if (handlePastedOTP(cleanValue)) return;
-      }
+      // Store the first digit immediately
+      setOtp((prevOtp) => {
+        const newOtp = [...prevOtp];
+        newOtp[0] = cleanValue.slice(-1);
+        return newOtp;
+      });
       
-      // Store the first digit immediately (single digit input)
-      if (cleanValue.length === 1) {
-        setOtp((prevOtp) => {
-          const newOtp = [...prevOtp];
-          newOtp[0] = cleanValue;
-          return newOtp;
-        });
-        
-        // Focus next input for manual entry
-        if (!isAutoVerifying) {
-          setTimeout(() => {
-            inputRefs.current[1]?.focus();
-          }, 10);
-        }
+      // Focus next input for manual entry
+      if (cleanValue && !isAutoVerifying) {
+        setTimeout(() => {
+          inputRefs.current[1]?.focus();
+        }, 10);
       }
       return;
     }
 
-    // For other inputs, handle normally
-    handleManualOTPInput(value, index);
+    // Handle single character input (manual typing)
+    if (value.length <= 1) {
+      setOtp((prevOtp) => {
+        const newOtp = [...prevOtp];
+        newOtp[index] = value.slice(-1);
+
+        // Auto-verify when all digits are filled
+        if (newOtp.every((digit) => digit !== "") && newOtp.length === OTP_CONSTRAINTS.LENGTH) {
+          setIsAutoVerifying(true);
+          setShowVerifyingText(true);
+          setTimeout(() => {
+            handleVerifyOTP(newOtp.join(""));
+          }, 100);
+        }
+
+        return newOtp;
+      });
+
+      // Auto-focus next input
+      if (value && index < OTP_CONSTRAINTS.LENGTH - 1 && !isAutoVerifying) {
+        setTimeout(() => {
+          inputRefs.current[index + 1]?.focus();
+        }, 10);
+      }
+    }
   };
 
   const handleKeyPress = (e: any, index: number) => {
@@ -634,91 +691,70 @@ export default function ForgotPassword() {
 
   const renderOTPInput = () => (
     <Animated.View entering={FadeInDown.duration(ANIMATION_DELAYS.FORM)}>
-      <Card variant="elevated" style={styles.formCard}>
-        <View style={styles.formContent}>
+      <Card variant="elevated">
+        <View style={styles.otpContainer}>
           {!showVerifyingText && (
-            <Animated.View entering={FadeInDown.duration(300)}>
-              <Text style={styles.otpLabel}>Verification Code</Text>
-            </Animated.View>
+            <Text style={styles.otpLabel}>Enter Verification Code</Text>
           )}
 
-          <View style={styles.otpInputContainer}>
+          <View style={styles.otpInputContainer} key={`otp-container-${isOtpReady}`}>
             {showVerifyingText && (
-              <Animated.View
-                style={styles.loadingContainer}
-                entering={FadeInDown.duration(300)}
-              >
+              <View style={styles.loadingContainer}>
                 <Text style={styles.loadingText}>Verifying...</Text>
-              </Animated.View>
+              </View>
             )}
-            {otp.map((digit, index) => (
-              <Animated.View
-                key={`otp-input-wrapper-${index}-${isOtpSent}`}
-                style={styles.otpInputWrapper}
-              >
+
+            {Array.from({ length: OTP_CONSTRAINTS.LENGTH }).map((_, index) => (
+              <View key={index} style={styles.otpInputWrapper}>
                 <TextInput
                   ref={(ref) => {
                     inputRefs.current[index] = ref;
                   }}
                   style={[
                     styles.otpInput,
-                    digit && styles.otpInputFilled,
+                    otp[index] && styles.otpInputFilled,
                     (isLoading || isAutoVerifying) && styles.otpInputDisabled,
                   ]}
-                  value={digit}
-                  onChangeText={(value) =>
-                    !isAutoVerifying && handleOtpChange(value, index)
-                  }
-                  onKeyPress={(e) =>
-                    !isAutoVerifying && handleKeyPress(e, index)
-                  }
+                  value={otp[index]}
+                  onChangeText={(value) => handleOtpChange(value, index)}
+                  onKeyPress={(e) => handleKeyPress(e, index)}
+                  onBlur={() => {
+                    // Handle blur event to prevent UI issues on Android
+                    if (Platform.OS === "android") {
+                      // Small delay to ensure proper cleanup
+                      setTimeout(() => {
+                        // Handle any cleanup needed
+                      }, 100);
+                    }
+                  }}
                   keyboardType="numeric"
                   maxLength={index === 0 ? OTP_CONSTRAINTS.LENGTH : 1}
-                  autoFocus={index === 0 && !isAutoVerifying}
-                  selectTextOnFocus={true}
+                  textContentType="oneTimeCode"
+                  autoComplete="sms-otp"
                   editable={!isLoading && !isAutoVerifying}
-                  textContentType={index === 0 ? "oneTimeCode" : "none"}
-                  autoComplete={index === 0 ? "sms-otp" : "off"}
-                  importantForAutofill={index === 0 ? "yes" : "no"}
-                  blurOnSubmit={false}
-                  contextMenuHidden={index !== 0}
-                  autoCorrect={false}
-                  spellCheck={false}
-                  // Enhanced autofill handling
-                  onSelectionChange={index === 0 ? (event) => {
-                    // Monitor selection changes that might indicate autofill
-                    const { selection } = event.nativeEvent;
-                    if (selection.end > 1) {
-                      console.log("Selection change detected in first input, might be autofill");
-                    }
-                  } : undefined}
+                  selectTextOnFocus
+                  returnKeyType="done"
+                  onSubmitEditing={() => {
+                    // Handle submit to dismiss keyboard properly
+                    Keyboard.dismiss();
+                  }}
                 />
-              </Animated.View>
+              </View>
             ))}
           </View>
 
           <View style={styles.resendContainer}>
             {timer > 0 ? (
-              <Text style={styles.timerText}>Resend code in {timer}s</Text>
+              <Text style={styles.countdownText}>Resend code in {timer}s</Text>
             ) : (
-              <TouchableOpacity onPress={handleResendOTP} disabled={isLoading}>
-                <Text
-                  style={[
-                    styles.resendText,
-                    isLoading && styles.resendTextDisabled,
-                  ]}
-                >
-                  Resend Code
-                </Text>
+              <TouchableOpacity style={styles.resendButton} onPress={handleResendOTP} disabled={isLoading}>
+                <Text style={styles.resendText}>Resend Code</Text>
               </TouchableOpacity>
             )}
           </View>
 
           <Text style={styles.helpText}>
-            {Platform.OS === "ios"
-              ? "Didn't receive the code? Check your SMS or try resending."
-              : "Didn't receive the code? Check your SMS or try resending."
-            }
+            Didn't receive the code? Check your SMS messages or try resending.
           </Text>
         </View>
       </Card>
@@ -890,6 +926,9 @@ const styles = StyleSheet.create({
   },
 
   // OTP Input
+  otpContainer: {
+    padding: SPACING.md,
+  },
   otpLabel: {
     fontSize: 16,
     fontWeight: "600",
@@ -900,35 +939,35 @@ const styles = StyleSheet.create({
   otpInputContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginBottom: SPACING.md,
     paddingHorizontal: SPACING.sm,
   },
   otpInputWrapper: {
-    paddingTop: SPACING.xl,
+    // Wrapper for individual input animations
   },
   otpInput: {
-    width: 45,
-    height: 55,
+    width: 40,
+    height: 48,
     borderWidth: 2,
     borderColor: COLORS.gray[300],
-    borderRadius: 12,
+    borderRadius: 8,
     textAlign: "center",
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "600",
     color: COLORS.gray[900],
     backgroundColor: COLORS.white,
   },
   otpInputFilled: {
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.brand.blue_subtle,
+    backgroundColor: COLORS.primary + "08",
   },
   otpInputDisabled: {
-    backgroundColor: COLORS.gray[100],
-    borderColor: COLORS.gray[200],
-    color: COLORS.gray[400],
+    opacity: 0.5,
   },
   loadingContainer: {
+    paddingTop: 5,
     position: "absolute",
-    top: -10,
+    top: -30,
     left: 0,
     right: 0,
     alignItems: "center",
@@ -943,26 +982,27 @@ const styles = StyleSheet.create({
   // Resend
   resendContainer: {
     alignItems: "center",
-    marginTop: SPACING.sm,
+    marginBottom: SPACING.md,
   },
-  timerText: {
-    fontSize: 14,
-    color: COLORS.gray[500],
+  resendButton: {
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
   },
   resendText: {
-    fontSize: 14,
     color: COLORS.primary,
+    fontSize: 14,
     fontWeight: "600",
   },
-  resendTextDisabled: {
-    color: COLORS.gray[400],
+  countdownText: {
+    color: COLORS.gray[600],
+    fontSize: 14,
   },
   helpText: {
-    fontSize: 14,
-    color: COLORS.gray[600],
     textAlign: "center",
+    color: COLORS.gray[600],
+    fontSize: 12,
     marginTop: SPACING.sm,
-    lineHeight: 18,
+    lineHeight: 16,
   },
   // Bottom section
   bottomSection: {
