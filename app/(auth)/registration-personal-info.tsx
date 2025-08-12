@@ -383,6 +383,7 @@ export default function RegistrationPersonalInfo() {
                   keyboardType="phone-pad"
                   icon="call-outline"
                   error={errors.phone}
+                  maxLength={11}
                 />
 
                 <Input
