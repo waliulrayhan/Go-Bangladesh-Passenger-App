@@ -26,6 +26,11 @@
         "foregroundImage": "./assets/images/appIconPng1024_lg.png",
         "backgroundColor": "#FFFFFF"
       },
+      "splash": {
+        "image": "./assets/images/splashScreenTransparent1024_updated.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#FFFFFF"
+      },
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -46,7 +51,16 @@
           "locationAlwaysAndWhenInUsePermission": "This app needs access to location for trip tracking."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splashScreenTransparent1024_updated.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ]
     ],
     "scheme": "go-bangladesh",
     "extra": {
