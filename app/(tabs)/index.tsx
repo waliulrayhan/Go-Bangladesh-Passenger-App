@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   Image,
   RefreshControl,
+  Text as RNText,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -138,9 +139,14 @@ const formatTimeString = (date: Date): string => {
 };
 
 const formatBalanceDisplay = (balance: number | undefined): string => {
-  return typeof balance === "number"
-    ? `৳ ${balance.toFixed(2)}`
-    : UI_TEXTS.FALLBACKS.BALANCE;
+  // Explicitly handle the case where balance is a number (including 0)
+  if (typeof balance === "number" && !isNaN(balance)) {
+    const formattedNumber = balance.toFixed(2);
+    // Use explicit string concatenation instead of template literals
+    return "৳ " + formattedNumber;
+  }
+  
+  return UI_TEXTS.FALLBACKS.BALANCE;
 };
 
 const getCardTypeLabel = (userType: string | undefined): string => {
@@ -635,9 +641,13 @@ export default function Dashboard() {
               <Animated.View
                 style={[styles.balanceDisplayContainer, balanceSlideStyle]}
               >
-                <Text variant="h2" color={COLORS.white} style={styles.balance}>
-                  {formatBalanceDisplay(user?.balance || card?.balance)}
-                </Text>
+                <RNText 
+                  style={[styles.balance, { color: COLORS.white }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit={false}
+                >
+                  {formatBalanceDisplay(user?.balance ?? card?.balance)}
+                </RNText>
               </Animated.View>
             )}
           </View>
@@ -1260,7 +1270,7 @@ const styles = StyleSheet.create({
   },
   balanceContainer: {
     width: "100%",
-    height: 50,
+    minHeight: 50,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1279,6 +1289,8 @@ const styles = StyleSheet.create({
     lineHeight: 38,
     letterSpacing: -0.5,
     textAlign: "center",
+    minWidth: 120, // Ensure enough space for the full text
+    flexShrink: 0, // Prevent text from shrinking
   },
   showBalanceButton: {
     flexDirection: "row",
