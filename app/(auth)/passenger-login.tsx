@@ -251,9 +251,9 @@ export default function PassengerLogin() {
         onPress={navigateToRegistration}
       >
         <Text style={styles.createAccountText}>
-          Don't have an account?{" "}
-          <Text style={styles.createAccountLink}>Register Now</Text>
+          Don't have an account?
         </Text>
+        <Text style={styles.createAccountLink}>Register Now</Text>
       </TouchableOpacity>
 
       <TouchableOpacity 
