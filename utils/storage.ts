@@ -96,7 +96,7 @@ export class StorageService {
     console.log('🧹 [STORAGE] Clearing all application data...');
     
     try {
-      // Clear all auth-related data
+      // Clear all auth-related data first
       await this.clearAuthData();
       
       // Clear additional app-specific data
@@ -108,17 +108,54 @@ export class StorageService {
         'transaction_cache',
         'history_cache',
         'bus_data_cache',
-        'profile_cache'
+        'profile_cache',
+        'user_preferences',
+        'recent_searches',
+        'app_state',
+        'navigation_state'
       ];
       
-      await Promise.all(
-        additionalKeys.map(key => this.removeItem(key))
+      // Clear all additional keys in parallel
+      const clearPromises = additionalKeys.map(key => 
+        this.removeItem(key).catch(error => 
+          console.warn(`⚠️ [STORAGE] Failed to clear ${key}:`, error)
+        )
       );
+      
+      await Promise.allSettled(clearPromises);
+      
+      // Also try to clear any keys that might be prefixed
+      try {
+        const allKeys = await AsyncStorage.getAllKeys();
+        const appKeys = allKeys.filter(key => 
+          key.startsWith('go_bangladesh_') || 
+          key.includes('auth') || 
+          key.includes('user') ||
+          key.includes('card') ||
+          key.includes('trip')
+        );
+        
+        if (appKeys.length > 0) {
+          await AsyncStorage.multiRemove(appKeys);
+          console.log(`🧹 [STORAGE] Cleared ${appKeys.length} additional app keys`);
+        }
+      } catch (multiClearError) {
+        console.warn('⚠️ [STORAGE] Multi-clear failed:', multiClearError);
+      }
       
       console.log('✅ [STORAGE] All application data cleared successfully');
     } catch (error) {
       console.error('❌ [STORAGE] Error clearing application data:', error);
-      throw error;
+      
+      // Last resort: try to clear everything
+      try {
+        console.log('🧹 [STORAGE] Attempting nuclear clear...');
+        await AsyncStorage.clear();
+        console.log('✅ [STORAGE] Nuclear clear successful');
+      } catch (nuclearError) {
+        console.error('💥 [STORAGE] Nuclear clear also failed:', nuclearError);
+        throw error; // Re-throw original error
+      }
     }
   }
 }

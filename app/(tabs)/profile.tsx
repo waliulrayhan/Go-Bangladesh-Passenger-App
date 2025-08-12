@@ -212,17 +212,18 @@ export default function Profile() {
       setLocalIsLoggingOut(true);
       setShowLogoutConfirmation(false);
       
-      // Very subtle fade out animation for the content only
-      fadeOpacity.value = withTiming(0.7, { duration: 300 });
-      slideTransform.value = withTiming(-3, { duration: 300 });
+      console.log('🔄 [PROFILE] Starting logout process...');
       
-      // Minimal delay for smooth transition to global overlay
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Simple fade out animation
+      fadeOpacity.value = withTiming(0.8, { duration: 200 });
       
-      // Now perform the actual logout - global overlay will take over immediately
+      // Short delay for smooth transition
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Perform the logout - global overlay will take over
       await logout();
       
-      // Note: Component will unmount, so no need to reset local state
+      console.log('✅ [PROFILE] Logout completed');
       
     } catch (error) {
       console.error('❌ [PROFILE] Logout error:', error);
@@ -242,7 +243,7 @@ export default function Profile() {
         } catch (navError) {
           console.error('Navigation fallback also failed:', navError);
         }
-      }, LOGOUT_ERROR_REDIRECT_DELAY);
+      }, 1000);
     }
   };
 

@@ -46,43 +46,6 @@ const formatError = (error: any): string => {
   return error.message || 'An error occurred';
 };
 
-// Simple navigation helper to avoid import issues
-const safeNavigateToWelcome = async (): Promise<boolean> => {
-  try {
-    console.log('🔄 [NAV] Attempting safe navigation to welcome screen...');
-    
-    // Strategy 1: Simple replace (no dismissAll to avoid POP_TO_TOP)
-    router.replace('/');
-    console.log('✅ [NAV] Navigation successful');
-    return true;
-  } catch (error1) {
-    console.warn('⚠️ [NAV] Strategy 1 failed, trying push:', error1);
-    
-    try {
-      // Strategy 2: Push to root
-      router.push('/');
-      console.log('✅ [NAV] Navigation Strategy 2 successful');
-      return true;
-    } catch (error2) {
-      console.warn('⚠️ [NAV] Strategy 2 failed, trying navigate:', error2);
-      
-      try {
-        // Strategy 3: Navigate to login
-        router.navigate('/(auth)/passenger-login');
-        console.log('✅ [NAV] Navigation Strategy 3 successful');
-        return true;
-      } catch (error3) {
-        console.error('💥 [NAV] All navigation strategies failed:', {
-          strategy1: error1,
-          strategy2: error2,
-          strategy3: error3
-        });
-        return false;
-      }
-    }
-  }
-};
-
 export const useAuthStore = create<AuthState>((set, get) => ({
   // Initial state
   user: null,
@@ -171,35 +134,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Set global logout state immediately
       set({ isLoggingOut: true });
       
+      // Clear card store data first to prevent stale data
+      try {
+        const { useCardStore } = await import('../stores/cardStore');
+        const cardStore = useCardStore.getState();
+        await cardStore.clearAllCardData();
+        console.log('✅ [AUTH] Card store cleared');
+      } catch (cardError) {
+        console.warn('⚠️ [AUTH] Card store clear error:', cardError);
+      }
+      
       // Clear all auth-related data from storage
       await storageService.clearAllAppData();
       
-      // Reset the auth state (but keep isLoggingOut true until navigation completes)
+      // Reset the auth state completely - this will trigger navigation in main layout
       set({
         user: null,
         isAuthenticated: false,
         error: null,
         isLoading: false,
         justLoggedIn: false,
-        // Keep isLoggingOut: true to prevent flash
+        isLoggingOut: false // Clear immediately so navigation can proceed
       });
       
-      console.log('✅ [AUTH] Logout completed successfully');
-      
-      // Use safe navigation for logout redirect with longer delay to prevent flash
-      setTimeout(async () => {
-        try {
-          await safeNavigateToWelcome();
-          // Clear logout state after navigation
-          setTimeout(() => {
-            set({ isLoggingOut: false });
-          }, 500); // Additional delay to ensure new screen has loaded
-        } catch (navError) {
-          console.error('❌ [AUTH] Navigation error during logout:', navError);
-          // Clear logout state even if navigation fails
-          set({ isLoggingOut: false });
-        }
-      }, 200); // Increased from 100ms to 200ms
+      console.log('✅ [AUTH] Logout state cleared successfully');
       
     } catch (error) {
       console.error('❌ [AUTH] Logout error:', error);
@@ -211,23 +169,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
         isLoading: false,
         justLoggedIn: false,
-        isLoggingOut: true // Set logout state even on error
+        isLoggingOut: false // Clear immediately so navigation can proceed
       });
-      
-      // Still attempt navigation with longer delay
-      setTimeout(async () => {
-        try {
-          await safeNavigateToWelcome();
-          // Clear logout state after navigation
-          setTimeout(() => {
-            set({ isLoggingOut: false });
-          }, 500);
-        } catch (navError) {
-          console.error('❌ [AUTH] Fallback navigation also failed:', navError);
-          // Clear logout state even if navigation fails
-          set({ isLoggingOut: false });
-        }
-      }, 200); // Increased from 100ms to 200ms
     }
   },
 
@@ -249,10 +192,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         
         // Check if token is expired
         if (isTokenExpired(token)) {
-          console.log('⏰ [AUTH] Token has expired - triggering automatic logout');
+          console.log('⏰ [AUTH] Token has expired - clearing session silently');
           
-          // Token is expired, clear everything and reset state
-          await get().handleUnauthorized();
+          // Token is expired, clear everything silently without triggering handleUnauthorized
+          await storageService.clearAllAppData();
+          
+          // Clear card store data as well
+          try {
+            const { useCardStore } = await import('./cardStore');
+            const cardStore = useCardStore.getState();
+            await cardStore.clearAllCardData();
+          } catch (cardError) {
+            console.warn('⚠️ [AUTH] Card store clear error during token expiry:', cardError);
+          }
+          
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null
+          });
           return;
         }
         
@@ -260,22 +219,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({
           user: userData,
           isAuthenticated: true,
-          isLoading: false
+          isLoading: false,
+          error: null
         });
       } else {
         console.log('ℹ️ [AUTH] No valid session found in storage');
         set({
           user: null,
           isAuthenticated: false,
-          isLoading: false
+          isLoading: false,
+          error: null
         });
       }
     } catch (error) {
       console.error('💥 [AUTH] Error loading user from storage:', error);
       
-      // Clear potentially corrupted data
+      // Clear potentially corrupted data silently
       try {
-        await get().handleUnauthorized();
+        await storageService.clearAllAppData();
+        
+        // Clear card store data as well
+        try {
+          const { useCardStore } = await import('./cardStore');
+          const cardStore = useCardStore.getState();
+          await cardStore.clearAllCardData();
+        } catch (cardError) {
+          console.warn('⚠️ [AUTH] Card store clear error during error recovery:', cardError);
+        }
       } catch (cleanupError) {
         console.error('💥 [AUTH] Error during cleanup:', cleanupError);
       }
@@ -283,7 +253,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         user: null,
         isAuthenticated: false,
-        isLoading: false
+        isLoading: false,
+        error: null
       });
     }
   },
@@ -495,22 +466,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       console.log('✅ [AUTH] Session cleanup completed successfully');
       
-      // Use safe navigation for robust redirect
-      setTimeout(async () => {
+      // Simple navigation to welcome screen
+      setTimeout(() => {
         try {
-          const success = await safeNavigateToWelcome();
-          
-          if (success) {
-            console.log('✅ [AUTH] Navigation service redirect successful');
-          } else {
-            console.log('❌ [AUTH] Navigation service redirect failed, trying dismissAll fallback');
-            
-            // Fallback to manual navigation with dismissAll
-            router.dismissAll();
-            router.replace('/');
-          }
+          router.replace('/');
+          console.log('✅ [AUTH] Navigation to welcome successful');
         } catch (navError) {
-          console.error('💥 [AUTH] All navigation attempts failed:', navError);
+          console.error('💥 [AUTH] Navigation failed:', navError);
+          // Try alternative navigation
+          try {
+            router.push('/');
+          } catch (pushError) {
+            console.error('💥 [AUTH] Push navigation also failed:', pushError);
+          }
         }
       }, 200);
       
@@ -527,9 +495,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       
       // Still try to navigate even if cleanup failed
-      setTimeout(async () => {
+      setTimeout(() => {
         try {
-          await safeNavigateToWelcome();
+          router.replace('/');
         } catch (navError) {
           console.error('💥 [AUTH] Final navigation attempt failed:', navError);
         }

@@ -4,14 +4,14 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { SafeAreaView, StyleSheet, View } from "react-native";
 import Animated, {
-  Easing,
-  FadeInDown,
-  FadeInUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
+    Easing,
+    FadeInDown,
+    FadeInUp,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
 } from "react-native-reanimated";
 import { GoBangladeshLogo } from "../components/GoBangladeshLogo";
 import { BubbleAnimation } from "../components/ui/BubbleAnimation";
@@ -90,7 +90,7 @@ export default function WelcomeScreen() {
     }, 200);
   };
 
-  // Only redirect after initialization is complete
+  // Only redirect after initialization is complete and ensure no logout in progress
   useEffect(() => {
     if (isInitialized && isAuthenticated) {
       console.log("🔄 [WELCOME] User is authenticated, redirecting to tabs...");
@@ -104,11 +104,28 @@ export default function WelcomeScreen() {
   }, [isInitialized, isAuthenticated]);
 
   const initializeApp = async () => {
+    // Prevent multiple initializations
+    if (isLoading === false) {
+      console.log("🔄 [WELCOME] Already initialized, skipping...");
+      return;
+    }
+    
     setIsLoading(true);
     console.log("🚀 [WELCOME] Initializing app and checking authentication...");
 
     try {
-      await loadUserFromStorage();
+      // Check if we're coming from a logout (auth state already clear)
+      const currentAuthState = useAuthStore.getState();
+      
+      if (!currentAuthState.isAuthenticated) {
+        console.log("🔄 [WELCOME] User not authenticated, skipping storage load");
+        // Don't call loadUserFromStorage if user is already not authenticated
+        // This prevents restoring stale authentication during logout
+      } else {
+        console.log("🔄 [WELCOME] User appears authenticated, loading from storage");
+        await loadUserFromStorage();
+      }
+      
       console.log("✅ [WELCOME] Authentication check completed");
     } catch (error) {
       console.error("❌ [WELCOME] Error during app initialization:", error);
@@ -116,11 +133,15 @@ export default function WelcomeScreen() {
       const { handleUnauthorized } = useAuthStore.getState();
       await handleUnauthorized();
     } finally {
-      // Add a minimum loading time to prevent flashing
+      // For logout scenarios, reduce loading time to prevent stuck state
+      const currentState = useAuthStore.getState();
+      const loadingDelay = currentState?.isAuthenticated ? 300 : 100;
+      
       setTimeout(() => {
         setIsLoading(false);
         setIsInitialized(true);
-      }, 500);
+        console.log("✅ [WELCOME] Welcome screen initialization completed");
+      }, loadingDelay);
     }
   };
 

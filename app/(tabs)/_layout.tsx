@@ -1,29 +1,33 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Tabs, useRouter } from "expo-router";
+import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { useAuthStore } from "../../stores/authStore";
 import { COLORS } from "../../utils/constants";
 import { FONT_SIZES, FONT_WEIGHTS } from "../../utils/fonts";
 
 export default function TabsLayout() {
-  const { logout, user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const router = useRouter();
 
-  const handleLogout = async () => {
-    try {
-      // The logout function now handles navigation internally
-      await logout();
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Fallback navigation if something goes wrong
-      try {
-        router.replace("/");
-      } catch (navError) {
-        console.error("Navigation fallback also failed:", navError);
-      }
+  // Note: Navigation is now handled by the main layout to prevent conflicts
+  // Redirect to welcome if user is not authenticated
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      console.log('🔄 [TABS] User not authenticated - main layout will handle navigation');
+      // Let the main layout handle navigation to prevent conflicts
     }
-  };
+  }, [isAuthenticated, user]);
+
+  // If user is not authenticated, don't render the tabs at all
+  // This forces Expo Router to show the fallback route (welcome screen)
+  if (!isAuthenticated || !user) {
+    console.log('🚫 [TABS] Not rendering tabs - user not authenticated');
+    return null; // This will cause Expo Router to show the index route instead
+  }
+
+  console.log('✅ [TABS] Rendering tabs for authenticated user');
 
   return (
     <View style={styles.container}>

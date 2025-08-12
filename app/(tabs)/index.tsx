@@ -171,7 +171,7 @@ const adjustTimeForTimezone = (dateString: string): Date => {
 export default function Dashboard() {
   // Navigation and store hooks
   const router = useRouter();
-  const { user, logout, justLoggedIn, clearJustLoggedIn } = useAuthStore();
+  const { user, logout, justLoggedIn, clearJustLoggedIn, isAuthenticated } = useAuthStore();
   const {
     card,
     loadCardDetails,
