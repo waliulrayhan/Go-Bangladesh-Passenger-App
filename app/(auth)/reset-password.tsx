@@ -113,6 +113,8 @@ export default function ResetPassword() {
       showSuccess("Your password has been reset successfully. You can now login with your new password!");
       // Navigate to login after a short delay to allow user to see the success message
       setTimeout(() => {
+        // Use a more specific navigation method that avoids potential UI shake
+        router.dismissAll();
         router.replace("/(auth)/passenger-login");
       }, 3000);
     }
@@ -142,7 +144,7 @@ export default function ResetPassword() {
 
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
           <ScrollView
@@ -151,6 +153,14 @@ export default function ResetPassword() {
             showsVerticalScrollIndicator={false}
             bounces={false}
             overScrollMode="never"
+            scrollEventThrottle={16}
+            removeClippedSubviews={false}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+              autoscrollToTopThreshold: 0,
+            }}
+            automaticallyAdjustContentInsets={false}
+            contentInsetAdjustmentBehavior="never"
           >
             <Animated.View
               entering={FadeInUp.duration(800)}

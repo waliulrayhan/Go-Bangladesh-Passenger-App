@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Dimensions,
   KeyboardAvoidingView,
@@ -67,6 +67,17 @@ export default function PassengerRegistration() {
   // External hooks
   const { toast, showError, showSuccess, hideToast } = useToast();
 
+  // Clear form when screen comes into focus (user navigates back)
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        // Cleanup: Clear form when navigating away
+        setCardNumber("");
+        setIsLoading(false);
+      };
+    }, []) // Empty dependencies to prevent infinite loops
+  );
+
   // Helper functions
   const validateCardNumber = (input: string): boolean => {
     return CARD_CONSTRAINTS.VALID_PATTERN.test(input.trim());
@@ -78,7 +89,13 @@ export default function PassengerRegistration() {
 
   const navigateBack = () => router.back();
 
-  const navigateToLogin = () => router.push("/(auth)/passenger-login");
+  const navigateToLogin = () => {
+    // Clear form before navigation to prevent UI shake
+    setCardNumber("");
+    setIsLoading(false);
+    hideToast();
+    router.push("/(auth)/passenger-login");
+  };
 
   const navigateToPersonalInfo = (validationResponse: CardValidationResponse) => {
     router.push({
@@ -242,8 +259,8 @@ export default function PassengerRegistration() {
 
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={0}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
           <ScrollView
             contentContainerStyle={styles.scrollContent}
@@ -251,6 +268,14 @@ export default function PassengerRegistration() {
             showsVerticalScrollIndicator={false}
             bounces={false}
             overScrollMode="never"
+            scrollEventThrottle={16}
+            removeClippedSubviews={false}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+              autoscrollToTopThreshold: 0,
+            }}
+            automaticallyAdjustContentInsets={false}
+            contentInsetAdjustmentBehavior="never"
           >
             {renderHeader()}
             {renderRegistrationForm()}

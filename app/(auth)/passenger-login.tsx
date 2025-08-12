@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   KeyboardAvoidingView,
   Linking,
@@ -61,10 +61,43 @@ export default function PassengerLogin() {
 
   const inputType = determineInputType(identifier);
 
-  const navigateToForgotPassword = () => router.push("/(auth)/forgot-password");
+  // Clear form when the screen comes into focus (user navigates back)
+  useFocusEffect(
+    useCallback(() => {
+      // Clear any existing error state and toast when screen is focused
+      clearError();
+      hideToast();
+      
+      return () => {
+        // Cleanup: Clear form when navigating away
+        setIdentifier("");
+        setPassword("");
+        setShowPassword(false);
+      };
+    }, []) // Empty dependencies to prevent infinite loops
+  );
+
+  const navigateToForgotPassword = () => {
+    // Clear form before navigation to prevent UI shake
+    setIdentifier("");
+    setPassword("");
+    setShowPassword(false);
+    clearError();
+    hideToast();
+    router.push("/(auth)/forgot-password");
+  };
+
   const navigateBack = () => router.back();
-  const navigateToRegistration = () =>
+
+  const navigateToRegistration = () => {
+    // Clear form before navigation to prevent UI shake
+    setIdentifier("");
+    setPassword("");
+    setShowPassword(false);
+    clearError();
+    hideToast();
     router.push("/(auth)/passenger-registration");
+  };
 
   const handleEmailPress = () => {
     const email = 'info@thegobd.com';
@@ -295,8 +328,8 @@ export default function PassengerLogin() {
 
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={0}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
           <ScrollView
             contentContainerStyle={styles.scrollContent}
@@ -306,6 +339,12 @@ export default function PassengerLogin() {
             overScrollMode="never"
             scrollEventThrottle={16}
             removeClippedSubviews={false}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+              autoscrollToTopThreshold: 0,
+            }}
+            automaticallyAdjustContentInsets={false}
+            contentInsetAdjustmentBehavior="never"
           >
             {renderHeader()}
             {renderLoginForm()}

@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -147,6 +147,23 @@ export default function ForgotPassword() {
   // Refs
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
+  // Clear form when screen comes into focus (user navigates back)
+  useFocusEffect(
+    useCallback(() => {
+      // No immediate actions on focus
+      
+      return () => {
+        // Cleanup: Clear form when navigating away - simplified to avoid dependency issues
+        setMobile("");
+        setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
+        setIsOtpSent(false);
+        setIsAutoVerifying(false);
+        setShowVerifyingText(false);
+        setIsOtpReady(false);
+      };
+    }, []) // Empty dependencies to prevent infinite loops
+  );
+
   const navigateBack = () => router.back();
 
   const validateMobile = (mobile: string): boolean => {
@@ -182,6 +199,13 @@ export default function ForgotPassword() {
 
   // Effects
   useEffect(() => {
+    // Cleanup function for when component unmounts
+    return () => {
+      otpAutofill.cleanup();
+    };
+  }, []); // Empty dependency array - runs once on mount, cleanup on unmount
+
+  useEffect(() => {
     if (isOtpSent) {
       setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
       setIsAutoVerifying(false);
@@ -199,12 +223,6 @@ export default function ForgotPassword() {
       }, OTP_CONSTRAINTS.FOCUS_DELAY);
     }
   }, [isOtpSent]);
-
-  useEffect(() => {
-    return () => {
-      otpAutofill.cleanup();
-    };
-  }, []);
 
   // Trigger OTP ready state for autofill
   useEffect(() => {
@@ -810,8 +828,8 @@ export default function ForgotPassword() {
 
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={0}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
           <ScrollView
             contentContainerStyle={styles.scrollContent}
@@ -819,6 +837,14 @@ export default function ForgotPassword() {
             showsVerticalScrollIndicator={false}
             bounces={false}
             overScrollMode="never"
+            scrollEventThrottle={16}
+            removeClippedSubviews={false}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+              autoscrollToTopThreshold: 0,
+            }}
+            automaticallyAdjustContentInsets={false}
+            contentInsetAdjustmentBehavior="never"
           >
             {renderHeader()}
             {isOtpSent ? renderOTPInput() : renderMobileInput()}
