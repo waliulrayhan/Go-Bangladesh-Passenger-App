@@ -486,28 +486,28 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
     userLocationMarker = L.marker([latitude, longitude], { 
       icon: createUserLocationIcon(username, profilePhotoUrl) 
     })
-      .bindPopup(
-        '<div class="bus-popup">' +
-          '<div class="bus-popup-header">' +
-            '<span class="bus-popup-icon">📍</span>' +
-            '<h3>' + username + '</h3>' +
-          '</div>' +
-          '<div class="bus-popup-info">' +
-            '<span class="bus-popup-label">Coordinates</span>' +
-            '<span class="bus-popup-value">' + latitude.toFixed(6) + ', ' + longitude.toFixed(6) + '</span>' +
-          '</div>' +
-          '<div class="bus-popup-footer">' +
-            '<div class="bus-popup-live">' +
-              '<div class="live-dot"></div>' +
-              'Current Location' +
-            '</div>' +
-          '</div>' +
-        '</div>',
-        {
-          maxWidth: 300,
-          className: 'custom-popup'
-        }
-      )
+      // .bindPopup(
+      //   '<div class="bus-popup">' +
+      //     '<div class="bus-popup-header">' +
+      //       '<span class="bus-popup-icon">📍</span>' +
+      //       '<h3>' + username + '</h3>' +
+      //     '</div>' +
+      //     '<div class="bus-popup-info">' +
+      //       '<span class="bus-popup-label">Coordinates</span>' +
+      //       '<span class="bus-popup-value">' + latitude.toFixed(6) + ', ' + longitude.toFixed(6) + '</span>' +
+      //     '</div>' +
+      //     '<div class="bus-popup-footer">' +
+      //       '<div class="bus-popup-live">' +
+      //         '<div class="live-dot"></div>' +
+      //         'Current Location' +
+      //       '</div>' +
+      //     '</div>' +
+      //   '</div>',
+      //   {
+      //     maxWidth: 300,
+      //     className: 'custom-popup'
+      //   }
+      // )
       .addTo(map);
     
     if (focusOnly) {
@@ -564,34 +564,34 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
         const marker = L.marker([lat, lng], { 
           icon: createBusIcon(bus.busName, bus.busNumber) 
         })
-          .bindPopup(
-            '<div class="bus-popup">' +
-              '<div class="bus-popup-header">' +
-                '<span class="bus-popup-icon">🚌</span>' +
-                '<h3>' + (bus.busName || 'Bus') + '</h3>' +
-              '</div>' +
-              '<div class="bus-popup-info">' +
-                '<span class="bus-popup-label">Number</span>' +
-                '<span class="bus-popup-value bus-popup-number">' + bus.busNumber + '</span>' +
-                (bus.organizationName ? 
-                  '<span class="bus-popup-label">Organization</span>' +
-                  '<span class="bus-popup-value">' + bus.organizationName + '</span>' 
-                  : '') +
-                '<span class="bus-popup-label">Coordinates</span>' +
-                '<span class="bus-popup-value">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</span>' +
-              '</div>' +
-              '<div class="bus-popup-footer">' +
-                '<div class="bus-popup-live">' +
-                  '<div class="live-dot"></div>' +
-                  'Live Location' +
-                '</div>' +
-              '</div>' +
-            '</div>',
-            {
-              maxWidth: 300,
-              className: 'custom-popup'
-            }
-          );
+          // .bindPopup(
+          //   '<div class="bus-popup">' +
+          //     '<div class="bus-popup-header">' +
+          //       '<span class="bus-popup-icon">🚌</span>' +
+          //       '<h3>' + (bus.busName || 'Bus') + '</h3>' +
+          //     '</div>' +
+          //     '<div class="bus-popup-info">' +
+          //       '<span class="bus-popup-label">Number</span>' +
+          //       '<span class="bus-popup-value bus-popup-number">' + bus.busNumber + '</span>' +
+          //       (bus.organizationName ? 
+          //         '<span class="bus-popup-label">Organization</span>' +
+          //         '<span class="bus-popup-value">' + bus.organizationName + '</span>' 
+          //         : '') +
+          //       '<span class="bus-popup-label">Coordinates</span>' +
+          //       '<span class="bus-popup-value">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</span>' +
+          //     '</div>' +
+          //     '<div class="bus-popup-footer">' +
+          //       '<div class="bus-popup-live">' +
+          //         '<div class="live-dot"></div>' +
+          //         'Live Location' +
+          //       '</div>' +
+          //     '</div>' +
+          //   '</div>',
+          //   {
+          //     maxWidth: 300,
+          //     className: 'custom-popup'
+          //   }
+          // );
         
         // Add smooth animation on marker add
         setTimeout(() => {
