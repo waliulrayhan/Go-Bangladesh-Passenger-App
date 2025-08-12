@@ -25,6 +25,7 @@ import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { RechargeTransaction, TripTransaction } from "../../services/api";
 import { useCardStore } from "../../stores/cardStore";
 import { COLORS, SPACING } from "../../utils/constants";
+import { TYPOGRAPHY } from "../../utils/fonts";
 
 // History configuration constants
 const HISTORY_CONFIG = {
@@ -1258,16 +1259,15 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    ...TYPOGRAPHY.body,
     color: COLORS.gray[900],
-    paddingVertical: 4,
+    paddingVertical: 2,
   },
   filterHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingBottom: 12,
   },
   filterInfo: {
     flex: 1,
