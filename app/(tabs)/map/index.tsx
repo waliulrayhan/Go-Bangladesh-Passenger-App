@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -314,7 +315,13 @@ export default function MapScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <>
+      <StatusBar
+        style="light"
+        backgroundColor={COLORS.primary}
+        translucent={false}
+      />
+      <View style={styles.container}>
       <LinearGradient
         colors={["rgba(74, 144, 226, 0.1)", "rgba(255, 138, 0, 0.1)"]}
         style={styles.gradient}
@@ -425,6 +432,7 @@ export default function MapScreen() {
         onHide={hideToast}
       />
     </View>
+    </>
   );
 }
 

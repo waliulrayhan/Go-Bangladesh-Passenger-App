@@ -57,7 +57,7 @@ export default function ChangePassword() {
   );
 
   const handleGoBack = () => {
-    router.back();
+    router.replace('/(tabs)/profile');
   };
 
   const validatePassword = (password: string) => {
@@ -115,7 +115,7 @@ export default function ChangePassword() {
       showSuccess("Your password has been updated successfully!");
       // Navigate back after a short delay to allow user to see the success message
       setTimeout(() => {
-        router.back();
+        router.replace('/(tabs)/profile');
       }, 2000);
     } else {
       showError(result.message);

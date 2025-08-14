@@ -1,5 +1,6 @@
 // React Native and Expo imports
 import { Ionicons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -1129,7 +1130,13 @@ export default function History() {
 
   // Main component render
   return (
-    <SafeAreaView style={styles.container}>
+    <>
+      <StatusBar
+        style="light"
+        backgroundColor={COLORS.primary}
+        translucent={false}
+      />
+      <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         {/* Header Section */}
         <View style={styles.headerSection}>
@@ -1341,6 +1348,7 @@ export default function History() {
         onHide={hideToast}
       />
     </SafeAreaView>
+    </>
   );
 }
 
