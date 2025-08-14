@@ -412,7 +412,7 @@ export default function RegistrationPersonalInfo() {
                   }
                   value={form.phone}
                   onChangeText={(value) => updateForm("phone", value)}
-                  placeholder="(e.g. 01XXXXXXXXXX)"
+                  placeholder="(e.g. 01XXXXXXXXX)"
                   keyboardType="phone-pad"
                   icon="call-outline"
                   error={errors.phone}
