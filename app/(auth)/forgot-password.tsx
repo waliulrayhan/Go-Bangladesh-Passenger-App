@@ -689,6 +689,7 @@ export default function ForgotPassword() {
             keyboardType="phone-pad"
             icon="call-outline"
             autoCapitalize="none"
+            maxLength={11}
           />
 
           {renderInputIndicator()}
