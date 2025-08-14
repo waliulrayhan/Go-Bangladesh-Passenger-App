@@ -141,8 +141,18 @@ const UI_TEXTS = {
 // Utility functions
 const formatDateString = (date: Date): string => {
   const months = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ];
   const day = date.getDate();
   const month = months[date.getMonth()];
@@ -151,7 +161,9 @@ const formatDateString = (date: Date): string => {
 };
 
 const formatTimeString = (dateString: string): string => {
-  const date = new Date(new Date(dateString).getTime() + HISTORY_CONFIG.TIMEZONE_OFFSET);
+  const date = new Date(
+    new Date(dateString).getTime() + HISTORY_CONFIG.TIMEZONE_OFFSET
+  );
   const hours24 = date.getHours();
   const minutes = date.getMinutes().toString().padStart(2, "0");
   const hours12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
@@ -164,7 +176,12 @@ const openMapLocation = (latitude: number, longitude: number): void => {
   Linking.openURL(url);
 };
 
-const openRouteMap = (startLat: number, startLng: number, endLat: number, endLng: number): void => {
+const openRouteMap = (
+  startLat: number,
+  startLng: number,
+  endLat: number,
+  endLng: number
+): void => {
   const url = `https://www.google.com/maps/dir/${startLat},${startLng}/${endLat},${endLng}`;
   Linking.openURL(url);
 };
@@ -217,17 +234,25 @@ type HistoryTab = "trips" | "recharge";
 export default function History() {
   // Selective store subscriptions to prevent unnecessary re-renders
   const tripTransactions = useCardStore((state) => state.tripTransactions);
-  const rechargeTransactions = useCardStore((state) => state.rechargeTransactions);
+  const rechargeTransactions = useCardStore(
+    (state) => state.rechargeTransactions
+  );
   const tripPagination = useCardStore((state) => state.tripPagination);
   const rechargePagination = useCardStore((state) => state.rechargePagination);
   const isLoading = useCardStore((state) => state.isLoading);
   const error = useCardStore((state) => state.error);
-  
+
   // Store actions (these are stable and won't cause re-renders)
   const loadTripHistory = useCardStore((state) => state.loadTripHistory);
-  const loadRechargeHistory = useCardStore((state) => state.loadRechargeHistory);
-  const loadMoreTripHistory = useCardStore((state) => state.loadMoreTripHistory);
-  const loadMoreRechargeHistory = useCardStore((state) => state.loadMoreRechargeHistory);
+  const loadRechargeHistory = useCardStore(
+    (state) => state.loadRechargeHistory
+  );
+  const loadMoreTripHistory = useCardStore(
+    (state) => state.loadMoreTripHistory
+  );
+  const loadMoreRechargeHistory = useCardStore(
+    (state) => state.loadMoreRechargeHistory
+  );
 
   // Custom hooks
   const { refreshAllData } = useTokenRefresh();
@@ -240,13 +265,13 @@ export default function History() {
   const [searchQuery, setSearchQuery] = useState("");
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
   const [isFilteringInProgress, setIsFilteringInProgress] = useState(false);
-  
+
   // Filter state
   const [filters, setFilters] = useState<FilterOptions>({
     dateFilter: "all",
     sortOrder: "newest",
   });
-  
+
   // Filter and sort data whenever dependencies change
   // Using useMemo to prevent unnecessary recalculations
   const filteredData = useMemo(() => {
@@ -370,7 +395,7 @@ export default function History() {
   }, [tripTransactions, rechargeTransactions, activeTab, filters, searchQuery]);
 
   // Effects
-  
+
   // Load initial data when component mounts
   useEffect(() => {
     if (!hasInitialLoad) {
@@ -388,7 +413,7 @@ export default function History() {
     if (showFilterModal || isFilteringInProgress) {
       return;
     }
-    
+
     setRefreshing(true);
     try {
       await refreshAllData(true);
@@ -442,7 +467,7 @@ export default function History() {
   };
 
   // Filter management functions
-  
+
   // Safe filter modal handler - prevents opening during refresh or ongoing operations
   const handleFilterModalOpen = useCallback((): void => {
     // Prevent modal from opening if refresh is in progress or filtering is ongoing
@@ -458,27 +483,31 @@ export default function History() {
       setShowFilterModal(false);
     }
   }, [isFilteringInProgress]);
-  
+
   // Apply new filters with debouncing and state protection
-  const applyFilters = useCallback(async (newFilters: FilterOptions): Promise<void> => {
-    if (isFilteringInProgress) return; // Prevent multiple simultaneous applications
-    
-    setIsFilteringInProgress(true);
-    
-    try {
-      // Small delay to prevent rapid successive calls
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      setFilters(newFilters);
-      setShowFilterModal(false);
-    } finally {
-      setIsFilteringInProgress(false);
-    }
-  }, [isFilteringInProgress]);
+  const applyFilters = useCallback(
+    async (newFilters: FilterOptions): Promise<void> => {
+      if (isFilteringInProgress) return; // Prevent multiple simultaneous applications
+
+      setIsFilteringInProgress(true);
+
+      try {
+        // Small delay to prevent rapid successive calls
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        setFilters(newFilters);
+        setShowFilterModal(false);
+      } finally {
+        setIsFilteringInProgress(false);
+      }
+    },
+    [isFilteringInProgress]
+  );
 
   // Render individual trip transaction item
   const renderTripItem = ({ item }: { item: TripTransaction }) => {
     const trip = item.trip;
+    const transactionId = item.transactionId;
 
     if (!trip) return null;
 
@@ -497,11 +526,11 @@ export default function History() {
     return (
       <Card variant="elevated" style={styles.historyCard}>
         <View style={styles.cardHeader}>
-          <View style={styles.headerLeft}>
+          <View style={styles.busInfoContainer}>
             <View style={styles.busIconContainer}>
               <Ionicons name="bus" size={20} color={COLORS.white} />
             </View>
-            <View>
+            <View style={styles.busDetailsContainer}>
               <Text
                 variant="label"
                 color={COLORS.gray[900]}
@@ -509,18 +538,42 @@ export default function History() {
               >
                 {busNumber}
               </Text>
-              <Text
-                variant="caption"
-                color={COLORS.gray[500]}
-                style={styles.cardDate}
+              <TouchableOpacity
+                style={styles.transactionIdItem}
+                onPress={() => copyTransactionId(transactionId)}
+                activeOpacity={0.7}
               >
-                {tripStartTime ? formatDateString(new Date(tripStartTime)) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
-              </Text>
+                <Text
+                  variant="bodySmall"
+                  color={COLORS.gray[600]}
+                  style={styles.detailText}
+                  numberOfLines={1}
+                  ellipsizeMode="middle"
+                >
+                  TrxID: {transactionId}
+                </Text>
+                <Ionicons
+                  name="copy-outline"
+                  size={12}
+                  color={COLORS.gray[400]}
+                />
+              </TouchableOpacity>
             </View>
           </View>
-          <Text variant="h6" color={COLORS.error} style={styles.fareAmount}>
-            -৳{tripAmount.toFixed(2)}
-          </Text>
+          <View style={styles.amountDateContainer}>
+            <Text variant="h6" color={COLORS.error} style={styles.fareAmount}>
+              -৳{tripAmount.toFixed(2)}
+            </Text>
+            <Text
+              variant="caption"
+              color={COLORS.gray[500]}
+              style={styles.cardDate}
+            >
+              {tripStartTime
+                ? formatTimeString(tripStartTime)
+                : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.tripDetails}>
@@ -537,21 +590,34 @@ export default function History() {
                 style={styles.tapInButton}
                 onPress={() => {
                   if (trip.startingLatitude && trip.startingLongitude) {
-                    openMapLocation(+trip.startingLatitude, +trip.startingLongitude);
+                    openMapLocation(
+                      +trip.startingLatitude,
+                      +trip.startingLongitude
+                    );
                   }
                 }}
                 disabled={!trip.startingLatitude || !trip.startingLongitude}
               >
-                <Ionicons name="time-outline" size={14} color={COLORS.success} />
+                <Ionicons
+                  name="time-outline"
+                  size={14}
+                  color={COLORS.success}
+                />
                 <Text
                   variant="bodySmall"
                   color={COLORS.white}
                   style={styles.timeText}
                 >
-                  {tripStartTime ? formatTimeString(tripStartTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
+                  {tripStartTime
+                    ? formatTimeString(tripStartTime)
+                    : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
                 {trip.startingLatitude && trip.startingLongitude && (
-                  <Ionicons name="location-outline" size={14} color={COLORS.success} />
+                  <Ionicons
+                    name="location-outline"
+                    size={14}
+                    color={COLORS.success}
+                  />
                 )}
               </TouchableOpacity>
             </View>
@@ -569,12 +635,19 @@ export default function History() {
                   style={styles.tapOutButton}
                   onPress={() => {
                     if (trip.endingLatitude && trip.endingLongitude) {
-                      openMapLocation(+trip.endingLatitude, +trip.endingLongitude);
+                      openMapLocation(
+                        +trip.endingLatitude,
+                        +trip.endingLongitude
+                      );
                     }
                   }}
                   disabled={!trip.endingLatitude || !trip.endingLongitude}
                 >
-                  <Ionicons name="time-outline" size={14} color={COLORS.error} />
+                  <Ionicons
+                    name="time-outline"
+                    size={14}
+                    color={COLORS.error}
+                  />
                   <Text
                     variant="bodySmall"
                     color={COLORS.white}
@@ -583,7 +656,11 @@ export default function History() {
                     {formatTimeString(tripEndTime)}
                   </Text>
                   {trip.endingLatitude && trip.endingLongitude && (
-                    <Ionicons name="location-outline" size={14} color={COLORS.error} />
+                    <Ionicons
+                      name="location-outline"
+                      size={14}
+                      color={COLORS.error}
+                    />
                   )}
                 </TouchableOpacity>
               </View>
@@ -698,7 +775,8 @@ export default function History() {
                     tapOutStatus === "Card" && styles.tapCardButton,
                     tapOutStatus === "Time-Out" && styles.tapTimeOutButton,
                     tapOutStatus === "Staff" && styles.tapStaffButton,
-                    tapOutStatus === "Session-Out" && styles.tapSessionOutButton,
+                    tapOutStatus === "Session-Out" &&
+                      styles.tapSessionOutButton,
                     tapOutStatus === "Mobile App" && styles.tapMobileAppButton,
                     tapOutStatus === "Penalty" && styles.tapPenaltyButton,
                   ]}
@@ -728,8 +806,8 @@ export default function History() {
     const transactionId = item.transactionId;
     const agent = item.agent;
     const organization = agent?.organization;
-    const isRecharge = item.transactionType === 'Recharge';
-    const isReturn = item.transactionType === 'Return';
+    const isRecharge = item.transactionType === "Recharge";
+    const isReturn = item.transactionType === "Return";
     const amount = item.amount || 0;
     const displayAmount = Math.abs(amount);
 
@@ -737,13 +815,17 @@ export default function History() {
       <Card variant="elevated" style={styles.historyCard}>
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
-            <View style={[
-              isRecharge ? styles.rechargeIconContainer : styles.returnIconContainer
-            ]}>
-              <Ionicons 
-                name={isRecharge ? "add-circle" : "remove-circle"} 
-                size={20} 
-                color={COLORS.white} 
+            <View
+              style={[
+                isRecharge
+                  ? styles.rechargeIconContainer
+                  : styles.returnIconContainer,
+              ]}
+            >
+              <Ionicons
+                name={isRecharge ? "add-circle" : "remove-circle"}
+                size={20}
+                color={COLORS.white}
               />
             </View>
             <View>
@@ -752,14 +834,17 @@ export default function History() {
                 color={COLORS.gray[900]}
                 style={styles.cardTitle}
               >
-                {isRecharge ? UI_TEXTS.TRANSACTION_TYPES.RECHARGE : UI_TEXTS.TRANSACTION_TYPES.RETURN}
+                {isRecharge
+                  ? UI_TEXTS.TRANSACTION_TYPES.RECHARGE
+                  : UI_TEXTS.TRANSACTION_TYPES.RETURN}
               </Text>
               <Text
                 variant="caption"
                 color={COLORS.gray[600]}
                 style={styles.cardSubtitle}
               >
-                {UI_TEXTS.LABELS.BY} {agent?.name || UI_TEXTS.FALLBACKS.UNKNOWN_AGENT}
+                {UI_TEXTS.LABELS.BY}{" "}
+                {agent?.name || UI_TEXTS.FALLBACKS.UNKNOWN_AGENT}
               </Text>
               {organization && (
                 <Text
@@ -775,22 +860,24 @@ export default function History() {
           <Text
             variant="h6"
             color={isRecharge ? COLORS.success : COLORS.error}
-            style={[
-              isRecharge ? styles.rechargeAmount : styles.returnAmount
-            ]}
+            style={[isRecharge ? styles.rechargeAmount : styles.returnAmount]}
           >
-            {isRecharge ? '+' : '-'}৳{displayAmount.toFixed(2)}
+            {isRecharge ? "+" : "-"}৳{displayAmount.toFixed(2)}
           </Text>
         </View>
 
         <View style={styles.rechargeDetails}>
           <View style={styles.singleRowDetails}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.transactionIdItem}
               onPress={() => copyTransactionId(transactionId)}
               activeOpacity={0.7}
             >
-              <Ionicons name="receipt-outline" size={14} color={COLORS.gray[500]} />
+              <Ionicons
+                name="receipt-outline"
+                size={14}
+                color={COLORS.gray[500]}
+              />
               <Text
                 variant="bodySmall"
                 color={COLORS.gray[600]}
@@ -800,27 +887,43 @@ export default function History() {
               >
                 {transactionId}
               </Text>
-              <Ionicons name="copy-outline" size={12} color={COLORS.gray[400]} />
+              <Ionicons
+                name="copy-outline"
+                size={12}
+                color={COLORS.gray[400]}
+              />
             </TouchableOpacity>
             <View style={styles.dateTimeContainer}>
               <View style={styles.dateItem}>
-                <Ionicons name="calendar-outline" size={14} color={COLORS.gray[500]} />
+                <Ionicons
+                  name="calendar-outline"
+                  size={14}
+                  color={COLORS.gray[500]}
+                />
                 <Text
                   variant="bodySmall"
                   color={COLORS.gray[600]}
                   style={styles.detailText}
                 >
-                  {item.createTime ? formatDateString(new Date(item.createTime)) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
+                  {item.createTime
+                    ? formatDateString(new Date(item.createTime))
+                    : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
               </View>
               <View style={styles.TimeItem}>
-                <Ionicons name="time-outline" size={14} color={COLORS.gray[500]} />
+                <Ionicons
+                  name="time-outline"
+                  size={14}
+                  color={COLORS.gray[500]}
+                />
                 <Text
                   variant="bodySmall"
                   color={COLORS.gray[600]}
                   style={styles.detailText}
                 >
-                  {item.createTime ? formatTimeString(item.createTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
+                  {item.createTime
+                    ? formatTimeString(item.createTime)
+                    : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
               </View>
             </View>
@@ -870,46 +973,58 @@ export default function History() {
                 color={COLORS.gray[600]}
                 style={styles.loadingText}
               >
-                {activeTab === "trips" 
-                  ? UI_TEXTS.LOADING_STATES.LOADING_MORE_TRIPS 
+                {activeTab === "trips"
+                  ? UI_TEXTS.LOADING_STATES.LOADING_MORE_TRIPS
                   : UI_TEXTS.LOADING_STATES.LOADING_MORE_TRANSACTIONS}
               </Text>
               {(() => {
-                const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
-                if (currentPagination.totalCount && currentPagination.totalCount > 0) {
-                  const progressPercentage = Math.round((currentPagination.totalLoaded / currentPagination.totalCount) * 100);
+                const currentPagination =
+                  activeTab === "trips" ? tripPagination : rechargePagination;
+                if (
+                  currentPagination.totalCount &&
+                  currentPagination.totalCount > 0
+                ) {
+                  const progressPercentage = Math.round(
+                    (currentPagination.totalLoaded /
+                      currentPagination.totalCount) *
+                      100
+                  );
                   return (
                     <Text
                       variant="caption"
                       color={COLORS.gray[500]}
                       style={styles.loadingText}
                     >
-                      {currentPagination.totalLoaded} of {currentPagination.totalCount} ({progressPercentage}%)
+                      {currentPagination.totalLoaded} of{" "}
+                      {currentPagination.totalCount} ({progressPercentage}%)
                     </Text>
                   );
                 }
                 return null;
               })()}
             </View>
-          ) : (activeTab === "trips" ? tripPagination : rechargePagination).hasMore ? (
+          ) : (activeTab === "trips" ? tripPagination : rechargePagination)
+              .hasMore ? (
             <TouchableOpacity
               style={styles.loadMoreButton}
               onPress={onLoadMore}
             >
               <Text variant="labelSmall" color={COLORS.primary}>
-                {activeTab === "trips" 
-                  ? UI_TEXTS.BUTTONS.LOAD_MORE_TRIPS 
+                {activeTab === "trips"
+                  ? UI_TEXTS.BUTTONS.LOAD_MORE_TRIPS
                   : UI_TEXTS.BUTTONS.LOAD_MORE_TRANSACTIONS}
               </Text>
               {(() => {
-                const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
-                if (currentPagination.totalCount && currentPagination.totalCount > 0) {
+                const currentPagination =
+                  activeTab === "trips" ? tripPagination : rechargePagination;
+                if (
+                  currentPagination.totalCount &&
+                  currentPagination.totalCount > 0
+                ) {
                   return (
-                    <Text
-                      variant="caption"
-                      color={COLORS.gray[500]}
-                    >
-                      {currentPagination.totalLoaded} of {currentPagination.totalCount}
+                    <Text variant="caption" color={COLORS.gray[500]}>
+                      {currentPagination.totalLoaded} of{" "}
+                      {currentPagination.totalCount}
                     </Text>
                   );
                 }
@@ -931,8 +1046,8 @@ export default function History() {
                 color={COLORS.gray[600]}
                 style={styles.emptyText}
               >
-                {activeTab === "trips" 
-                  ? UI_TEXTS.EMPTY_STATES.NO_TRIP_HISTORY 
+                {activeTab === "trips"
+                  ? UI_TEXTS.EMPTY_STATES.NO_TRIP_HISTORY
                   : UI_TEXTS.EMPTY_STATES.NO_WALLET_HISTORY}
               </Text>
               <Text
@@ -946,9 +1061,9 @@ export default function History() {
                     filters.minAmount !== undefined ||
                     filters.maxAmount !== undefined
                   ? UI_TEXTS.EMPTY_STATES.TRY_ADJUSTING_FILTERS
-                  : activeTab === "trips" 
-                    ? UI_TEXTS.EMPTY_STATES.BUS_TRIPS_WILL_APPEAR
-                    : UI_TEXTS.EMPTY_STATES.WALLET_HISTORY_WILL_APPEAR}
+                  : activeTab === "trips"
+                  ? UI_TEXTS.EMPTY_STATES.BUS_TRIPS_WILL_APPEAR
+                  : UI_TEXTS.EMPTY_STATES.WALLET_HISTORY_WILL_APPEAR}
               </Text>
               {(searchQuery ||
                 filters.dateFilter !== "all" ||
@@ -1009,11 +1124,15 @@ export default function History() {
               <Ionicons
                 name="card"
                 size={20}
-                color={activeTab === "recharge" ? COLORS.white : COLORS.gray[600]}
+                color={
+                  activeTab === "recharge" ? COLORS.white : COLORS.gray[600]
+                }
               />
               <Text
                 variant="labelSmall"
-                color={activeTab === "recharge" ? COLORS.white : COLORS.gray[600]}
+                color={
+                  activeTab === "recharge" ? COLORS.white : COLORS.gray[600]
+                }
                 style={styles.tabText}
               >
                 {UI_TEXTS.TABS.WALLET}
@@ -1028,8 +1147,8 @@ export default function History() {
               <TextInput
                 style={styles.searchInput}
                 placeholder={
-                  activeTab === "trips" 
-                    ? UI_TEXTS.SEARCH.TRIPS_PLACEHOLDER 
+                  activeTab === "trips"
+                    ? UI_TEXTS.SEARCH.TRIPS_PLACEHOLDER
                     : UI_TEXTS.SEARCH.WALLET_PLACEHOLDER
                 }
                 placeholderTextColor={COLORS.gray[500]}
@@ -1039,7 +1158,11 @@ export default function History() {
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery("")}>
-                  <Ionicons name="close-circle" size={20} color={COLORS.gray[400]} />
+                  <Ionicons
+                    name="close-circle"
+                    size={20}
+                    color={COLORS.gray[400]}
+                  />
                 </TouchableOpacity>
               )}
             </View>
@@ -1052,17 +1175,24 @@ export default function History() {
           >
             <View style={styles.filterInfo}>
               <Text variant="bodySmall" color={COLORS.gray[600]}>
-                {filteredData.length} result{filteredData.length !== 1 ? 's' : ''} 
+                {filteredData.length} result
+                {filteredData.length !== 1 ? "s" : ""}
                 {(() => {
-                  const currentPagination = activeTab === "trips" ? tripPagination : rechargePagination;
-                  if (currentPagination.totalCount && currentPagination.totalCount > 0) {
+                  const currentPagination =
+                    activeTab === "trips" ? tripPagination : rechargePagination;
+                  if (
+                    currentPagination.totalCount &&
+                    currentPagination.totalCount > 0
+                  ) {
                     return ` • ${currentPagination.totalCount} total`;
                   }
-                  return '';
+                  return "";
                 })()}
                 {filters.dateFilter !== "all" && ` • ${filters.dateFilter}`}
                 {filters.sortOrder !== "newest" && ` • ${filters.sortOrder}`}
-                {(filters.minAmount !== undefined || filters.maxAmount !== undefined) && ' • amount filtered'}
+                {(filters.minAmount !== undefined ||
+                  filters.maxAmount !== undefined) &&
+                  " • amount filtered"}
               </Text>
             </View>
             <TouchableOpacity
@@ -1073,7 +1203,8 @@ export default function History() {
                   filters.maxAmount !== undefined) &&
                   styles.filterButtonActive,
                 // Add visual feedback when disabled during refresh or filtering
-                (refreshing || isFilteringInProgress) && styles.filterButtonDisabled,
+                (refreshing || isFilteringInProgress) &&
+                  styles.filterButtonDisabled,
               ]}
               onPress={handleFilterModalOpen}
               disabled={refreshing || isFilteringInProgress} // Disable during refresh or filtering
@@ -1164,7 +1295,7 @@ export default function History() {
         onClose={handleFilterModalClose}
         onApply={applyFilters}
       />
-      
+
       {/* Toast notification */}
       <Toast
         visible={toast.visible}
@@ -1187,7 +1318,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  
+
   // Header section styles
   headerSection: {
     backgroundColor: COLORS.gray[50],
@@ -1198,7 +1329,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
   },
-  
+
   // Tab navigation styles
   tabContainer: {
     flexDirection: "row",
@@ -1231,7 +1362,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
-  
+
   // Search and filter styles
   searchContainer: {
     paddingHorizontal: 16,
@@ -1284,7 +1415,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     backgroundColor: COLORS.gray[50],
   },
-  
+
   // Transaction card styles
   historyCard: {
     marginBottom: 12,
@@ -1301,7 +1432,22 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 12,
   },
-  
+  headerRight: {
+    alignItems: "flex-end",
+  },
+  busInfoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 12,
+  },
+  busDetailsContainer: {
+    flex: 1,
+  },
+  amountDateContainer: {
+    alignItems: "flex-end",
+  },
+
   // Icon container styles
   busIconContainer: {
     width: 40,
@@ -1330,12 +1476,11 @@ const styles = StyleSheet.create({
   deductionIconContainer: {
     backgroundColor: COLORS.error,
   },
-  
+
   // Text and content styles
   cardTitle: {
     // Font properties handled by Text component
-    fontWeight: "500",
-    fontSize: 14,
+    fontSize: 16,
   },
   cardSubtitle: {
     // marginTop: 2,
@@ -1346,7 +1491,6 @@ const styles = StyleSheet.create({
     // Font properties handled by Text component
   },
   fareAmount: {
-    paddingTop: 30,
     // Font properties handled by Text component
   },
   rechargeAmount: {
@@ -1355,7 +1499,7 @@ const styles = StyleSheet.create({
   returnAmount: {
     // Font properties handled by Text component
   },
-  
+
   // Trip details styles
   tripDetails: {
     borderTopWidth: 1,
@@ -1527,8 +1671,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    flex: 1,
-    maxWidth: "35%", // Limit transaction ID width
+    marginTop: 4,
   },
   dateTimeContainer: {
     flexDirection: "row",
