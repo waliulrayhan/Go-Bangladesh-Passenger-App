@@ -224,6 +224,13 @@ export default function Dashboard() {
     }
   }, [justLoggedIn, showSuccess, clearJustLoggedIn]);
 
+  // Reset hasLoadedData when user changes (login/logout)
+  useEffect(() => {
+    if (!user || !isAuthenticated) {
+      setHasLoadedData(false);
+    }
+  }, [user?.id, isAuthenticated]);
+
   // Initialize loading animation when balance is being fetched
   useEffect(() => {
     if (isLoadingBalance) {
@@ -241,13 +248,18 @@ export default function Dashboard() {
 
   // Load initial data when user is available
   useEffect(() => {
-    if (user && !hasLoadedData) {
-      loadCardDetails();
-      loadRecentActivity();
-      checkOngoingTrip();
-      setHasLoadedData(true);
+    if (user && !hasLoadedData && isAuthenticated) {
+      console.log('🔄 [DASHBOARD] Loading initial data for authenticated user');
+      
+      // Small delay to prevent race conditions with realtime trip hook
+      setTimeout(() => {
+        loadCardDetails();
+        loadRecentActivity();
+        // Don't call checkOngoingTrip here - let useRealtimeTrip handle it
+        setHasLoadedData(true);
+      }, 100);
     }
-  }, [user, hasLoadedData]);
+  }, [user, hasLoadedData, isAuthenticated]);
 
   // Handle pulse animation for active trips
   useEffect(() => {

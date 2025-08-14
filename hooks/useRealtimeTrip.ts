@@ -57,14 +57,15 @@ export const useRealtimeTrip = (options: RealtimeTripOptions = {}) => {
   const debouncedCheckOngoingTrip = useCallback(() => {
     const now = Date.now();
     const timeSinceLastCall = now - lastCallTimeRef.current;
-    const minInterval = 5000; // Minimum 5 seconds between calls
+    const minInterval = 10000; // Minimum 10 seconds between calls (increased from 5s)
 
     if (timeSinceLastCall < minInterval) {
-      console.log('🚫 [REALTIME TRIP] Skipping API call - too soon since last call');
+      console.log(`🚫 [REALTIME TRIP] Skipping API call - too soon since last call (${Math.round(timeSinceLastCall / 1000)}s ago, min ${minInterval / 1000}s)`);
       return;
     }
 
     lastCallTimeRef.current = now;
+    console.log('✅ [REALTIME TRIP] Making API call to check ongoing trip');
     checkOngoingTrip();
   }, [checkOngoingTrip]);
 
@@ -169,15 +170,21 @@ export const useRealtimeTrip = (options: RealtimeTripOptions = {}) => {
   // Main effect to start/stop polling based on dependencies
   useEffect(() => {
     if (enabled && isAuthenticated && user) {
-      startPolling();
+      // Add a small delay after login to prevent race conditions with initial data loading
+      const startDelay = 2000; // 2 second delay
+      
+      console.log('🔄 [REALTIME TRIP] Scheduling polling start after authentication');
+      const timeoutId = setTimeout(() => {
+        startPolling();
+      }, startDelay);
+
+      return () => {
+        clearTimeout(timeoutId);
+        stopPolling();
+      };
     } else {
       stopPolling();
     }
-
-    // Cleanup on unmount
-    return () => {
-      stopPolling();
-    };
   }, [enabled, isAuthenticated, user, startPolling, stopPolling]);
 
   return {

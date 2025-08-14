@@ -80,10 +80,10 @@ export const useCardStore = create<CardState>((set, get) => ({
 
   // Load card details (for compatibility)
   loadCardDetails: async () => {
-    // This is mainly for refreshing user data, which is handled by auth store
-    await useAuthStore.getState().refreshUserData();
-
-    // Create card from user data for compatibility
+    console.log('🔄 [CARD STORE] Loading card details');
+    
+    // Don't call refreshUserData here as it causes duplicate API calls
+    // The auth store already has fresh user data after login
     const user = useAuthStore.getState().user;
     if (user) {
       const card: Card = {
@@ -95,6 +95,7 @@ export const useCardStore = create<CardState>((set, get) => ({
         createdAt: new Date().toISOString()
       };
       set({ card });
+      console.log('✅ [CARD STORE] Card details loaded from existing user data');
     }
   },
 
@@ -377,14 +378,16 @@ export const useCardStore = create<CardState>((set, get) => ({
 
   // Refresh all data
   refreshData: async () => {
+    console.log('🔄 [CARD STORE] Refreshing card data');
     await Promise.all([
       get().loadTripHistory(1, true),
       get().loadRechargeHistory(1, true),
       get().checkOngoingTrip()
     ]);
 
-    // Also refresh user data in auth store
-    await useAuthStore.getState().refreshUserData();
+    // Don't refresh user data here to avoid duplicate API calls
+    // Only refresh user data when explicitly needed (e.g., profile updates)
+    console.log('✅ [CARD STORE] Card data refresh completed');
   },
 
   // Force refresh data (alias for refreshData)
