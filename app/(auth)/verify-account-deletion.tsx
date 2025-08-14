@@ -308,18 +308,25 @@ export default function VerifyAccountDeletion() {
       
       if (result.isSuccess) {
         console.log("✅ Account deactivation successful");
-        showSuccess(MESSAGES.VERIFICATION_SUCCESS);
+        // showSuccess(MESSAGES.VERIFICATION_SUCCESS);
         
-        // Clear all user data and logout
+        // Clear loading states first
+        setIsLoading(false);
+        setIsAutoVerifying(false);
+        setShowVerifyingText(false);
+        
+        // Wait a bit for user to see success message, then logout and redirect
         setTimeout(async () => {
           await handleLogoutAndRedirect();
-        }, 2000);
+        }, 0); // Reduced from 2000ms to 0ms for faster transition
       } else {
         throw new Error(result.message || "Account deactivation failed");
       }
     } catch (deactivationError: any) {
       console.error("❌ Account deactivation error:", deactivationError);
       setIsLoading(false);
+      setIsAutoVerifying(false);
+      setShowVerifyingText(false);
       
       const errorMessage = deactivationError.message || 
         deactivationError.response?.data?.data?.message || 
@@ -337,21 +344,51 @@ export default function VerifyAccountDeletion() {
       await logout();
       
       console.log('✅ [ACCOUNT_DELETION] User data cleared successfully');
+      
+      // Explicitly navigate to welcome page after successful logout
+      setTimeout(() => {
+        try {
+          router.replace('/');
+          console.log('✅ [ACCOUNT_DELETION] Navigation to welcome page successful');
+        } catch (navError) {
+          console.error('❌ [ACCOUNT_DELETION] Navigation error:', navError);
+          // Try alternative navigation method
+          try {
+            router.push('/');
+            console.log('✅ [ACCOUNT_DELETION] Alternative navigation successful');
+          } catch (pushError) {
+            console.error('❌ [ACCOUNT_DELETION] Alternative navigation also failed:', pushError);
+          }
+        }
+      }, 100);
+      
     } catch (logoutError) {
       console.error("❌ Logout error during account deletion:", logoutError);
-      // The logout function now handles navigation internally,
-      // so we don't need manual navigation here
+      
+      // Even if logout fails, try to navigate to welcome page
+      setTimeout(() => {
+        try {
+          router.replace('/');
+          console.log('✅ [ACCOUNT_DELETION] Fallback navigation successful');
+        } catch (navError) {
+          console.error('❌ [ACCOUNT_DELETION] Fallback navigation failed:', navError);
+        }
+      }, 100);
     }
   };
 
   const handleVerificationFailure = () => {
     setIsLoading(false);
+    setIsAutoVerifying(false);
+    setShowVerifyingText(false);
     resetOTPForm();
     showError(MESSAGES.VERIFICATION_FAILED);
   };
 
   const handleVerificationError = (error: any) => {
     setIsLoading(false);
+    setIsAutoVerifying(false);
+    setShowVerifyingText(false);
     console.error("❌ OTP verification error:", error);
     resetOTPForm();
     
@@ -367,6 +404,7 @@ export default function VerifyAccountDeletion() {
     setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
     setIsAutoVerifying(false);
     setShowVerifyingText(false);
+    setIsLoading(false); // Also reset loading state
     // Focus after keyboard is dismissed
     setTimeout(() => {
       inputRefs.current[0]?.focus();
@@ -387,6 +425,7 @@ export default function VerifyAccountDeletion() {
       resetTimer();
       setIsAutoVerifying(false);
       setShowVerifyingText(false);
+      setIsLoading(false); // Also reset loading state
       
       setTimeout(() => {
         inputRefs.current[0]?.focus();
@@ -402,6 +441,7 @@ export default function VerifyAccountDeletion() {
       setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
       setIsAutoVerifying(false);
       setShowVerifyingText(false);
+      setIsLoading(false); // Also reset loading state
 
       const errorMessage = error.message || 
         error.response?.data?.data?.message || 
