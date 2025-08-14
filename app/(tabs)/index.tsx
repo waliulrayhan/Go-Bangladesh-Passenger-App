@@ -6,13 +6,12 @@ import { useEffect, useState } from "react";
 import {
   Image,
   RefreshControl,
-  Text as RNText,
   SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 // Reanimated imports for animations
@@ -45,10 +44,6 @@ const DASHBOARD_CONFIG = {
     RFID_CARD: 300,
     RECENT_ACTIVITY: 600,
     PROFILE_MENU: 300,
-  },
-  POLLING_INTERVALS: {
-    ACTIVE_TRIP: 15000,
-    IDLE_TRIP: 30000,
   },
   BALANCE_AUTO_HIDE_DELAY: 5000,
   BALANCE_ANIMATION_DURATION: {
@@ -197,10 +192,6 @@ export default function Dashboard() {
     restartPolling,
     stopPolling,
   } = useRealtimeTrip({
-    interval:
-      tripStatus === "active"
-        ? DASHBOARD_CONFIG.POLLING_INTERVALS.ACTIVE_TRIP
-        : DASHBOARD_CONFIG.POLLING_INTERVALS.IDLE_TRIP,
     enabled: true,
     onlyWhenActive: true,
     onTripStatusChange: (status, trip) => {

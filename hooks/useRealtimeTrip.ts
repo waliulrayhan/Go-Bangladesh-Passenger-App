@@ -4,8 +4,6 @@ import { useAuthStore } from '../stores/authStore';
 import { useCardStore } from '../stores/cardStore';
 
 interface RealtimeTripOptions {
-  /** Polling interval in milliseconds (default: 30000 = 30 seconds) */
-  interval?: number;
   /** Whether to enable real-time polling (default: true) */
   enabled?: boolean;
   /** Whether to poll only when app is in foreground (default: true) */
@@ -16,11 +14,12 @@ interface RealtimeTripOptions {
 
 /**
  * Custom hook for real-time ongoing trip monitoring
- * Automatically polls the getOnGoingTrip API at regular intervals
+ * Automatically polls the getOnGoingTrip API at appropriate intervals:
+ * - 1 minute when no trip is running
+ * - 30 seconds when a trip is active
  */
 export const useRealtimeTrip = (options: RealtimeTripOptions = {}) => {
   const {
-    interval = 30000, // 30 seconds default
     enabled = true,
     onlyWhenActive = true,
     onTripStatusChange
@@ -33,6 +32,13 @@ export const useRealtimeTrip = (options: RealtimeTripOptions = {}) => {
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const previousTripStatusRef = useRef<string>(tripStatus);
   const previousTripIdRef = useRef<string | null>(currentTrip?.tripId || null);
+  const isPollingRef = useRef<boolean>(false);
+  const lastCallTimeRef = useRef<number>(0);
+
+  // Get appropriate interval based on trip status
+  const getPollingInterval = useCallback(() => {
+    return tripStatus === 'active' ? 30000 : 60000; // 30s for active trip, 1min for idle
+  }, [tripStatus]);
 
   // Handle app state changes
   const handleAppStateChange = useCallback((nextAppState: AppStateStatus) => {
@@ -47,13 +53,40 @@ export const useRealtimeTrip = (options: RealtimeTripOptions = {}) => {
     }
   }, [onlyWhenActive]);
 
+  // Debounced API call to prevent multiple rapid calls
+  const debouncedCheckOngoingTrip = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastCall = now - lastCallTimeRef.current;
+    const minInterval = 5000; // Minimum 5 seconds between calls
+
+    if (timeSinceLastCall < minInterval) {
+      console.log('🚫 [REALTIME TRIP] Skipping API call - too soon since last call');
+      return;
+    }
+
+    lastCallTimeRef.current = now;
+    checkOngoingTrip();
+  }, [checkOngoingTrip]);
+
   // Start polling function
   const startPolling = useCallback(() => {
+    // Early return conditions
     if (!enabled || !isAuthenticated || !user) {
+      console.log('🛑 [REALTIME TRIP] Not starting polling - conditions not met:', {
+        enabled,
+        isAuthenticated,
+        hasUser: !!user
+      });
       return;
     }
 
     if (onlyWhenActive && appStateRef.current !== 'active') {
+      console.log('🛑 [REALTIME TRIP] Not starting polling - app not active');
+      return;
+    }
+
+    if (isPollingRef.current) {
+      console.log('🔄 [REALTIME TRIP] Already polling, skipping start');
       return;
     }
 
@@ -62,27 +95,32 @@ export const useRealtimeTrip = (options: RealtimeTripOptions = {}) => {
       clearInterval(intervalRef.current);
     }
 
-    console.log(`🔄 [REALTIME TRIP] Starting polling (${interval}ms interval)`);
+    const currentInterval = getPollingInterval();
+    console.log(`🔄 [REALTIME TRIP] Starting polling (${currentInterval}ms interval, status: ${tripStatus})`);
     
-    // Initial check
-    checkOngoingTrip();
+    isPollingRef.current = true;
+    
+    // Initial check (debounced)
+    debouncedCheckOngoingTrip();
 
     // Set up polling interval
     intervalRef.current = setInterval(() => {
       if (onlyWhenActive && appStateRef.current === 'active') {
-        checkOngoingTrip();
+        debouncedCheckOngoingTrip();
       } else if (!onlyWhenActive) {
-        checkOngoingTrip();
+        debouncedCheckOngoingTrip();
       }
-    }, interval);
-  }, [enabled, isAuthenticated, user, interval, onlyWhenActive, checkOngoingTrip]);
+    }, currentInterval);
+  }, [enabled, isAuthenticated, user, onlyWhenActive, getPollingInterval, tripStatus, debouncedCheckOngoingTrip]);
 
   // Stop polling function
   const stopPolling = useCallback(() => {
+    console.log('🛑 [REALTIME TRIP] Stopping polling');
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    isPollingRef.current = false;
   }, []);
 
   // Restart polling function
@@ -97,19 +135,16 @@ export const useRealtimeTrip = (options: RealtimeTripOptions = {}) => {
     
     // Check if trip status changed
     if (previousTripStatusRef.current !== tripStatus) {
+      console.log(`🔄 [REALTIME TRIP] Trip status changed: ${previousTripStatusRef.current} → ${tripStatus}`);
+      
       // Call custom callback if provided
       if (onTripStatusChange) {
         onTripStatusChange(tripStatus, currentTrip);
       }
 
-      // Adjust polling frequency based on trip status
-      if (tripStatus === 'active' && previousTripStatusRef.current !== 'active') {
-        // More frequent polling when trip is active (15 seconds)
-        if (enabled && interval > 15000) {
-          restartPolling();
-        }
-      } else if (tripStatus === 'idle' && previousTripStatusRef.current === 'active') {
-        // Normal polling when no active trip
+      // Restart polling with new interval based on trip status
+      if (tripStatus !== previousTripStatusRef.current && isPollingRef.current) {
+        console.log('🔄 [REALTIME TRIP] Restarting polling due to status change');
         restartPolling();
       }
 
@@ -118,9 +153,10 @@ export const useRealtimeTrip = (options: RealtimeTripOptions = {}) => {
 
     // Check if trip ID changed (new trip started)
     if (previousTripIdRef.current !== currentTripId) {
+      console.log(`🔄 [REALTIME TRIP] Trip ID changed: ${previousTripIdRef.current} → ${currentTripId}`);
       previousTripIdRef.current = currentTripId;
     }
-  }, [tripStatus, currentTrip, onTripStatusChange, enabled, interval, restartPolling]);
+  }, [tripStatus, currentTrip, onTripStatusChange, restartPolling]);
 
   // Set up app state listener
   useEffect(() => {
@@ -152,6 +188,6 @@ export const useRealtimeTrip = (options: RealtimeTripOptions = {}) => {
     stopPolling,
     restartPolling,
     /** Force check for ongoing trip immediately */
-    checkNow: checkOngoingTrip
+    checkNow: debouncedCheckOngoingTrip
   };
 };

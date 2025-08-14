@@ -287,6 +287,13 @@ export const useCardStore = create<CardState>((set, get) => ({
   // Check for ongoing trip
   checkOngoingTrip: async () => {
     try {
+      // Check if user is authenticated before making API call
+      const { user, isAuthenticated } = useAuthStore.getState();
+      if (!isAuthenticated || !user) {
+        console.log('🚫 [CARD STORE] Skipping ongoing trip check - user not authenticated');
+        return;
+      }
+
       const ongoingTrip = await apiService.getOnGoingTrip();
 
       set({
