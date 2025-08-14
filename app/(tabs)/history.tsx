@@ -23,6 +23,7 @@ import { Toast } from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { RechargeTransaction, TripTransaction } from "../../services/api";
+import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
 import { COLORS, SPACING } from "../../utils/constants";
 import { TYPOGRAPHY } from "../../utils/fonts";
@@ -258,6 +259,10 @@ export default function History() {
   const { refreshAllData } = useTokenRefresh();
   const { toast, showToast, hideToast } = useToast();
 
+  // Get auth state to ensure user is authenticated before loading data
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
   // Component state management
   const [activeTab, setActiveTab] = useState<HistoryTab>("trips");
   const [refreshing, setRefreshing] = useState(false);
@@ -265,6 +270,7 @@ export default function History() {
   const [searchQuery, setSearchQuery] = useState("");
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
   const [isFilteringInProgress, setIsFilteringInProgress] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // Filter state
   const [filters, setFilters] = useState<FilterOptions>({
@@ -396,21 +402,51 @@ export default function History() {
 
   // Effects
 
-  // Load initial data when component mounts
+  // Initialize and load data when component mounts or when user becomes available
   useEffect(() => {
-    if (!hasInitialLoad) {
-      loadTripHistory(1, true);
-      loadRechargeHistory(1, true);
-      setHasInitialLoad(true);
+    const initializeHistoryData = async () => {
+      // Don't proceed if already initialized or if user is not authenticated
+      if (hasInitialLoad || !isAuthenticated || !user?.id) {
+        if (!isAuthenticated || !user?.id) {
+          setIsInitializing(false);
+        }
+        return;
+      }
+
+      setIsInitializing(true);
+      
+      try {
+        // Load both trip and recharge history in parallel
+        await Promise.all([
+          loadTripHistory(1, true),
+          loadRechargeHistory(1, true)
+        ]);
+        
+        setHasInitialLoad(true);
+      } catch (error) {
+        console.error("Failed to initialize history data:", error);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initializeHistoryData();
+  }, [hasInitialLoad, isAuthenticated, user?.id, loadTripHistory, loadRechargeHistory]);
+
+  // Reset initialization state when user becomes unauthenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setHasInitialLoad(false);
+      setIsInitializing(false);
     }
-  }, [hasInitialLoad]);
+  }, [isAuthenticated]);
 
   // Event handlers
 
   // Pull-to-refresh handler with error feedback
   const onRefresh = useCallback(async () => {
-    // Prevent refresh if modal is open or filtering is in progress
-    if (showFilterModal || isFilteringInProgress) {
+    // Prevent refresh if modal is open, filtering is in progress, or initializing
+    if (showFilterModal || isFilteringInProgress || isInitializing) {
       return;
     }
 
@@ -423,7 +459,7 @@ export default function History() {
     } finally {
       setRefreshing(false);
     }
-  }, [refreshAllData, showToast, showFilterModal, isFilteringInProgress]);
+  }, [refreshAllData, showToast, showFilterModal, isFilteringInProgress, isInitializing]);
 
   // Handle tab switching
   const handleTabChange = (tab: HistoryTab) => {
@@ -470,12 +506,12 @@ export default function History() {
 
   // Safe filter modal handler - prevents opening during refresh or ongoing operations
   const handleFilterModalOpen = useCallback((): void => {
-    // Prevent modal from opening if refresh is in progress or filtering is ongoing
-    if (refreshing || isFilteringInProgress || isLoading) {
+    // Prevent modal from opening if refresh is in progress, filtering is ongoing, or initializing
+    if (refreshing || isFilteringInProgress || isLoading || isInitializing) {
       return;
     }
     setShowFilterModal(true);
-  }, [refreshing, isFilteringInProgress, isLoading]);
+  }, [refreshing, isFilteringInProgress, isLoading, isInitializing]);
 
   // Safe filter modal close handler
   const handleFilterModalClose = useCallback((): void => {
@@ -958,7 +994,7 @@ export default function History() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             colors={[COLORS.primary]}
-            enabled={!showFilterModal && !isFilteringInProgress} // Disable refresh when modal is open or filtering
+            enabled={!showFilterModal && !isFilteringInProgress && !isInitializing} // Disable refresh when modal is open, filtering, or initializing
           />
         }
         onEndReached={onLoadMore}
@@ -1202,12 +1238,12 @@ export default function History() {
                   filters.minAmount !== undefined ||
                   filters.maxAmount !== undefined) &&
                   styles.filterButtonActive,
-                // Add visual feedback when disabled during refresh or filtering
-                (refreshing || isFilteringInProgress) &&
+                // Add visual feedback when disabled during refresh, filtering, or initialization
+                (refreshing || isFilteringInProgress || isInitializing) &&
                   styles.filterButtonDisabled,
               ]}
               onPress={handleFilterModalOpen}
-              disabled={refreshing || isFilteringInProgress} // Disable during refresh or filtering
+              disabled={refreshing || isFilteringInProgress || isInitializing} // Disable during refresh, filtering, or initialization
             >
               <Ionicons
                 name="funnel"
@@ -1260,9 +1296,9 @@ export default function History() {
         )}
 
         {/* Loading Indicator for Initial Load */}
-        {isLoading &&
+        {(isInitializing || (isLoading &&
           tripTransactions.length === 0 &&
-          rechargeTransactions.length === 0 &&
+          rechargeTransactions.length === 0)) &&
           !error && (
             <View style={styles.initialLoading}>
               <ActivityIndicator size="large" color={COLORS.primary} />
@@ -1271,15 +1307,15 @@ export default function History() {
                 color={COLORS.gray[600]}
                 style={styles.loadingText}
               >
-                Loading history...
+                {UI_TEXTS.LOADING_STATES.LOADING_HISTORY}
               </Text>
             </View>
           )}
 
         {/* Tab Content */}
-        {(!isLoading ||
+        {(!isInitializing && (!isLoading ||
           tripTransactions.length > 0 ||
-          rechargeTransactions.length > 0) && (
+          rechargeTransactions.length > 0)) && (
           <Animated.View
             entering={FadeInDown.duration(600)}
             style={styles.tabContent}
