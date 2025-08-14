@@ -4,14 +4,14 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { SafeAreaView, StyleSheet, View } from "react-native";
 import Animated, {
-    Easing,
-    FadeInDown,
-    FadeInUp,
-    useAnimatedStyle,
-    useSharedValue,
-    withRepeat,
-    withSequence,
-    withTiming,
+  Easing,
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
 } from "react-native-reanimated";
 import { GoBangladeshLogo } from "../components/GoBangladeshLogo";
 import { BubbleAnimation } from "../components/ui/BubbleAnimation";
@@ -22,14 +22,12 @@ import { COLORS, SPACING } from "../utils/constants";
 
 export default function WelcomeScreen() {
   const { isAuthenticated, loadUserFromStorage } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Animation values
   const logoScale = useSharedValue(1);
   const buttonScale = useSharedValue(1);
   const floatY = useSharedValue(0);
-  const pulseScale = useSharedValue(1);
 
   useEffect(() => {
     initializeApp();
@@ -58,24 +56,10 @@ export default function WelcomeScreen() {
       -1,
       true
     );
-
-    // Pulse animation for loading
-    pulseScale.value = withRepeat(
-      withTiming(1.1, {
-        duration: 1000,
-        easing: Easing.inOut(Easing.ease),
-      }),
-      -1,
-      true
-    );
   };
 
   const animatedLogoStyle = useAnimatedStyle(() => ({
     transform: [{ scale: logoScale.value }],
-  }));
-
-  const animatedPulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseScale.value }],
   }));
 
   const handleButtonPress = () => {
@@ -104,13 +88,6 @@ export default function WelcomeScreen() {
   }, [isInitialized, isAuthenticated]);
 
   const initializeApp = async () => {
-    // Prevent multiple initializations
-    if (isLoading === false) {
-      console.log("🔄 [WELCOME] Already initialized, skipping...");
-      return;
-    }
-    
-    setIsLoading(true);
     console.log("🚀 [WELCOME] Initializing app and checking authentication...");
 
     try {
@@ -133,15 +110,8 @@ export default function WelcomeScreen() {
       const { handleUnauthorized } = useAuthStore.getState();
       await handleUnauthorized();
     } finally {
-      // For logout scenarios, reduce loading time to prevent stuck state
-      const currentState = useAuthStore.getState();
-      const loadingDelay = currentState?.isAuthenticated ? 300 : 100;
-      
-      setTimeout(() => {
-        setIsLoading(false);
-        setIsInitialized(true);
-        console.log("✅ [WELCOME] Welcome screen initialization completed");
-      }, loadingDelay);
+      setIsInitialized(true);
+      console.log("✅ [WELCOME] Welcome screen initialization completed");
     }
   };
 
@@ -149,7 +119,8 @@ export default function WelcomeScreen() {
     handleButtonPress();
   };
 
-  if (isLoading || !isInitialized) {
+  // Only show welcome screen if user is not authenticated or still initializing
+  if (!isInitialized) {
     return (
       <>
         <StatusBar
@@ -174,13 +145,11 @@ export default function WelcomeScreen() {
           <View style={styles.bubbleContainer}>
             <BubbleAnimation bubbleCount={20} />
           </View>
-          <View style={styles.loadingContainer}>
+          {/* <View style={styles.loadingContainer}>
             <Animated.View entering={FadeInUp.duration(500)}>
-              <Animated.View style={[animatedPulseStyle]}>
-                <GoBangladeshLogo size={100} />
-              </Animated.View>
+              <GoBangladeshLogo size={100} />
             </Animated.View>
-          </View>
+          </View> */}
         </SafeAreaView>
       </>
     );
