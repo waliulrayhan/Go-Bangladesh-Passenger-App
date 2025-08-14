@@ -212,14 +212,6 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                   style={styles.actionContainer}
                 >
                   <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={onClose}
-                    disabled={isLoading}
-                  >
-                    {/* <Ionicons name="close" size={16} color={COLORS.gray[600]} /> */}
-                    <Text style={styles.backButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
                     style={[
                       styles.deleteButton,
                       (isLoading || !isChecked) && styles.deleteButtonDisabled,
@@ -237,6 +229,14 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                         </Text>
                       </>
                     )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={onClose}
+                    disabled={isLoading}
+                  >
+                    {/* <Ionicons name="close" size={16} color={COLORS.gray[600]} /> */}
+                    <Text style={styles.backButtonText}>Cancel</Text>
                   </TouchableOpacity>
                 </Animated.View>
               </ScrollView>

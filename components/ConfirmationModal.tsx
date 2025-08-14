@@ -54,10 +54,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       onRequestClose={onCancel}
     >
       <TouchableWithoutFeedback onPress={onCancel}>
-        <Animated.View
-          entering={FadeIn.duration(200)}
-          style={styles.overlay}
-        >
+        <Animated.View entering={FadeIn.duration(200)} style={styles.overlay}>
           <TouchableWithoutFeedback>
             <Animated.View
               entering={SlideInUp.duration(300).springify()}
@@ -74,7 +71,12 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               </View>
 
               {/* Icon Section */}
-              <View style={[styles.iconContainer, { backgroundColor: iconColor + "20" }]}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: iconColor + "20" },
+                ]}
+              >
                 <Ionicons name={icon} size={28} color={iconColor} />
               </View>
 
@@ -96,7 +98,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                       </Text>
                     </View>
                   )}
-                  
+
                   {route && (
                     <View style={styles.detailRow}>
                       <Text variant="bodySmall" style={styles.detailLabel}>
@@ -107,21 +109,28 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                       </Text>
                     </View>
                   )}
-                  
+
                   {penaltyAmount !== undefined && (
                     <>
                       <View style={styles.detailRow}>
                         <Text variant="bodySmall" style={styles.detailLabel}>
                           Penalty Amount:
                         </Text>
-                        <Text variant="bodySmall" style={[styles.detailValue, styles.penaltyAmount]}>
+                        <Text
+                          variant="bodySmall"
+                          style={[styles.detailValue, styles.penaltyAmount]}
+                        >
                           ৳ {penaltyAmount.toFixed(2)}
                         </Text>
                       </View>
-                      
+
                       <View style={styles.penaltyNotice}>
-                        <Text variant="caption" style={styles.penaltyNoticeText}>
-                          This penalty amount will be deducted from your balance.
+                        <Text
+                          variant="caption"
+                          style={styles.penaltyNoticeText}
+                        >
+                          This penalty amount will be deducted from your
+                          balance.
                         </Text>
                       </View>
                     </>
@@ -132,21 +141,30 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               {/* Button Section */}
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
+                  style={[
+                    styles.button,
+                    styles.confirmButton,
+                    { backgroundColor: confirmButtonColor },
+                  ]}
+                  onPress={onConfirm}
+                >
+                  <Ionicons
+                    name="exit-outline"
+                    size={16}
+                    color={COLORS.white}
+                    style={styles.buttonIcon}
+                  />
+                  <Text variant="label" style={styles.confirmButtonText}>
+                    {confirmText}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
                   style={[styles.button, styles.cancelButton]}
                   onPress={onCancel}
                 >
                   <Text variant="label" style={styles.cancelButtonText}>
                     {cancelText}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.button, styles.confirmButton, { backgroundColor: confirmButtonColor }]}
-                  onPress={onConfirm}
-                >
-                  <Ionicons name="exit-outline" size={16} color={COLORS.white} style={styles.buttonIcon} />
-                  <Text variant="label" style={styles.confirmButtonText}>
-                    {confirmText}
                   </Text>
                 </TouchableOpacity>
               </View>
