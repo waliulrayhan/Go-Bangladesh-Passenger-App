@@ -685,7 +685,7 @@ export default function ForgotPassword() {
             label="Mobile Number"
             value={mobile}
             onChangeText={setMobile}
-            placeholder="(e.g. 01XXXXXXXXXX)"
+            placeholder="(e.g. 01XXXXXXXXX)"
             keyboardType="phone-pad"
             icon="call-outline"
             autoCapitalize="none"
