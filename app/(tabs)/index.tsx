@@ -50,7 +50,7 @@ const DASHBOARD_CONFIG = {
     ACTIVE_TRIP: 15000,
     IDLE_TRIP: 30000,
   },
-  BALANCE_AUTO_HIDE_DELAY: 4000,
+  BALANCE_AUTO_HIDE_DELAY: 40000,
   BALANCE_ANIMATION_DURATION: {
     SHOW: 500,
     HIDE: 300,
@@ -228,7 +228,7 @@ export default function Dashboard() {
   // Handle login success message
   useEffect(() => {
     if (justLoggedIn) {
-      showSuccess("Your login is successful!");
+      // showSuccess("Your login is successful!");
       clearJustLoggedIn();
     }
   }, [justLoggedIn, showSuccess, clearJustLoggedIn]);
@@ -638,17 +638,17 @@ export default function Dashboard() {
               </Animated.View>
             ) : (
               // Balance Display (No Hide Button)
-              <Animated.View
+                <Animated.View
                 style={[styles.balanceDisplayContainer, balanceSlideStyle]}
-              >
-                <RNText 
+                >
+                <Text 
                   style={[styles.balance, { color: COLORS.white }]}
                   numberOfLines={1}
-                  adjustsFontSizeToFit={false}
+                  // adjustsFontSizeToFit={false}
                 >
                   {formatBalanceDisplay(user?.balance ?? card?.balance)}
-                </RNText>
-              </Animated.View>
+                </Text>
+                </Animated.View>
             )}
           </View>
         </View>

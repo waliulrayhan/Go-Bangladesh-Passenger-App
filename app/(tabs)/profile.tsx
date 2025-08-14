@@ -1100,7 +1100,6 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 14,
-    fontWeight: '700',
     color: COLORS.white,
     marginLeft: 6,
     letterSpacing: 0.2,

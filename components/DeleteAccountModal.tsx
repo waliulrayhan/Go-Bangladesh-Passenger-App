@@ -2,13 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import Animated, { FadeIn, SlideInUp } from "react-native-reanimated";
 import { useToast } from "../hooks/useToast";
@@ -32,7 +32,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
-  
+
   const { user } = useAuthStore();
   const { showError, showSuccess } = useToast();
 
@@ -51,20 +51,20 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
     }
 
     setIsLoading(true);
-    
+
     try {
       const mobileNumber = user.mobileNumber || user.mobile;
       console.log("🔄 Sending OTP for account deletion to:", mobileNumber);
-      
+
       // Send OTP for account deletion verification
       await apiService.sendOTP(mobileNumber);
-      
+
       console.log("✅ OTP sent successfully for account deletion");
       showSuccess("OTP sent to your mobile number for verification.");
-      
+
       // Close the modal and navigate to OTP verification page
       onClose();
-      
+
       // Navigate to OTP verification page with required parameters
       router.push({
         pathname: "/(auth)/verify-account-deletion",
@@ -73,12 +73,12 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
           userName: userName,
         },
       });
-      
     } catch (error: any) {
       console.error("❌ Error sending OTP for account deletion:", error);
-      
-      const errorMessage = error.message || 
-        error.response?.data?.data?.message || 
+
+      const errorMessage =
+        error.message ||
+        error.response?.data?.data?.message ||
         "Failed to send OTP. Please try again.";
       showError(errorMessage);
     } finally {
@@ -100,12 +100,15 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
               entering={SlideInUp.duration(300)}
               style={styles.modalContainer}
             >
-              <ScrollView 
+              <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
               >
                 {/* Header */}
-                <Animated.View entering={FadeIn.delay(100)} style={styles.header}>
+                <Animated.View
+                  entering={FadeIn.delay(100)}
+                  style={styles.header}
+                >
                   <View style={styles.warningIconContainer}>
                     <Ionicons name="warning" size={24} color={COLORS.white} />
                   </View>
@@ -118,9 +121,12 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                 </Animated.View>
 
                 {/* Important Information */}
-                <Animated.View entering={FadeIn.delay(200)} style={styles.infoSection}>
+                <Animated.View
+                  entering={FadeIn.delay(200)}
+                  style={styles.infoSection}
+                >
                   <Text style={styles.infoTitle}>Important Information</Text>
-                  
+
                   <View style={styles.bulletPoint}>
                     <View style={styles.bullet} />
                     <Text style={styles.bulletText}>
@@ -151,29 +157,49 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                 </Animated.View>
 
                 {/* User Confirmation */}
-                <Animated.View entering={FadeIn.delay(300)} style={styles.confirmationSection}>
+                <Animated.View
+                  entering={FadeIn.delay(300)}
+                  style={styles.confirmationSection}
+                >
                   <View style={styles.checkboxContainer}>
-                    <TouchableOpacity 
-                      style={[styles.checkbox, isChecked && styles.checkboxChecked]}
+                    <TouchableOpacity
+                      style={[
+                        styles.checkbox,
+                        isChecked && styles.checkboxChecked,
+                      ]}
                       onPress={() => setIsChecked(!isChecked)}
                       activeOpacity={0.7}
                     >
                       {isChecked && (
-                        <Ionicons name="checkmark" size={14} color={COLORS.white} />
+                        <Ionicons
+                          name="checkmark"
+                          size={14}
+                          color={COLORS.white}
+                        />
                       )}
                     </TouchableOpacity>
                     <Text style={styles.confirmationText}>
-                      I, <Text style={styles.userName}>{userName}</Text>, confirm deletion of my account. My balance of{" "}
-                      <Text style={styles.balanceAmount}>৳{userBalance.toFixed(2)}</Text>{" "}
+                      I, <Text style={styles.userName}>{userName}</Text>,
+                      confirm deletion of my account. My balance of{" "}
+                      <Text style={styles.balanceAmount}>
+                        ৳{userBalance.toFixed(2)}
+                      </Text>{" "}
                       and all data will be permanently lost after 7 days.
                     </Text>
                   </View>
                 </Animated.View>
 
                 {/* Note */}
-                <Animated.View entering={FadeIn.delay(400)} style={styles.noteSection}>
+                <Animated.View
+                  entering={FadeIn.delay(400)}
+                  style={styles.noteSection}
+                >
                   <View style={styles.noteIcon}>
-                    <Ionicons name="information-circle" size={16} color={COLORS.info} />
+                    <Ionicons
+                      name="information-circle"
+                      size={16}
+                      color={COLORS.info}
+                    />
                   </View>
                   <Text style={styles.noteText}>
                     OTP will be sent to your mobile number for verification.
@@ -181,18 +207,15 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                 </Animated.View>
 
                 {/* Action Buttons */}
-                <Animated.View entering={FadeIn.delay(500)} style={styles.actionContainer}>
-                  <TouchableOpacity 
-                    style={styles.backButton} 
-                    onPress={onClose}
-                    disabled={isLoading}
-                  >
-                    <Ionicons name="arrow-back" size={16} color={COLORS.gray[600]} />
-                    <Text style={styles.backButtonText}>Back to Profile</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity 
-                    style={[styles.deleteButton, (isLoading || !isChecked) && styles.deleteButtonDisabled]} 
+                <Animated.View
+                  entering={FadeIn.delay(500)}
+                  style={styles.actionContainer}
+                >
+                  <TouchableOpacity
+                    style={[
+                      styles.deleteButton,
+                      (isLoading || !isChecked) && styles.deleteButtonDisabled,
+                    ]}
                     onPress={handleConfirmDelete}
                     disabled={isLoading || !isChecked}
                   >
@@ -201,9 +224,20 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                     ) : (
                       <>
                         <Ionicons name="trash" size={16} color={COLORS.white} />
-                        <Text style={styles.deleteButtonText}>Confirm Delete Account</Text>
+                        <Text style={styles.deleteButtonText}>
+                          Confirm Delete Account
+                        </Text>
                       </>
                     )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={onClose}
+                    disabled={isLoading}
+                  >
+                    {/* <Ionicons name="close" size={16} color={COLORS.gray[600]} /> */}
+                    <Text style={styles.backButtonText}>Cancel</Text>
                   </TouchableOpacity>
                 </Animated.View>
               </ScrollView>
@@ -264,7 +298,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "700",
     color: COLORS.white,
     marginBottom: 2,
   },
