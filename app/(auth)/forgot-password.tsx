@@ -779,30 +779,30 @@ export default function ForgotPassword() {
     </Animated.View>
   );
 
-  const renderBottomSection = () => (
-    <Animated.View
-      entering={FadeInDown.duration(ANIMATION_DELAYS.BOTTOM)}
-      style={styles.bottomSection}
-    >
-      {!isOtpSent && (
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
-          <View style={styles.dividerLine} />
-        </View>
-      )}
+  // const renderBottomSection = () => (
+  //   <Animated.View
+  //     entering={FadeInDown.duration(ANIMATION_DELAYS.BOTTOM)}
+  //     style={styles.bottomSection}
+  //   >
+  //     {!isOtpSent && (
+  //       <View style={styles.divider}>
+  //         <View style={styles.dividerLine} />
+  //         <Text style={styles.dividerText}>OR</Text>
+  //         <View style={styles.dividerLine} />
+  //       </View>
+  //     )}
 
-      <TouchableOpacity
-        onPress={handleContactOrganization}
-        style={styles.organizationButton}
-      >
-        <Text style={styles.organizationText}>
-          Need help with your account?
-        </Text>
-        <Text style={styles.organizationEmail}>info@thegobd.com</Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
+  //     <TouchableOpacity
+  //       onPress={handleContactOrganization}
+  //       style={styles.organizationButton}
+  //     >
+  //       <Text style={styles.organizationText}>
+  //         Need help with your account?
+  //       </Text>
+  //       <Text style={styles.organizationEmail}>info@thegobd.com</Text>
+  //     </TouchableOpacity>
+  //   </Animated.View>
+  // );
 
   return (
     <>
@@ -848,7 +848,7 @@ export default function ForgotPassword() {
           >
             {renderHeader()}
             {isOtpSent ? renderOTPInput() : renderMobileInput()}
-            {renderBottomSection()}
+            {/* {renderBottomSection()} */}
           </ScrollView>
         </KeyboardAvoidingView>
 
@@ -897,7 +897,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: SPACING.md,
-    paddingTop: 80,
+    // paddingTop: 80,
     paddingBottom: SPACING.lg,
     justifyContent: "center",
   },
