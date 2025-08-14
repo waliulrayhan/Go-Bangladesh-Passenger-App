@@ -567,10 +567,10 @@ export default function History() {
             <Text
               variant="caption"
               color={COLORS.gray[500]}
-              style={styles.cardDate}
+              style={styles.cardDateTrip}
             >
               {tripStartTime
-                ? formatTimeString(tripStartTime)
+                ? formatDateString(new Date(tripStartTime))
                 : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
             </Text>
           </View>
@@ -1480,7 +1480,7 @@ const styles = StyleSheet.create({
   // Text and content styles
   cardTitle: {
     // Font properties handled by Text component
-    fontSize: 16,
+    fontSize: 15,
   },
   cardSubtitle: {
     // marginTop: 2,
@@ -1491,6 +1491,12 @@ const styles = StyleSheet.create({
     // Font properties handled by Text component
   },
   fareAmount: {
+    fontSize: 16,
+    // Font properties handled by Text component
+  },
+    cardDateTrip: {
+    // marginTop: 4,
+    fontSize: 12,
     // Font properties handled by Text component
   },
   rechargeAmount: {
@@ -1671,7 +1677,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginTop: 4,
+    // marginTop: 4,
   },
   dateTimeContainer: {
     flexDirection: "row",
