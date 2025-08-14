@@ -1,7 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { StatusBar } from "expo-status-bar";
+import { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -12,17 +12,17 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
-} from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+  View,
+} from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
-import { useToast } from '../hooks/useToast';
-import { apiService } from '../services/api';
-import { useAuthStore } from '../stores/authStore';
-import { COLORS, SPACING } from '../utils/constants';
-import { Card } from './ui/Card';
-import { Text } from './ui/Text';
-import { Toast } from './ui/Toast';
+import { useToast } from "../hooks/useToast";
+import { apiService } from "../services/api";
+import { useAuthStore } from "../stores/authStore";
+import { COLORS, SPACING } from "../utils/constants";
+import { Card } from "./ui/Card";
+import { Text } from "./ui/Text";
+import { Toast } from "./ui/Toast";
 
 const ANIMATION_DELAYS = {
   HEADER: 800,
@@ -41,7 +41,8 @@ const OTP_CONSTRAINTS = {
 
 const MESSAGES = {
   COMPLETE_OTP: "Please enter the complete 6-digit OTP!",
-  VERIFICATION_FAILED: "OTP verification failed. Please check the code and try again.",
+  VERIFICATION_FAILED:
+    "OTP verification failed. Please check the code and try again.",
   INVALID_OTP: "Invalid OTP. Please try again.",
   RESEND_SUCCESS: "A new OTP has been sent to your mobile number.",
   RESEND_FAILED: "Failed to resend OTP. Please try again.",
@@ -59,40 +60,64 @@ interface ProfileOTPVerificationModalProps {
     name: string;
     cardNumber?: string;
   };
+  changeDetails?: {
+    isNameChanged: boolean;
+    isMobileChanged: boolean;
+    newMobileNumber?: string;
+  };
 }
 
 /**
  * Custom hook for managing countdown timer
  */
-const useCountdownTimer = () => {
-  const [countdown, setCountdown] = useState<number>(OTP_CONSTRAINTS.TIMER_DURATION);
+const useCountdownTimer = (shouldStart: boolean = false) => {
+  const [countdown, setCountdown] = useState<number>(
+    OTP_CONSTRAINTS.TIMER_DURATION
+  );
   const [canResend, setCanResend] = useState(false);
+  const [isActive, setIsActive] = useState(shouldStart);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          setCanResend(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    let timer: NodeJS.Timeout;
 
-    return () => clearInterval(timer);
-  }, []);
+    if (isActive && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            setCanResend(true);
+            setIsActive(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [isActive, countdown]);
+
+  const startTimer = () => {
+    setCountdown(OTP_CONSTRAINTS.TIMER_DURATION);
+    setCanResend(false);
+    setIsActive(true);
+  };
 
   const resetTimer = () => {
     setCountdown(OTP_CONSTRAINTS.TIMER_DURATION);
     setCanResend(false);
+    setIsActive(true);
   };
 
-  return { countdown, canResend, resetTimer };
+  return { countdown, canResend, resetTimer, startTimer };
 };
 
 /**
  * ProfileOTPVerificationModal Component
- * 
+ *
  * Handles OTP verification for profile updates with:
  * - SMS autofill support for better UX
  * - Countdown timer for resend functionality
@@ -105,23 +130,27 @@ export function ProfileOTPVerificationModal({
   onVerificationSuccess,
   mobileNumber,
   userData,
+  changeDetails,
 }: ProfileOTPVerificationModalProps) {
   // State management
-  const [otp, setOtp] = useState<string[]>(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
+  const [otp, setOtp] = useState<string[]>(
+    Array(OTP_CONSTRAINTS.LENGTH).fill("")
+  );
   const [isResending, setIsResending] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAutoVerifying, setIsAutoVerifying] = useState(false);
   const [showVerifyingText, setShowVerifyingText] = useState(false);
   const [isOtpReady, setIsOtpReady] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isSendingInitialOTP, setIsSendingInitialOTP] = useState(false);
 
   // Custom hooks
-  const { countdown, canResend, resetTimer } = useCountdownTimer();
+  const { countdown, canResend, resetTimer, startTimer } = useCountdownTimer();
 
   // External hooks and stores
   const { refreshUserData } = useAuthStore();
   const { toast, showError, showSuccess, hideToast } = useToast();
-  
+
   // Refs
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
@@ -141,7 +170,62 @@ export function ProfileOTPVerificationModal({
     }, 100);
   };
 
+  const sendInitialOTP = async () => {
+    setIsSendingInitialOTP(true);
+
+    try {
+      console.log("🔄 [PROFILE OTP] Sending initial OTP to:", mobileNumber);
+      await apiService.sendOTP(mobileNumber);
+      console.log("✅ [PROFILE OTP] Initial OTP sent successfully");
+
+      // Start the countdown timer after successfully sending OTP
+      startTimer();
+
+      setIsSendingInitialOTP(false);
+    } catch (error: any) {
+      setIsSendingInitialOTP(false);
+      console.error("❌ [PROFILE OTP] Failed to send initial OTP:", error);
+
+      const errorMessage =
+        error.message ||
+        error.response?.data?.data?.message ||
+        "Failed to send OTP. Please try again.";
+
+      showError(errorMessage);
+
+      // Close modal if OTP sending fails
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+    }
+  };
+
   // Effects
+  useEffect(() => {
+    // Reset state and send initial OTP when modal opens
+    if (visible && !isSendingInitialOTP) {
+      // Reset all states
+      setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
+      setIsLoading(false);
+      setIsAutoVerifying(false);
+      setShowVerifyingText(false);
+      setIsResending(false);
+
+      // Send initial OTP
+      sendInitialOTP();
+    }
+
+    // Reset states when modal closes
+    if (!visible) {
+      setIsSendingInitialOTP(false);
+      setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
+      setIsLoading(false);
+      setIsAutoVerifying(false);
+      setShowVerifyingText(false);
+      setIsResending(false);
+    }
+  }, [visible]);
+
   useEffect(() => {
     // Trigger OTP ready state for autofill
     const timer = setTimeout(() => {
@@ -161,18 +245,27 @@ export function ProfileOTPVerificationModal({
 
   // Keyboard event listeners to handle Android keyboard behavior
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
-      setKeyboardHeight(e.endCoordinates.height);
-    });
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      }
+    );
 
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      setKeyboardHeight(0);
-    });
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
 
-    const keyboardWillHideListener = Keyboard.addListener('keyboardWillHide', () => {
-      // Pre-emptively set keyboard height to 0 for smoother transition
-      setKeyboardHeight(0);
-    });
+    const keyboardWillHideListener = Keyboard.addListener(
+      "keyboardWillHide",
+      () => {
+        // Pre-emptively set keyboard height to 0 for smoother transition
+        setKeyboardHeight(0);
+      }
+    );
 
     return () => {
       keyboardDidShowListener?.remove();
@@ -183,7 +276,7 @@ export function ProfileOTPVerificationModal({
 
   const handlePastedOTP = (pastedOtp: string): boolean => {
     const cleanOtp = pastedOtp.replace(/\D/g, "");
-    
+
     if (cleanOtp.length >= OTP_CONSTRAINTS.LENGTH) {
       setIsAutoVerifying(true);
       setShowVerifyingText(true);
@@ -210,26 +303,28 @@ export function ProfileOTPVerificationModal({
 
     // Handle pasted OTP (multiple characters at once)
     if (value.length > 1) {
-      const pastedOtp = value.replace(/\D/g, "").slice(0, OTP_CONSTRAINTS.LENGTH);
+      const pastedOtp = value
+        .replace(/\D/g, "")
+        .slice(0, OTP_CONSTRAINTS.LENGTH);
       if (handlePastedOTP(pastedOtp)) return;
     }
 
     // For first input, handle SMS autofill specially
     if (index === 0) {
       const cleanValue = value.replace(/\D/g, "");
-      
+
       // If we get multiple digits in first input (SMS autofill), handle as paste
       if (cleanValue.length > 1) {
         if (handlePastedOTP(cleanValue)) return;
       }
-      
+
       // Store the first digit immediately
       setOtp((prevOtp) => {
         const newOtp = [...prevOtp];
         newOtp[0] = cleanValue.slice(-1);
         return newOtp;
       });
-      
+
       // Focus next input for manual entry
       if (cleanValue && !isAutoVerifying) {
         setTimeout(() => {
@@ -246,7 +341,10 @@ export function ProfileOTPVerificationModal({
         newOtp[index] = value.slice(-1);
 
         // Auto-verify when all digits are filled
-        if (newOtp.every((digit) => digit !== "") && newOtp.length === OTP_CONSTRAINTS.LENGTH) {
+        if (
+          newOtp.every((digit) => digit !== "") &&
+          newOtp.length === OTP_CONSTRAINTS.LENGTH
+        ) {
           setIsAutoVerifying(true);
           setShowVerifyingText(true);
           setTimeout(() => {
@@ -285,7 +383,10 @@ export function ProfileOTPVerificationModal({
     try {
       console.log("🔐 [PROFILE OTP] Verifying OTP for:", mobileNumber);
 
-      const verificationResult = await apiService.verifyOTP(mobileNumber, otpString);
+      const verificationResult = await apiService.verifyOTP(
+        mobileNumber,
+        otpString
+      );
 
       if (verificationResult) {
         console.log("✅ [PROFILE OTP] OTP verification successful");
@@ -302,17 +403,17 @@ export function ProfileOTPVerificationModal({
     try {
       console.log("🔄 [PROFILE OTP] Executing profile update...");
       await onVerificationSuccess();
-      
+
       console.log("⏳ [PROFILE OTP] Waiting for API to process update...");
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       console.log("🔄 [PROFILE OTP] Refreshing user data...");
       await refreshUserData();
-      
+
       setIsLoading(false);
       setIsAutoVerifying(false);
       setShowVerifyingText(false);
-      
+
       // Don't show success toast here - it's handled by parent component
       setTimeout(() => {
         console.log("🚪 [PROFILE OTP] Closing modal after successful update");
@@ -323,11 +424,12 @@ export function ProfileOTPVerificationModal({
       setIsLoading(false);
       setIsAutoVerifying(false);
       setShowVerifyingText(false);
-      
-      const errorMessage = updateError.message || 
-        updateError.response?.data?.data?.message || 
+
+      const errorMessage =
+        updateError.message ||
+        updateError.response?.data?.data?.message ||
         MESSAGES.UPDATE_FAILED;
-      
+
       showError(errorMessage);
       resetOTPForm();
     }
@@ -343,9 +445,10 @@ export function ProfileOTPVerificationModal({
     setIsLoading(false);
     console.error("❌ [PROFILE OTP] OTP verification error:", error);
     resetOTPForm();
-    
-    const errorMessage = error.message || 
-      error.response?.data?.data?.message || 
+
+    const errorMessage =
+      error.message ||
+      error.response?.data?.data?.message ||
       MESSAGES.INVALID_OTP;
     showError(errorMessage);
   };
@@ -373,10 +476,10 @@ export function ProfileOTPVerificationModal({
 
       setIsResending(false);
       setOtp(Array(OTP_CONSTRAINTS.LENGTH).fill(""));
-      resetTimer();
+      resetTimer(); // This will restart the timer
       setIsAutoVerifying(false);
       setShowVerifyingText(false);
-      
+
       setTimeout(() => {
         inputRefs.current[0]?.focus();
       }, OTP_CONSTRAINTS.FOCUS_DELAY);
@@ -392,8 +495,9 @@ export function ProfileOTPVerificationModal({
       setIsAutoVerifying(false);
       setShowVerifyingText(false);
 
-      const errorMessage = error.message || 
-        error.response?.data?.data?.message || 
+      const errorMessage =
+        error.message ||
+        error.response?.data?.data?.message ||
         MESSAGES.RESEND_FAILED;
       showError(errorMessage);
     }
@@ -401,104 +505,138 @@ export function ProfileOTPVerificationModal({
 
   // Render functions
   const renderHeader = () => (
-    <Animated.View entering={FadeInUp.duration(ANIMATION_DELAYS.HEADER)} style={styles.header}>
+    <Animated.View
+      entering={FadeInUp.duration(ANIMATION_DELAYS.HEADER)}
+      style={styles.header}
+    >
       <View style={styles.iconContainer}>
         <Ionicons name="shield-checkmark" size={32} color={COLORS.primary} />
       </View>
 
       <Text variant="h3" color={COLORS.secondary} style={styles.title}>
-        Verify Your Mobile Number
+        Verify Your Identity
       </Text>
       <Text style={styles.subtitle}>
         Enter the 6-digit code sent to{"\n"}
         <Text style={styles.phoneNumber}>{mobileNumber}</Text>
+        {/* {changeDetails?.isMobileChanged && changeDetails?.newMobileNumber && (
+          <Text style={styles.newNumberText}>{"\n"}New number: {changeDetails.newMobileNumber}</Text>
+        )} */}
       </Text>
 
-      <View style={styles.userInfo}>
+      {/* <View style={styles.userInfo}>
         <Text style={styles.infoLabel}>Updating Profile for</Text>
         <Text style={styles.infoValue}>{userData.name}</Text>
         {userData.cardNumber && (
           <Text style={styles.cardInfo}>Card: {userData.cardNumber}</Text>
         )}
-      </View>
+      </View> */}
     </Animated.View>
   );
 
   const renderOTPForm = () => (
-    <Animated.View entering={FadeInDown.duration(ANIMATION_DELAYS.FORM).delay(200)}>
+    <Animated.View
+      entering={FadeInDown.duration(ANIMATION_DELAYS.FORM).delay(200)}
+    >
       <Card variant="elevated">
         <View style={styles.otpContainer}>
-          {!showVerifyingText && (
-            <Text style={styles.otpLabel}>Enter Verification Code</Text>
-          )}
-
-          <View style={styles.otpInputContainer} key={`otp-container-${isOtpReady}`}>
-            {showVerifyingText && (
-              <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Verifying & Updating Profile...</Text>
-              </View>
-            )}
-
-            {Array.from({ length: OTP_CONSTRAINTS.LENGTH }).map((_, index) => (
-              <View key={index} style={styles.otpInputWrapper}>
-                <TextInput
-                  ref={(ref) => {
-                    inputRefs.current[index] = ref;
-                  }}
-                  style={[
-                    styles.otpInput,
-                    otp[index] && styles.otpInputFilled,
-                    (isLoading || isAutoVerifying) && styles.otpInputDisabled,
-                  ]}
-                  value={otp[index]}
-                  onChangeText={(value) => handleOtpChange(value, index)}
-                  onKeyPress={(e) => handleKeyPress(e, index)}
-                  onBlur={() => {
-                    // Handle blur event to prevent UI issues on Android
-                    if (Platform.OS === "android") {
-                      // Small delay to ensure proper cleanup
-                      setTimeout(() => {
-                        setKeyboardHeight(0);
-                      }, 100);
-                    }
-                  }}
-                  keyboardType="numeric"
-                  maxLength={index === 0 ? OTP_CONSTRAINTS.LENGTH : 1}
-                  textContentType="oneTimeCode"
-                  autoComplete="sms-otp"
-                  editable={!isLoading && !isAutoVerifying}
-                  selectTextOnFocus
-                  returnKeyType="done"
-                  onSubmitEditing={() => {
-                    // Handle submit to dismiss keyboard properly
-                    Keyboard.dismiss();
-                  }}
-                />
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.resendContainer}>
-            {canResend ? (
-              <TouchableOpacity 
-                style={styles.resendButton} 
-                onPress={handleResendOTP}
-                disabled={isResending || isLoading}
-              >
-                <Text style={styles.resendText}>
-                  {isResending ? "Sending..." : "Resend Code"}
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={styles.countdownText}>
-                Resend code in {formatTime(countdown)}
+          {isSendingInitialOTP ? (
+            <View style={styles.sendingOtpContainer}>
+              <Text style={styles.sendingOtpText}>
+                Sending verification code...
               </Text>
-            )}
-          </View>
+              <Text style={styles.sendingOtpSubtext}>
+                Please wait while we send the OTP to your mobile number
+              </Text>
+            </View>
+          ) : (
+            <>
+              {!showVerifyingText && (
+                <Text style={styles.otpLabel}>Enter Verification Code</Text>
+              )}
 
-          <Text style={styles.helpText}>
-            Didn't receive the code? Check your SMS messages or try resending.
-          </Text>
+              <View
+                style={styles.otpInputContainer}
+                key={`otp-container-${isOtpReady}`}
+              >
+                {showVerifyingText && (
+                  <View style={styles.loadingContainer}>
+                    <Text style={styles.loadingText}>
+                      Verifying & Updating Profile...
+                    </Text>
+                  </View>
+                )}
+
+                {Array.from({ length: OTP_CONSTRAINTS.LENGTH }).map(
+                  (_, index) => (
+                    <View key={index} style={styles.otpInputWrapper}>
+                      <TextInput
+                        ref={(ref) => {
+                          inputRefs.current[index] = ref;
+                        }}
+                        style={[
+                          styles.otpInput,
+                          otp[index] && styles.otpInputFilled,
+                          (isLoading ||
+                            isAutoVerifying ||
+                            isSendingInitialOTP) &&
+                            styles.otpInputDisabled,
+                        ]}
+                        value={otp[index]}
+                        onChangeText={(value) => handleOtpChange(value, index)}
+                        onKeyPress={(e) => handleKeyPress(e, index)}
+                        onBlur={() => {
+                          // Handle blur event to prevent UI issues on Android
+                          if (Platform.OS === "android") {
+                            // Small delay to ensure proper cleanup
+                            setTimeout(() => {
+                              setKeyboardHeight(0);
+                            }, 100);
+                          }
+                        }}
+                        keyboardType="numeric"
+                        maxLength={index === 0 ? OTP_CONSTRAINTS.LENGTH : 1}
+                        textContentType="oneTimeCode"
+                        autoComplete="sms-otp"
+                        editable={
+                          !isLoading && !isAutoVerifying && !isSendingInitialOTP
+                        }
+                        selectTextOnFocus
+                        returnKeyType="done"
+                        onSubmitEditing={() => {
+                          // Handle submit to dismiss keyboard properly
+                          Keyboard.dismiss();
+                        }}
+                      />
+                    </View>
+                  )
+                )}
+              </View>
+
+              <View style={styles.resendContainer}>
+                {canResend ? (
+                  <TouchableOpacity
+                    style={styles.resendButton}
+                    onPress={handleResendOTP}
+                    disabled={isResending || isLoading || isSendingInitialOTP}
+                  >
+                    <Text style={styles.resendText}>
+                      {isResending ? "Sending..." : "Resend Code"}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={styles.countdownText}>
+                    Resend code in {formatTime(countdown)}
+                  </Text>
+                )}
+              </View>
+
+              <Text style={styles.helpText}>
+                Didn't receive the code? Check your SMS messages or try
+                resending.
+              </Text>
+            </>
+          )}
         </View>
       </Card>
     </Animated.View>
@@ -516,7 +654,11 @@ export function ProfileOTPVerificationModal({
       }}
       statusBarTranslucent={true}
     >
-      <StatusBar style="light" backgroundColor="transparent" translucent={true} />
+      <StatusBar
+        style="light"
+        backgroundColor="transparent"
+        translucent={true}
+      />
       <SafeAreaView style={styles.container}>
         <LinearGradient
           colors={[
@@ -543,9 +685,15 @@ export function ProfileOTPVerificationModal({
             keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
             enabled={Platform.OS === "ios"}
           >
-            <View style={[styles.content, Platform.OS === "android" && keyboardHeight > 0 && {
-              paddingBottom: keyboardHeight * 0.1, // Minimal adjustment for Android
-            }]}>
+            <View
+              style={[
+                styles.content,
+                Platform.OS === "android" &&
+                  keyboardHeight > 0 && {
+                    paddingBottom: keyboardHeight * 0.1, // Minimal adjustment for Android
+                  },
+              ]}
+            >
               {renderHeader()}
               {renderOTPForm()}
             </View>
@@ -614,6 +762,11 @@ const styles = StyleSheet.create({
   phoneNumber: {
     fontWeight: "600",
     color: COLORS.primary,
+  },
+  newNumberText: {
+    fontWeight: "500",
+    color: COLORS.secondary,
+    fontSize: 14,
   },
   userInfo: {
     backgroundColor: COLORS.brand.orange_subtle,
@@ -689,6 +842,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.primary,
     fontWeight: "600",
+  },
+  sendingOtpContainer: {
+    alignItems: "center",
+    paddingVertical: SPACING.lg,
+  },
+  sendingOtpText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.primary,
+    marginBottom: SPACING.xs,
+    textAlign: "center",
+  },
+  sendingOtpSubtext: {
+    fontSize: 14,
+    color: COLORS.gray[600],
+    textAlign: "center",
+    lineHeight: 20,
   },
   resendContainer: {
     alignItems: "center",

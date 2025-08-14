@@ -1,7 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as ImagePicker from 'expo-image-picker';
-import { useEffect, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import * as ImagePicker from "expo-image-picker";
+import { useEffect, useState } from "react";
 import {
   Image,
   Modal,
@@ -10,22 +10,22 @@ import {
   StatusBar,
   StyleSheet,
   TouchableOpacity,
-  View
-} from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+  View,
+} from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
-import { useToast } from '../hooks/useToast';
-import { apiService } from '../services/api';
-import { BORDER_RADIUS, COLORS, SPACING } from '../utils/constants';
-import { ProfileOTPVerificationModal } from './ProfileOTPVerificationModal';
-import { Button } from './ui/Button';
-import { Input } from './ui/Input';
-import { Text } from './ui/Text';
-import { Toast } from './ui/Toast';
+import { useToast } from "../hooks/useToast";
+import { apiService } from "../services/api";
+import { BORDER_RADIUS, COLORS, SPACING } from "../utils/constants";
+import { ProfileOTPVerificationModal } from "./ProfileOTPVerificationModal";
+import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
+import { Text } from "./ui/Text";
+import { Toast } from "./ui/Toast";
 
 // Constants
-const API_BASE_URL = 'https://thegobd.com';
-const GENDERS = ['Male', 'Female'] as const;
+const API_BASE_URL = "https://thegobd.com";
+const GENDERS = ["Male", "Female"] as const;
 
 // Types
 interface UserData {
@@ -65,14 +65,14 @@ interface EditProfileModalProps {
 
 /**
  * EditProfileModal Component
- * 
+ *
  * A comprehensive modal for editing user profile information including:
  * - Profile picture upload with image picker
  * - Personal information (name, contact, demographics)
  * - Form validation and error handling
  * - OTP verification workflow for security
  * - Responsive UI with animations
- * 
+ *
  * Features:
  * - Image picker with permission handling
  * - Date picker for birth date selection
@@ -97,8 +97,8 @@ export function EditProfileModal({
     emailAddress: userData.emailAddress,
     address: userData.address,
     gender: userData.gender,
-    dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
-    passengerId: userData.passengerId || userData.studentId || '',
+    dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split("T")[0] : "",
+    passengerId: userData.passengerId || userData.studentId || "",
   });
 
   const [originalData, setOriginalData] = useState<ProfileFormData>({
@@ -107,8 +107,8 @@ export function EditProfileModal({
     emailAddress: userData.emailAddress,
     address: userData.address,
     gender: userData.gender,
-    dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
-    passengerId: userData.passengerId || userData.studentId || '',
+    dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split("T")[0] : "",
+    passengerId: userData.passengerId || userData.studentId || "",
   });
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -116,7 +116,9 @@ export function EditProfileModal({
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [isOTPSuccess, setIsOTPSuccess] = useState(false);
-  const [pendingUpdateData, setPendingUpdateData] = useState<FormData | null>(null);
+  const [pendingUpdateData, setPendingUpdateData] = useState<FormData | null>(
+    null
+  );
 
   // ==================== UTILITY FUNCTIONS ====================
   const createInitialFormData = (): ProfileFormData => ({
@@ -125,8 +127,8 @@ export function EditProfileModal({
     emailAddress: userData.emailAddress,
     address: userData.address,
     gender: userData.gender,
-    dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split('T')[0] : '',
-    passengerId: userData.passengerId || userData.studentId || '',
+    dateOfBirth: userData.dateOfBirth ? userData.dateOfBirth.split("T")[0] : "",
+    passengerId: userData.passengerId || userData.studentId || "",
   });
 
   const resetForm = () => {
@@ -141,8 +143,8 @@ export function EditProfileModal({
 
   const hasChanges = (): boolean => {
     if (selectedImage) return true;
-    
-    return Object.keys(formData).some(key => {
+
+    return Object.keys(formData).some((key) => {
       const formKey = key as keyof ProfileFormData;
       return formData[formKey] !== originalData[formKey];
     });
@@ -150,21 +152,22 @@ export function EditProfileModal({
 
   const getProfileImageSource = () => {
     if (selectedImage) return { uri: selectedImage };
-    if (userData.imageUrl) return { uri: `${API_BASE_URL}/${userData.imageUrl}` };
+    if (userData.imageUrl)
+      return { uri: `${API_BASE_URL}/${userData.imageUrl}` };
     return null;
   };
 
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
-      showError('Name is required');
+      showError("Name is required");
       return false;
     }
     if (!formData.mobileNumber.trim()) {
-      showError('Mobile number is required');
+      showError("Mobile number is required");
       return false;
     }
     if (formData.mobileNumber.trim().length !== 11) {
-      showError('Phone number must be 11 digits');
+      showError("Phone number must be 11 digits");
       return false;
     }
     return true;
@@ -176,7 +179,7 @@ export function EditProfileModal({
       resetForm();
     }
   }, [visible]);
-  
+
   useEffect(() => {
     if (visible) {
       const updatedData = createInitialFormData();
@@ -188,10 +191,13 @@ export function EditProfileModal({
   // ==================== EVENT HANDLERS ====================
   const pickImage = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (status !== 'granted') {
-        showError('We need camera roll permissions to change your profile picture.');
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== "granted") {
+        showError(
+          "We need camera roll permissions to change your profile picture."
+        );
         return;
       }
 
@@ -206,49 +212,52 @@ export function EditProfileModal({
         setSelectedImage(result.assets[0].uri);
       }
     } catch (error) {
-      showError('Failed to pick image. Please try again.');
+      showError("Failed to pick image. Please try again.");
     }
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (selectedDate) {
-      const dateString = selectedDate.toISOString().split('T')[0];
-      setFormData(prev => ({ ...prev, dateOfBirth: dateString }));
+      const dateString = selectedDate.toISOString().split("T")[0];
+      setFormData((prev) => ({ ...prev, dateOfBirth: dateString }));
     }
   };
 
   const createUpdateFormData = (): FormData => {
     const updateFormData = new FormData();
-    
+
     // Add form fields with correct API field names
-    updateFormData.append('Id', userData.id);
-    updateFormData.append('Name', formData.name);
-    updateFormData.append('DateOfBirth', formData.dateOfBirth);
-    updateFormData.append('MobileNumber', formData.mobileNumber);
-    updateFormData.append('EmailAddress', formData.emailAddress);
-    updateFormData.append('Address', formData.address);
-    updateFormData.append('Gender', formData.gender);
-    
+    updateFormData.append("Id", userData.id);
+    updateFormData.append("Name", formData.name);
+    updateFormData.append("DateOfBirth", formData.dateOfBirth);
+    updateFormData.append("MobileNumber", formData.mobileNumber);
+    updateFormData.append("EmailAddress", formData.emailAddress);
+    updateFormData.append("Address", formData.address);
+    updateFormData.append("Gender", formData.gender);
+
     // Normalize user type
-    const normalizedUserType = userData.userType.toLowerCase() === 'public' ? 'Public' : 
-                               userData.userType.toLowerCase() === 'private' ? 'Private' : 
-                               userData.userType;
-    updateFormData.append('UserType', normalizedUserType);
-    updateFormData.append('PassengerId', formData.passengerId);
-    
+    const normalizedUserType =
+      userData.userType.toLowerCase() === "public"
+        ? "Public"
+        : userData.userType.toLowerCase() === "private"
+        ? "Private"
+        : userData.userType;
+    updateFormData.append("UserType", normalizedUserType);
+    updateFormData.append("PassengerId", formData.passengerId);
+
     // Add optional fields
     if (userData.organizationId) {
-      updateFormData.append('OrganizationId', userData.organizationId);
+      updateFormData.append("OrganizationId", userData.organizationId);
     }
 
     // Add profile picture if selected
     if (selectedImage) {
       const timestamp = Date.now();
       const filename = `profile-${timestamp}.jpg`;
-      updateFormData.append('ProfilePicture', {
+      updateFormData.append("ProfilePicture", {
         uri: selectedImage,
-        type: 'image/jpeg',
+        type: "image/jpeg",
         name: filename,
       } as any);
     }
@@ -269,7 +278,7 @@ export function EditProfileModal({
     setIsLoading(true);
     try {
       const updateFormData = createUpdateFormData();
-      
+
       if (requiresOTPVerification()) {
         // Changes to name or mobile number require OTP verification
         setPendingUpdateData(updateFormData);
@@ -280,8 +289,8 @@ export function EditProfileModal({
         await handleDirectUpdate(updateFormData);
       }
     } catch (error: any) {
-      console.error('Error preparing profile update:', error);
-      showError(error.message || 'Failed to prepare profile update');
+      console.error("Error preparing profile update:", error);
+      showError(error.message || "Failed to prepare profile update");
       setIsLoading(false);
     }
   };
@@ -289,50 +298,49 @@ export function EditProfileModal({
   const handleDirectUpdate = async (updateFormData: FormData) => {
     try {
       const result = await apiService.updatePassengerProfile(updateFormData);
-      
+
       if (!result.isSuccess) {
-        throw new Error(result.message || 'Failed to update profile');
+        throw new Error(result.message || "Failed to update profile");
       }
-      
+
       // Update successful
       await onUpdate(updateFormData);
       setIsLoading(false);
-      
+
       // Close modal first
       onClose();
-      
+
       // Trigger success callback if provided
       if (onUpdateSuccess) {
         onUpdateSuccess();
       }
-      
     } catch (error: any) {
-      console.error('❌ [PROFILE UPDATE] Error updating profile:', error);
+      console.error("❌ [PROFILE UPDATE] Error updating profile:", error);
       setIsLoading(false);
-      showError(error.message || 'Failed to update profile. Please try again.');
+      showError(error.message || "Failed to update profile. Please try again.");
     }
   };
 
   const handleOTPVerificationSuccess = async () => {
     if (!pendingUpdateData) {
-      throw new Error('No pending update data found');
+      throw new Error("No pending update data found");
     }
 
     try {
       const result = await apiService.updatePassengerProfile(pendingUpdateData);
-      
+
       if (!result.isSuccess) {
-        throw new Error(result.message || 'Failed to update profile');
+        throw new Error(result.message || "Failed to update profile");
       }
-      
+
       // Clear pending data and refresh UI
       setPendingUpdateData(null);
       await onUpdate(pendingUpdateData);
       setIsOTPSuccess(true);
-      
+
       return { success: true };
     } catch (error: any) {
-      console.error('❌ [PROFILE UPDATE] Error updating profile:', error);
+      console.error("❌ [PROFILE UPDATE] Error updating profile:", error);
       throw error;
     }
   };
@@ -340,26 +348,30 @@ export function EditProfileModal({
   // ==================== RENDER HELPERS ====================
   const renderGenderSelection = () => (
     <View style={styles.fieldGroup}>
-      <Text variant="label" style={styles.fieldLabel}>Gender</Text>
+      <Text variant="label" style={styles.fieldLabel}>
+        Gender
+      </Text>
       <View style={styles.genderContainer}>
         {GENDERS.map((gender) => (
           <TouchableOpacity
             key={gender}
             style={[
               styles.genderOption,
-              formData.gender === gender && styles.genderOptionSelected
+              formData.gender === gender && styles.genderOptionSelected,
             ]}
-            onPress={() => setFormData(prev => ({ ...prev, gender }))}
+            onPress={() => setFormData((prev) => ({ ...prev, gender }))}
           >
-            <Ionicons 
-              name={gender === 'Male' ? 'male' : 'female'} 
-              size={18} 
-              color={formData.gender === gender ? COLORS.white : COLORS.primary} 
+            <Ionicons
+              name={gender === "Male" ? "male" : "female"}
+              size={18}
+              color={formData.gender === gender ? COLORS.white : COLORS.primary}
             />
-            <Text style={[
-              styles.genderText,
-              formData.gender === gender && styles.genderTextSelected
-            ]}>
+            <Text
+              style={[
+                styles.genderText,
+                formData.gender === gender && styles.genderTextSelected,
+              ]}
+            >
               {gender}
             </Text>
           </TouchableOpacity>
@@ -370,18 +382,22 @@ export function EditProfileModal({
 
   const renderDatePicker = () => (
     <View style={styles.fieldGroup}>
-      <Text variant="label" style={styles.fieldLabel}>Date of Birth</Text>
+      <Text variant="label" style={styles.fieldLabel}>
+        Date of Birth
+      </Text>
       <TouchableOpacity
         style={styles.dateButton}
         onPress={() => setShowDatePicker(true)}
       >
         <View style={styles.dateButtonContent}>
           <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
-          <Text style={[
-            styles.dateText,
-            !formData.dateOfBirth && styles.dateTextPlaceholder
-          ]}>
-            {formData.dateOfBirth || 'Select date of birth'}
+          <Text
+            style={[
+              styles.dateText,
+              !formData.dateOfBirth && styles.dateTextPlaceholder,
+            ]}
+          >
+            {formData.dateOfBirth || "Select date of birth"}
           </Text>
         </View>
         <Ionicons name="chevron-down" size={18} color={COLORS.gray[400]} />
@@ -394,7 +410,7 @@ export function EditProfileModal({
     setPendingUpdateData(null);
     setIsOTPSuccess(false);
     onClose(); // Close main modal
-    
+
     // If OTP was successful, trigger success callback
     if (isOTPSuccess && onUpdateSuccess) {
       onUpdateSuccess();
@@ -417,7 +433,9 @@ export function EditProfileModal({
             <View style={styles.headerIcon}>
               <Ionicons name="person" size={20} color={COLORS.primary} />
             </View>
-            <Text variant="h5" style={styles.headerTitle}>Edit Profile</Text>
+            <Text variant="h5" style={styles.headerTitle}>
+              Edit Profile
+            </Text>
           </View>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <Ionicons name="close" size={24} color={COLORS.gray[600]} />
@@ -427,11 +445,17 @@ export function EditProfileModal({
         {/* Content */}
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Profile Picture Section */}
-          <Animated.View entering={FadeInUp.duration(600)} style={styles.section}>
+          <Animated.View
+            entering={FadeInUp.duration(600)}
+            style={styles.section}
+          >
             <View style={styles.sectionContent}>
               <View style={styles.profilePictureSection}>
                 <View style={styles.profilePictureContainer}>
-                  <TouchableOpacity onPress={pickImage} style={styles.imageButton}>
+                  <TouchableOpacity
+                    onPress={pickImage}
+                    style={styles.imageButton}
+                  >
                     {getProfileImageSource() ? (
                       <Image
                         source={getProfileImageSource()!}
@@ -439,7 +463,11 @@ export function EditProfileModal({
                       />
                     ) : (
                       <View style={styles.imagePlaceholder}>
-                        <Ionicons name="person" size={32} color={COLORS.gray[400]} />
+                        <Ionicons
+                          name="person"
+                          size={32}
+                          color={COLORS.gray[400]}
+                        />
                       </View>
                     )}
                     <View style={styles.uploadOverlay}>
@@ -448,20 +476,34 @@ export function EditProfileModal({
                   </TouchableOpacity>
                 </View>
                 <View style={styles.profileInfo}>
-                    <Text variant="h6" style={styles.profileName}>{userData.name}</Text>
-                    <Text variant="caption" style={styles.userType}>
-                    {userData.userType.charAt(0).toUpperCase() + userData.userType.slice(1)} User
-                    </Text>
-                    {userData.organization?.name && (
+                  <Text variant="h6" style={styles.profileName}>
+                    {userData.name}
+                  </Text>
+                  <Text variant="caption" style={styles.userType}>
+                    {userData.userType.charAt(0).toUpperCase() +
+                      userData.userType.slice(1)}{" "}
+                    User
+                  </Text>
+                  {userData.organization?.name && (
                     <View style={styles.organizationContainer}>
-                      <Ionicons name="business-outline" size={12} color={COLORS.gray[600]} style={styles.organizationIcon} />
+                      <Ionicons
+                        name="business-outline"
+                        size={12}
+                        color={COLORS.gray[600]}
+                        style={styles.organizationIcon}
+                      />
                       <Text variant="caption" style={styles.userType}>
-                      {userData.organization.name}
+                        {userData.organization.name}
                       </Text>
                     </View>
-                    )}
-                  <TouchableOpacity onPress={pickImage} style={styles.changePhotoButton}>
-                  <Text variant="caption" style={styles.changePhotoText}>Change Photo</Text>
+                  )}
+                  <TouchableOpacity
+                    onPress={pickImage}
+                    style={styles.changePhotoButton}
+                  >
+                    <Text variant="caption" style={styles.changePhotoText}>
+                      Change Photo
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -469,17 +511,42 @@ export function EditProfileModal({
           </Animated.View>
 
           {/* Personal Information Section */}
-          <Animated.View entering={FadeInDown.duration(600).delay(200)} style={styles.section}>
-            
-            {/* Info Section - Always visible */}
-            <View style={styles.infoSection}>
-              <Ionicons name="information-circle-outline" size={16} color={COLORS.gray[600]} />
-              <Text style={styles.infoSectionText}>
-                Changing your name or mobile number will require OTP verification for security purposes.
-              </Text>
-            </View>
-            <Text variant="h6" style={styles.sectionTitle}>Personal Information</Text>
-            
+          <Animated.View
+            entering={FadeInDown.duration(600).delay(200)}
+            style={styles.section}
+          >
+            {/* Dynamic Info Section - Show when OTP is required */}
+              <View style={styles.infoSection}>
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={16}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.infoSectionText}>
+                  Changes to your name and mobile number require OTP
+                  verification for security.
+                </Text>
+              </View>
+
+            {/* General Info Section - Show when no OTP required */}
+            {!requiresOTPVerification() && hasChanges() && (
+              <View style={styles.infoSection}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={16}
+                  color={COLORS.gray[600]}
+                />
+                <Text style={styles.infoSectionText}>
+                  Your changes will be saved immediately without requiring
+                  verification.
+                </Text>
+              </View>
+            )}
+
+            <Text variant="h6" style={styles.sectionTitle}>
+              Personal Information
+            </Text>
+
             <View style={styles.sectionContent}>
               <View style={styles.fieldGroup}>
                 <Input
@@ -490,14 +557,20 @@ export function EditProfileModal({
                       </Text>
                       {formData.name !== originalData.name && (
                         <View style={styles.otpBadge}>
-                          <Ionicons name="shield-checkmark" size={12} color={COLORS.primary} />
+                          <Ionicons
+                            name="shield-checkmark"
+                            size={12}
+                            color={COLORS.primary}
+                          />
                           <Text style={styles.otpBadgeText}>OTP Required</Text>
                         </View>
                       )}
                     </View>
                   }
                   value={formData.name}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+                  onChangeText={(text) =>
+                    setFormData((prev) => ({ ...prev, name: text }))
+                  }
                   placeholder="Enter your full name"
                   icon="person-outline"
                 />
@@ -513,14 +586,20 @@ export function EditProfileModal({
                       </Text>
                       {formData.mobileNumber !== originalData.mobileNumber && (
                         <View style={styles.otpBadge}>
-                          <Ionicons name="shield-checkmark" size={12} color={COLORS.primary} />
+                          <Ionicons
+                            name="shield-checkmark"
+                            size={12}
+                            color={COLORS.primary}
+                          />
                           <Text style={styles.otpBadgeText}>OTP Required</Text>
                         </View>
                       )}
                     </View>
                   }
                   value={formData.mobileNumber}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, mobileNumber: text }))}
+                  onChangeText={(text) =>
+                    setFormData((prev) => ({ ...prev, mobileNumber: text }))
+                  }
                   placeholder="Enter your mobile number"
                   keyboardType="phone-pad"
                   icon="call-outline"
@@ -532,7 +611,9 @@ export function EditProfileModal({
                 <Input
                   label="Email Address"
                   value={formData.emailAddress}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, emailAddress: text }))}
+                  onChangeText={(text) =>
+                    setFormData((prev) => ({ ...prev, emailAddress: text }))
+                  }
                   placeholder="Enter your email address"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -543,14 +624,20 @@ export function EditProfileModal({
               {/* ID Field - Editable for all users */}
               <View style={styles.fieldGroup}>
                 <Input
-                  label={userData.userType === 'Private' 
-                    ? 'Identity Number' 
-                    : 'Identity Number'}
+                  label={
+                    userData.userType === "Private"
+                      ? "Identity Number"
+                      : "Identity Number"
+                  }
                   value={formData.passengerId}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, passengerId: text }))}
-                  placeholder={userData.userType === 'Private'
-                    ? 'Enter your Identity Number' 
-                    : 'Enter your Identity Number'}
+                  onChangeText={(text) =>
+                    setFormData((prev) => ({ ...prev, passengerId: text }))
+                  }
+                  placeholder={
+                    userData.userType === "Private"
+                      ? "Enter your Identity Number"
+                      : "Enter your Identity Number"
+                  }
                   icon="id-card-outline"
                 />
               </View>
@@ -563,7 +650,9 @@ export function EditProfileModal({
                 <Input
                   label="Address"
                   value={formData.address}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, address: text }))}
+                  onChangeText={(text) =>
+                    setFormData((prev) => ({ ...prev, address: text }))
+                  }
                   placeholder="Enter your address"
                   icon="location-outline"
                 />
@@ -576,11 +665,15 @@ export function EditProfileModal({
         <View style={styles.footer}>
           <View style={styles.footerButtons}>
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text variant="button" style={styles.cancelText}>Cancel</Text>
+              <Text variant="button" style={styles.cancelText}>
+                Cancel
+              </Text>
             </TouchableOpacity>
             <View style={styles.saveButtonContainer}>
               <Button
-                title={requiresOTPVerification() ? "Verify & Save" : "Save Changes"}
+                title={
+                  requiresOTPVerification() ? "Verify & Save" : "Save Changes"
+                }
                 onPress={handleSubmit}
                 loading={isLoading}
                 size="medium"
@@ -601,9 +694,11 @@ export function EditProfileModal({
         {/* Date Picker */}
         {showDatePicker && (
           <DateTimePicker
-            value={formData.dateOfBirth ? new Date(formData.dateOfBirth) : new Date()}
+            value={
+              formData.dateOfBirth ? new Date(formData.dateOfBirth) : new Date()
+            }
             mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={handleDateChange}
             maximumDate={new Date()}
           />
@@ -614,10 +709,19 @@ export function EditProfileModal({
           visible={showOTPModal}
           onClose={handleOTPModalClose}
           onVerificationSuccess={handleOTPVerificationSuccess}
-          mobileNumber={formData.mobileNumber}
+          mobileNumber={originalData.mobileNumber}
           userData={{
             name: formData.name,
-            cardNumber: userData.cardNumber
+            cardNumber: userData.cardNumber,
+          }}
+          changeDetails={{
+            isNameChanged: formData.name !== originalData.name,
+            isMobileChanged:
+              formData.mobileNumber !== originalData.mobileNumber,
+            newMobileNumber:
+              formData.mobileNumber !== originalData.mobileNumber
+                ? formData.mobileNumber
+                : undefined,
           }}
         />
       </View>
@@ -636,9 +740,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.brand.background,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
@@ -646,8 +750,8 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.gray[100],
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   headerIcon: {
@@ -655,13 +759,13 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: COLORS.brand.blue_subtle,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: SPACING.sm,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.gray[900],
   },
   closeButton: {
@@ -669,8 +773,8 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: COLORS.gray[100],
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   content: {
     flex: 1,
@@ -682,16 +786,16 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.secondary,
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.xs,
   },
   infoSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.gray[50],
-    // paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     marginBottom: SPACING.md,
@@ -701,12 +805,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     color: COLORS.gray[600],
-    fontWeight: '400',
+    fontWeight: "400",
     lineHeight: 16,
   },
   securityNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.brand.blue_subtle,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
@@ -718,7 +822,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     color: COLORS.primary,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 16,
   },
   sectionContent: {
@@ -726,17 +830,17 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
   },
-  
+
   // Profile Picture Section
   profilePictureSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   profilePictureContainer: {
     marginRight: SPACING.lg,
   },
   imageButton: {
-    position: 'relative',
+    position: "relative",
   },
   profileImage: {
     width: 80,
@@ -748,14 +852,14 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     backgroundColor: COLORS.gray[100],
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 2,
     borderColor: COLORS.gray[200],
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
   },
   uploadOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     right: 0,
     backgroundColor: COLORS.primary,
@@ -769,21 +873,21 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.secondary,
     marginBottom: 2,
   },
   userType: {
     fontSize: 13,
     color: COLORS.gray[600],
-    fontWeight: '500',
+    fontWeight: "500",
   },
   organizationContainer: {
     paddingTop: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
-    organizationIcon: {
+  organizationIcon: {
     marginRight: 4,
   },
   changePhotoButton: {
@@ -792,28 +896,28 @@ const styles = StyleSheet.create({
   changePhotoText: {
     fontSize: 13,
     color: COLORS.primary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
-  
+
   // Form Fields
   fieldGroup: {
     marginBottom: SPACING.lg,
   },
   fieldLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.gray[700],
     marginBottom: SPACING.sm,
   },
   labelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
   },
   otpBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.brand.blue_subtle,
     paddingHorizontal: SPACING.xs,
     paddingVertical: 2,
@@ -822,21 +926,21 @@ const styles = StyleSheet.create({
   },
   otpBadgeText: {
     fontSize: 10,
-    fontWeight: '500',
+    fontWeight: "500",
     color: COLORS.primary,
   },
-  
+
   // Gender Selection
   genderContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: SPACING.sm,
     marginTop: SPACING.xs,
   },
   genderOption: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,
@@ -851,18 +955,18 @@ const styles = StyleSheet.create({
   },
   genderText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: COLORS.gray[700],
   },
   genderTextSelected: {
     color: COLORS.white,
   },
-  
+
   // Date Button
   dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
     backgroundColor: COLORS.white,
@@ -872,8 +976,8 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
   dateButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: SPACING.sm,
   },
   dateText: {
@@ -883,27 +987,27 @@ const styles = StyleSheet.create({
   dateTextPlaceholder: {
     color: COLORS.gray[500],
   },
-  
+
   // Info Items (read-only fields)
   infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray[100],
   },
   infoLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   infoIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: SPACING.sm,
   },
   infoContent: {
@@ -916,10 +1020,10 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: COLORS.gray[900],
   },
-  
+
   // Footer
   footer: {
     backgroundColor: COLORS.white,
@@ -929,14 +1033,14 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
   },
   footerButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: SPACING.md,
   },
   cancelButton: {
     flex: 1,
     paddingVertical: SPACING.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
     borderColor: COLORS.gray[300],
@@ -944,15 +1048,15 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.gray[700],
   },
   saveButtonContainer: {
     flex: 2,
   },
-  
+
   // Bottom padding
   bottomPadding: {
-    height: SPACING['3xl'],
+    height: SPACING["3xl"],
   },
 });
