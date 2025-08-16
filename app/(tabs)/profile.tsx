@@ -777,7 +777,7 @@ export default function Profile() {
           visible={toast.visible}
           message={toast.message}
           type={toast.type}
-          position="top"
+          position="bottom"
           onHide={hideToast}
         />
       )}

@@ -382,7 +382,7 @@ export default function MapViewScreen() {
       message={toast.message}
       type={toast.type}
       onHide={hideToast}
-      position="top"
+      position="bottom"
     />
   );
 

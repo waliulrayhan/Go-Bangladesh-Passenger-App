@@ -357,7 +357,7 @@ export default function PassengerLogin() {
           message={toast.message}
           type={toast.type}
           onHide={hideToast}
-          position="top"
+          position="bottom"
         />
       </SafeAreaView>
     </>

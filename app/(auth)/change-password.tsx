@@ -313,7 +313,7 @@ export default function ChangePassword() {
           message={toast.message}
           type={toast.type}
           onHide={hideToast}
-          position="top"
+          position="bottom"
         />
       </SafeAreaView>
     </>

@@ -608,7 +608,7 @@ export default function RegistrationPersonalInfo() {
           message={toast.message}
           type={toast.type}
           onHide={hideToast}
-          position="top"
+          position="bottom"
         />
       </SafeAreaView>
     </>

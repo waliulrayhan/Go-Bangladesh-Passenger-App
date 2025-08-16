@@ -145,6 +145,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
           message={toast.message}
           type={toast.type}
           onHide={hideToast}
+          position="bottom"
         />
       </View>
     </Modal>

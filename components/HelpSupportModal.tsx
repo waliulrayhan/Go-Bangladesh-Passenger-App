@@ -322,6 +322,7 @@ Best regards,
           message={toast.message}
           type={toast.type}
           onHide={hideToast}
+          position="bottom"
         />
       </View>
     </Modal>

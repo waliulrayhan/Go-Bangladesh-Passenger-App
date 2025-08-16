@@ -421,6 +421,7 @@ export default function MapScreen() {
         message={toast.message}
         type={toast.type}
         onHide={hideToast}
+        position="bottom"
       />
     </View>
     </>

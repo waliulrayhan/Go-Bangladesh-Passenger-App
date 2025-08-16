@@ -689,6 +689,7 @@ export function EditProfileModal({
           message={toast.message}
           type={toast.type}
           onHide={hideToast}
+          position="bottom"
         />
 
         {/* Date Picker */}

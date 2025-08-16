@@ -594,7 +594,7 @@ export default function VerifyAccountDeletion() {
           message={toast.message}
           type={toast.type}
           onHide={hideToast}
-          position="top"
+          position="bottom"
         />
       </SafeAreaView>
     </>

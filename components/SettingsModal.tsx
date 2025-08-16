@@ -260,6 +260,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           message={toast.message}
           type={toast.type}
           onHide={hideToast}
+          position="bottom"
         />
       </View>
 

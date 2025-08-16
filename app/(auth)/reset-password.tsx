@@ -311,7 +311,7 @@ export default function ResetPassword() {
           message={toast.message}
           type={toast.type}
           onHide={hideToast}
-          position="top"
+          position="bottom"
         />
       </SafeAreaView>
     </>
