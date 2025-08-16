@@ -450,10 +450,21 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
     }
   }
   
+  // Helper function to format passenger count
+  function formatPassengerCount(count) {
+    if (count === undefined || count === null || count === 0) {
+      return 'No Passengers';
+    } else if (count === 1) {
+      return '1 Passenger';
+    } else {
+      return count + ' Passengers';
+    }
+  }
+  
   // Create bus icon
   function createBusIcon(busName, busNumber, runningTrips) {
     const displayName = busNumber || busName || 'Bus';
-    const passengersText = runningTrips !== undefined && runningTrips !== null ? runningTrips + ' Passengers' : '';
+    const passengersText = runningTrips !== undefined && runningTrips !== null ? formatPassengerCount(runningTrips) : '';
     
     const labelContent = passengersText 
       ? '<div class="bus-number">' + displayName + '</div><div class="bus-passengers">' + passengersText + '</div>'

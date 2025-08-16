@@ -273,7 +273,10 @@ export default function MapViewScreen() {
           <Text style={styles.headerSubtitle}>{routeName}</Text>
         )}
         <Text style={styles.busCount}>
-          {mapState.buses.length} bus{mapState.buses.length !== 1 ? 'es' : ''} active
+          {mapState.buses.length === 0 
+            ? 'No Buses Active' 
+            : `${mapState.buses.length} Bus${mapState.buses.length === 1 ? '' : 'es'} Active`
+          }
         </Text>
       </View>
     </LinearGradient>
