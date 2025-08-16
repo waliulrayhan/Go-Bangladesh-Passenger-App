@@ -511,7 +511,7 @@ export default function Profile() {
     <Animated.View entering={FadeInDown.duration(600).delay(700)} style={styles.section}>
       <Text variant="h5" color={COLORS.secondary} style={styles.sectionTitle}> Quick Actions</Text>
       <View style={styles.actionsList}>
-        <TouchableOpacity 
+        {/* <TouchableOpacity 
           style={styles.actionItem}
           onPress={() => setShowSettingsModal(true)}
         >
@@ -522,7 +522,7 @@ export default function Profile() {
             <Text style={styles.actionText}>Settings</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity 
           style={styles.actionItem}
@@ -545,7 +545,7 @@ export default function Profile() {
             <View style={[styles.actionIconContainer, { backgroundColor: COLORS.purple + '15' }]}>
               <Ionicons name="help-circle-outline" size={18} color={COLORS.purple} />
             </View>
-            <Text style={styles.actionText}>Help & Support</Text>
+            <Text style={styles.actionText}>Contact & Support</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
         </TouchableOpacity>

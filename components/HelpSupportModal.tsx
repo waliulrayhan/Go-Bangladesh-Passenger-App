@@ -20,9 +20,9 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
 
   const contactInfo = {
     email: 'info@thegobd.com',
-    phone: '+8801521306506',
+    phone: '+8801711360170',
     website: 'https://thegobd.com',
-    address: 'Dhaka, Bangladesh'
+    address: 'ICT Tower, 14th Floor, Plot E-14/X, Agargaon, Sher-e-Bangla Nagar, Dhaka-1207'
   };
 
   const faqData = [
@@ -157,7 +157,7 @@ Best regards,
           <Text variant="caption" style={styles.contactSubtitle}>{subtitle}</Text>
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
+      <Ionicons name="chevron-forward-outline" size={16} color={COLORS.gray[400]} />
     </TouchableOpacity>
   );
 
@@ -184,7 +184,7 @@ Best regards,
           <Text variant="caption" style={styles.actionSubtitle}>{subtitle}</Text>
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
+      <Ionicons name="chevron-forward-outline" size={16} color={COLORS.gray[400]} />
     </TouchableOpacity>
   );
 
@@ -203,7 +203,7 @@ Best regards,
       <TouchableOpacity style={styles.faqHeader} onPress={onToggle}>
         <Text variant="body" style={styles.faqQuestion}>{question}</Text>
         <Ionicons 
-          name={isExpanded ? "chevron-up" : "chevron-down"} 
+          name={isExpanded ? "chevron-up-outline" : "chevron-down-outline"} 
           size={20} 
           color={COLORS.gray[600]} 
         />
@@ -231,7 +231,7 @@ Best regards,
             <View style={styles.headerIcon}>
               <Ionicons name="help-circle" size={20} color={COLORS.primary} />
             </View>
-            <Text variant="h5" style={styles.headerTitle}>Help & Support</Text>
+            <Text variant="h5" style={styles.headerTitle}>Contact & Support</Text>
           </View>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <Ionicons name="close" size={24} color={COLORS.gray[600]} />
@@ -297,7 +297,7 @@ Best regards,
           </View>
 
           {/* FAQ Section */}
-          <View style={styles.section}>
+          {/* <View style={styles.section}>
             <SectionTitle title="Frequently Asked Questions" />
             <View style={styles.sectionContent}>
               {faqData.map((faq, index) => (
@@ -310,7 +310,7 @@ Best regards,
                 />
               ))}
             </View>
-          </View>
+          </View> */}
 
           {/* Bottom padding for better scrolling */}
           <View style={styles.bottomPadding} />
