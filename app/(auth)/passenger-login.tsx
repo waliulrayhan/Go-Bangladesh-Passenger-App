@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   // Header
   header: {
     alignItems: "center",
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xl,
     marginTop: SPACING.xl,
   },
   logoContainer: {
