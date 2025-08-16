@@ -544,7 +544,7 @@ export default function VerifyAccountDeletion() {
           </View>
 
           <Text style={styles.helpText}>
-            Didn't receive the code? Check your SMS messages or try resending.
+            Didn't receive the code?{"\n"}Check your SMS messages or try resending.
           </Text>
         </View>
       </Card>

@@ -548,12 +548,12 @@ export default function VerifyRegistration() {
             )}
           </View>
 
-          <Text style={styles.helpText}>
+            <Text style={styles.helpText}>
             {Platform.OS === "ios"
-              ? "Didn't receive the code? Check your SMS or try resending."
-              : "Didn't receive the code? Check your SMS or try resending."
+              ? "Didn't receive the code?\nCheck your SMS or try resending."
+              : "Didn't receive the code?\nCheck your SMS or try resending."
             }
-          </Text>
+            </Text>
         </View>
       </Card>
     </Animated.View>

@@ -632,7 +632,7 @@ export function ProfileOTPVerificationModal({
               </View>
 
               <Text style={styles.helpText}>
-                Didn't receive the code? Check your SMS messages or try
+                Didn't receive the code?{"\n"}Check your SMS messages or try
                 resending.
               </Text>
             </>

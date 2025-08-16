@@ -161,32 +161,34 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                   entering={FadeIn.delay(300)}
                   style={styles.confirmationSection}
                 >
-                  <View style={styles.checkboxContainer}>
-                    <TouchableOpacity
-                      style={[
-                        styles.checkbox,
-                        isChecked && styles.checkboxChecked,
-                      ]}
-                      onPress={() => setIsChecked(!isChecked)}
-                      activeOpacity={0.7}
-                    >
-                      {isChecked && (
-                        <Ionicons
-                          name="checkmark"
-                          size={14}
-                          color={COLORS.white}
-                        />
-                      )}
-                    </TouchableOpacity>
-                    <Text style={styles.confirmationText}>
-                      I, <Text style={styles.userName}>{userName}</Text>,
-                      confirm deletion of my account. My balance of{" "}
-                      <Text style={styles.balanceAmount}>
-                        ৳{userBalance.toFixed(2)}
-                      </Text>{" "}
-                      and all data will be permanently lost after 7 days.
-                    </Text>
+                  <TouchableOpacity
+                  style={styles.checkboxContainer}
+                  onPress={() => setIsChecked(!isChecked)}
+                  activeOpacity={0.7}
+                  >
+                  <View
+                    style={[
+                    styles.checkbox,
+                    isChecked && styles.checkboxChecked,
+                    ]}
+                  >
+                    {isChecked && (
+                    <Ionicons
+                      name="checkmark"
+                      size={14}
+                      color={COLORS.white}
+                    />
+                    )}
                   </View>
+                  <Text style={styles.confirmationText}>
+                    I, <Text style={styles.userName}>{userName}</Text>,
+                    confirm deletion of my account. My balance of{" "}
+                    <Text style={styles.balanceAmount}>
+                    ৳{userBalance.toFixed(2)}
+                    </Text>{" "}
+                    and all data will be permanently lost after 7 days.
+                  </Text>
+                  </TouchableOpacity>
                 </Animated.View>
 
                 {/* Note */}
