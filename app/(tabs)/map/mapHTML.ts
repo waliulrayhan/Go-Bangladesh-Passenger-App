@@ -93,6 +93,19 @@ const getMapStyles = (): string => `
     border: 1px solid rgba(255,255,255,0.3);
     min-width: 60px;
     text-align: center;
+    line-height: 1.2;
+  }
+  
+  .bus-number {
+    font-weight: 600;
+    font-size: 11px;
+  }
+  
+  .bus-passengers {
+    font-weight: 500;
+    font-size: 10px;
+    opacity: 0.9;
+    margin-top: 2px;
   }
   
   .bus-marker-shadow {
@@ -438,19 +451,24 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
   }
   
   // Create bus icon
-  function createBusIcon(busName, busNumber) {
+  function createBusIcon(busName, busNumber, runningTrips) {
     const displayName = busNumber || busName || 'Bus';
+    const passengersText = runningTrips !== undefined && runningTrips !== null ? runningTrips + ' Passengers' : '';
+    
+    const labelContent = passengersText 
+      ? '<div class="bus-number">' + displayName + '</div><div class="bus-passengers">' + passengersText + '</div>'
+      : displayName;
     
     return L.divIcon({
       html: '<div class="bus-marker">' +
               '<div class="bus-marker-shadow"></div>' +
               '<div class="bus-marker-inner"></div>' +
-              '<div class="bus-marker-label">' + displayName + '</div>' +
+              '<div class="bus-marker-label">' + labelContent + '</div>' +
             '</div>',
       className: 'custom-bus-marker',
-      iconSize: [Math.max(120, displayName.length * 8), 60],
-      iconAnchor: [Math.max(60, displayName.length * 4), 30],
-      popupAnchor: [0, -30]
+      iconSize: [Math.max(120, displayName.length * 8), passengersText ? 75 : 60],
+      iconAnchor: [Math.max(60, displayName.length * 4), passengersText ? 37.5 : 30],
+      popupAnchor: [0, passengersText ? -37.5 : -30]
     });
   }
   
@@ -562,7 +580,7 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
       
       if (!isNaN(lat) && !isNaN(lng)) {
         const marker = L.marker([lat, lng], { 
-          icon: createBusIcon(bus.busName, bus.busNumber) 
+          icon: createBusIcon(bus.busName, bus.busNumber, bus.runningTrips) 
         })
           // .bindPopup(
           //   '<div class="bus-popup">' +

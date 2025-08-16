@@ -103,6 +103,7 @@ export interface BusInfo {
   organization: Organization;
   presentLatitude: string;
   presentLongitude: string;
+  runningTrips?: number;
   id: string;
   createTime: string;
   lastModifiedTime: string;

@@ -393,19 +393,10 @@ export default function MapScreen() {
             onPress={handleSearchBuses}
             disabled={!isSearchEnabled}
           >
-            <LinearGradient
-              colors={
-                isSearchEnabled
-                  ? [COLORS.brand.blue, COLORS.brand.orange]
-                  : [COLORS.gray[300], COLORS.gray[400]]
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.searchButtonGradient}
-            >
+            <View style={styles.searchButtonContent}>
               <Ionicons name="search" size={20} color={COLORS.white} />
               <Text style={styles.searchButtonText}>Search Buses</Text>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -572,12 +563,12 @@ const styles = StyleSheet.create({
   searchButton: {
     marginTop: 16,
     borderRadius: 12,
-    overflow: "hidden",
+    backgroundColor: COLORS.brand.blue,
   },
   searchButtonDisabled: {
-    opacity: 0.6,
+    backgroundColor: COLORS.gray[400],
   },
-  searchButtonGradient: {
+  searchButtonContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
