@@ -26,7 +26,7 @@ export const Toast: React.FC<ToastProps> = ({
   visible,
   message,
   type = "info",
-  duration = 4000,
+  duration = 1000,
   onHide,
   position = "top",
 }) => {
