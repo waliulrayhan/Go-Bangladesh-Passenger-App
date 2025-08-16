@@ -508,13 +508,13 @@ const styles = StyleSheet.create({
   },
   organizationText: {
     paddingTop: SPACING.md,
-    fontSize: 16,
+    fontSize: 14,
     textAlign: "center",
     color: COLORS.gray[600],
     lineHeight: 16,
   },
   organizationEmail: {
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.primary,
     fontWeight: "600",
   },
