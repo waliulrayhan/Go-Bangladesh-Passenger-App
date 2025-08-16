@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
 
   // Login form
   loginCard: {
-    marginBottom: SPACING.lg,
+    // marginBottom: SPACING.lg,
   },
   loginContent: {
     padding: SPACING.md,
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
   },
   forgotPasswordText: {
-    paddingTop: SPACING.lg,
+    // paddingTop: SPACING.lg,
     color: COLORS.primary,
     fontSize: 16,
     fontWeight: "600",
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   createAccountText: {
-    fontSize: 15,
+    fontSize: 16,
     textAlign: "center",
     color: COLORS.gray[600],
   },
@@ -507,14 +507,14 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
   organizationText: {
-    paddingTop: SPACING.xl,
-    fontSize: 13,
+    paddingTop: SPACING.md,
+    fontSize: 16,
     textAlign: "center",
-    color: COLORS.gray[500],
+    color: COLORS.gray[600],
     lineHeight: 16,
   },
   organizationEmail: {
-    fontSize: 13,
+    fontSize: 16,
     color: COLORS.primary,
     fontWeight: "600",
   },
