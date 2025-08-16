@@ -53,6 +53,7 @@ utils/              # Constants and utilities
 npm install -g eas-cli
 eas login
 eas build:configure
+npx expo-doctor
 eas build --platform android --profile preview
 ```
 
