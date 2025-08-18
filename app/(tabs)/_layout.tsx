@@ -99,7 +99,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="map"
           options={{
-            headerShown: false,
+            title: "Map",
             tabBarLabel: "Map",
             tabBarIcon: ({ color, size, focused }) => (
               <Ionicons name={focused ? "map" : "map-outline"} size={size} color={color} />
