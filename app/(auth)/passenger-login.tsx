@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
   organizationText: {
-    paddingTop: SPACING.md,
+    paddingTop: SPACING.xs,
     fontSize: 14,
     textAlign: "center",
     color: COLORS.gray[600],
