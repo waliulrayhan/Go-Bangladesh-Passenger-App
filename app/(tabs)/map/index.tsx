@@ -1,15 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 import { DropdownSkeleton } from "../../../components/Skeleton";
@@ -317,11 +318,11 @@ export default function MapScreen() {
   return (
     <>
       <StatusBar
-        style="light"
         backgroundColor={COLORS.primary}
+        barStyle="light-content"
         translucent={false}
       />
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
       <LinearGradient
         colors={["rgba(74, 144, 226, 0.1)", "rgba(255, 138, 0, 0.1)"]}
         style={styles.gradient}
@@ -423,7 +424,7 @@ export default function MapScreen() {
         onHide={hideToast}
         position="bottom"
       />
-    </View>
+    </SafeAreaView>
     </>
   );
 }
