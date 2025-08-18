@@ -254,7 +254,7 @@ export default function MapViewScreen() {
   };
 
   const handleGoBack = () => {
-    router.back();
+    router.push('/(tabs)/map');
   };
 
   // Render Functions

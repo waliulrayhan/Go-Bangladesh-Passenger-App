@@ -125,7 +125,8 @@ export default function TabsLayout() {
           name="view"
           options={{
             title: "View Map",
-            headerShown: false, // Show header like History page
+            headerShown: false,
+            href: null, // Hide from tab bar
           }}
         />
         <Tabs.Screen
