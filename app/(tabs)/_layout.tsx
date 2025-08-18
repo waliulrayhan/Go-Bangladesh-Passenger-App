@@ -15,7 +15,9 @@ export default function TabsLayout() {
   // Redirect to welcome if user is not authenticated
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      console.log('🔄 [TABS] User not authenticated - main layout will handle navigation');
+      console.log(
+        "🔄 [TABS] User not authenticated - main layout will handle navigation"
+      );
       // Let the main layout handle navigation to prevent conflicts
     }
   }, [isAuthenticated, user]);
@@ -23,11 +25,11 @@ export default function TabsLayout() {
   // If user is not authenticated, don't render the tabs at all
   // This forces Expo Router to show the fallback route (welcome screen)
   if (!isAuthenticated || !user) {
-    console.log('🚫 [TABS] Not rendering tabs - user not authenticated');
+    console.log("🚫 [TABS] Not rendering tabs - user not authenticated");
     return null; // This will cause Expo Router to show the index route instead
   }
 
-  console.log('✅ [TABS] Rendering tabs for authenticated user');
+  console.log("✅ [TABS] Rendering tabs for authenticated user");
 
   return (
     <View style={styles.container}>
@@ -82,7 +84,11 @@ export default function TabsLayout() {
             headerShown: false,
             tabBarLabel: "Home",
             tabBarIcon: ({ color, size, focused }) => (
-              <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
+              <Ionicons
+                name={focused ? "home" : "home-outline"}
+                size={size}
+                color={color}
+              />
             ),
           }}
         />
@@ -92,7 +98,11 @@ export default function TabsLayout() {
             title: "History",
             tabBarLabel: "History",
             tabBarIcon: ({ color, size, focused }) => (
-              <Ionicons name={focused ? "time" : "time-outline"} size={size} color={color} />
+              <Ionicons
+                name={focused ? "time" : "time-outline"}
+                size={size}
+                color={color}
+              />
             ),
           }}
         />
@@ -100,10 +110,22 @@ export default function TabsLayout() {
           name="map"
           options={{
             title: "Map",
+            headerShown: true, // Show header like History page
             tabBarLabel: "Map",
             tabBarIcon: ({ color, size, focused }) => (
-              <Ionicons name={focused ? "map" : "map-outline"} size={size} color={color} />
+              <Ionicons
+                name={focused ? "map" : "map-outline"}
+                size={size}
+                color={color}
+              />
             ),
+          }}
+        />
+        <Tabs.Screen
+          name="view"
+          options={{
+            title: "View Map",
+            headerShown: false, // Show header like History page
           }}
         />
         <Tabs.Screen
@@ -112,7 +134,11 @@ export default function TabsLayout() {
             title: "Profile",
             tabBarLabel: "Profile",
             tabBarIcon: ({ color, size, focused }) => (
-              <Ionicons name={focused ? "person" : "person-outline"} size={size} color={color} />
+              <Ionicons
+                name={focused ? "person" : "person-outline"}
+                size={size}
+                color={color}
+              />
             ),
           }}
         />

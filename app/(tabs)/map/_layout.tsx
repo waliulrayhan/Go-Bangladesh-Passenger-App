@@ -2,13 +2,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Stack } from "expo-router";
 import { StyleSheet, View } from "react-native";
 
-
-// Screen configurations
-const getViewScreenOptions = () => ({
-  headerShown: false,
-  presentation: 'fullScreenModal' as const,
-});
-
 export default function MapLayout() {
   return (
     <View style={styles.container}>
@@ -27,16 +20,22 @@ export default function MapLayout() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Navigation Stack */}
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen 
+      <Stack>
+        <Stack.Screen
           name="index"
-          options={{ headerShown: false }}
+          options={{
+            title: "Map", // Explicitly set title to match Tabs
+            headerShown: false, // Let Tabs layout handle the header
+          }}
         />
-        <Stack.Screen 
+        {/* <Stack.Screen
           name="view"
-          options={getViewScreenOptions()}
-        />
+          options={{
+            title: "Map View",
+            headerShown: false, // Explicitly hide header for view page
+            presentation: "card",
+          }}
+        /> */}
       </Stack>
     </View>
   );
@@ -48,7 +47,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     position: "relative",
   },
-  
+
   // Background Gradient Styles
   glowBackground: {
     position: "absolute",

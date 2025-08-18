@@ -218,7 +218,7 @@ export default function MapScreen() {
       routeName: routeDropdown.selectedLabel || "",
     });
 
-    router.push(`/(tabs)/map/view?${params.toString()}`);
+    router.push(`/(tabs)/view?${params.toString()}`);
   }, [
     organizationDropdown.selectedValue,
     organizationDropdown.selectedLabel,

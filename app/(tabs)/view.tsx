@@ -12,16 +12,16 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-import { PulsingDot } from '../../../components/PulsingDot';
-import { Toast } from '../../../components/ui/Toast';
-import { useLocation } from '../../../hooks/useLocation';
-import { useToast } from '../../../hooks/useToast';
-import { ApiResponse, apiService } from '../../../services/api';
-import { useAuthStore } from '../../../stores/authStore';
-import { BusInfo } from '../../../types';
-import { COLORS } from '../../../utils/constants';
-import { FONT_SIZES, FONT_WEIGHTS } from '../../../utils/fonts';
-import { generateMapHTML } from './mapHTML';
+import { PulsingDot } from '../../components/PulsingDot';
+import { Toast } from '../../components/ui/Toast';
+import { useLocation } from '../../hooks/useLocation';
+import { useToast } from '../../hooks/useToast';
+import { ApiResponse, apiService } from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
+import { BusInfo } from '../../types';
+import { COLORS } from '../../utils/constants';
+import { FONT_SIZES, FONT_WEIGHTS } from '../../utils/fonts';
+import { generateMapHTML } from './map/mapHTML';
 
 // Constants
 const REFRESH_INTERVAL = 10000; // 10 seconds
