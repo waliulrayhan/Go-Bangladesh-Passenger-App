@@ -19,7 +19,8 @@
       "bundleIdentifier": "com.solutionspin.gobangladesh",
       "icon": "./assets/images/iOS.png",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "Go Bangladesh"
       }
     },
     "android": {
