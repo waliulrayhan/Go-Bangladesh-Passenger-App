@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   StatusBar,
   StyleSheet,
   Text,
@@ -389,7 +390,11 @@ export default function MapViewScreen() {
   // Main Render
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.brand.blue} />
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor={COLORS.brand.blue}
+        translucent={Platform.OS === 'android'}
+      />
       
       {renderHeader()}
       {renderMapContainer()}
