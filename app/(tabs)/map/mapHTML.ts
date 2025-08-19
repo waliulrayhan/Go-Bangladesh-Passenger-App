@@ -356,22 +356,23 @@ const getMapStyles = (): string => `
   }
   
   .leaflet-control-zoom {
-    border-radius: 12px;
+    border-radius: 6px !important;
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border: 1px solid rgba(255,255,255,0.3);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    border: 1px solid rgba(255,255,255,0.3) !important;
   }
   
   .leaflet-control-zoom a {
-    background: rgba(255,255,255,0.95);
+    background: rgba(255,255,255,0.95) !important;
     backdrop-filter: blur(10px);
-    color: #4A90E2;
+    color: #4A90E2 !important;
     font-weight: bold;
-    border: none;
+    border: none !important;
     transition: all 0.2s ease;
-    width: 36px;
-    height: 36px;
-    line-height: 36px;
+    width: 24px !important;
+    height: 24px !important;
+    line-height: 24px !important;
+    font-size: 12px !important;
   }
   
   .leaflet-control-zoom a:hover {
