@@ -1102,7 +1102,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary, // Same color as header
   },
   headerContent: {
-    // paddingTop: 35,
+    paddingTop: 15,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
