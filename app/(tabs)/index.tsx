@@ -6,13 +6,13 @@ import { useEffect, useState } from "react";
 import {
   Image,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   TouchableOpacity,
   View
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Reanimated imports for animations
 import Animated, {
@@ -179,6 +179,9 @@ export default function Dashboard() {
     forceTapOut,
     forceRefreshData,
   } = useCardStore();
+
+  // Safe area insets for consistent padding
+  const insets = useSafeAreaInsets();
 
   // Token refresh for maintaining session
   const { refreshAllData } = useTokenRefresh();
@@ -443,7 +446,7 @@ export default function Dashboard() {
       style={styles.header}
     >
       {/* Main Header Content */}
-      <View style={styles.headerContent}>
+      <View style={[styles.headerContent, { paddingTop: Math.max(insets.top, 0) + 15 }]}>
         <View style={styles.brandSection}>
           <View style={styles.logoContainer}>
             <View style={styles.logoBackground}>
@@ -997,7 +1000,7 @@ export default function Dashboard() {
         networkActivityIndicatorVisible={false}
       />
 
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         {/* Background gradient overlay */}
         <LinearGradient
           colors={[
@@ -1060,7 +1063,7 @@ export default function Dashboard() {
           onHide={hideToast}
           position="bottom"
         />
-      </SafeAreaView>
+      </View>
     </>
   );
 }
@@ -1098,7 +1101,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   headerContent: {
-    paddingTop: 45, // Fixed 45px padding regardless of status bar height
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
