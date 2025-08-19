@@ -348,20 +348,14 @@ export default function MapViewScreen() {
     mapState.buses.length > 0 && (
       <View style={styles.realTimeIndicator}>
         <PulsingDot color={COLORS.success} size={6} />
-        <Text style={styles.realTimeText}>
-          {mapState.buses.length === 0
-            ? "No Buses Active"
-            : `${mapState.buses.length} Bus${
-                mapState.buses.length === 1 ? "" : "es"
-              } Active`}
-        </Text>
-        {/* <Text style={styles.bottomInfoBusCount}>
-          {mapState.buses.length === 0
-            ? "No Buses Active"
-            : `${mapState.buses.length} Bus${
-                mapState.buses.length === 1 ? "" : "es"
-              } Active`}
-        </Text> */}
+        <View style={styles.realTimeTextContainer}>
+          <Text style={styles.realTimeText}>
+            {`Active Bus${mapState.buses.length === 1 ? "" : "es"}`}
+          </Text>
+          <Text style={styles.bottomInfoBusCount}>
+            {mapState.buses.length}
+          </Text>
+        </View>
       </View>
     );
 
@@ -399,13 +393,6 @@ export default function MapViewScreen() {
               {routeName.replace(" - ", " ⇄ ")}
             </Text>
           )}
-          {/* <Text style={styles.bottomInfoBusCount}>
-            {mapState.buses.length === 0
-              ? "No Buses Active"
-              : `${mapState.buses.length} Bus${
-                  mapState.buses.length === 1 ? "" : "es"
-                } Active`}
-          </Text> */}
         </View>
       </View>
     );
@@ -529,13 +516,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 12,
     elevation: 3,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     gap: 6,
+  },
+  realTimeTextContainer: {
+    flexDirection: "column",
+    alignItems: "center",
   },
   realTimeText: {
     fontSize: FONT_SIZES.xs,
