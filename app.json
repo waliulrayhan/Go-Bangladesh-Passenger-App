@@ -17,10 +17,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.solutionspin.gobangladesh",
+      "bundleName": "Go BD",
+      "displayName": "Go BD",
       "icon": "./assets/images/iOS.png",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "CFBundleDisplayName": "Go Bangladesh"
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
