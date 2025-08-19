@@ -257,31 +257,6 @@ export default function MapViewScreen() {
     router.push('/(tabs)/index');
   };
 
-  // Render Functions
-  // const renderHeader = () => (
-  //   <LinearGradient
-  //     colors={[COLORS.brand.blue, COLORS.brand.blue_dark]}
-  //     style={styles.header}
-  //   >
-  //     <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-  //       <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-  //     </TouchableOpacity>
-      
-      // <View style={styles.headerContent}>
-      //   <Text style={styles.headerTitle}>{organizationName}</Text>
-      //   {routeName && (
-      //     <Text style={styles.headerSubtitle}>{routeName}</Text>
-      //   )}
-      //   <Text style={styles.busCount}>
-      //     {mapState.buses.length === 0 
-      //       ? 'No Buses Active' 
-      //       : `${mapState.buses.length} Bus${mapState.buses.length === 1 ? '' : 'es'} Active`
-      //     }
-      //   </Text>
-      // </View>
-  //   </LinearGradient>
-  // );
-
   const renderMapContainer = () => (
     <View style={styles.mapContainer}>
       {mapState.loading ? (
@@ -381,7 +356,7 @@ export default function MapViewScreen() {
       <View style={styles.bottomInfoContent}>
         <Text style={styles.bottomInfoTitle}>{organizationName}</Text>
         {routeName && (
-          <Text style={styles.bottomInfoSubtitle}>{routeName}</Text>
+          <Text style={styles.bottomInfoSubtitle}>{routeName.replace(' - ', ' ⇄ ')}</Text>
         )}
         <Text style={styles.bottomInfoBusCount}>
           {mapState.buses.length === 0 
@@ -412,7 +387,6 @@ export default function MapViewScreen() {
         translucent={Platform.OS === 'android'}
       />
       
-      {/* {renderHeader()} */}
       {renderMapContainer()}
       {renderRealTimeIndicator()}
       {renderMyLocationButton()}
@@ -564,40 +538,32 @@ const styles = StyleSheet.create({
   },
   bottomInfoContainer: {
     position: 'absolute',
-    bottom: 16,
+    bottom: 20,
     left: 16,
-    right: 16,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    // right: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    elevation: 3,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   bottomInfoContent: {
     alignItems: 'center',
   },
   bottomInfoTitle: {
-    fontSize: FONT_SIZES.lg,
-    fontFamily: FONT_WEIGHTS.bold,
-    color: COLORS.gray[800],
+    fontSize: 16,
+    color: COLORS.primary,
     textAlign: 'center',
   },
   bottomInfoSubtitle: {
-    fontSize: FONT_SIZES.sm,
-    fontFamily: FONT_WEIGHTS.medium,
+    fontSize: 14,
     color: COLORS.gray[700],
     marginTop: 2,
     textAlign: 'center',
   },
   bottomInfoBusCount: {
-    fontSize: FONT_SIZES.xs,
-    fontFamily: FONT_WEIGHTS.regular,
+    fontSize: 12,
     color: COLORS.gray[600],
-    marginTop: 4,
+    marginTop: 2,
     textAlign: 'center',
   },
 });
