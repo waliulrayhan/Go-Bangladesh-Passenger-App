@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -9,19 +9,19 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { WebView } from 'react-native-webview';
+} from "react-native";
+import { WebView } from "react-native-webview";
 
-import { PulsingDot } from '../../components/PulsingDot';
-import { Toast } from '../../components/ui/Toast';
-import { useLocation } from '../../hooks/useLocation';
-import { useToast } from '../../hooks/useToast';
-import { ApiResponse, apiService } from '../../services/api';
-import { useAuthStore } from '../../stores/authStore';
-import { BusInfo } from '../../types';
-import { COLORS } from '../../utils/constants';
-import { FONT_SIZES, FONT_WEIGHTS } from '../../utils/fonts';
-import { generateMapHTML } from './map/mapHTML';
+import { PulsingDot } from "../../components/PulsingDot";
+import { Toast } from "../../components/ui/Toast";
+import { useLocation } from "../../hooks/useLocation";
+import { useToast } from "../../hooks/useToast";
+import { ApiResponse, apiService } from "../../services/api";
+import { useAuthStore } from "../../stores/authStore";
+import { BusInfo } from "../../types";
+import { COLORS } from "../../utils/constants";
+import { FONT_SIZES, FONT_WEIGHTS } from "../../utils/fonts";
+import { generateMapHTML } from "./map/mapHTML";
 
 // Constants
 const REFRESH_INTERVAL = 10000; // 10 seconds
@@ -44,11 +44,11 @@ export default function MapViewScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const webViewRef = useRef<WebView>(null);
-  
+
   // Hooks
   const { user } = useAuthStore();
   const { toast, showError, showSuccess, showInfo, hideToast } = useToast();
-  
+
   const {
     userLocation,
     gettingLocation,
@@ -56,11 +56,16 @@ export default function MapViewScreen() {
     checkLocationPermission,
   } = useLocation({
     onLocationSuccess: (location) => {
-      const userName = user?.name || 'You';
-      showSuccess('Your location has been added to the map');
-      setMapState(prev => ({ ...prev, userInteractedWithMap: false })); // Reset to allow centering
+      const userName = user?.name || "You";
+      showSuccess("Your location has been added to the map");
+      setMapState((prev) => ({ ...prev, userInteractedWithMap: false })); // Reset to allow centering
       if (mapState.mapLoaded && webViewRef.current) {
-        addUserLocationToMap(location.latitude, location.longitude, userName, false);
+        addUserLocationToMap(
+          location.latitude,
+          location.longitude,
+          userName,
+          false
+        );
       }
     },
     onLocationError: (error) => showError(error),
@@ -86,7 +91,7 @@ export default function MapViewScreen() {
   // Effects
   useEffect(() => {
     initializeMap();
-    
+
     const interval = setInterval(() => {
       fetchBusData(true);
     }, REFRESH_INTERVAL);
@@ -96,10 +101,7 @@ export default function MapViewScreen() {
 
   // Initialization
   const initializeMap = async () => {
-    await Promise.all([
-      fetchBusData(false),
-      checkLocationPermission(),
-    ]);
+    await Promise.all([fetchBusData(false), checkLocationPermission()]);
   };
 
   // API Functions
@@ -109,7 +111,7 @@ export default function MapViewScreen() {
 
       const apiUrl = buildApiUrl(organizationId, routeId);
       const response = await apiService.get<ApiResponse<BusInfo[]>>(apiUrl);
-      
+
       if (response.data.data.isSuccess) {
         const busData = response.data.data.content;
         updateBusData(busData, isRefresh);
@@ -130,27 +132,32 @@ export default function MapViewScreen() {
     return url;
   };
 
-  const constructProfilePhotoUrl = (profilePhoto: string | undefined): string | null => {
+  const constructProfilePhotoUrl = (
+    profilePhoto: string | undefined
+  ): string | null => {
     if (!profilePhoto) return null;
-    
+
     // Return full URL if it already has a protocol
-    if (profilePhoto.startsWith('http://') || profilePhoto.startsWith('https://')) {
+    if (
+      profilePhoto.startsWith("http://") ||
+      profilePhoto.startsWith("https://")
+    ) {
       return profilePhoto;
     }
-    
+
     // Construct full URL for relative paths
     return `https://thegobd.com/${profilePhoto}`;
   };
 
   const updateLoadingState = (isRefresh: boolean, loading: boolean) => {
-    setMapState(prev => ({
+    setMapState((prev) => ({
       ...prev,
-      [isRefresh ? 'refreshing' : 'loading']: loading,
+      [isRefresh ? "refreshing" : "loading"]: loading,
     }));
   };
 
   const updateBusData = (busData: BusInfo[], isRefresh: boolean) => {
-    setMapState(prev => ({
+    setMapState((prev) => ({
       ...prev,
       buses: busData,
       isInitialLoad: isRefresh ? prev.isInitialLoad : false,
@@ -162,9 +169,9 @@ export default function MapViewScreen() {
   };
 
   const handleFetchError = (error: unknown, isRefresh: boolean) => {
-    console.error('Error fetching bus data:', error);
+    console.error("Error fetching bus data:", error);
     if (!isRefresh) {
-      showError('Failed to fetch bus locations');
+      showError("Failed to fetch bus locations");
     }
   };
 
@@ -186,15 +193,25 @@ export default function MapViewScreen() {
     webViewRef.current.postMessage(updateScript);
   };
 
-  const addUserLocationToMap = (latitude: number, longitude: number, username: string = user?.name || 'You', focusOnly: boolean = false) => {
+  const addUserLocationToMap = (
+    latitude: number,
+    longitude: number,
+    username: string = user?.name || "You",
+    focusOnly: boolean = false
+  ) => {
     if (!webViewRef.current) return;
 
-    const profilePhotoUrl = constructProfilePhotoUrl(user?.profileImage || user?.imageUrl);
-    const escapedProfilePhotoUrl = profilePhotoUrl?.replace(/"/g, '\\"').replace(/'/g, "\\'") || null;
+    const profilePhotoUrl = constructProfilePhotoUrl(
+      user?.profileImage || user?.imageUrl
+    );
+    const escapedProfilePhotoUrl =
+      profilePhotoUrl?.replace(/"/g, '\\"').replace(/'/g, "\\'") || null;
 
     const locationScript = `
       if (typeof addUserLocation === 'function') {
-        addUserLocation(${latitude}, ${longitude}, "${username}", ${focusOnly}, ${escapedProfilePhotoUrl ? `"${escapedProfilePhotoUrl}"` : 'null'});
+        addUserLocation(${latitude}, ${longitude}, "${username}", ${focusOnly}, ${
+      escapedProfilePhotoUrl ? `"${escapedProfilePhotoUrl}"` : "null"
+    });
       }
       true;
     `;
@@ -216,33 +233,43 @@ export default function MapViewScreen() {
   // Event Handlers
   const handleMapMessage = (event: any) => {
     const { data } = event.nativeEvent;
-    
+
     switch (data) {
-      case 'MAP_READY':
+      case "MAP_READY":
         handleMapReady();
         break;
-      case 'USER_INTERACTION':
-        setMapState(prev => ({ ...prev, userInteractedWithMap: true }));
+      case "USER_INTERACTION":
+        setMapState((prev) => ({ ...prev, userInteractedWithMap: true }));
         break;
     }
   };
 
   const handleMapReady = () => {
-    setMapState(prev => ({ ...prev, mapLoaded: true }));
-    
+    setMapState((prev) => ({ ...prev, mapLoaded: true }));
+
     // Add user location if available
     if (userLocation && webViewRef.current) {
-      const userName = user?.name || 'You';
-      addUserLocationToMap(userLocation.latitude, userLocation.longitude, userName, false);
+      const userName = user?.name || "You";
+      addUserLocationToMap(
+        userLocation.latitude,
+        userLocation.longitude,
+        userName,
+        false
+      );
     }
   };
 
   const handleMyLocationPress = () => {
-    const userName = user?.name || 'You';
+    const userName = user?.name || "You";
     if (userLocation) {
       // Focus only on user location if we already have it
-      addUserLocationToMap(userLocation.latitude, userLocation.longitude, userName, true);
-      showInfo('Focused on your location');
+      addUserLocationToMap(
+        userLocation.latitude,
+        userLocation.longitude,
+        userName,
+        true
+      );
+      showInfo("Focused on your location");
     } else {
       // Get new location
       getUserLocation();
@@ -254,18 +281,16 @@ export default function MapViewScreen() {
   };
 
   const handleGoBack = () => {
-    router.push('/(tabs)/index');
+    router.push("/(tabs)/index");
   };
 
   const renderMapContainer = () => (
     <View style={styles.mapContainer}>
-      {mapState.loading ? (
-        renderLoadingState()
-      ) : mapState.buses.length === 0 ? (
-        renderEmptyState()
-      ) : (
-        renderMap()
-      )}
+      {mapState.loading
+        ? renderLoadingState()
+        : mapState.buses.length === 0
+        ? renderEmptyState()
+        : renderMap()}
     </View>
   );
 
@@ -291,19 +316,21 @@ export default function MapViewScreen() {
   );
 
   const renderMap = () => {
-    const profilePhotoUrl = constructProfilePhotoUrl(user?.profileImage || user?.imageUrl);
-    
+    const profilePhotoUrl = constructProfilePhotoUrl(
+      user?.profileImage || user?.imageUrl
+    );
+
     return (
       <WebView
         ref={webViewRef}
-        source={{ 
+        source={{
           html: generateMapHTML({
             buses: mapState.buses,
             defaultLat: DEFAULT_COORDINATES.lat,
             defaultLng: DEFAULT_COORDINATES.lng,
-            userName: user?.name || 'You',
+            userName: user?.name || "You",
             userProfilePhoto: profilePhotoUrl || undefined,
-          })
+          }),
         }}
         style={styles.webView}
         onMessage={handleMapMessage}
@@ -317,20 +344,26 @@ export default function MapViewScreen() {
     );
   };
 
-  const renderRealTimeIndicator = () => (
+  const renderRealTimeIndicator = () =>
     mapState.buses.length > 0 && (
       <View style={styles.realTimeIndicator}>
         <PulsingDot color={COLORS.success} size={6} />
         <Text style={styles.realTimeText}>Live Updates</Text>
+        <Text style={styles.bottomInfoBusCount}>
+          {mapState.buses.length === 0
+            ? "No Buses Active"
+            : `${mapState.buses.length} Bus${
+                mapState.buses.length === 1 ? "" : "es"
+              } Active`}
+        </Text>
       </View>
-    )
-  );
+    );
 
-  const renderMyLocationButton = () => (
+  const renderMyLocationButton = () =>
     mapState.buses.length > 0 && (
       <View style={styles.floatingButtons}>
-        <TouchableOpacity 
-          style={styles.myLocationButton} 
+        <TouchableOpacity
+          style={styles.myLocationButton}
           onPress={handleMyLocationPress}
           disabled={gettingLocation}
         >
@@ -340,33 +373,36 @@ export default function MapViewScreen() {
             <Ionicons name="locate" size={20} color="#1A73E8" />
           )}
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.centerAllButton} 
+
+        <TouchableOpacity
+          style={styles.centerAllButton}
           onPress={fitAllMarkersInView}
         >
           <Ionicons name="apps" size={20} color="#1A73E8" />
         </TouchableOpacity>
       </View>
-    )
-  );
+    );
 
-  const renderBottomInfo = () => (
-    <View style={styles.bottomInfoContainer}>
-      <View style={styles.bottomInfoContent}>
-        <Text style={styles.bottomInfoTitle}>{organizationName}</Text>
-        {routeName && (
-          <Text style={styles.bottomInfoSubtitle}>{routeName.replace(' - ', ' ⇄ ')}</Text>
-        )}
-        <Text style={styles.bottomInfoBusCount}>
-          {mapState.buses.length === 0 
-            ? 'No Buses Active' 
-            : `${mapState.buses.length} Bus${mapState.buses.length === 1 ? '' : 'es'} Active`
-          }
-        </Text>
+  const renderBottomInfo = () =>
+    mapState.buses.length > 0 && (
+      <View style={styles.bottomInfoContainer}>
+        <View style={styles.bottomInfoContent}>
+          <Text style={styles.bottomInfoTitle}>{organizationName}</Text>
+          {routeName && (
+            <Text style={styles.bottomInfoSubtitle}>
+              {routeName.replace(" - ", " ⇄ ")}
+            </Text>
+          )}
+          <Text style={styles.bottomInfoBusCount}>
+            {mapState.buses.length === 0
+              ? "No Buses Active"
+              : `${mapState.buses.length} Bus${
+                  mapState.buses.length === 1 ? "" : "es"
+                } Active`}
+          </Text>
+        </View>
       </View>
-    </View>
-  );
+    );
 
   const renderToast = () => (
     <Toast
@@ -381,12 +417,12 @@ export default function MapViewScreen() {
   // Main Render
   return (
     <View style={styles.container}>
-      <StatusBar 
-        barStyle="light-content" 
+      <StatusBar
+        barStyle="light-content"
         backgroundColor={COLORS.brand.blue}
-        translucent={Platform.OS === 'android'}
+        translucent={Platform.OS === "android"}
       />
-      
+
       {renderMapContainer()}
       {renderRealTimeIndicator()}
       {renderMyLocationButton()}
@@ -403,8 +439,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingBottom: 16,
     paddingHorizontal: 16,
   },
@@ -442,8 +478,8 @@ const styles = StyleSheet.create({
   },
   centeredContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 32,
   },
   loadingText: {
@@ -463,7 +499,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     fontFamily: FONT_WEIGHTS.regular,
     color: COLORS.gray[600],
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 22,
     marginBottom: 24,
   },
@@ -479,11 +515,11 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   realTimeIndicator: {
-    position: 'absolute',
+    position: "absolute",
     top: 10,
     right: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.white,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -501,7 +537,7 @@ const styles = StyleSheet.create({
     color: COLORS.gray[700],
   },
   floatingButtons: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     right: 16,
     gap: 12,
@@ -509,61 +545,61 @@ const styles = StyleSheet.create({
   myLocationButton: {
     width: 48,
     height: 48,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 4,
-    shadowColor: '#000000',
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     borderWidth: 0.5,
-    borderColor: 'rgba(0,0,0,0.1)',
+    borderColor: "rgba(0,0,0,0.1)",
   },
   centerAllButton: {
     width: 48,
     height: 48,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 4,
-    shadowColor: '#000000',
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     borderWidth: 0.5,
-    borderColor: 'rgba(0,0,0,0.1)',
+    borderColor: "rgba(0,0,0,0.1)",
   },
   bottomInfoContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     left: 16,
     // right: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   bottomInfoContent: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   bottomInfoTitle: {
     fontSize: 16,
     color: COLORS.primary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   bottomInfoSubtitle: {
     fontSize: 14,
     color: COLORS.gray[700],
     marginTop: 2,
-    textAlign: 'center',
+    textAlign: "center",
   },
   bottomInfoBusCount: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.xs,
+    fontFamily: FONT_WEIGHTS.semiBold,
     color: COLORS.gray[600],
-    marginTop: 2,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
