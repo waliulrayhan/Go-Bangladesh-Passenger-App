@@ -664,9 +664,9 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.1)",
   },
   realTimeIndicator: {
-    position: "center",
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     backgroundColor: COLORS.white,
     paddingHorizontal: 12,
     paddingVertical: 8,
