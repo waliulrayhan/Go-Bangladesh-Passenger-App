@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  BackHandler,
   Platform,
   StatusBar,
   StyleSheet,
@@ -98,6 +99,26 @@ export default function MapViewScreen() {
 
     return () => clearInterval(interval);
   }, [organizationId, routeId]);
+
+  // Handle back button/gesture navigation
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        router.push("/(tabs)/map");
+        return true; // Prevent default back action
+      };
+
+      // Add hardware back button handler for Android
+      if (Platform.OS === 'android') {
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+        return () => backHandler.remove();
+      }
+
+      // For iOS, the gesture navigation is handled by the navigation system
+      // but we can override it by preventing default navigation
+      return () => {};
+    }, [router])
+  );
 
   // Initialization
   const initializeMap = async () => {
@@ -305,7 +326,7 @@ export default function MapViewScreen() {
   };
 
   const handleGoBack = () => {
-    router.push("/(tabs)/index");
+    router.push("/(tabs)/map/index");
   };
 
   const renderMapContainer = () => (
