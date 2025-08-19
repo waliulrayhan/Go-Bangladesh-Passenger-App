@@ -1098,11 +1098,11 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   statusBarArea: {
-    // height: 15, // iOS status bar height
+    height: 15, // iOS status bar height
     backgroundColor: COLORS.primary, // Same color as header
   },
   headerContent: {
-    paddingTop: 45,
+    // paddingTop: 45,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
