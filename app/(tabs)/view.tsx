@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     gap: 6,
-    minHeight: 64,
+    minHeight: 50,
   },
   infoCardContent: {
     alignItems: "center",
