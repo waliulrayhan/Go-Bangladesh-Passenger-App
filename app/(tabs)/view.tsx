@@ -344,17 +344,32 @@ export default function MapViewScreen() {
     );
   };
 
-  const renderRealTimeIndicator = () =>
+  const renderTopInfoCards = () =>
     mapState.buses.length > 0 && (
-      <View style={styles.realTimeIndicator}>
-        <PulsingDot color={COLORS.success} size={6} />
-        <View style={styles.realTimeTextContainer}>
-          <Text style={styles.realTimeText}>
-            {`Active Bus${mapState.buses.length === 1 ? "" : "es"}`}
-          </Text>
-          <Text style={styles.bottomInfoBusCount}>
-            {mapState.buses.length}
-          </Text>
+      <View style={styles.topInfoContainer}>
+        {/* Organization Info Card */}
+        <View style={styles.infoCard}>
+          <View style={styles.infoCardContent}>
+            <Text style={styles.infoCardTitle}>{organizationName}</Text>
+            {routeName && (
+              <Text style={styles.infoCardSubtitle}>
+                {routeName.replace(" - ", " ⇄ ")}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* Real Time Indicator Card */}
+        <View style={styles.infoCard}>
+          <PulsingDot color={COLORS.success} size={6} />
+          <View style={styles.infoCardContent}>
+            <Text style={styles.infoCardText}>
+              {`Active Bus${mapState.buses.length === 1 ? "" : "es"}`}
+            </Text>
+            <Text style={styles.infoCardCount}>
+              {mapState.buses.length}
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -383,20 +398,6 @@ export default function MapViewScreen() {
       </View>
     );
 
-  const renderBottomInfo = () =>
-    mapState.buses.length > 0 && (
-      <View style={styles.bottomInfoContainer}>
-        <View style={styles.bottomInfoContent}>
-          <Text style={styles.bottomInfoTitle}>{organizationName}</Text>
-          {routeName && (
-            <Text style={styles.bottomInfoSubtitle}>
-              {routeName.replace(" - ", " ⇄ ")}
-            </Text>
-          )}
-        </View>
-      </View>
-    );
-
   const renderToast = () => (
     <Toast
       visible={toast.visible}
@@ -417,9 +418,8 @@ export default function MapViewScreen() {
       />
 
       {renderMapContainer()}
-      {renderRealTimeIndicator()}
+      {renderTopInfoCards()}
       {renderMyLocationButton()}
-      {renderBottomInfo()}
       {renderToast()}
     </View>
   );
@@ -507,15 +507,20 @@ const styles = StyleSheet.create({
     fontFamily: FONT_WEIGHTS.semiBold,
     color: COLORS.white,
   },
-  realTimeIndicator: {
+  topInfoContainer: {
     position: "absolute",
     top: 10,
+    left: 45,
     right: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  infoCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(255, 255, 255, 1)",
     paddingHorizontal: 12,
-    // paddingVertical: 10,
     paddingBottom: 4,
     borderRadius: 12,
     borderWidth: 2,
@@ -526,15 +531,34 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     gap: 6,
+    minHeight: 64,
   },
-  realTimeTextContainer: {
-    flexDirection: "column",
+  infoCardContent: {
     alignItems: "center",
   },
-  realTimeText: {
+  infoCardTitle: {
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONT_WEIGHTS.semiBold,
+    color: COLORS.primary,
+    textAlign: "center",
+  },
+  infoCardSubtitle: {
+    fontSize: FONT_SIZES.xs,
+    fontFamily: FONT_WEIGHTS.regular,
+    color: COLORS.gray[700],
+    textAlign: "center",
+  },
+  infoCardText: {
     fontSize: FONT_SIZES.xs,
     fontFamily: FONT_WEIGHTS.semiBold,
     color: COLORS.gray[700],
+    textAlign: "center",
+  },
+  infoCardCount: {
+    fontSize: FONT_SIZES.xs,
+    fontFamily: FONT_WEIGHTS.semiBold,
+    color: COLORS.gray[600],
+    textAlign: "center",
   },
   floatingButtons: {
     position: "absolute",
@@ -571,43 +595,5 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     borderWidth: 0.5,
     borderColor: "rgba(0,0,0,0.1)",
-  },
-  bottomInfoContainer: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    backgroundColor: "rgba(255, 255, 255, 1)",
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "rgba(0,0,0,0.1)",
-    paddingHorizontal: 16,
-    // paddingVertical: 10,
-    paddingBottom: 4,
-    elevation: 3,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  bottomInfoContent: {
-    alignItems: "center",
-  },
-  bottomInfoTitle: {
-    fontSize: FONT_SIZES.sm,
-    fontFamily: FONT_WEIGHTS.semiBold,
-    color: COLORS.primary,
-    textAlign: "center",
-  },
-  bottomInfoSubtitle: {
-    fontSize: FONT_SIZES.xs,
-    fontFamily: FONT_WEIGHTS.regular,
-    color: COLORS.gray[700],
-    textAlign: "center",
-  },
-  bottomInfoBusCount: {
-    fontSize: FONT_SIZES.xs,
-    fontFamily: FONT_WEIGHTS.semiBold,
-    color: COLORS.gray[600],
-    textAlign: "center",
   },
 });
