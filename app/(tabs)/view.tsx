@@ -392,25 +392,41 @@ export default function MapViewScreen() {
             )}
           </View>
         </View>
-
-        {/* Real Time Indicator Card */}
-        <View style={styles.infoCard}>
-          <PulsingDot color={COLORS.success} size={6} />
-          <View style={styles.infoCardContent}>
-            <Text style={styles.infoCardText}>
-              {`Active Bus${mapState.buses.length === 1 ? "" : "es"}`}
-            </Text>
-            <Text style={styles.infoCardCount}>
-              {mapState.buses.length}
-            </Text>
-          </View>
-        </View>
       </View>
     );
 
   const renderMyLocationButton = () =>
     mapState.buses.length > 0 && (
-      <View style={styles.floatingButtons}>
+      <View style={styles.bottomControls}>
+        <TouchableOpacity
+          style={styles.centerAllButton}
+          onPress={fitAllMarkersInView}
+        >
+          <Ionicons name="apps" size={20} color="#1A73E8" />
+        </TouchableOpacity>
+
+        {/* Real Time Indicator Card */}
+        {/* <View style={styles.infoCard}>
+          <PulsingDot color={COLORS.success} size={6} />
+          <View style={styles.infoCardContent}>
+            <Text style={styles.infoCardText}>
+              {mapState.buses.length} Bus
+              {mapState.buses.length === 1 ? "" : "es"} Active
+            </Text>
+          </View>
+        </View> */}
+
+        <View style={styles.realTimeIndicator}>
+          <PulsingDot color={COLORS.success} size={6} />
+          <Text style={styles.realTimeText}>
+            {mapState.buses.length === 0
+              ? "No Buses Active"
+              : `${mapState.buses.length} Bus${
+                  mapState.buses.length === 1 ? "" : "es"
+                } Active`}
+          </Text>
+        </View>
+
         <TouchableOpacity
           style={styles.myLocationButton}
           onPress={handleMyLocationPress}
@@ -421,13 +437,6 @@ export default function MapViewScreen() {
           ) : (
             <Ionicons name="locate" size={20} color="#1A73E8" />
           )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.centerAllButton}
-          onPress={fitAllMarkersInView}
-        >
-          <Ionicons name="apps" size={20} color="#1A73E8" />
         </TouchableOpacity>
       </View>
     );
@@ -586,7 +595,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     gap: 6,
-    minHeight: 50,
+    minHeight: 30,
   },
   infoCardContent: {
     alignItems: "center",
@@ -615,11 +624,14 @@ const styles = StyleSheet.create({
     color: COLORS.gray[600],
     textAlign: "center",
   },
-  floatingButtons: {
+  bottomControls: {
     position: "absolute",
-    bottom: 20,
-    right: 16,
-    gap: 12,
+    bottom: 10,
+    left: 15,
+    right: 15,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   myLocationButton: {
     width: 48,
@@ -650,5 +662,26 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     borderWidth: 0.5,
     borderColor: "rgba(0,0,0,0.1)",
+  },
+  realTimeIndicator: {
+    position: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    elevation: 3,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    gap: 6,
+  },
+  realTimeText: {
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONT_WEIGHTS.semiBold,
+    fontWeight: "bold",
+    color: COLORS.primary,
   },
 });
