@@ -409,7 +409,7 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
   // Initialize map
   function initMap() {
     map = L.map('map', {
-      zoomControl: true,
+      zoomControl: false,
       scrollWheelZoom: true,
       doubleClickZoom: true,
       boxZoom: true,
@@ -642,6 +642,19 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
   // Handle messages from React Native
   function fitAllMarkersFromReactNative() {
     fitAllMarkersInView();
+  }
+  
+  // Zoom functions for React Native
+  function zoomInFromReactNative() {
+    if (map) {
+      map.zoomIn();
+    }
+  }
+  
+  function zoomOutFromReactNative() {
+    if (map) {
+      map.zoomOut();
+    }
   }
   
   // Handle messages from React Native

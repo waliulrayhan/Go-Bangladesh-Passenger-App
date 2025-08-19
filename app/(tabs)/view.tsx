@@ -230,6 +230,30 @@ export default function MapViewScreen() {
     webViewRef.current.postMessage(fitScript);
   };
 
+  const handleZoomIn = () => {
+    if (!webViewRef.current) return;
+
+    const zoomScript = `
+      if (typeof zoomInFromReactNative === 'function') {
+        zoomInFromReactNative();
+      }
+      true;
+    `;
+    webViewRef.current.postMessage(zoomScript);
+  };
+
+  const handleZoomOut = () => {
+    if (!webViewRef.current) return;
+
+    const zoomScript = `
+      if (typeof zoomOutFromReactNative === 'function') {
+        zoomOutFromReactNative();
+      }
+      true;
+    `;
+    webViewRef.current.postMessage(zoomScript);
+  };
+
   // Event Handlers
   const handleMapMessage = (event: any) => {
     const { data } = event.nativeEvent;
@@ -347,6 +371,16 @@ export default function MapViewScreen() {
   const renderTopInfoCards = () =>
     mapState.buses.length > 0 && (
       <View style={styles.topInfoContainer}>
+        {/* Zoom Control Placeholder */}
+        <View style={styles.zoomControlPlaceholder}>
+          <TouchableOpacity style={styles.zoomButton} onPress={handleZoomIn}>
+            <Ionicons name="add" size={12} color="#4A90E2" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.zoomButton} onPress={handleZoomOut}>
+            <Ionicons name="remove" size={12} color="#4A90E2" />
+          </TouchableOpacity>
+        </View>
+
         {/* Organization Info Card */}
         <View style={styles.infoCard}>
           <View style={styles.infoCardContent}>
@@ -510,11 +544,31 @@ const styles = StyleSheet.create({
   topInfoContainer: {
     position: "absolute",
     top: 10,
-    left: 45,
-    right: 10,
+    left: 20,
+    right: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
+    gap: 10,
+  },
+  zoomControlPlaceholder: {
+    flexDirection: "column",
+    gap: 2,
+  },
+  zoomButton: {
+    width: 24,
+    height: 24,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+    elevation: 3,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
   infoCard: {
     flexDirection: "row",
