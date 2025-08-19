@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -268,18 +267,18 @@ export default function MapViewScreen() {
   //       <Ionicons name="arrow-back" size={24} color={COLORS.white} />
   //     </TouchableOpacity>
       
-  //     <View style={styles.headerContent}>
-  //       <Text style={styles.headerTitle}>{organizationName}</Text>
-  //       {routeName && (
-  //         <Text style={styles.headerSubtitle}>{routeName}</Text>
-  //       )}
-  //       <Text style={styles.busCount}>
-  //         {mapState.buses.length === 0 
-  //           ? 'No Buses Active' 
-  //           : `${mapState.buses.length} Bus${mapState.buses.length === 1 ? '' : 'es'} Active`
-  //         }
-  //       </Text>
-  //     </View>
+      // <View style={styles.headerContent}>
+      //   <Text style={styles.headerTitle}>{organizationName}</Text>
+      //   {routeName && (
+      //     <Text style={styles.headerSubtitle}>{routeName}</Text>
+      //   )}
+      //   <Text style={styles.busCount}>
+      //     {mapState.buses.length === 0 
+      //       ? 'No Buses Active' 
+      //       : `${mapState.buses.length} Bus${mapState.buses.length === 1 ? '' : 'es'} Active`
+      //     }
+      //   </Text>
+      // </View>
   //   </LinearGradient>
   // );
 
@@ -377,6 +376,23 @@ export default function MapViewScreen() {
     )
   );
 
+  const renderBottomInfo = () => (
+    <View style={styles.bottomInfoContainer}>
+      <View style={styles.bottomInfoContent}>
+        <Text style={styles.bottomInfoTitle}>{organizationName}</Text>
+        {routeName && (
+          <Text style={styles.bottomInfoSubtitle}>{routeName}</Text>
+        )}
+        <Text style={styles.bottomInfoBusCount}>
+          {mapState.buses.length === 0 
+            ? 'No Buses Active' 
+            : `${mapState.buses.length} Bus${mapState.buses.length === 1 ? '' : 'es'} Active`
+          }
+        </Text>
+      </View>
+    </View>
+  );
+
   const renderToast = () => (
     <Toast
       visible={toast.visible}
@@ -400,6 +416,7 @@ export default function MapViewScreen() {
       {renderMapContainer()}
       {renderRealTimeIndicator()}
       {renderMyLocationButton()}
+      {renderBottomInfo()}
       {renderToast()}
     </View>
   );
@@ -544,5 +561,39 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     borderWidth: 0.5,
     borderColor: 'rgba(0,0,0,0.1)',
+  },
+  bottomInfoContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  bottomInfoContent: {
+    alignItems: 'center',
+  },
+  bottomInfoTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontFamily: FONT_WEIGHTS.bold,
+    color: COLORS.white,
+    textAlign: 'center',
+  },
+  bottomInfoSubtitle: {
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONT_WEIGHTS.medium,
+    color: COLORS.white,
+    opacity: 0.9,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  bottomInfoBusCount: {
+    fontSize: FONT_SIZES.xs,
+    fontFamily: FONT_WEIGHTS.regular,
+    color: COLORS.white,
+    opacity: 0.8,
+    marginTop: 4,
+    textAlign: 'center',
   },
 });
