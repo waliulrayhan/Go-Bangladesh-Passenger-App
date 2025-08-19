@@ -348,14 +348,20 @@ export default function MapViewScreen() {
     mapState.buses.length > 0 && (
       <View style={styles.realTimeIndicator}>
         <PulsingDot color={COLORS.success} size={6} />
-        <Text style={styles.realTimeText}>Live Updates</Text>
-        <Text style={styles.bottomInfoBusCount}>
+        <Text style={styles.realTimeText}>
           {mapState.buses.length === 0
             ? "No Buses Active"
             : `${mapState.buses.length} Bus${
                 mapState.buses.length === 1 ? "" : "es"
               } Active`}
         </Text>
+        {/* <Text style={styles.bottomInfoBusCount}>
+          {mapState.buses.length === 0
+            ? "No Buses Active"
+            : `${mapState.buses.length} Bus${
+                mapState.buses.length === 1 ? "" : "es"
+              } Active`}
+        </Text> */}
       </View>
     );
 
@@ -393,13 +399,13 @@ export default function MapViewScreen() {
               {routeName.replace(" - ", " ⇄ ")}
             </Text>
           )}
-          <Text style={styles.bottomInfoBusCount}>
+          {/* <Text style={styles.bottomInfoBusCount}>
             {mapState.buses.length === 0
               ? "No Buses Active"
               : `${mapState.buses.length} Bus${
                   mapState.buses.length === 1 ? "" : "es"
                 } Active`}
-          </Text>
+          </Text> */}
         </View>
       </View>
     );
@@ -574,26 +580,28 @@ const styles = StyleSheet.create({
   },
   bottomInfoContainer: {
     position: "absolute",
-    bottom: 20,
-    left: 16,
-    // right: 30,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    top: 10,
+    left: 50,
+    backgroundColor: "rgba(255, 255, 255, 1)",
     borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "rgba(0,0,0,0.1)",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   bottomInfoContent: {
     alignItems: "center",
   },
   bottomInfoTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONT_WEIGHTS.semiBold,
     color: COLORS.primary,
     textAlign: "center",
   },
   bottomInfoSubtitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.xs,
+    fontFamily: FONT_WEIGHTS.regular,
     color: COLORS.gray[700],
-    marginTop: 2,
     textAlign: "center",
   },
   bottomInfoBusCount: {
