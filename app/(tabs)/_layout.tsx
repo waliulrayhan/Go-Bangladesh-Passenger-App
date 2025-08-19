@@ -3,11 +3,20 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Tabs, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
+import { useStatusBar } from "../../hooks/useStatusBar";
 import { useAuthStore } from "../../stores/authStore";
 import { COLORS } from "../../utils/constants";
 import { FONT_SIZES, FONT_WEIGHTS } from "../../utils/fonts";
 
 export default function TabsLayout() {
+  // Status bar configuration for consistent appearance
+  useStatusBar({
+    backgroundColor: COLORS.brand.blue,
+    barStyle: 'light-content',
+    translucent: false,
+    hidden: false,
+  });
+
   const { user, isAuthenticated } = useAuthStore();
   const router = useRouter();
 

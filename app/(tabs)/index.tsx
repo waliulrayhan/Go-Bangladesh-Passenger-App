@@ -442,9 +442,6 @@ export default function Dashboard() {
       entering={FadeInUp.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.HEADER)}
       style={styles.header}
     >
-      {/* Status Bar Area - Same color as header */}
-      <View style={styles.statusBarArea} />
-
       {/* Main Header Content */}
       <View style={styles.headerContent}>
         <View style={styles.brandSection}>
@@ -990,11 +987,14 @@ export default function Dashboard() {
   // Main component render
   return (
     <>
-      {/* Status bar configuration */}
+      {/* Explicit Status bar configuration - no layout interference */}
       <StatusBar
         backgroundColor={COLORS.primary}
         barStyle="light-content"
         translucent={false}
+        hidden={false}
+        animated={false}
+        networkActivityIndicatorVisible={false}
       />
 
       <SafeAreaView style={styles.container}>
@@ -1097,12 +1097,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 20,
   },
-  statusBarArea: {
-    height: 15, // iOS status bar height
-    backgroundColor: COLORS.primary, // Same color as header
-  },
   headerContent: {
-    // paddingTop: 45,
+    paddingTop: 45, // Fixed 45px padding regardless of status bar height
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
