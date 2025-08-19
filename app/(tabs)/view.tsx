@@ -255,33 +255,33 @@ export default function MapViewScreen() {
   };
 
   const handleGoBack = () => {
-    router.push('/(tabs)/map');
+    router.push('/(tabs)/index');
   };
 
   // Render Functions
-  const renderHeader = () => (
-    <LinearGradient
-      colors={[COLORS.brand.blue, COLORS.brand.blue_dark]}
-      style={styles.header}
-    >
-      <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-        <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-      </TouchableOpacity>
+  // const renderHeader = () => (
+  //   <LinearGradient
+  //     colors={[COLORS.brand.blue, COLORS.brand.blue_dark]}
+  //     style={styles.header}
+  //   >
+  //     <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+  //       <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+  //     </TouchableOpacity>
       
-      <View style={styles.headerContent}>
-        <Text style={styles.headerTitle}>{organizationName}</Text>
-        {routeName && (
-          <Text style={styles.headerSubtitle}>{routeName}</Text>
-        )}
-        <Text style={styles.busCount}>
-          {mapState.buses.length === 0 
-            ? 'No Buses Active' 
-            : `${mapState.buses.length} Bus${mapState.buses.length === 1 ? '' : 'es'} Active`
-          }
-        </Text>
-      </View>
-    </LinearGradient>
-  );
+  //     <View style={styles.headerContent}>
+  //       <Text style={styles.headerTitle}>{organizationName}</Text>
+  //       {routeName && (
+  //         <Text style={styles.headerSubtitle}>{routeName}</Text>
+  //       )}
+  //       <Text style={styles.busCount}>
+  //         {mapState.buses.length === 0 
+  //           ? 'No Buses Active' 
+  //           : `${mapState.buses.length} Bus${mapState.buses.length === 1 ? '' : 'es'} Active`
+  //         }
+  //       </Text>
+  //     </View>
+  //   </LinearGradient>
+  // );
 
   const renderMapContainer = () => (
     <View style={styles.mapContainer}>
@@ -396,7 +396,7 @@ export default function MapViewScreen() {
         translucent={Platform.OS === 'android'}
       />
       
-      {renderHeader()}
+      {/* {renderHeader()} */}
       {renderMapContainer()}
       {renderRealTimeIndicator()}
       {renderMyLocationButton()}
@@ -489,8 +489,8 @@ const styles = StyleSheet.create({
   },
   realTimeIndicator: {
     position: 'absolute',
-    top: 100,
-    right: 16,
+    top: 10,
+    right: 10,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,

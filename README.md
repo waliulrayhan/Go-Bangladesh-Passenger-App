@@ -80,3 +80,5 @@ sdk.dir=C:/Users/Rayhan/AppData/Local/Android/Sdk
 npx expo start --web (Local)
 
 npx expo start --tunnel (Remote)
+
+npx expo prebuild --clean

@@ -124,8 +124,8 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="view"
           options={{
-            title: "View Map",
-            headerShown: false,
+            title: "Map Preview",
+            headerShown: true,
             href: null, // Hide from tab bar
           }}
         />
