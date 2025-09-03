@@ -781,7 +781,7 @@ export default function Dashboard() {
 
   // Activity helper functions
   const getActivityIcon = (transactionType: string) => {
-    if (transactionType === "BusFare" || transactionType === "Penalty") {
+    if (transactionType === "BusFare" || transactionType === "Penalty" || transactionType === "Return") {
       // Deductions - red with up arrow (money going out)
       return {
         icon: "arrow-up-outline" as const,
@@ -833,14 +833,14 @@ export default function Dashboard() {
   const getActivityAmount = (transactionType: string, amount: number) => {
     // BusFare and Penalty are deductions (negative)
     // Recharge and Return are additions (positive)
-    const prefix = (transactionType === "BusFare" || transactionType === "Penalty") ? "-" : "+";
+    const prefix = (transactionType === "BusFare" || transactionType === "Penalty" || transactionType === "Return") ? "-" : "+";
     return `${prefix}৳${amount.toFixed(2)}`;
   };
 
   const getActivityColor = (transactionType: string) => {
     // BusFare and Penalty are red (deductions)
     // Recharge and Return are green (additions)
-    return (transactionType === "BusFare" || transactionType === "Penalty") ? COLORS.error : COLORS.success;
+    return (transactionType === "BusFare" || transactionType === "Penalty" || transactionType === "Return") ? COLORS.error : COLORS.success;
   };
 
   const getCombinedTransactions = () => {
@@ -1016,6 +1016,9 @@ export default function Dashboard() {
           end={{ x: 0.5, y: 1 }}
         />
 
+        {/* Fixed Header */}
+        {renderHeader()}
+
         {/* Main scrollable content */}
         <ScrollView
           style={styles.content}
@@ -1027,7 +1030,6 @@ export default function Dashboard() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          {renderHeader()}
           {renderTripStatus()}
           {renderRFIDCard()}
           {renderRecentActivity()}
@@ -1089,9 +1091,11 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     backgroundColor: "transparent",
+    marginTop: 75, // Add margin to account for fixed header
   },
   scrollContent: {
     paddingBottom: 30,
+    paddingTop: 10, // Add padding for content spacing
   },
 
   // Header styles
@@ -1099,6 +1103,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingBottom: 20,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   headerContent: {
     flexDirection: "row",
