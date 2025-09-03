@@ -3,16 +3,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Clipboard,
-  FlatList,
-  Linking,
-  RefreshControl,
-  SafeAreaView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Clipboard,
+    FlatList,
+    Linking,
+    RefreshControl,
+    SafeAreaView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
@@ -27,6 +27,7 @@ import { RechargeTransaction, TripTransaction } from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
 import { COLORS, SPACING } from "../../utils/constants";
+import { formatDate, TimeFormatter } from "../../utils/dateTime";
 import { TYPOGRAPHY } from "../../utils/fonts";
 
 // History configuration constants
@@ -36,7 +37,6 @@ const HISTORY_CONFIG = {
     TAB_CONTENT: 600,
   },
   LOAD_MORE_THRESHOLD: 0.1,
-  TIMEZONE_OFFSET: 6 * 60 * 60 * 1000, // 6 hours in milliseconds
   TRANSACTION_ID_MAX_WIDTH: "35%",
   QUICK_FILTER_AMOUNTS: {
     SMALL: { min: 0, max: 50 },
@@ -139,39 +139,6 @@ const UI_TEXTS = {
     BY: "by",
   },
 } as const;
-
-// Utility functions
-const formatDateString = (date: Date): string => {
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  const day = date.getDate();
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
-};
-
-const formatTimeString = (dateString: string): string => {
-  const date = new Date(
-    new Date(dateString).getTime() + HISTORY_CONFIG.TIMEZONE_OFFSET
-  );
-  const hours24 = date.getHours();
-  const minutes = date.getMinutes().toString().padStart(2, "0");
-  const hours12 = hours24 === 0 ? 12 : hours24 > 12 ? hours24 - 12 : hours24;
-  const ampm = hours24 >= 12 ? "PM" : "AM";
-  return `${hours12}:${minutes} ${ampm}`;
-};
 
 const openMapLocation = (latitude: number, longitude: number): void => {
   const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
@@ -607,7 +574,7 @@ export default function History() {
               style={styles.cardDateTrip}
             >
               {tripStartTime
-                ? formatDateString(new Date(tripStartTime))
+                ? formatDate(new Date(tripStartTime))
                 : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
             </Text>
           </View>
@@ -646,7 +613,7 @@ export default function History() {
                   style={styles.timeText}
                 >
                   {tripStartTime
-                    ? formatTimeString(tripStartTime)
+                    ? TimeFormatter.forHistory(tripStartTime)
                     : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
                 {trip.startingLatitude && trip.startingLongitude && (
@@ -690,7 +657,7 @@ export default function History() {
                     color={COLORS.white}
                     style={styles.timeText}
                   >
-                    {formatTimeString(tripEndTime)}
+                    {TimeFormatter.forHistory(tripEndTime)}
                   </Text>
                   {trip.endingLatitude && trip.endingLongitude && (
                     <Ionicons
@@ -943,7 +910,7 @@ export default function History() {
                   style={styles.detailText}
                 >
                   {item.createTime
-                    ? formatDateString(new Date(item.createTime))
+                    ? formatDate(new Date(item.createTime))
                     : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
               </View>
@@ -959,7 +926,7 @@ export default function History() {
                   style={styles.detailText}
                 >
                   {item.createTime
-                    ? formatTimeString(item.createTime)
+                    ? TimeFormatter.forHistory(item.createTime)
                     : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
                 </Text>
               </View>

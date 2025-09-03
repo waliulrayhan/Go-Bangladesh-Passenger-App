@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { apiService } from '../services/api';
 import { User } from '../types';
 import { STORAGE_KEYS } from '../utils/constants';
+import { nowISO } from '../utils/dateTime';
 import { extractUserIdFromToken } from '../utils/jwt';
 import { storageService } from '../utils/storage';
 
@@ -94,7 +95,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         cardNumber: userResponse.cardNumber,
         userType: userResponse.userType?.toLowerCase() as 'passenger' | 'public' | 'private',
         isActive: true,
-        createdAt: new Date().toISOString(),
+        createdAt: nowISO(),
         profileImage: userResponse.imageUrl,
         imageUrl: userResponse.imageUrl,
         dateOfBirth: userResponse.dateOfBirth,
@@ -389,7 +390,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           cardNumber: userResponse.cardNumber,
           userType: userResponse.userType?.toLowerCase() as 'passenger' | 'public' | 'private',
           isActive: true,
-          createdAt: user.createdAt || new Date().toISOString(), // Keep original or set default
+          createdAt: user.createdAt || nowISO(), // Keep original or set default
           profileImage: userResponse.imageUrl,
           imageUrl: userResponse.imageUrl,
           dateOfBirth: userResponse.dateOfBirth,

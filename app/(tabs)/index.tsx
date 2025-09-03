@@ -35,6 +35,7 @@ import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
 import { API_BASE_URL, COLORS } from "../../utils/constants";
+import { DateFormatter, DateTime, formatDate, formatTime } from "../../utils/dateTime";
 
 // Dashboard configuration constants
 const DASHBOARD_CONFIG = {
@@ -103,36 +104,6 @@ const UI_TEXTS = {
   },
 } as const;
 
-// Utility functions
-const formatDateString = (date: Date): string => {
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  const day = date.getDate();
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
-};
-
-const formatTimeString = (date: Date): string => {
-  return date.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-};
-
 const formatBalanceDisplay = (balance: number | undefined): string => {
   // Explicitly handle the case where balance is a number (including 0)
   if (typeof balance === "number" && !isNaN(balance)) {
@@ -156,7 +127,7 @@ const getCardTypeLabel = (userType: string | undefined): string => {
 };
 
 const adjustTimeForTimezone = (dateString: string): Date => {
-  return new Date(new Date(dateString).getTime() + 6 * 60 * 60 * 1000);
+  return DateTime.parse(dateString, true); // Apply device timezone offset using centralized utility
 };
 
 /**
@@ -761,12 +732,9 @@ export default function Dashboard() {
                           const adjustedDate = adjustTimeForTimezone(
                             currentTrip.tripStartTime
                           );
-                          return `${formatTimeString(
+                          return `${formatTime(
                             adjustedDate
-                          )} , ${adjustedDate.toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}`;
+                          )} , ${DateFormatter.locale(adjustedDate, "en-US")}`;
                         })()
                       : UI_TEXTS.FALLBACKS.GENERIC}
                   </Text>
@@ -846,8 +814,8 @@ export default function Dashboard() {
   const getCombinedTransactions = () => {
     return recentActivity
       .sort((a, b) => {
-        const aDate = new Date(a.createTime || 0);
-        const bDate = new Date(b.createTime || 0);
+        const aDate = DateTime.parse(a.createTime || "0", true); // Apply device timezone offset
+        const bDate = DateTime.parse(b.createTime || "0", true); // Apply device timezone offset
         return bDate.getTime() - aDate.getTime();
       })
       .slice(0, DASHBOARD_CONFIG.RECENT_TRANSACTIONS_LIMIT);
@@ -910,7 +878,7 @@ export default function Dashboard() {
           ) : allTransactions.length > 0 ? (
             allTransactions.map((transaction: any, index: number) => {
               const iconInfo = getActivityIcon(transaction.transactionType);
-              const transactionDate = new Date(transaction.createTime);
+              const transactionDate = DateTime.parse(transaction.createTime, true); // Apply device timezone offset
 
               return (
                 <View key={transaction.id} style={styles.activityItem}>
@@ -939,8 +907,8 @@ export default function Dashboard() {
                       color={COLORS.gray[500]}
                       style={styles.activityTime}
                     >
-                      {formatDateString(transactionDate)},{" "}
-                      {formatTimeString(transactionDate)}
+                      {formatDate(transactionDate)},{" "}
+                      {formatTime(transactionDate)}
                     </Text>
                   </View>
                   <Text

@@ -3,20 +3,21 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
-  Image,
-  Modal,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  TouchableOpacity,
-  View,
+    Image,
+    Modal,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 import { useToast } from "../hooks/useToast";
 import { apiService } from "../services/api";
 import { BORDER_RADIUS, COLORS, SPACING } from "../utils/constants";
+import { DateFormatter, DateTimeUtils } from "../utils/dateTime";
 import { ProfileOTPVerificationModal } from "./ProfileOTPVerificationModal";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
@@ -219,7 +220,7 @@ export function EditProfileModal({
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (selectedDate) {
-      const dateString = selectedDate.toISOString().split("T")[0];
+      const dateString = DateFormatter.toDateInput(selectedDate);
       setFormData((prev) => ({ ...prev, dateOfBirth: dateString }));
     }
   };
@@ -253,8 +254,7 @@ export function EditProfileModal({
 
     // Add profile picture if selected
     if (selectedImage) {
-      const timestamp = Date.now();
-      const filename = `profile-${timestamp}.jpg`;
+      const filename = DateTimeUtils.generateTimestampedFilename('profile', 'jpg');
       updateFormData.append("ProfilePicture", {
         uri: selectedImage,
         type: "image/jpeg",

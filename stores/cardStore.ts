@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { apiService, RechargeTransaction, TripTransaction } from '../services/api';
 import { Card, PaginationState, Trip } from '../types';
+import { nowISO, timestamp } from '../utils/dateTime';
 import { useAuthStore } from './authStore';
 
 interface CardState {
@@ -87,12 +88,12 @@ export const useCardStore = create<CardState>((set, get) => ({
     const user = useAuthStore.getState().user;
     if (user) {
       const card: Card = {
-        id: user.id ? parseInt(user.id.toString()) : Date.now(),
+        id: user.id ? parseInt(user.id.toString()) : timestamp(),
         cardNumber: user.cardNumber || '',
         userId: parseInt(user.id?.toString() || '1'),
         balance: typeof user.balance === 'number' ? user.balance : 0,
         isActive: true,
-        createdAt: new Date().toISOString()
+        createdAt: nowISO()
       };
       set({ card });
       console.log('✅ [CARD STORE] Card details loaded from existing user data');

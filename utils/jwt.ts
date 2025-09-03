@@ -1,5 +1,6 @@
 // Import Buffer from the buffer package for React Native compatibility
 import { Buffer } from 'buffer';
+import { DateFormatter, now, timestamp } from './dateTime';
 
 export interface JWTPayload {
   userId?: number;
@@ -78,12 +79,12 @@ export function isTokenExpired(token: string): boolean {
       return true;
     }
     
-    const currentTime = Math.floor(Date.now() / 1000);
+    const currentTime = Math.floor(timestamp() / 1000);
     const isExpired = payload.exp < currentTime;
     
     if (isExpired) {
       const expiredTime = new Date(payload.exp * 1000);
-      console.log(`⏰ [JWT] Token expired at: ${expiredTime.toISOString()}`);
+      console.log(`⏰ [JWT] Token expired at: ${DateFormatter.toISO(expiredTime)}`);
     }
     
     return isExpired;
@@ -137,7 +138,7 @@ export function extractUserInfoFromJWT(token: string) {
     
     // Additional metadata
     tokenValid: !isTokenExpired(token),
-    extractedAt: new Date()
+    extractedAt: now()
   };
 
   return userInfo;
