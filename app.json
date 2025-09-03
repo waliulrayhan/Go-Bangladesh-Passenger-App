@@ -6,8 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/images/appIconPng1024_lg.png",
     "userInterfaceStyle": "light",
-    "statusBarBackgroundColor": "#4A90E2",
-    "statusBarStyle": "light",
     "splash": {
       "image": "./assets/images/splashScreenTransparent1024_updated.png",
       "resizeMode": "contain",
@@ -19,8 +17,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.solutionspin.gobangladesh",
-      "bundleName": "Go BD",
-      "displayName": "Go BD",
       "icon": "./assets/images/iOS.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -38,8 +34,6 @@
         "resizeMode": "contain",
         "backgroundColor": "#FFFFFF"
       },
-      "statusBarBackgroundColor": "#4A90E2",
-      "statusBarStyle": "light",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -72,7 +66,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#FFFFFF"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "scheme": "go-bangladesh",
     "extra": {
