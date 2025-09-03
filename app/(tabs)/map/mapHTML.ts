@@ -62,7 +62,7 @@ const getMapStyles = (): string => `
   .bus-marker-inner {
     width: 24px;
     height: 24px;
-    background: linear-gradient(135deg, #4A90E2 0%, #2E5C8A 100%);
+    background: #4A90E2;
     border: 3px solid white;
     border-radius: 50%;
     box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
@@ -203,7 +203,7 @@ const getMapStyles = (): string => `
   }
   
   .user-location-label {
-    background: rgba(66, 133, 244, 0.95);
+    background: #4A90E2;
     color: white;
     padding: 4px 8px;
     border-radius: 12px;
