@@ -621,26 +621,20 @@ export function EditProfileModal({
                 />
               </View>
 
-              {/* ID Field - Editable for all users */}
-              <View style={styles.fieldGroup}>
-                <Input
-                  label={
-                    userData.userType === "Private"
-                      ? "Identity Number"
-                      : "Identity Number"
-                  }
-                  value={formData.passengerId}
-                  onChangeText={(text) =>
-                    setFormData((prev) => ({ ...prev, passengerId: text }))
-                  }
-                  placeholder={
-                    userData.userType === "Private"
-                      ? "Enter your Identity Number"
-                      : "Enter your Identity Number"
-                  }
-                  icon="id-card-outline"
-                />
-              </View>
+              {/* ID Field - Only for Private users */}
+              {userData.userType === "private" && (
+                <View style={styles.fieldGroup}>
+                  <Input
+                    label="Identity Number"
+                    value={formData.passengerId}
+                    onChangeText={(text) =>
+                      setFormData((prev) => ({ ...prev, passengerId: text }))
+                    }
+                    placeholder="Enter your Identity Number"
+                    icon="id-card-outline"
+                  />
+                </View>
+              )}
 
               {renderGenderSelection()}
 

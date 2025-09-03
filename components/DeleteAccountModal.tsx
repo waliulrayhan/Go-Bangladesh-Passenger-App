@@ -67,7 +67,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
 
       // Navigate to OTP verification page with required parameters
       router.push({
-        pathname: "/(auth)/verify-account-deletion",
+        pathname: "/(tabs)/verify-account-deletion",
         params: {
           phone: mobileNumber,
           userName: userName,

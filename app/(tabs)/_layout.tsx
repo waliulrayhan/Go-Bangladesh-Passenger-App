@@ -152,6 +152,24 @@ export default function TabsLayout() {
             ),
           }}
         />
+        <Tabs.Screen
+          name="change-password"
+          options={{
+            title: "Change Password",
+            headerShown: false,
+            href: null, // Hide from tab bar
+            tabBarStyle: { display: "none" }, // Hide entire tab bar
+          }}
+        />
+        <Tabs.Screen
+          name="verify-account-deletion"
+          options={{
+            title: "Verify Account Deletion",
+            headerShown: false,
+            href: null, // Hide from tab bar
+            tabBarStyle: { display: "none" }, // Hide entire tab bar
+          }}
+        />
       </Tabs>
     </View>
   );

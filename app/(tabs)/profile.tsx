@@ -526,7 +526,7 @@ export default function Profile() {
 
         <TouchableOpacity 
           style={styles.actionItem}
-          onPress={() => router.push('/(auth)/change-password')}
+          onPress={() => router.push('/(tabs)/change-password')}
         >
           <View style={styles.actionLeft}>
             <View style={[styles.actionIconContainer, { backgroundColor: COLORS.primary + '15' }]}>

@@ -126,7 +126,7 @@ export default function VerifyAccountDeletion() {
     Keyboard.dismiss();
     // Small delay to ensure keyboard is fully dismissed
     setTimeout(() => {
-      router.back();
+      router.replace('/profile');
     }, 100);
   };
 
