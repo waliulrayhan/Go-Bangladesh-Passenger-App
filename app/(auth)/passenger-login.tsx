@@ -429,14 +429,15 @@ const styles = StyleSheet.create({
     // marginBottom: SPACING.lg,
   },
   loginContent: {
-    padding: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.md,
     gap: SPACING.sm,
   },
 
   // Input type indicator
   inputTypeIndicator: {
     position: "absolute",
-    right: 20,
+    right: 10,
     top: 49,
     flexDirection: "row",
     alignItems: "center",

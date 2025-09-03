@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   },
   medium: {
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
     minHeight: SIZES.button.md,
   },
   large: {
