@@ -2,14 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  BackHandler,
-  Platform,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    BackHandler,
+    Platform,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { WebView } from "react-native-webview";
 
@@ -69,7 +69,15 @@ export default function MapViewScreen() {
         );
       }
     },
-    onLocationError: (error) => showError(error),
+    onLocationError: (error) => {
+      showError(error);
+      // On iOS, provide additional guidance for common issues
+      if (Platform.OS === 'ios' && error.includes('Settings')) {
+        setTimeout(() => {
+          showInfo("Open Settings > Privacy & Security > Location Services > Go BD");
+        }, 3000);
+      }
+    },
     onLocationInfo: (info) => showInfo(info),
   });
 
@@ -122,7 +130,15 @@ export default function MapViewScreen() {
 
   // Initialization
   const initializeMap = async () => {
-    await Promise.all([fetchBusData(false), checkLocationPermission()]);
+    // Always fetch bus data first
+    await fetchBusData(false);
+    
+    // Check location permission but don't block the map loading
+    try {
+      await checkLocationPermission();
+    } catch (error) {
+      console.log('Initial location check failed:', error);
+    }
   };
 
   // API Functions
@@ -316,7 +332,10 @@ export default function MapViewScreen() {
       );
       showInfo("Focused on your location");
     } else {
-      // Get new location
+      // Get new location with enhanced iOS feedback
+      if (Platform.OS === 'ios') {
+        showInfo("Requesting location permission...");
+      }
       getUserLocation();
     }
   };

@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import { useCallback, useState } from 'react';
+import { Platform } from 'react-native';
 
 interface UseLocationParams {
   onLocationSuccess?: (location: { latitude: number; longitude: number }) => void;
@@ -38,8 +39,30 @@ export const useLocation = ({
 
   const requestLocationPermission = useCallback(async (): Promise<Location.PermissionStatus> => {
     try {
+      // Check if location services are enabled first (especially important for iOS)
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!servicesEnabled) {
+        onLocationError?.(
+          Platform.OS === 'ios' 
+            ? 'Please enable Location Services in Settings > Privacy & Security > Location Services'
+            : 'Please enable Location Services on your device'
+        );
+        return Location.PermissionStatus.DENIED;
+      }
+
       const { status } = await Location.requestForegroundPermissionsAsync();
       setLocationPermission(status);
+      
+      if (status !== Location.PermissionStatus.GRANTED) {
+        if (Platform.OS === 'ios') {
+          onLocationError?.(
+            'Location permission is required. Please go to Settings > Go BD > Location and select "While Using App"'
+          );
+        } else {
+          onLocationError?.('Location permission is required to show your location');
+        }
+      }
+      
       return status;
     } catch (error) {
       console.error('Error requesting location permission:', error);
@@ -52,6 +75,17 @@ export const useLocation = ({
     try {
       setGettingLocation(true);
       
+      // Check if location services are enabled first (especially important for iOS)
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!servicesEnabled) {
+        onLocationError?.(
+          Platform.OS === 'ios' 
+            ? 'Please enable Location Services in Settings > Privacy & Security > Location Services'
+            : 'Please enable Location Services on your device'
+        );
+        return;
+      }
+      
       // Check permission first
       let permissionStatus = locationPermission;
       if (!permissionStatus) {
@@ -63,17 +97,34 @@ export const useLocation = ({
         permissionStatus = await requestLocationPermission();
       }
       
-      // If permission still not granted, show error
+      // If permission still not granted, show platform-specific error
       if (permissionStatus !== Location.PermissionStatus.GRANTED) {
-        onLocationError?.('Location permission is required to show your location');
+        if (Platform.OS === 'ios') {
+          if (permissionStatus === Location.PermissionStatus.DENIED) {
+            onLocationError?.(
+              'Location access denied. Please go to Settings > Go BD > Location and select "While Using App"'
+            );
+          } else {
+            onLocationError?.(
+              'Location permission required. Please allow location access when prompted or check Settings > Go BD > Location'
+            );
+          }
+        } else {
+          onLocationError?.('Location permission is required to show your location');
+        }
         return;
       }
       
-      // Get current location
+      // Get current location with enhanced settings for iOS
       onLocationInfo?.('Getting your location...');
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
+      
+      const locationOptions: Location.LocationOptions = {
+        accuracy: Platform.OS === 'ios' ? Location.Accuracy.BestForNavigation : Location.Accuracy.High,
+        timeInterval: Platform.OS === 'ios' ? 1000 : 5000,
+        distanceInterval: Platform.OS === 'ios' ? 0 : 10,
+      };
+      
+      const location = await Location.getCurrentPositionAsync(locationOptions);
       
       const { latitude, longitude } = location.coords;
       const newLocation = { latitude, longitude };
@@ -81,9 +132,34 @@ export const useLocation = ({
       
       onLocationSuccess?.(newLocation);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting location:', error);
-      onLocationError?.('Failed to get your location. Please try again.');
+      
+      // Handle iOS-specific location errors
+      if (Platform.OS === 'ios') {
+        if (error.code === 'E_LOCATION_SERVICES_DISABLED') {
+          onLocationError?.(
+            'Location Services are disabled. Please enable them in Settings > Privacy & Security > Location Services'
+          );
+        } else if (error.code === 'E_LOCATION_UNAUTHORIZED') {
+          onLocationError?.(
+            'Location access denied. Please go to Settings > Go BD > Location and select "While Using App"'
+          );
+        } else if (error.code === 'E_LOCATION_TIMEOUT') {
+          onLocationError?.('Location request timed out. Please try again.');
+        } else {
+          onLocationError?.('Failed to get your location. Please ensure Location Services are enabled and try again.');
+        }
+      } else {
+        // Android error handling
+        if (error.code === 'E_LOCATION_SERVICES_DISABLED') {
+          onLocationError?.('Please enable Location Services on your device');
+        } else if (error.code === 'E_LOCATION_UNAUTHORIZED') {
+          onLocationError?.('Location permission is required to show your location');
+        } else {
+          onLocationError?.('Failed to get your location. Please try again.');
+        }
+      }
     } finally {
       setGettingLocation(false);
     }

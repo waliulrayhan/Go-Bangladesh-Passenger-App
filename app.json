@@ -23,7 +23,9 @@
       "displayName": "Go BD",
       "icon": "./assets/images/iOS.png",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "This app needs access to location to show your current position on the map and help you find nearby buses.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to location to show your current position on the map and help you find nearby buses."
       }
     },
     "android": {
@@ -55,7 +57,10 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "This app needs access to location for trip tracking."
+          "locationAlwaysAndWhenInUsePermission": "This app needs access to location to show your current position on the map and help you find nearby buses.",
+          "locationWhenInUsePermission": "This app needs access to location to show your current position on the map and help you find nearby buses.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
         }
       ],
       "expo-font",
