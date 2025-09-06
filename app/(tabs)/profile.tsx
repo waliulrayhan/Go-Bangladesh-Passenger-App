@@ -459,20 +459,22 @@ export default function Profile() {
             </View>
           </View>
 
-          {/* Show Student ID / Passenger ID */}
-          <View style={styles.infoRow}>
-            <View style={[styles.infoIcon, { backgroundColor: COLORS.primary + '15' }]}>
-              <Ionicons name="id-card-outline" size={16} color={COLORS.primary} />
+          {/* Show Student ID / Passenger ID only for private users */}
+          {user?.userType?.toLowerCase() === 'private' && (
+            <View style={styles.infoRow}>
+              <View style={[styles.infoIcon, { backgroundColor: COLORS.primary + '15' }]}>
+                <Ionicons name="id-card-outline" size={16} color={COLORS.primary} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>
+                  {user?.passengerId ? 'Identity Number' : user?.studentId ? 'Identity Number' : 'Identity Number'}
+                </Text>
+                <Text style={styles.infoValue}>
+                  {user?.passengerId || user?.studentId || 'Not Provided'}
+                </Text>
+              </View>
             </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>
-                {user?.passengerId ? 'Identity Number' : user?.studentId ? 'Identity Number' : 'Identity Number'}
-              </Text>
-              <Text style={styles.infoValue}>
-                {user?.passengerId || user?.studentId || 'Not Provided'}
-              </Text>
-            </View>
-          </View>
+          )}
 
           <View style={styles.infoRow}>
             <View style={[styles.infoIcon, { backgroundColor: COLORS.purple + '15' }]}>
@@ -552,7 +554,15 @@ export default function Profile() {
 
         <TouchableOpacity 
           style={styles.actionItem}
-          onPress={() => setShowDeleteAccountModal(true)}
+          onPress={() => {
+            // Check if user has negative balance
+            const currentBalance = user?.balance || 0;
+            if (currentBalance < 0) {
+              showToast('User Card has negative balance, need to recharge first for delete account.', 'warning');
+              return;
+            }
+            setShowDeleteAccountModal(true);
+          }}
         >
           <View style={styles.actionLeft}>
             <View style={[styles.actionIconContainer, { backgroundColor: COLORS.error + '15' }]}>
@@ -778,6 +788,7 @@ export default function Profile() {
           message={toast.message}
           type={toast.type}
           position="bottom"
+          duration={toast.type === 'warning' ? 4000 : 1000}
           onHide={hideToast}
         />
       )}
