@@ -558,7 +558,7 @@ export default function Profile() {
             // Check if user has negative balance
             const currentBalance = user?.balance || 0;
             if (currentBalance < 0) {
-              showToast('User Card has negative balance, need to recharge first for delete account.', 'warning');
+              showToast('Your Account currently has negative balance, need to recharge first for delete account.', 'warning');
               return;
             }
             setShowDeleteAccountModal(true);
