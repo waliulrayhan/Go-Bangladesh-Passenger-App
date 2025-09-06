@@ -985,7 +985,7 @@ export default function Dashboard() {
         />
 
         {/* Fixed Header */}
-        {renderHeader()}
+        {/* {renderHeader()} */}
 
         {/* Main scrollable content */}
         <ScrollView
@@ -998,6 +998,7 @@ export default function Dashboard() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
+          {renderHeader()}
           {renderTripStatus()}
           {renderRFIDCard()}
           {renderRecentActivity()}
@@ -1059,11 +1060,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     backgroundColor: "transparent",
-    marginTop: 75, // Add margin to account for fixed header
   },
   scrollContent: {
     paddingBottom: 30,
-    paddingTop: 10, // Add padding for content spacing
   },
 
   // Header styles
@@ -1071,11 +1070,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingBottom: 20,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
   },
   headerContent: {
     flexDirection: "row",

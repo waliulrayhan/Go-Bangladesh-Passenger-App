@@ -3,21 +3,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Clipboard,
-    FlatList,
-    Linking,
-    RefreshControl,
-    SafeAreaView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Clipboard,
+  FlatList,
+  Linking,
+  RefreshControl,
+  SafeAreaView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 // Custom components and utilities
-import FilterModal, { FilterOptions } from "../../components/FilterModal";
 import { Card } from "../../components/ui/Card";
 import { Text } from "../../components/ui/Text";
 import { Toast } from "../../components/ui/Toast";
@@ -29,21 +28,6 @@ import { useCardStore } from "../../stores/cardStore";
 import { COLORS, SPACING } from "../../utils/constants";
 import { formatDate, TimeFormatter } from "../../utils/dateTime";
 import { TYPOGRAPHY } from "../../utils/fonts";
-
-// History configuration constants
-const HISTORY_CONFIG = {
-  ANIMATION_DELAYS: {
-    FILTER_HEADER: 200,
-    TAB_CONTENT: 600,
-  },
-  LOAD_MORE_THRESHOLD: 0.1,
-  TRANSACTION_ID_MAX_WIDTH: "35%",
-  QUICK_FILTER_AMOUNTS: {
-    SMALL: { min: 0, max: 50 },
-    MEDIUM: { min: 50, max: 200 },
-    LARGE: { min: 200, max: 1000 },
-  },
-} as const;
 
 // UI text constants
 const UI_TEXTS = {
@@ -60,41 +44,11 @@ const UI_TEXTS = {
     RETURN: "Return",
     BUS_FARE: "Bus Fare",
   },
-  FILTER_LABELS: {
-    DATE_RANGES: {
-      ALL: "All Time",
-      TODAY: "Today",
-      WEEK: "This Week",
-      MONTH: "This Month",
-      CUSTOM: "Custom Range",
-    },
-    SORT_OPTIONS: {
-      NEWEST: "Newest First",
-      OLDEST: "Oldest First",
-      AMOUNT_HIGH: "Amount: High to Low",
-      AMOUNT_LOW: "Amount: Low to High",
-    },
-    SECTIONS: {
-      DATE_RANGE: "Date Range",
-      SORT_BY: "Sort By",
-      AMOUNT_RANGE: "Amount Range (৳)",
-      QUICK_FILTERS: "Quick filters:",
-    },
-  },
   BUTTONS: {
-    FILTER: "Filter",
-    RESET: "Reset",
     RETRY: "Retry",
     LOAD_MORE_TRIPS: "Load More Trips",
     LOAD_MORE_TRANSACTIONS: "Load More Transactions",
     CLEAR_SEARCH_AND_FILTERS: "Clear Search & Filters",
-    CLEAR_FILTERS: "Clear Filters",
-  },
-  MODAL: {
-    FOOTER: {
-      CANCEL: "Cancel",
-      APPLY_FILTERS: "Apply Filters",
-    },
   },
   LOADING_STATES: {
     LOADING_HISTORY: "Loading history...",
@@ -234,73 +188,15 @@ export default function History() {
   // Component state management
   const [activeTab, setActiveTab] = useState<HistoryTab>("trips");
   const [refreshing, setRefreshing] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
-  const [isFilteringInProgress, setIsFilteringInProgress] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-
-  // Filter state
-  const [filters, setFilters] = useState<FilterOptions>({
-    dateFilter: "all",
-    sortOrder: "newest",
-  });
 
   // Filter and sort data whenever dependencies change
   // Using useMemo to prevent unnecessary recalculations
   const filteredData = useMemo(() => {
     let data: (TripTransaction | RechargeTransaction)[] =
       activeTab === "trips" ? tripTransactions : rechargeTransactions;
-
-    // Apply date filter
-    if (filters.dateFilter !== "all") {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-      data = data.filter((item) => {
-        const dateString =
-          activeTab === "trips"
-            ? (item as TripTransaction).trip?.tripStartTime
-            : item.createTime;
-        if (!dateString) return false;
-        const itemDate = new Date(dateString);
-
-        switch (filters.dateFilter) {
-          case "today":
-            return itemDate >= today;
-          case "week":
-            const weekAgo = new Date(today);
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            return itemDate >= weekAgo;
-          case "month":
-            const monthAgo = new Date(today);
-            monthAgo.setMonth(monthAgo.getMonth() - 1);
-            return itemDate >= monthAgo;
-          case "custom":
-            if (filters.customStartDate && filters.customEndDate) {
-              return (
-                itemDate >= filters.customStartDate &&
-                itemDate <= filters.customEndDate
-              );
-            }
-            return true;
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Apply amount filter
-    if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
-      data = data.filter((item) => {
-        const amount = item.amount || 0;
-        const minCheck =
-          filters.minAmount === undefined || amount >= filters.minAmount;
-        const maxCheck =
-          filters.maxAmount === undefined || amount <= filters.maxAmount;
-        return minCheck && maxCheck;
-      });
-    }
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -334,7 +230,7 @@ export default function History() {
       });
     }
 
-    // Apply sorting
+    // Apply default sorting (newest first)
     data.sort((a, b) => {
       const aDateString =
         activeTab === "trips"
@@ -348,25 +244,13 @@ export default function History() {
 
       const aDate = new Date(aDateString);
       const bDate = new Date(bDateString);
-      const aAmount = a.amount || 0;
-      const bAmount = b.amount || 0;
 
-      switch (filters.sortOrder) {
-        case "oldest":
-          return aDate.getTime() - bDate.getTime();
-        case "amount_high":
-          return bAmount - aAmount;
-        case "amount_low":
-          return aAmount - bAmount;
-        case "newest":
-        default:
-          return bDate.getTime() - aDate.getTime();
-      }
+      return bDate.getTime() - aDate.getTime();
     });
 
     console.log("📊 [HISTORY COMPONENT] Filtered data:", data.length);
     return data;
-  }, [tripTransactions, rechargeTransactions, activeTab, filters, searchQuery]);
+  }, [tripTransactions, rechargeTransactions, activeTab, searchQuery]);
 
   // Effects
 
@@ -413,8 +297,8 @@ export default function History() {
 
   // Pull-to-refresh handler with error feedback
   const onRefresh = useCallback(async () => {
-    // Prevent refresh if modal is open, filtering is in progress, or initializing
-    if (showFilterModal || isFilteringInProgress || isInitializing) {
+    // Prevent refresh if initializing
+    if (isInitializing) {
       return;
     }
 
@@ -427,7 +311,7 @@ export default function History() {
     } finally {
       setRefreshing(false);
     }
-  }, [refreshAllData, showToast, showFilterModal, isFilteringInProgress, isInitializing]);
+  }, [refreshAllData, showToast, isInitializing]);
 
   // Handle tab switching
   const handleTabChange = (tab: HistoryTab) => {
@@ -469,44 +353,6 @@ export default function History() {
       showToast(UI_TEXTS.TOAST_MESSAGES.COPY_FAILED, "error");
     }
   };
-
-  // Filter management functions
-
-  // Safe filter modal handler - prevents opening during refresh or ongoing operations
-  const handleFilterModalOpen = useCallback((): void => {
-    // Prevent modal from opening if refresh is in progress, filtering is ongoing, or initializing
-    if (refreshing || isFilteringInProgress || isLoading || isInitializing) {
-      return;
-    }
-    setShowFilterModal(true);
-  }, [refreshing, isFilteringInProgress, isLoading, isInitializing]);
-
-  // Safe filter modal close handler
-  const handleFilterModalClose = useCallback((): void => {
-    if (!isFilteringInProgress) {
-      setShowFilterModal(false);
-    }
-  }, [isFilteringInProgress]);
-
-  // Apply new filters with debouncing and state protection
-  const applyFilters = useCallback(
-    async (newFilters: FilterOptions): Promise<void> => {
-      if (isFilteringInProgress) return; // Prevent multiple simultaneous applications
-
-      setIsFilteringInProgress(true);
-
-      try {
-        // Small delay to prevent rapid successive calls
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        setFilters(newFilters);
-        setShowFilterModal(false);
-      } finally {
-        setIsFilteringInProgress(false);
-      }
-    },
-    [isFilteringInProgress]
-  );
 
   // Render individual trip transaction item
   const renderTripItem = ({ item }: { item: TripTransaction }) => {
@@ -962,7 +808,7 @@ export default function History() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             colors={[COLORS.primary]}
-            enabled={!showFilterModal && !isFilteringInProgress && !isInitializing} // Disable refresh when modal is open, filtering, or initializing
+            enabled={!isInitializing} // Disable refresh when initializing
           />
         }
         onEndReached={onLoadMore}
@@ -1061,30 +907,19 @@ export default function History() {
               >
                 {searchQuery
                   ? `${UI_TEXTS.EMPTY_STATES.NO_RESULTS_FOR} "${searchQuery}"`
-                  : filters.dateFilter !== "all" ||
-                    filters.minAmount !== undefined ||
-                    filters.maxAmount !== undefined
-                  ? UI_TEXTS.EMPTY_STATES.TRY_ADJUSTING_FILTERS
                   : activeTab === "trips"
                   ? UI_TEXTS.EMPTY_STATES.BUS_TRIPS_WILL_APPEAR
                   : UI_TEXTS.EMPTY_STATES.WALLET_HISTORY_WILL_APPEAR}
               </Text>
-              {(searchQuery ||
-                filters.dateFilter !== "all" ||
-                filters.minAmount !== undefined ||
-                filters.maxAmount !== undefined) && (
+              {searchQuery && (
                 <TouchableOpacity
                   style={styles.clearFiltersButton}
                   onPress={() => {
                     setSearchQuery("");
-                    setFilters({
-                      dateFilter: "all",
-                      sortOrder: "newest",
-                    });
                   }}
                 >
                   <Text variant="labelSmall" color={COLORS.primary}>
-                    {UI_TEXTS.BUTTONS.CLEAR_SEARCH_AND_FILTERS}
+                    Clear Search
                   </Text>
                 </TouchableOpacity>
               )}
@@ -1177,73 +1012,6 @@ export default function History() {
               )}
             </View>
           </View>
-
-          {/* Filter Header */}
-          <Animated.View
-            entering={FadeInDown.delay(200)}
-            style={styles.filterHeader}
-          >
-            <View style={styles.filterInfo}>
-              <Text variant="bodySmall" color={COLORS.gray[600]}>
-                {filteredData.length} result
-                {filteredData.length !== 1 ? "s" : ""}
-                {(() => {
-                  const currentPagination =
-                    activeTab === "trips" ? tripPagination : rechargePagination;
-                  if (
-                    currentPagination.totalCount &&
-                    currentPagination.totalCount > 0
-                  ) {
-                    return ` • ${currentPagination.totalCount} total`;
-                  }
-                  return "";
-                })()}
-                {filters.dateFilter !== "all" && ` • ${filters.dateFilter}`}
-                {filters.sortOrder !== "newest" && ` • ${filters.sortOrder}`}
-                {(filters.minAmount !== undefined ||
-                  filters.maxAmount !== undefined) &&
-                  " • amount filtered"}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={[
-                styles.filterButton,
-                (filters.dateFilter !== "all" ||
-                  filters.minAmount !== undefined ||
-                  filters.maxAmount !== undefined) &&
-                  styles.filterButtonActive,
-                // Add visual feedback when disabled during refresh, filtering, or initialization
-                (refreshing || isFilteringInProgress || isInitializing) &&
-                  styles.filterButtonDisabled,
-              ]}
-              onPress={handleFilterModalOpen}
-              disabled={refreshing || isFilteringInProgress || isInitializing} // Disable during refresh, filtering, or initialization
-            >
-              <Ionicons
-                name="funnel"
-                size={16}
-                color={
-                  filters.dateFilter !== "all" ||
-                  filters.minAmount !== undefined ||
-                  filters.maxAmount !== undefined
-                    ? COLORS.white
-                    : COLORS.gray[600]
-                }
-              />
-              <Text
-                variant="labelSmall"
-                color={
-                  filters.dateFilter !== "all" ||
-                  filters.minAmount !== undefined ||
-                  filters.maxAmount !== undefined
-                    ? COLORS.white
-                    : COLORS.gray[600]
-                }
-              >
-                Filter
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
         </View>
 
         {/* Error Display */}
@@ -1298,13 +1066,6 @@ export default function History() {
           </Animated.View>
         )}
       </View>
-
-      <FilterModal
-        visible={showFilterModal}
-        filters={filters}
-        onClose={handleFilterModalClose}
-        onApply={applyFilters}
-      />
 
       {/* Toast notification */}
       <Toast
@@ -1395,36 +1156,6 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.gray[900],
     paddingVertical: 2,
-  },
-  filterHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-  },
-  filterInfo: {
-    flex: 1,
-  },
-  filteringIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  filterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: COLORS.gray[100],
-    gap: 6,
-  },
-  filterButtonActive: {
-    backgroundColor: COLORS.primary,
-  },
-  filterButtonDisabled: {
-    opacity: 0.6,
-    backgroundColor: COLORS.gray[50],
   },
 
   // Transaction card styles
