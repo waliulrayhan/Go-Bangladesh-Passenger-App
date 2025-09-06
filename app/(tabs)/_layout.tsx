@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Tabs, useRouter } from "expo-router";
 import { useEffect } from "react";
+import { CustomHeader } from "../../components/ui/CustomHeader";
 import { StyleSheet, View } from "react-native";
 import { useStatusBar } from "../../hooks/useStatusBar";
 import { useAuthStore } from "../../stores/authStore";
@@ -39,6 +40,11 @@ export default function TabsLayout() {
   }
 
   console.log("✅ [TABS] Rendering tabs for authenticated user");
+
+  // Custom header component function
+  const renderCustomHeader = () => {
+    return <CustomHeader />;
+  };
 
   return (
     <View style={styles.container}>
@@ -90,7 +96,8 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            headerShown: false,
+            header: renderCustomHeader,
+            headerShown: true,
             tabBarLabel: "Home",
             tabBarIcon: ({ color, size, focused }) => (
               <Ionicons
