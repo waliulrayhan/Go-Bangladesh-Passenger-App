@@ -1,16 +1,27 @@
 import React, { useMemo } from "react";
-import { Animated, StyleSheet, View } from "react-native";
-import { COLORS } from "../../utils/constants";
+import { Animated, Image, StyleSheet, TouchableOpacity, View } from "react-native";
+import { API_BASE_URL, COLORS } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { GoBangladeshLogo } from "../GoBangladeshLogo";
 import { Text } from "./Text";
+
+interface User {
+  name?: string;
+  imageUrl?: string;
+  profileImage?: string;
+}
+
 interface CustomHeaderProps {
   title?: string;
   subtitle?: string;
+  user?: User;
+  onProfilePress?: () => void;
 }
 export const CustomHeader: React.FC<CustomHeaderProps> = React.memo(({
   title = "Go Bangladesh",
   subtitle = "One step toward a better future",
+  user,
+  onProfilePress,
 }) => {
   // Input validation and sanitization
   const sanitizedTitle = useMemo(() => {
@@ -47,6 +58,38 @@ export const CustomHeader: React.FC<CustomHeaderProps> = React.memo(({
           <Text style={styles.subtitleText}>{sanitizedSubtitle}</Text>
         </View>
       </View>
+
+      {/* Profile Section */}
+      {user && onProfilePress && (
+        <TouchableOpacity
+          style={styles.profileSection}
+          onPress={onProfilePress}
+        >
+          <View style={styles.avatar}>
+            {user?.imageUrl ? (
+              <Image
+                source={{ uri: `${API_BASE_URL}/${user.imageUrl}` }}
+                style={styles.avatarImage}
+              />
+            ) : user?.profileImage ? (
+              <Image
+                source={{ uri: user.profileImage }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <View style={styles.avatarFallback}>
+                <Text
+                  variant="bodyLarge"
+                  color={COLORS.primary}
+                  style={styles.avatarText}
+                >
+                  {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 });
@@ -99,5 +142,34 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     marginTop: 2,
     lineHeight: 16,
+  },
+  profileSection: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: COLORS.gray[100] + "80",
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  avatarFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

@@ -407,105 +407,6 @@ export default function Dashboard() {
     }
   };
 
-  // Render functions
-  /**
-   * Renders the main header with branding, logo, and profile access
-   */
-  const renderHeader = () => (
-    <Animated.View
-      entering={FadeInUp.duration(DASHBOARD_CONFIG.ANIMATION_DELAYS.HEADER)}
-      style={styles.header}
-    >
-      {/* Main Header Content */}
-      <View style={[styles.headerContent, { paddingTop: Math.max(insets.top, 0) + 15 }]}>
-        <View style={styles.brandSection}>
-          <View style={styles.logoContainer}>
-            <View style={styles.logoBackground}>
-              <Image
-                source={require("../../assets/images/appIconPng1024_lg.png")}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
-          </View>
-          <View style={styles.brandTextContainer}>
-            <Text variant="h6" color={COLORS.white} style={styles.brandName}>
-              {UI_TEXTS.BRAND.NAME}
-            </Text>
-            <Text
-              variant="caption"
-              color={COLORS.white}
-              style={styles.brandSlogan}
-            >
-              {UI_TEXTS.BRAND.SLOGAN}
-            </Text>
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={styles.profileSection}
-          onPress={navigateToProfile}
-        >
-          <View style={styles.avatar}>
-            {user?.imageUrl ? (
-              <Image
-                source={{ uri: `${API_BASE_URL}/${user.imageUrl}` }}
-                style={styles.avatarImage}
-              />
-            ) : user?.profileImage ? (
-              <Image
-                source={{ uri: user.profileImage }}
-                style={styles.avatarImage}
-              />
-            ) : (
-              <View style={styles.avatarFallback}>
-                <Text
-                  variant="bodyLarge"
-                  color={COLORS.primary}
-                  style={styles.avatarText}
-                >
-                  {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                </Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {/* Profile Menu */}
-      {showProfileMenu && (
-        <Animated.View
-          entering={FadeInDown.duration(
-            DASHBOARD_CONFIG.ANIMATION_DELAYS.PROFILE_MENU
-          )}
-          style={styles.profileMenu}
-        >
-          <TouchableOpacity style={styles.menuItem} onPress={navigateToProfile}>
-            <Ionicons name="person-outline" size={18} color={COLORS.primary} />
-            <Text
-              variant="bodySmall"
-              color={COLORS.primary}
-              style={styles.menuText}
-            >
-              View Profile
-            </Text>
-          </TouchableOpacity>
-          <View style={styles.menuDivider} />
-          <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={18} color={COLORS.error} />
-            <Text
-              variant="bodySmall"
-              color={COLORS.error}
-              style={styles.menuText}
-            >
-              Logout
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
-    </Animated.View>
-  );
-
   /**
    * Renders the RFID card with balance visibility toggle
    */
@@ -998,7 +899,6 @@ export default function Dashboard() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          {renderHeader()}
           {renderTripStatus()}
           {renderRFIDCard()}
           {renderRecentActivity()}

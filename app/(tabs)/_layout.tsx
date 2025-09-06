@@ -2,8 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Tabs, useRouter } from "expo-router";
 import { useEffect } from "react";
-import { CustomHeader } from "../../components/ui/CustomHeader";
 import { StyleSheet, View } from "react-native";
+import { CustomHeader } from "../../components/ui/CustomHeader";
 import { useStatusBar } from "../../hooks/useStatusBar";
 import { useAuthStore } from "../../stores/authStore";
 import { COLORS } from "../../utils/constants";
@@ -43,7 +43,12 @@ export default function TabsLayout() {
 
   // Custom header component function
   const renderCustomHeader = () => {
-    return <CustomHeader />;
+    return (
+      <CustomHeader 
+        user={user}
+        onProfilePress={() => router.push("/(tabs)/profile")}
+      />
+    );
   };
 
   return (
