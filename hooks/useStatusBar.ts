@@ -12,37 +12,45 @@ interface UseStatusBarProps {
 /**
  * Hook to manage status bar appearance consistently across platforms and environments
  * This ensures proper status bar handling in Expo Go, standalone builds, and development
+ * with improved iOS support and consistent primary blue color
  */
 export const useStatusBar = ({
-  backgroundColor = '#4A90E2',
+  backgroundColor = '#4A90E2', // COLORS.brand.blue
   barStyle = 'light-content',
   translucent = false,
   hidden = false,
 }: UseStatusBarProps = {}) => {
-  // Set status bar configuration when component mounts
-  useEffect(() => {
+  
+  // Apply status bar configuration
+  const applyStatusBarConfig = useCallback(() => {
     if (Platform.OS === 'android') {
+      // Android specific configuration
       StatusBar.setBackgroundColor(backgroundColor, true);
       StatusBar.setBarStyle(barStyle, true);
       StatusBar.setTranslucent(translucent);
     } else {
+      // iOS specific configuration - always light content for primary blue
       StatusBar.setBarStyle(barStyle, true);
     }
-    StatusBar.setHidden(hidden, 'slide');
+    StatusBar.setHidden(hidden, 'fade');
   }, [backgroundColor, barStyle, translucent, hidden]);
 
+  // Set status bar configuration when component mounts
+  useEffect(() => {
+    applyStatusBarConfig();
+  }, [applyStatusBarConfig]);
+
   // Re-apply status bar settings when screen comes into focus
-  // This is important for maintaining consistency in tab navigation
+  // This is critical for maintaining consistency in tab navigation
+  // and prevents the status bar from reverting to default colors
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor(backgroundColor, true);
-        StatusBar.setBarStyle(barStyle, true);
-        StatusBar.setTranslucent(translucent);
-      } else {
-        StatusBar.setBarStyle(barStyle, true);
-      }
-      StatusBar.setHidden(hidden, 'slide');
-    }, [backgroundColor, barStyle, translucent, hidden])
+      // Add a small delay to ensure the focus effect takes priority
+      const timeoutId = setTimeout(() => {
+        applyStatusBarConfig();
+      }, 50);
+
+      return () => clearTimeout(timeoutId);
+    }, [applyStatusBarConfig])
   );
 };

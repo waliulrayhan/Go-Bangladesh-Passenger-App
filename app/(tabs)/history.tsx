@@ -1,6 +1,5 @@
 // React Native and Expo imports
 import { Ionicons } from "@expo/vector-icons";
-import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -21,7 +20,6 @@ import { Card } from "../../components/ui/Card";
 import { Text } from "../../components/ui/Text";
 import { Toast } from "../../components/ui/Toast";
 import { useToast } from "../../hooks/useToast";
-import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { RechargeTransaction, TripTransaction } from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
@@ -48,7 +46,6 @@ const UI_TEXTS = {
     RETRY: "Retry",
     LOAD_MORE_TRIPS: "Load More Trips",
     LOAD_MORE_TRANSACTIONS: "Load More Transactions",
-    CLEAR_SEARCH_AND_FILTERS: "Clear Search & Filters",
   },
   LOADING_STATES: {
     LOADING_HISTORY: "Loading history...",
@@ -59,7 +56,6 @@ const UI_TEXTS = {
     NO_TRIP_HISTORY: "No trip history found",
     NO_WALLET_HISTORY: "No wallet history found",
     NO_RESULTS_FOR: "No results found for",
-    TRY_ADJUSTING_FILTERS: "Try adjusting your filters",
     BUS_TRIPS_WILL_APPEAR: "Your bus trips will appear here",
     WALLET_HISTORY_WILL_APPEAR: "Your wallet history will appear here",
   },
@@ -88,8 +84,6 @@ const UI_TEXTS = {
     DISTANCE: "Distance",
     TAP_IN_BY: "Tap In By",
     TAP_OUT_BY: "Tap Out By",
-    MIN: "Min",
-    MAX: "Max",
     BY: "by",
   },
 } as const;
@@ -178,19 +172,15 @@ export default function History() {
   );
 
   // Custom hooks
-  const { refreshAllData } = useTokenRefresh();
   const { toast, showToast, hideToast } = useToast();
 
   // Get auth state to ensure user is authenticated before loading data
-  const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   // Component state management
   const [activeTab, setActiveTab] = useState<HistoryTab>("trips");
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [hasInitialLoad, setHasInitialLoad] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
 
   // Filter and sort data whenever dependencies change
   // Using useMemo to prevent unnecessary recalculations
@@ -254,64 +244,31 @@ export default function History() {
 
   // Effects
 
-  // Initialize and load data when component mounts or when user becomes available
+  // Load data when component mounts and user is authenticated
   useEffect(() => {
-    const initializeHistoryData = async () => {
-      // Don't proceed if already initialized or if user is not authenticated
-      if (hasInitialLoad || !isAuthenticated || !user?.id) {
-        if (!isAuthenticated || !user?.id) {
-          setIsInitializing(false);
-        }
-        return;
-      }
-
-      setIsInitializing(true);
-      
-      try {
-        // Load both trip and recharge history in parallel
-        await Promise.all([
-          loadTripHistory(1, true),
-          loadRechargeHistory(1, true)
-        ]);
-        
-        setHasInitialLoad(true);
-      } catch (error) {
-        console.error("Failed to initialize history data:", error);
-      } finally {
-        setIsInitializing(false);
-      }
-    };
-
-    initializeHistoryData();
-  }, [hasInitialLoad, isAuthenticated, user?.id, loadTripHistory, loadRechargeHistory]);
-
-  // Reset initialization state when user becomes unauthenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setHasInitialLoad(false);
-      setIsInitializing(false);
+    if (isAuthenticated) {
+      loadTripHistory(1, true);
+      loadRechargeHistory(1, true);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, loadTripHistory, loadRechargeHistory]);
 
   // Event handlers
 
-  // Pull-to-refresh handler with error feedback
+  // Pull-to-refresh handler
   const onRefresh = useCallback(async () => {
-    // Prevent refresh if initializing
-    if (isInitializing) {
-      return;
-    }
-
     setRefreshing(true);
     try {
-      await refreshAllData(true);
+      await Promise.all([
+        loadTripHistory(1, true),
+        loadRechargeHistory(1, true)
+      ]);
     } catch (error) {
       console.log("Refresh error:", error);
       showToast(UI_TEXTS.TOAST_MESSAGES.REFRESH_FAILED, "error");
     } finally {
       setRefreshing(false);
     }
-  }, [refreshAllData, showToast, isInitializing]);
+  }, [loadTripHistory, loadRechargeHistory, showToast]);
 
   // Handle tab switching
   const handleTabChange = (tab: HistoryTab) => {
@@ -584,17 +541,7 @@ export default function History() {
               >
                 {UI_TEXTS.LABELS.TAP_IN_BY}
               </Text>
-              <View
-                style={[
-                  styles.tapInByButton,
-                  tapInType === "Card" && styles.tapCardButton,
-                  tapInType === "Time-Out" && styles.tapTimeOutButton,
-                  tapInType === "Staff" && styles.tapStaffButton,
-                  tapInType === "Session-Out" && styles.tapSessionOutButton,
-                  tapInType === "Mobile App" && styles.tapMobileAppButton,
-                  tapInType === "Penalty" && styles.tapPenaltyButton,
-                ]}
-              >
+              <View style={styles.tapInByButton}>
                 <Ionicons
                   name={getTapTypeIcon(tapInType || "")}
                   size={14}
@@ -619,18 +566,7 @@ export default function History() {
                 >
                   {UI_TEXTS.LABELS.TAP_OUT_BY}
                 </Text>
-                <View
-                  style={[
-                    styles.tapOutByButton,
-                    tapOutStatus === "Card" && styles.tapCardButton,
-                    tapOutStatus === "Time-Out" && styles.tapTimeOutButton,
-                    tapOutStatus === "Staff" && styles.tapStaffButton,
-                    tapOutStatus === "Session-Out" &&
-                      styles.tapSessionOutButton,
-                    tapOutStatus === "Mobile App" && styles.tapMobileAppButton,
-                    tapOutStatus === "Penalty" && styles.tapPenaltyButton,
-                  ]}
-                >
+                <View style={styles.tapOutByButton}>
                   <Ionicons
                     name={getTapTypeIcon(tapOutStatus || "")}
                     size={14}
@@ -808,7 +744,6 @@ export default function History() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             colors={[COLORS.primary]}
-            enabled={!isInitializing} // Disable refresh when initializing
           />
         }
         onEndReached={onLoadMore}
@@ -827,31 +762,6 @@ export default function History() {
                   ? UI_TEXTS.LOADING_STATES.LOADING_MORE_TRIPS
                   : UI_TEXTS.LOADING_STATES.LOADING_MORE_TRANSACTIONS}
               </Text>
-              {(() => {
-                const currentPagination =
-                  activeTab === "trips" ? tripPagination : rechargePagination;
-                if (
-                  currentPagination.totalCount &&
-                  currentPagination.totalCount > 0
-                ) {
-                  const progressPercentage = Math.round(
-                    (currentPagination.totalLoaded /
-                      currentPagination.totalCount) *
-                      100
-                  );
-                  return (
-                    <Text
-                      variant="caption"
-                      color={COLORS.gray[500]}
-                      style={styles.loadingText}
-                    >
-                      {currentPagination.totalLoaded} of{" "}
-                      {currentPagination.totalCount} ({progressPercentage}%)
-                    </Text>
-                  );
-                }
-                return null;
-              })()}
             </View>
           ) : (activeTab === "trips" ? tripPagination : rechargePagination)
               .hasMore ? (
@@ -864,22 +774,6 @@ export default function History() {
                   ? UI_TEXTS.BUTTONS.LOAD_MORE_TRIPS
                   : UI_TEXTS.BUTTONS.LOAD_MORE_TRANSACTIONS}
               </Text>
-              {(() => {
-                const currentPagination =
-                  activeTab === "trips" ? tripPagination : rechargePagination;
-                if (
-                  currentPagination.totalCount &&
-                  currentPagination.totalCount > 0
-                ) {
-                  return (
-                    <Text variant="caption" color={COLORS.gray[500]}>
-                      {currentPagination.totalLoaded} of{" "}
-                      {currentPagination.totalCount}
-                    </Text>
-                  );
-                }
-                return null;
-              })()}
             </TouchableOpacity>
           ) : null
         }
@@ -933,11 +827,6 @@ export default function History() {
   // Main component render
   return (
     <>
-      <StatusBar
-        style="light"
-        backgroundColor={COLORS.primary}
-        translucent={false}
-      />
       <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         {/* Header Section */}
@@ -1038,9 +927,9 @@ export default function History() {
         )}
 
         {/* Loading Indicator for Initial Load */}
-        {(isInitializing || (isLoading &&
+        {isLoading &&
           tripTransactions.length === 0 &&
-          rechargeTransactions.length === 0)) &&
+          rechargeTransactions.length === 0 &&
           !error && (
             <View style={styles.initialLoading}>
               <ActivityIndicator size="large" color={COLORS.primary} />
@@ -1055,9 +944,9 @@ export default function History() {
           )}
 
         {/* Tab Content */}
-        {(!isInitializing && (!isLoading ||
+        {(!isLoading ||
           tripTransactions.length > 0 ||
-          rechargeTransactions.length > 0)) && (
+          rechargeTransactions.length > 0) && (
           <Animated.View
             entering={FadeInDown.duration(600)}
             style={styles.tabContent}
@@ -1318,27 +1207,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FAFAFA",
     borderRadius: 6,
   },
-  sectionLabel: {
-    marginBottom: SPACING.xs,
-    fontWeight: "500",
-    fontSize: 12,
-  },
-  tapOutByContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-  },
-  tapOutByItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    backgroundColor: COLORS.white,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: COLORS.gray[200],
-  },
   tapInByButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1346,7 +1214,6 @@ const styles = StyleSheet.create({
     padding: SPACING.xs,
     backgroundColor: "#E3F2FD", // Light blue background
     borderRadius: 6,
-    borderColor: "#BBDEFB",
     justifyContent: "center",
     minHeight: 32,
   },
@@ -1355,7 +1222,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     padding: SPACING.xs,
-    // backgroundColor: "#E8F5E8", // Light green background
+    backgroundColor: "#E8F5E8", // Light green background
     borderRadius: 6,
     justifyContent: "center",
     minHeight: 32,
@@ -1363,31 +1230,6 @@ const styles = StyleSheet.create({
   tapByText: {
     fontWeight: "500",
     fontSize: 12,
-  },
-  // Tap type specific button styles
-  tapCardButton: {
-    backgroundColor: "#E3F2FD", // Light blue
-    borderColor: "#BBDEFB",
-  },
-  tapTimeOutButton: {
-    backgroundColor: "#FFF3E0", // Light orange
-    borderColor: "#FFCC02",
-  },
-  tapStaffButton: {
-    backgroundColor: "#E8F5E8", // Light green
-    borderColor: "#C8E6C9",
-  },
-  tapSessionOutButton: {
-    backgroundColor: "#FFEBEE", // Light red
-    borderColor: "#FFCDD2",
-  },
-  tapMobileAppButton: {
-    backgroundColor: "#F3E5F5", // Light purple
-    borderColor: "#E1BEE7",
-  },
-  tapPenaltyButton: {
-    backgroundColor: "#FFF3E0", // Light orange-amber
-    borderColor: "#FFB74D",
   },
   distanceButton: {
     flexDirection: "row",

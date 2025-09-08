@@ -3,14 +3,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 
 import { DropdownSkeleton } from "../../../components/Skeleton";
@@ -317,11 +316,6 @@ export default function MapScreen() {
 
   return (
     <>
-      <StatusBar
-        backgroundColor={COLORS.primary}
-        barStyle="light-content"
-        translucent={false}
-      />
       <SafeAreaView style={styles.container}>
       <LinearGradient
         colors={["rgba(74, 144, 226, 0.1)", "rgba(255, 138, 0, 0.1)"]}

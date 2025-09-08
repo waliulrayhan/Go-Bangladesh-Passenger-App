@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Image,
@@ -680,11 +679,6 @@ export default function Profile() {
   // ==================== COMPONENT RENDER ====================
   return (
     <>
-      <StatusBar
-        style="light"
-        backgroundColor={COLORS.primary}
-        translucent={false}
-      />
       <SafeAreaView style={styles.container}>
       {/* Brand gradient background */}
       <LinearGradient

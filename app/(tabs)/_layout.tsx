@@ -10,7 +10,8 @@ import { COLORS } from "../../utils/constants";
 import { FONT_SIZES, FONT_WEIGHTS } from "../../utils/fonts";
 
 export default function TabsLayout() {
-  // Status bar configuration for consistent appearance
+  // Status bar configuration for consistent appearance across all tabs
+  // This ensures the status bar is properly configured on all platforms
   useStatusBar({
     backgroundColor: COLORS.brand.blue,
     barStyle: 'light-content',

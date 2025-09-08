@@ -72,6 +72,10 @@ npx expo run:android
 
 eas build --platform ios --profile production
 
+Build your iOS app in the cloud -> eas build -p ios
+
+Submit directly to Apple -> eas submit -p ios
+
 eas submit --platform ios
 
 local.properties

@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   BackHandler,
   Platform,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -576,12 +575,6 @@ export default function MapViewScreen() {
   // Main Render
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.brand.blue}
-        translucent={Platform.OS === "android"}
-      />
-
       {renderMapContainer()}
       {renderTopInfoCards()}
       {renderMyLocationButton()}

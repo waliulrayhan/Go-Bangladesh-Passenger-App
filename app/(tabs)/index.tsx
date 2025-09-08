@@ -4,10 +4,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Image,
   RefreshControl,
   ScrollView,
-  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View
@@ -17,12 +15,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 // Reanimated imports for animations
 import Animated, {
   FadeInDown,
-  FadeInUp,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withTiming,
+  withTiming
 } from "react-native-reanimated";
 
 // Custom components and utilities
@@ -30,11 +27,12 @@ import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { Text } from "../../components/ui/Text";
 import { Toast } from "../../components/ui/Toast";
 import { useRealtimeTrip } from "../../hooks/useRealtimeTrip";
+import { useStatusBar } from "../../hooks/useStatusBar";
 import { useToast } from "../../hooks/useToast";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
-import { API_BASE_URL, COLORS } from "../../utils/constants";
+import { COLORS } from "../../utils/constants";
 import { DateFormatter, DateTime, formatDate, formatTime } from "../../utils/dateTime";
 
 // Dashboard configuration constants
@@ -135,6 +133,14 @@ const adjustTimeForTimezone = (dateString: string): Date => {
  * Displays RFID card, trip status, balance, and recent activity
  */
 export default function Dashboard() {
+  // Status bar configuration for consistent appearance
+  useStatusBar({
+    backgroundColor: COLORS.brand.blue,
+    barStyle: 'light-content',
+    translucent: false,
+    hidden: false,
+  });
+
   // Navigation and store hooks
   const router = useRouter();
   const { user, logout, justLoggedIn, clearJustLoggedIn, isAuthenticated } = useAuthStore();
@@ -859,16 +865,6 @@ export default function Dashboard() {
   // Main component render
   return (
     <>
-      {/* Explicit Status bar configuration - no layout interference */}
-      <StatusBar
-        backgroundColor={COLORS.primary}
-        barStyle="light-content"
-        translucent={false}
-        hidden={false}
-        animated={false}
-        networkActivityIndicatorVisible={false}
-      />
-
       <View style={styles.container}>
         {/* Background gradient overlay */}
         <LinearGradient

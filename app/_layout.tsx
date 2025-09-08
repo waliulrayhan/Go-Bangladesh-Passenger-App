@@ -2,9 +2,10 @@ import { useFonts } from "expo-font";
 import { Slot, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { View } from "react-native";
+import { Platform, StatusBar, View } from "react-native";
 import { useTokenExpirationCheck } from "../hooks/useTokenExpirationCheck";
 import { useAuthStore } from "../stores/authStore";
+import { COLORS } from "../utils/constants";
 import { plusJakartaSansFonts } from "../utils/fonts";
 import WelcomeScreen from "./index";
 
@@ -20,6 +21,18 @@ export default function RootLayout() {
   const { isAuthenticated, loadUserFromStorage, isLoggingOut } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
+
+  // Initialize status bar immediately to prevent flickering
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      StatusBar.setBackgroundColor(COLORS.brand.blue, false);
+      StatusBar.setBarStyle('light-content', false);
+      StatusBar.setTranslucent(false);
+    } else {
+      StatusBar.setBarStyle('light-content', false);
+    }
+    StatusBar.setHidden(false, 'none');
+  }, []);
 
   // Initialize token expiration monitoring
   useTokenExpirationCheck();
