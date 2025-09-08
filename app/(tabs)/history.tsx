@@ -157,6 +157,7 @@ export default function History() {
   const tripPagination = useCardStore((state) => state.tripPagination);
   const rechargePagination = useCardStore((state) => state.rechargePagination);
   const isLoading = useCardStore((state) => state.isLoading);
+  const isRefreshing = useCardStore((state) => state.isRefreshing);
   const error = useCardStore((state) => state.error);
 
   // Store actions (these are stable and won't cause re-renders)
@@ -179,7 +180,6 @@ export default function History() {
 
   // Component state management
   const [activeTab, setActiveTab] = useState<HistoryTab>("trips");
-  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter and sort data whenever dependencies change
@@ -246,9 +246,11 @@ export default function History() {
 
   // Load data when component mounts and user is authenticated
   useEffect(() => {
+    console.log('🔄 [HISTORY COMPONENT] useEffect triggered - isAuthenticated:', isAuthenticated);
     if (isAuthenticated) {
-      loadTripHistory(1, true);
-      loadRechargeHistory(1, true);
+      console.log('🔄 [HISTORY COMPONENT] Loading initial data...');
+      loadTripHistory(1, false); // Changed from true to false for initial load
+      loadRechargeHistory(1, false); // Changed from true to false for initial load
     }
   }, [isAuthenticated, loadTripHistory, loadRechargeHistory]);
 
@@ -256,7 +258,6 @@ export default function History() {
 
   // Pull-to-refresh handler
   const onRefresh = useCallback(async () => {
-    setRefreshing(true);
     try {
       await Promise.all([
         loadTripHistory(1, true),
@@ -265,8 +266,6 @@ export default function History() {
     } catch (error) {
       console.log("Refresh error:", error);
       showToast(UI_TEXTS.TOAST_MESSAGES.REFRESH_FAILED, "error");
-    } finally {
-      setRefreshing(false);
     }
   }, [loadTripHistory, loadRechargeHistory, showToast]);
 
@@ -741,7 +740,7 @@ export default function History() {
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={isRefreshing}
             onRefresh={onRefresh}
             colors={[COLORS.primary]}
           />
@@ -930,6 +929,7 @@ export default function History() {
         {isLoading &&
           tripTransactions.length === 0 &&
           rechargeTransactions.length === 0 &&
+          !isRefreshing &&
           !error && (
             <View style={styles.initialLoading}>
               <ActivityIndicator size="large" color={COLORS.primary} />
@@ -946,7 +946,8 @@ export default function History() {
         {/* Tab Content */}
         {(!isLoading ||
           tripTransactions.length > 0 ||
-          rechargeTransactions.length > 0) && (
+          rechargeTransactions.length > 0 ||
+          isRefreshing) && (
           <Animated.View
             entering={FadeInDown.duration(600)}
             style={styles.tabContent}

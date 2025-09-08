@@ -13,6 +13,7 @@ interface CardState {
   currentTrip: Trip | null;
   tripStatus: 'idle' | 'active' | 'completed';
   isLoading: boolean;
+  isRefreshing: boolean;
   error: string | null;
 
   // Trip pagination
@@ -57,6 +58,7 @@ export const useCardStore = create<CardState>((set, get) => ({
   currentTrip: null,
   tripStatus: 'idle',
   isLoading: false,
+  isRefreshing: false,
   error: null,
   tripPage: 1,
   tripHasMore: true,
@@ -104,29 +106,29 @@ export const useCardStore = create<CardState>((set, get) => ({
   loadTripHistory: async (pageNo = 1, reset = false) => {
     const { tripTransactions, tripPage, tripPagination } = get();
 
+    console.log('🔄 [CARD STORE] Loading trip history - pageNo:', pageNo, 'reset:', reset, 'existing data:', tripTransactions.length);
+
     if (reset) {
+      // For pull-to-refresh, use isRefreshing instead of clearing data immediately
       set({
-        isLoading: true,
+        isRefreshing: true,
         error: null,
-        tripPage: 1,
-        tripHasMore: true,
-        tripTransactions: [],
-        tripPagination: {
-          ...tripPagination,
-          currentPage: 1,
-          hasMore: true,
-          isLoadingMore: false,
-          totalLoaded: 0,
-          totalCount: 0,
-        }
       });
     } else {
-      set({
-        tripPagination: {
-          ...tripPagination,
-          isLoadingMore: true
-        }
-      });
+      // For initial load
+      if (tripTransactions.length === 0) {
+        console.log('🔄 [CARD STORE] Initial trip history load - setting isLoading: true');
+        set({ isLoading: true, error: null });
+      } else {
+        // For pagination (loading more)
+        console.log('🔄 [CARD STORE] Loading more trip history - setting isLoadingMore: true');
+        set({
+          tripPagination: {
+            ...tripPagination,
+            isLoadingMore: true
+          }
+        });
+      }
     }
 
     try {
@@ -145,10 +147,19 @@ export const useCardStore = create<CardState>((set, get) => ({
       const newTransactions = response.data || [];
       const totalCount = response.rowCount || 0;
       const hasMore = newTransactions.length === 10;
-      const currentTotal = reset ? newTransactions.length : tripPagination.totalLoaded + newTransactions.length;
+      const isInitialLoad = tripTransactions.length === 0 && !reset;
+      const currentTotal = reset || isInitialLoad ? newTransactions.length : tripPagination.totalLoaded + newTransactions.length;
+
+      console.log('✅ [CARD STORE] Trip history loaded:', {
+        newTransactions: newTransactions.length,
+        isInitialLoad,
+        reset,
+        currentTotal,
+        hasMore
+      });
 
       set({
-        tripTransactions: reset ? newTransactions : [...tripTransactions, ...newTransactions],
+        tripTransactions: reset || isInitialLoad ? newTransactions : [...tripTransactions, ...newTransactions],
         tripPage: pageToLoad,
         tripHasMore: hasMore,
         tripPagination: {
@@ -159,11 +170,13 @@ export const useCardStore = create<CardState>((set, get) => ({
           totalLoaded: currentTotal,
           totalCount
         },
-        isLoading: false
+        isLoading: false,
+        isRefreshing: false
       });
     } catch (error: any) {
       set({
         isLoading: false,
+        isRefreshing: false,
         error: formatError(error),
         tripPagination: {
           ...get().tripPagination,
@@ -178,28 +191,24 @@ export const useCardStore = create<CardState>((set, get) => ({
     const { rechargeTransactions, rechargePage, rechargePagination } = get();
 
     if (reset) {
+      // For pull-to-refresh, use isRefreshing instead of clearing data immediately
       set({
-        isLoading: true,
+        isRefreshing: true,
         error: null,
-        rechargePage: 1,
-        rechargeHasMore: true,
-        rechargeTransactions: [],
-        rechargePagination: {
-          ...rechargePagination,
-          currentPage: 1,
-          hasMore: true,
-          isLoadingMore: false,
-          totalLoaded: 0,
-          totalCount: 0,
-        }
       });
     } else {
-      set({
-        rechargePagination: {
-          ...rechargePagination,
-          isLoadingMore: true
-        }
-      });
+      // For initial load
+      if (rechargeTransactions.length === 0) {
+        set({ isLoading: true, error: null });
+      } else {
+        // For pagination (loading more)
+        set({
+          rechargePagination: {
+            ...rechargePagination,
+            isLoadingMore: true
+          }
+        });
+      }
     }
 
     try {
@@ -218,10 +227,11 @@ export const useCardStore = create<CardState>((set, get) => ({
       const newTransactions = response.data || [];
       const totalCount = response.rowCount || 0;
       const hasMore = newTransactions.length === 10;
-      const currentTotal = reset ? newTransactions.length : rechargePagination.totalLoaded + newTransactions.length;
+      const isInitialLoad = rechargeTransactions.length === 0 && !reset;
+      const currentTotal = reset || isInitialLoad ? newTransactions.length : rechargePagination.totalLoaded + newTransactions.length;
 
       set({
-        rechargeTransactions: reset ? newTransactions : [...rechargeTransactions, ...newTransactions],
+        rechargeTransactions: reset || isInitialLoad ? newTransactions : [...rechargeTransactions, ...newTransactions],
         rechargePage: pageToLoad,
         rechargeHasMore: hasMore,
         rechargePagination: {
@@ -232,11 +242,13 @@ export const useCardStore = create<CardState>((set, get) => ({
           totalLoaded: currentTotal,
           totalCount
         },
-        isLoading: false
+        isLoading: false,
+        isRefreshing: false
       });
     } catch (error: any) {
       set({
         isLoading: false,
+        isRefreshing: false,
         error: formatError(error),
         rechargePagination: {
           ...get().rechargePagination,
