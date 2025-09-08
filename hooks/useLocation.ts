@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { useCallback, useState } from 'react';
 import { Platform } from 'react-native';
+import { debugLocation } from '../utils/debugLocation';
 
 interface UseLocationParams {
   onLocationSuccess?: (location: { latitude: number; longitude: number }) => void;
@@ -74,10 +75,14 @@ export const useLocation = ({
   const getUserLocation = useCallback(async (): Promise<void> => {
     try {
       setGettingLocation(true);
+      debugLocation.log('Starting location request...');
       
       // Check if location services are enabled first (especially important for iOS)
       const servicesEnabled = await Location.hasServicesEnabledAsync();
+      debugLocation.log('Location services enabled:', servicesEnabled);
+      
       if (!servicesEnabled) {
+        debugLocation.error('Location services disabled');
         onLocationError?.(
           Platform.OS === 'ios' 
             ? 'Please enable Location Services in Settings > Privacy & Security > Location Services'
@@ -89,16 +94,21 @@ export const useLocation = ({
       // Check permission first
       let permissionStatus = locationPermission;
       if (!permissionStatus) {
+        debugLocation.log('Checking location permission...');
         permissionStatus = await checkLocationPermission();
       }
       
+      debugLocation.log('Current permission status:', permissionStatus);
+      
       // Request permission if not granted
       if (permissionStatus !== Location.PermissionStatus.GRANTED) {
+        debugLocation.log('Requesting location permission...');
         permissionStatus = await requestLocationPermission();
       }
       
       // If permission still not granted, show platform-specific error
       if (permissionStatus !== Location.PermissionStatus.GRANTED) {
+        debugLocation.error('Permission denied after request:', permissionStatus);
         if (Platform.OS === 'ios') {
           if (permissionStatus === Location.PermissionStatus.DENIED) {
             onLocationError?.(
@@ -117,22 +127,53 @@ export const useLocation = ({
       
       // Get current location with enhanced settings for iOS
       onLocationInfo?.('Getting your location...');
+      debugLocation.log('Getting current position with options...');
       
-      const locationOptions: Location.LocationOptions = {
-        accuracy: Platform.OS === 'ios' ? Location.Accuracy.BestForNavigation : Location.Accuracy.High,
-        timeInterval: Platform.OS === 'ios' ? 1000 : 5000,
-        distanceInterval: Platform.OS === 'ios' ? 0 : 10,
-      };
-      
-      const location = await Location.getCurrentPositionAsync(locationOptions);
+      let location;
+      if (Platform.OS === 'ios') {
+        // Try with high accuracy first, fallback to balanced if needed
+        try {
+          const highAccuracyOptions: Location.LocationOptions = {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 2000,
+            distanceInterval: 5,
+          };
+          
+          debugLocation.log('Trying high accuracy location options:', highAccuracyOptions);
+          location = await Location.getCurrentPositionAsync(highAccuracyOptions);
+        } catch (highAccuracyError) {
+          debugLocation.warn('High accuracy failed, trying balanced:', highAccuracyError);
+          
+          const balancedOptions: Location.LocationOptions = {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 3000,
+            distanceInterval: 10,
+          };
+          
+          debugLocation.log('Trying balanced accuracy location options:', balancedOptions);
+          location = await Location.getCurrentPositionAsync(balancedOptions);
+        }
+      } else {
+        const locationOptions: Location.LocationOptions = {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 5000,
+          distanceInterval: 10,
+        };
+        
+        debugLocation.log('Android location options:', locationOptions);
+        location = await Location.getCurrentPositionAsync(locationOptions);
+      }
       
       const { latitude, longitude } = location.coords;
       const newLocation = { latitude, longitude };
+      debugLocation.log('Got location successfully:', newLocation);
+      
       setUserLocation(newLocation);
       
       onLocationSuccess?.(newLocation);
       
     } catch (error: any) {
+      debugLocation.error('Error getting location:', error);
       console.error('Error getting location:', error);
       
       // Handle iOS-specific location errors
@@ -162,6 +203,7 @@ export const useLocation = ({
       }
     } finally {
       setGettingLocation(false);
+      debugLocation.log('Location request completed');
     }
   }, [
     locationPermission,

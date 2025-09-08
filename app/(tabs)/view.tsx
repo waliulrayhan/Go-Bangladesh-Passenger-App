@@ -2,14 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    BackHandler,
-    Platform,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  BackHandler,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { WebView } from "react-native-webview";
 
@@ -21,6 +21,7 @@ import { ApiResponse, apiService } from "../../services/api";
 import { useAuthStore } from "../../stores/authStore";
 import { BusInfo } from "../../types";
 import { COLORS } from "../../utils/constants";
+import { debugLocation } from "../../utils/debugLocation";
 import { FONT_SIZES, FONT_WEIGHTS } from "../../utils/fonts";
 import { generateMapHTML } from "./map/mapHTML";
 
@@ -60,13 +61,37 @@ export default function MapViewScreen() {
       const userName = user?.name || "You";
       showSuccess("Your location has been added to the map");
       setMapState((prev) => ({ ...prev, userInteractedWithMap: false })); // Reset to allow centering
+      
+      // Enhanced iOS handling for location success
       if (mapState.mapLoaded && webViewRef.current) {
-        addUserLocationToMap(
-          location.latitude,
-          location.longitude,
-          userName,
-          false
-        );
+        if (Platform.OS === 'ios') {
+          // Add multiple attempts for iOS with increasing delays
+          let attempts = 0;
+          const maxAttempts = 3;
+          const tryAddLocation = () => {
+            attempts++;
+            addUserLocationToMap(
+              location.latitude,
+              location.longitude,
+              userName,
+              false
+            );
+            
+            // Retry if needed
+            if (attempts < maxAttempts) {
+              setTimeout(tryAddLocation, 300 * attempts);
+            }
+          };
+          
+          setTimeout(tryAddLocation, 100);
+        } else {
+          addUserLocationToMap(
+            location.latitude,
+            location.longitude,
+            userName,
+            false
+          );
+        }
       }
     },
     onLocationError: (error) => {
@@ -236,7 +261,12 @@ export default function MapViewScreen() {
     username: string = user?.name || "You",
     focusOnly: boolean = false
   ) => {
-    if (!webViewRef.current) return;
+    if (!webViewRef.current) {
+      debugLocation.warn('WebView ref not available for addUserLocationToMap');
+      return;
+    }
+
+    debugLocation.log(`Adding user location to map: ${latitude}, ${longitude}, ${username}, focus: ${focusOnly}`);
 
     const profilePhotoUrl = constructProfilePhotoUrl(
       user?.profileImage || user?.imageUrl
@@ -245,14 +275,32 @@ export default function MapViewScreen() {
       profilePhotoUrl?.replace(/"/g, '\\"').replace(/'/g, "\\'") || null;
 
     const locationScript = `
-      if (typeof addUserLocation === 'function') {
-        addUserLocation(${latitude}, ${longitude}, "${username}", ${focusOnly}, ${
+      try {
+        if (typeof addUserLocation === 'function') {
+          addUserLocation(${latitude}, ${longitude}, "${username}", ${focusOnly}, ${
       escapedProfilePhotoUrl ? `"${escapedProfilePhotoUrl}"` : "null"
     });
+        } else {
+          console.log('addUserLocation function not available yet');
+        }
+      } catch (error) {
+        console.error('Error adding user location:', error);
       }
       true;
     `;
-    webViewRef.current.postMessage(locationScript);
+    
+    debugLocation.log('Sending location script to WebView:', locationScript);
+    
+    // For iOS, add a small delay to ensure WebView is ready
+    if (Platform.OS === 'ios') {
+      setTimeout(() => {
+        debugLocation.log('Posting message to WebView (iOS delayed)');
+        webViewRef.current?.postMessage(locationScript);
+      }, 100);
+    } else {
+      debugLocation.log('Posting message to WebView (Android immediate)');
+      webViewRef.current.postMessage(locationScript);
+    }
   };
 
   const fitAllMarkersInView = () => {
@@ -302,27 +350,48 @@ export default function MapViewScreen() {
       case "USER_INTERACTION":
         setMapState((prev) => ({ ...prev, userInteractedWithMap: true }));
         break;
+      case "USER_LOCATION_ADDED":
+        console.log("User location added successfully to map");
+        break;
+      case "USER_LOCATION_ERROR":
+        console.error("Error adding user location to map");
+        showError("Failed to display your location on the map");
+        break;
     }
   };
 
   const handleMapReady = () => {
     setMapState((prev) => ({ ...prev, mapLoaded: true }));
 
-    // Add user location if available
+    // Add user location if available with iOS-specific handling
     if (userLocation && webViewRef.current) {
       const userName = user?.name || "You";
-      addUserLocationToMap(
-        userLocation.latitude,
-        userLocation.longitude,
-        userName,
-        false
-      );
+      
+      // For iOS, add additional delay and retry logic
+      if (Platform.OS === 'ios') {
+        setTimeout(() => {
+          addUserLocationToMap(
+            userLocation.latitude,
+            userLocation.longitude,
+            userName,
+            false
+          );
+        }, 200);
+      } else {
+        addUserLocationToMap(
+          userLocation.latitude,
+          userLocation.longitude,
+          userName,
+          false
+        );
+      }
     }
   };
 
   const handleMyLocationPress = () => {
     const userName = user?.name || "You";
-    if (userLocation) {
+    
+    if (userLocation && mapState.mapLoaded) {
       // Focus only on user location if we already have it
       addUserLocationToMap(
         userLocation.latitude,
@@ -404,6 +473,19 @@ export default function MapViewScreen() {
         scalesPageToFit={true}
         allowsInlineMediaPlayback={true}
         mediaPlaybackRequiresUserAction={false}
+        // iOS-specific props for better compatibility
+        allowsFullscreenVideo={false}
+        bounces={false}
+        scrollEnabled={false}
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+        // Enhanced iOS settings
+        {...(Platform.OS === 'ios' && {
+          allowsBackForwardNavigationGestures: false,
+          automaticallyAdjustContentInsets: false,
+          contentInsetAdjustmentBehavior: 'never',
+          decelerationRate: 'normal',
+        })}
       />
     );
   };

@@ -21,7 +21,10 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "This app needs access to location to show your current position on the map and help you find nearby buses.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to location to show your current position on the map and help you find nearby buses."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to location to show your current position on the map and help you find nearby buses.",
+        "NSLocationTemporaryUsageDescriptionDictionary": {
+          "MapLocation": "This app needs location access to show your position on the map."
+        }
       }
     },
     "android": {

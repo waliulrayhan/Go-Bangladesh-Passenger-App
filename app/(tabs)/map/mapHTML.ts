@@ -507,48 +507,72 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
   
   // Add user location to map
   function addUserLocation(latitude, longitude, username = '${userName}', focusOnly = false, profilePhotoUrl = ${escapedProfilePhoto ? `'${escapedProfilePhoto}'` : 'null'}) {
-    // Remove existing user location marker
-    if (userLocationMarker) {
-      map.removeLayer(userLocationMarker);
-    }
-    
-    // Add new user location marker
-    userLocationMarker = L.marker([latitude, longitude], { 
-      icon: createUserLocationIcon(username, profilePhotoUrl) 
-    })
-      // .bindPopup(
-      //   '<div class="bus-popup">' +
-      //     '<div class="bus-popup-header">' +
-      //       '<span class="bus-popup-icon">📍</span>' +
-      //       '<h3>' + username + '</h3>' +
-      //     '</div>' +
-      //     '<div class="bus-popup-info">' +
-      //       '<span class="bus-popup-label">Coordinates</span>' +
-      //       '<span class="bus-popup-value">' + latitude.toFixed(6) + ', ' + longitude.toFixed(6) + '</span>' +
-      //     '</div>' +
-      //     '<div class="bus-popup-footer">' +
-      //       '<div class="bus-popup-live">' +
-      //         '<div class="live-dot"></div>' +
-      //         'Current Location' +
-      //       '</div>' +
-      //     '</div>' +
-      //   '</div>',
-      //   {
-      //     maxWidth: 300,
-      //     className: 'custom-popup'
-      //   }
-      // )
-      .addTo(map);
-    
-    if (focusOnly) {
-      // Focus only on user location
-      map.setView([latitude, longitude], Math.max(map.getZoom(), 16), {
-        animate: true,
-        duration: 1.0
-      });
-    } else {
-      // Include everything in view (user location + buses)
-      fitAllMarkersInView();
+    try {
+      console.log('Adding user location:', latitude, longitude, username);
+      
+      // Validate coordinates
+      if (isNaN(latitude) || isNaN(longitude)) {
+        console.error('Invalid coordinates:', latitude, longitude);
+        return;
+      }
+      
+      // Remove existing user location marker
+      if (userLocationMarker) {
+        map.removeLayer(userLocationMarker);
+        userLocationMarker = null;
+      }
+      
+      // Add new user location marker
+      userLocationMarker = L.marker([latitude, longitude], { 
+        icon: createUserLocationIcon(username, profilePhotoUrl) 
+      })
+        // .bindPopup(
+        //   '<div class="bus-popup">' +
+        //     '<div class="bus-popup-header">' +
+        //       '<span class="bus-popup-icon">📍</span>' +
+        //       '<h3>' + username + '</h3>' +
+        //     '</div>' +
+        //     '<div class="bus-popup-info">' +
+        //       '<span class="bus-popup-label">Coordinates</span>' +
+        //       '<span class="bus-popup-value">' + latitude.toFixed(6) + ', ' + longitude.toFixed(6) + '</span>' +
+        //     '</div>' +
+        //     '<div class="bus-popup-footer">' +
+        //       '<div class="bus-popup-live">' +
+        //         '<div class="live-dot"></div>' +
+        //         'Current Location' +
+        //       '</div>' +
+        //     '</div>' +
+        //   '</div>',
+        //   {
+        //     maxWidth: 300,
+        //     className: 'custom-popup'
+        //   }
+        // )
+        .addTo(map);
+      
+      console.log('User location marker added successfully');
+      
+      if (focusOnly) {
+        // Focus only on user location
+        map.setView([latitude, longitude], Math.max(map.getZoom(), 16), {
+          animate: true,
+          duration: 1.0
+        });
+      } else {
+        // Include everything in view (user location + buses)
+        fitAllMarkersInView();
+      }
+      
+      // Send confirmation back to React Native
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage('USER_LOCATION_ADDED');
+      }
+      
+    } catch (error) {
+      console.error('Error adding user location:', error);
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage('USER_LOCATION_ERROR');
+      }
     }
   }
   
@@ -666,7 +690,25 @@ const getMapScript = (buses: BusInfo[], centerLat: number, centerLng: number, us
     }
   });
   
+  // iOS-specific message handling
+  if (window.ReactNativeWebView) {
+    window.addEventListener('message', function(event) {
+      try {
+        eval(event.data);
+      } catch (e) {
+        console.error('Error executing iOS script:', e);
+      }
+    });
+  }
+  
   // Initialize when page loads
   document.addEventListener('DOMContentLoaded', initMap);
+  
+  // Fallback initialization for iOS
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMap);
+  } else {
+    initMap();
+  }
 `;
 };
