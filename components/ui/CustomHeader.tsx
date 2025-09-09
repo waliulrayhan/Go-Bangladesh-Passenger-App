@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
-import { Animated, Image, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Animated, Image, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_BASE_URL, COLORS } from "../../utils/constants";
 import { logger } from "../../utils/logger";
 import { GoBangladeshLogo } from "../GoBangladeshLogo";
@@ -23,6 +24,18 @@ export const CustomHeader: React.FC<CustomHeaderProps> = React.memo(({
   user,
   onProfilePress,
 }) => {
+  const insets = useSafeAreaInsets();
+  
+  // Calculate proper padding for status bar on iOS
+  const getStatusBarHeight = () => {
+    if (Platform.OS === 'ios') {
+      // Use safe area insets if available, fallback to estimated status bar height
+      const statusBarHeight = insets.top > 0 ? insets.top : 44; // 44 is typical iOS status bar height
+      return statusBarHeight;
+    }
+    return 0; // Android handles this via system UI
+  };
+
   // Input validation and sanitization
   const sanitizedTitle = useMemo(() => {
     try {
@@ -41,7 +54,7 @@ export const CustomHeader: React.FC<CustomHeaderProps> = React.memo(({
     }
   }, [subtitle]);
   return (
-    <View style={styles.headerContainer}>
+    <View style={[styles.headerContainer, { paddingTop: getStatusBarHeight() + 12 }]}>
       <View style={styles.leftSection}>
         <Animated.View style={styles.logoContainer}>
           <View style={styles.bubbleBackground}>
@@ -97,7 +110,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     backgroundColor: COLORS.brand.blue,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12, // Only bottom padding, top padding handled dynamically
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",

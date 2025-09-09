@@ -104,6 +104,9 @@ export default function TabsLayout() {
           options={{
             header: renderCustomHeader,
             headerShown: true,
+            headerStyle: {
+              backgroundColor: COLORS.brand.blue,
+            },
             tabBarLabel: "Home",
             tabBarIcon: ({ color, size, focused }) => (
               <Ionicons

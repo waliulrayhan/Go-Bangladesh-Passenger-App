@@ -31,6 +31,7 @@
         "ITSAppUsesNonExemptEncryption": false,
         "UIStatusBarStyle": "UIStatusBarStyleLightContent",
         "UIViewControllerBasedStatusBarAppearance": false,
+        "UIStatusBarHidden": false,
         "NSLocationWhenInUseUsageDescription": "This app needs access to location to show your current position on the map and help you find nearby buses.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to location to show your current position on the map and help you find nearby buses.",
         "NSLocationTemporaryUsageDescriptionDictionary": {

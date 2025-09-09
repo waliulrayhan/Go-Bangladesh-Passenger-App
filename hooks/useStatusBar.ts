@@ -29,8 +29,10 @@ export const useStatusBar = ({
       StatusBar.setBarStyle(barStyle, true);
       StatusBar.setTranslucent(translucent);
     } else {
-      // iOS specific configuration - always light content for primary blue
+      // iOS specific configuration - be more aggressive to ensure visibility
       StatusBar.setBarStyle(barStyle, true);
+      // Ensure status bar is never hidden on iOS
+      StatusBar.setHidden(false, 'none');
     }
     StatusBar.setHidden(hidden, 'fade');
   }, [backgroundColor, barStyle, translucent, hidden]);

@@ -133,7 +133,7 @@ const adjustTimeForTimezone = (dateString: string): Date => {
  * Displays RFID card, trip status, balance, and recent activity
  */
 export default function Dashboard() {
-  // Status bar configuration for consistent appearance
+  // Status bar configuration for consistent appearance - critical for iOS custom header
   useStatusBar({
     backgroundColor: COLORS.brand.blue,
     barStyle: 'light-content',

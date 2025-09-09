@@ -3,6 +3,7 @@ import { Slot, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { Platform, StatusBar, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useTokenExpirationCheck } from "../hooks/useTokenExpirationCheck";
 import { useAuthStore } from "../stores/authStore";
 import { COLORS } from "../utils/constants";
@@ -92,7 +93,15 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <SafeAreaProvider>
+      {/* Ensure status bar is always visible with proper styling */}
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.brand.blue}
+        translucent={false}
+        hidden={false}
+      />
+      
       {/* Show welcome screen overlay if user is logged out but still in tabs */}
       {!isAuthenticated && segments[0] === "(tabs)" && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}>
@@ -100,6 +109,6 @@ export default function RootLayout() {
         </View>
       )}
       <Slot />
-    </>
+    </SafeAreaProvider>
   );
 }
