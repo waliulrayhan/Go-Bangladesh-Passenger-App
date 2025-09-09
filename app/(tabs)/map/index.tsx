@@ -1,15 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 import { DropdownSkeleton } from "../../../components/Skeleton";
@@ -97,9 +97,31 @@ export default function MapScreen() {
     }
   }, []);
 
+  // Clear form function
+  const clearForm = useCallback(() => {
+    setOrganizationDropdown({
+      isOpen: false,
+      selectedValue: null,
+      selectedLabel: null,
+    });
+    setRouteDropdown({
+      isOpen: false,
+      selectedValue: null,
+      selectedLabel: null,
+    });
+    setRoutes([]);
+  }, []);
+
   useEffect(() => {
     initializeUserData();
   }, [initializeUserData]);
+
+  // Clear form when navigating back to this page
+  useFocusEffect(
+    useCallback(() => {
+      clearForm();
+    }, [clearForm])
+  );
 
   // Filter organizations based on user type
   const filterOrganizations = useCallback(
