@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
     right: 15,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "stretch",
     gap: 10,
   },
   zoomControlPlaceholder: {
@@ -688,6 +688,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     padding: 4,
     gap: 2,
+    justifyContent: "center",
   },
   zoomButton: {
     width: 18,
@@ -700,7 +701,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(255, 255, 255, 1)",
     paddingHorizontal: 12,
-    paddingBottom: 4,
+    paddingBottom: 5,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: "rgba(0,0,0,0.1)",
@@ -710,7 +711,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     gap: 6,
-    minHeight: 30,
+    justifyContent: "center",
   },
   infoCardContent: {
     alignItems: "center",
