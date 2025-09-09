@@ -557,7 +557,7 @@ export default function Profile() {
             // Check if user has negative balance
             const currentBalance = user?.balance || 0;
             if (currentBalance < 0) {
-              showToast('Your account currently has a negative balance. Please recharge before deleting your account.', 'error');
+              showToast('Your account currently has a negative balance. Please recharge before deleting your account.', 'warning');
               return;
             }
             setShowDeleteAccountModal(true);
@@ -782,7 +782,7 @@ export default function Profile() {
           message={toast.message}
           type={toast.type}
           position="bottom"
-          duration={toast.type === 'error' ? 4000 : 1000}
+          duration={toast.type === 'warning' ? 4000 : 1000}
           onHide={hideToast}
         />
       )}
