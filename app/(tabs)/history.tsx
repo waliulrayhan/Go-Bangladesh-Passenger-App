@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 // Custom components and utilities
@@ -150,6 +151,9 @@ type HistoryTab = "trips" | "recharge";
  * with filtering, searching, and pagination capabilities
  */
 export default function History() {
+  // Get safe area insets for consistent layout across iOS
+  const insets = useSafeAreaInsets();
+  
   // Selective store subscriptions to prevent unnecessary re-renders
   const tripTransactions = useCardStore((state) => state.tripTransactions);
   const rechargeTransactions = useCardStore(
@@ -179,6 +183,7 @@ export default function History() {
   // Component state management
   const [activeTab, setActiveTab] = useState<HistoryTab>("trips");
   const [searchQuery, setSearchQuery] = useState("");
+  const [layoutReady, setLayoutReady] = useState(false);
 
   // Filter and sort data whenever dependencies change
   // Using useMemo to prevent unnecessary recalculations
@@ -245,6 +250,10 @@ export default function History() {
   useFocusEffect(
     useCallback(() => {
       if (isAuthenticated) {
+        // Force layout recalculation on focus to prevent iOS gaps
+        setLayoutReady(false);
+        setTimeout(() => setLayoutReady(true), 50);
+        
         // Use the unified load function for better state management
         loadAllHistory(true);
       }
@@ -749,7 +758,14 @@ export default function History() {
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: insets.bottom + 20 }
+        ]}
+        removeClippedSubviews={false} // Prevents layout issues on iOS
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={10}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -838,7 +854,7 @@ export default function History() {
   // Main component render
   return (
     <>
-      <SafeAreaView style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.content}>
           {/* Header Section */}
           <View style={styles.headerSection}>
@@ -966,13 +982,18 @@ export default function History() {
             )}
 
           {/* Tab Content */}
-          {(!isLoading ||
+          {layoutReady && 
+           (!isLoading ||
             tripTransactions.length > 0 ||
             rechargeTransactions.length > 0 ||
             isRefreshing) && (
             <Animated.View
+              key={`${activeTab}-${layoutReady}`} // Force re-render on tab/layout changes
               entering={FadeInDown.duration(600)}
               style={styles.tabContent}
+              onLayout={() => {
+                // Ensure content is properly positioned
+              }}
             >
               {renderTabContent()}
             </Animated.View>
@@ -987,7 +1008,7 @@ export default function History() {
           position="bottom"
           onHide={hideToast}
         />
-      </SafeAreaView>
+      </View>
     </>
   );
 }
@@ -1009,9 +1030,13 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray[100],
+    // Ensure consistent top positioning
+    paddingTop: 0,
   },
   listContent: {
     paddingBottom: 20,
+    // Ensure consistent spacing from header
+    paddingTop: 0,
   },
 
   // Tab navigation styles
@@ -1045,6 +1070,8 @@ const styles = StyleSheet.create({
   tabContent: {
     flex: 1,
     paddingHorizontal: 16,
+    // Ensure consistent positioning
+    marginTop: 0,
   },
 
   // Search and filter styles
