@@ -238,7 +238,6 @@ export default function History() {
       return bDate.getTime() - aDate.getTime();
     });
 
-    console.log("📊 [HISTORY COMPONENT] Filtered data:", data.length);
     return data;
   }, [tripTransactions, rechargeTransactions, activeTab, searchQuery]);
 
@@ -246,13 +245,20 @@ export default function History() {
 
   // Load data when component mounts and user is authenticated
   useEffect(() => {
-    console.log('🔄 [HISTORY COMPONENT] useEffect triggered - isAuthenticated:', isAuthenticated);
     if (isAuthenticated) {
-      console.log('🔄 [HISTORY COMPONENT] Loading initial data...');
-      loadTripHistory(1, false); // Changed from true to false for initial load
-      loadRechargeHistory(1, false); // Changed from true to false for initial load
+      // For initial load, use reset=true to ensure fresh data but the store will handle loading state correctly
+      loadTripHistory(1, true);
+      loadRechargeHistory(1, true);
     }
   }, [isAuthenticated, loadTripHistory, loadRechargeHistory]);
+
+  // Fallback effect to ensure data is loaded if user is already authenticated but data is empty
+  useEffect(() => {
+    if (isAuthenticated && tripTransactions.length === 0 && rechargeTransactions.length === 0 && !isLoading && !isRefreshing) {
+      loadTripHistory(1, true);
+      loadRechargeHistory(1, true);
+    }
+  }, [isAuthenticated, tripTransactions.length, rechargeTransactions.length, isLoading, isRefreshing, loadTripHistory, loadRechargeHistory]);
 
   // Event handlers
 
@@ -678,39 +684,37 @@ export default function History() {
                 color={COLORS.gray[400]}
               />
             </TouchableOpacity>
-            <View style={styles.dateTimeContainer}>
-              <View style={styles.dateItem}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={14}
-                  color={COLORS.gray[500]}
-                />
-                <Text
-                  variant="bodySmall"
-                  color={COLORS.gray[600]}
-                  style={styles.detailText}
-                >
-                  {item.createTime
-                    ? formatDate(new Date(item.createTime))
-                    : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
-                </Text>
-              </View>
-              <View style={styles.TimeItem}>
-                <Ionicons
-                  name="time-outline"
-                  size={14}
-                  color={COLORS.gray[500]}
-                />
-                <Text
-                  variant="bodySmall"
-                  color={COLORS.gray[600]}
-                  style={styles.detailText}
-                >
-                  {item.createTime
-                    ? TimeFormatter.forHistory(item.createTime)
-                    : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
-                </Text>
-              </View>
+            <View style={styles.dateItem}>
+              <Ionicons
+                name="calendar-outline"
+                size={14}
+                color={COLORS.gray[500]}
+              />
+              <Text
+                variant="bodySmall"
+                color={COLORS.gray[600]}
+                style={styles.detailText}
+              >
+                {item.createTime
+                  ? formatDate(new Date(item.createTime))
+                  : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
+              </Text>
+            </View>
+            <View style={styles.TimeItem}>
+              <Ionicons
+                name="time-outline"
+                size={14}
+                color={COLORS.gray[500]}
+              />
+              <Text
+                variant="bodySmall"
+                color={COLORS.gray[600]}
+                style={styles.detailText}
+              >
+                {item.createTime
+                  ? TimeFormatter.forHistory(item.createTime)
+                  : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
+              </Text>
             </View>
           </View>
         </View>
@@ -1262,6 +1266,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    flex: 1,
     // marginTop: 4,
   },
   dateTimeContainer: {
@@ -1273,18 +1278,18 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   dateItem: {
-    paddingLeft: 4,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     flex: 1,
+    justifyContent: "center",
   },
   TimeItem: {
-    paddingLeft: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     flex: 1,
+    justifyContent: "flex-end",
   },
   detailText: {
     // Font properties handled by Text component

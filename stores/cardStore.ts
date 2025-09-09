@@ -106,22 +106,25 @@ export const useCardStore = create<CardState>((set, get) => ({
   loadTripHistory: async (pageNo = 1, reset = false) => {
     const { tripTransactions, tripPage, tripPagination } = get();
 
-    console.log('🔄 [CARD STORE] Loading trip history - pageNo:', pageNo, 'reset:', reset, 'existing data:', tripTransactions.length);
-
     if (reset) {
-      // For pull-to-refresh, use isRefreshing instead of clearing data immediately
-      set({
-        isRefreshing: true,
-        error: null,
-      });
+      // For pull-to-refresh with existing data, use isRefreshing
+      if (tripTransactions.length > 0) {
+        set({
+          isRefreshing: true,
+          error: null,
+        });
+      } else {
+        // For initial load (even with reset=true), use isLoading
+        set({
+          isLoading: true,
+          error: null,
+        });
+      }
     } else {
-      // For initial load
+      // For pagination
       if (tripTransactions.length === 0) {
-        console.log('🔄 [CARD STORE] Initial trip history load - setting isLoading: true');
         set({ isLoading: true, error: null });
       } else {
-        // For pagination (loading more)
-        console.log('🔄 [CARD STORE] Loading more trip history - setting isLoadingMore: true');
         set({
           tripPagination: {
             ...tripPagination,
@@ -147,19 +150,10 @@ export const useCardStore = create<CardState>((set, get) => ({
       const newTransactions = response.data || [];
       const totalCount = response.rowCount || 0;
       const hasMore = newTransactions.length === 10;
-      const isInitialLoad = tripTransactions.length === 0 && !reset;
-      const currentTotal = reset || isInitialLoad ? newTransactions.length : tripPagination.totalLoaded + newTransactions.length;
-
-      console.log('✅ [CARD STORE] Trip history loaded:', {
-        newTransactions: newTransactions.length,
-        isInitialLoad,
-        reset,
-        currentTotal,
-        hasMore
-      });
+      const currentTotal = reset ? newTransactions.length : tripPagination.totalLoaded + newTransactions.length;
 
       set({
-        tripTransactions: reset || isInitialLoad ? newTransactions : [...tripTransactions, ...newTransactions],
+        tripTransactions: reset ? newTransactions : [...tripTransactions, ...newTransactions],
         tripPage: pageToLoad,
         tripHasMore: hasMore,
         tripPagination: {
@@ -191,17 +185,24 @@ export const useCardStore = create<CardState>((set, get) => ({
     const { rechargeTransactions, rechargePage, rechargePagination } = get();
 
     if (reset) {
-      // For pull-to-refresh, use isRefreshing instead of clearing data immediately
-      set({
-        isRefreshing: true,
-        error: null,
-      });
+      // For pull-to-refresh with existing data, use isRefreshing
+      if (rechargeTransactions.length > 0) {
+        set({
+          isRefreshing: true,
+          error: null,
+        });
+      } else {
+        // For initial load (even with reset=true), use isLoading
+        set({
+          isLoading: true,
+          error: null,
+        });
+      }
     } else {
-      // For initial load
+      // For pagination
       if (rechargeTransactions.length === 0) {
         set({ isLoading: true, error: null });
       } else {
-        // For pagination (loading more)
         set({
           rechargePagination: {
             ...rechargePagination,
@@ -227,11 +228,10 @@ export const useCardStore = create<CardState>((set, get) => ({
       const newTransactions = response.data || [];
       const totalCount = response.rowCount || 0;
       const hasMore = newTransactions.length === 10;
-      const isInitialLoad = rechargeTransactions.length === 0 && !reset;
-      const currentTotal = reset || isInitialLoad ? newTransactions.length : rechargePagination.totalLoaded + newTransactions.length;
+      const currentTotal = reset ? newTransactions.length : rechargePagination.totalLoaded + newTransactions.length;
 
       set({
-        rechargeTransactions: reset || isInitialLoad ? newTransactions : [...rechargeTransactions, ...newTransactions],
+        rechargeTransactions: reset ? newTransactions : [...rechargeTransactions, ...newTransactions],
         rechargePage: pageToLoad,
         rechargeHasMore: hasMore,
         rechargePagination: {
