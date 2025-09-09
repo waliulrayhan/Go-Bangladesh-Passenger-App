@@ -1,6 +1,7 @@
 // React Native and Expo imports
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Clipboard,
@@ -161,10 +162,7 @@ export default function History() {
   const error = useCardStore((state) => state.error);
 
   // Store actions (these are stable and won't cause re-renders)
-  const loadTripHistory = useCardStore((state) => state.loadTripHistory);
-  const loadRechargeHistory = useCardStore(
-    (state) => state.loadRechargeHistory
-  );
+  const loadAllHistory = useCardStore((state) => state.loadAllHistory);
   const loadMoreTripHistory = useCardStore(
     (state) => state.loadMoreTripHistory
   );
@@ -243,37 +241,26 @@ export default function History() {
 
   // Effects
 
-  // Load data when component mounts and user is authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      // For initial load, use reset=true to ensure fresh data but the store will handle loading state correctly
-      loadTripHistory(1, true);
-      loadRechargeHistory(1, true);
-    }
-  }, [isAuthenticated, loadTripHistory, loadRechargeHistory]);
-
-  // Fallback effect to ensure data is loaded if user is already authenticated but data is empty
-  useEffect(() => {
-    if (isAuthenticated && tripTransactions.length === 0 && rechargeTransactions.length === 0 && !isLoading && !isRefreshing) {
-      loadTripHistory(1, true);
-      loadRechargeHistory(1, true);
-    }
-  }, [isAuthenticated, tripTransactions.length, rechargeTransactions.length, isLoading, isRefreshing, loadTripHistory, loadRechargeHistory]);
+  // Load data when tab comes into focus and user is authenticated
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) {
+        // Use the unified load function for better state management
+        loadAllHistory(true);
+      }
+    }, [isAuthenticated, loadAllHistory])
+  );
 
   // Event handlers
 
   // Pull-to-refresh handler
   const onRefresh = useCallback(async () => {
     try {
-      await Promise.all([
-        loadTripHistory(1, true),
-        loadRechargeHistory(1, true)
-      ]);
+      await loadAllHistory(true);
     } catch (error) {
-      console.log("Refresh error:", error);
       showToast(UI_TEXTS.TOAST_MESSAGES.REFRESH_FAILED, "error");
     }
-  }, [loadTripHistory, loadRechargeHistory, showToast]);
+  }, [loadAllHistory, showToast]);
 
   // Handle tab switching
   const handleTabChange = (tab: HistoryTab) => {
@@ -291,7 +278,6 @@ export default function History() {
       try {
         await loadMoreFunction();
       } catch (error) {
-        console.log("Load more error:", error);
         showToast(UI_TEXTS.TOAST_MESSAGES.LOAD_MORE_FAILED, "error");
       }
     }
@@ -546,7 +532,17 @@ export default function History() {
               >
                 {UI_TEXTS.LABELS.TAP_IN_BY}
               </Text>
-              <View style={styles.tapInByButton}>
+              <View
+                style={[
+                  styles.tapInByButton,
+                  tapInType === "Card" && styles.tapCardButton,
+                  tapInType === "Time-Out" && styles.tapTimeOutButton,
+                  tapInType === "Staff" && styles.tapStaffButton,
+                  tapInType === "Session-Out" && styles.tapSessionOutButton,
+                  tapInType === "Mobile App" && styles.tapMobileAppButton,
+                  tapInType === "Penalty" && styles.tapPenaltyButton,
+                ]}
+              >
                 <Ionicons
                   name={getTapTypeIcon(tapInType || "")}
                   size={14}
@@ -571,7 +567,18 @@ export default function History() {
                 >
                   {UI_TEXTS.LABELS.TAP_OUT_BY}
                 </Text>
-                <View style={styles.tapOutByButton}>
+                <View
+                  style={[
+                    styles.tapOutByButton,
+                    tapOutStatus === "Card" && styles.tapCardButton,
+                    tapOutStatus === "Time-Out" && styles.tapTimeOutButton,
+                    tapOutStatus === "Staff" && styles.tapStaffButton,
+                    tapOutStatus === "Session-Out" &&
+                      styles.tapSessionOutButton,
+                    tapOutStatus === "Mobile App" && styles.tapMobileAppButton,
+                    tapOutStatus === "Penalty" && styles.tapPenaltyButton,
+                  ]}
+                >
                   <Ionicons
                     name={getTapTypeIcon(tapOutStatus || "")}
                     size={14}
@@ -737,6 +744,7 @@ export default function History() {
 
     return (
       <FlatList
+        key={activeTab} // This ensures independent scrolling for each tab
         data={filteredData}
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
@@ -831,145 +839,155 @@ export default function History() {
   return (
     <>
       <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Header Section */}
-        <View style={styles.headerSection}>
-          {/* Tab Headers */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === "trips" && styles.activeTab]}
-              onPress={() => handleTabChange("trips")}
-            >
-              <Ionicons
-                name="bus"
-                size={20}
-                color={activeTab === "trips" ? COLORS.white : COLORS.gray[600]}
-              />
-              <Text
-                variant="labelSmall"
-                color={activeTab === "trips" ? COLORS.white : COLORS.gray[600]}
-                style={styles.tabText}
-              >
-                {UI_TEXTS.TABS.TRIPS}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.tab, activeTab === "recharge" && styles.activeTab]}
-              onPress={() => handleTabChange("recharge")}
-            >
-              <Ionicons
-                name="card"
-                size={20}
-                color={
-                  activeTab === "recharge" ? COLORS.white : COLORS.gray[600]
-                }
-              />
-              <Text
-                variant="labelSmall"
-                color={
-                  activeTab === "recharge" ? COLORS.white : COLORS.gray[600]
-                }
-                style={styles.tabText}
-              >
-                {UI_TEXTS.TABS.WALLET}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
-            <View style={styles.searchInputContainer}>
-              <Ionicons name="search" size={20} color={COLORS.gray[500]} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder={
-                  activeTab === "trips"
-                    ? UI_TEXTS.SEARCH.TRIPS_PLACEHOLDER
-                    : UI_TEXTS.SEARCH.WALLET_PLACEHOLDER
-                }
-                placeholderTextColor={COLORS.gray[500]}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                clearButtonMode="while-editing"
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery("")}>
-                  <Ionicons
-                    name="close-circle"
-                    size={20}
-                    color={COLORS.gray[400]}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Error Display */}
-        {error && (
-          <Card style={{ margin: 16 }}>
-            <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle" size={48} color={COLORS.error} />
-              <Text variant="h6" color={COLORS.error} style={styles.errorText}>
-                {error}
-              </Text>
+        <View style={styles.content}>
+          {/* Header Section */}
+          <View style={styles.headerSection}>
+            {/* Tab Headers */}
+            <View style={styles.tabContainer}>
               <TouchableOpacity
-                style={styles.retryButton}
-                onPress={() => {
-                  loadTripHistory(1, true);
-                  loadRechargeHistory(1, true);
-                }}
+                style={[styles.tab, activeTab === "trips" && styles.activeTab]}
+                onPress={() => handleTabChange("trips")}
               >
-                <Text variant="labelSmall" color={COLORS.primary}>
-                  {UI_TEXTS.BUTTONS.RETRY}
+                <Ionicons
+                  name="bus"
+                  size={20}
+                  color={
+                    activeTab === "trips" ? COLORS.white : COLORS.gray[600]
+                  }
+                />
+                <Text
+                  variant="labelSmall"
+                  color={
+                    activeTab === "trips" ? COLORS.white : COLORS.gray[600]
+                  }
+                  style={styles.tabText}
+                >
+                  {UI_TEXTS.TABS.TRIPS}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.tab,
+                  activeTab === "recharge" && styles.activeTab,
+                ]}
+                onPress={() => handleTabChange("recharge")}
+              >
+                <Ionicons
+                  name="card"
+                  size={20}
+                  color={
+                    activeTab === "recharge" ? COLORS.white : COLORS.gray[600]
+                  }
+                />
+                <Text
+                  variant="labelSmall"
+                  color={
+                    activeTab === "recharge" ? COLORS.white : COLORS.gray[600]
+                  }
+                  style={styles.tabText}
+                >
+                  {UI_TEXTS.TABS.WALLET}
                 </Text>
               </TouchableOpacity>
             </View>
-          </Card>
-        )}
 
-        {/* Loading Indicator for Initial Load */}
-        {isLoading &&
-          tripTransactions.length === 0 &&
-          rechargeTransactions.length === 0 &&
-          !isRefreshing &&
-          !error && (
-            <View style={styles.initialLoading}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text
-                variant="body"
-                color={COLORS.gray[600]}
-                style={styles.loadingText}
-              >
-                {UI_TEXTS.LOADING_STATES.LOADING_HISTORY}
-              </Text>
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <View style={styles.searchInputContainer}>
+                <Ionicons name="search" size={20} color={COLORS.gray[500]} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder={
+                    activeTab === "trips"
+                      ? UI_TEXTS.SEARCH.TRIPS_PLACEHOLDER
+                      : UI_TEXTS.SEARCH.WALLET_PLACEHOLDER
+                  }
+                  placeholderTextColor={COLORS.gray[500]}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  clearButtonMode="while-editing"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery("")}>
+                    <Ionicons
+                      name="close-circle"
+                      size={20}
+                      color={COLORS.gray[400]}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
+          </View>
+
+          {/* Error Display */}
+          {error && (
+            <Card style={{ margin: 16 }}>
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={48} color={COLORS.error} />
+                <Text
+                  variant="h6"
+                  color={COLORS.error}
+                  style={styles.errorText}
+                >
+                  {error}
+                </Text>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={() => {
+                    loadAllHistory(true);
+                  }}
+                >
+                  <Text variant="labelSmall" color={COLORS.primary}>
+                    {UI_TEXTS.BUTTONS.RETRY}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </Card>
           )}
 
-        {/* Tab Content */}
-        {(!isLoading ||
-          tripTransactions.length > 0 ||
-          rechargeTransactions.length > 0 ||
-          isRefreshing) && (
-          <Animated.View
-            entering={FadeInDown.duration(600)}
-            style={styles.tabContent}
-          >
-            {renderTabContent()}
-          </Animated.View>
-        )}
-      </View>
+          {/* Loading Indicator for Initial Load */}
+          {isLoading &&
+            tripTransactions.length === 0 &&
+            rechargeTransactions.length === 0 &&
+            !isRefreshing &&
+            !error && (
+              <View style={styles.initialLoading}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text
+                  variant="body"
+                  color={COLORS.gray[600]}
+                  style={styles.loadingText}
+                >
+                  {UI_TEXTS.LOADING_STATES.LOADING_HISTORY}
+                </Text>
+              </View>
+            )}
 
-      {/* Toast notification */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        position="bottom"
-        onHide={hideToast}
-      />
-    </SafeAreaView>
+          {/* Tab Content */}
+          {(!isLoading ||
+            tripTransactions.length > 0 ||
+            rechargeTransactions.length > 0 ||
+            isRefreshing) && (
+            <Animated.View
+              entering={FadeInDown.duration(600)}
+              style={styles.tabContent}
+            >
+              {renderTabContent()}
+            </Animated.View>
+          )}
+        </View>
+
+        {/* Toast notification */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          position="bottom"
+          onHide={hideToast}
+        />
+      </SafeAreaView>
     </>
   );
 }
@@ -1130,7 +1148,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     // Font properties handled by Text component
   },
-    cardDateTrip: {
+  cardDateTrip: {
     // marginTop: 4,
     fontSize: 12,
     // Font properties handled by Text component
@@ -1361,5 +1379,30 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + "20",
     borderWidth: 1,
     borderColor: COLORS.primary,
+  },
+  // Tap type specific button styles
+  tapCardButton: {
+    backgroundColor: "#E3F2FD", // Light blue
+    borderColor: "#BBDEFB",
+  },
+  tapTimeOutButton: {
+    backgroundColor: "#FFF3E0", // Light orange
+    borderColor: "#FFCC02",
+  },
+  tapStaffButton: {
+    backgroundColor: "#E8F5E8", // Light green
+    borderColor: "#C8E6C9",
+  },
+  tapSessionOutButton: {
+    backgroundColor: "#FFEBEE", // Light red
+    borderColor: "#FFCDD2",
+  },
+  tapMobileAppButton: {
+    backgroundColor: "#F3E5F5", // Light purple
+    borderColor: "#E1BEE7",
+  },
+  tapPenaltyButton: {
+    backgroundColor: "#FFF3E0", // Light orange-amber
+    borderColor: "#FFB74D",
   },
 });

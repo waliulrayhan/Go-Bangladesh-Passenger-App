@@ -30,6 +30,7 @@ interface CardState {
   loadCardDetails: () => Promise<void>;
   loadTripHistory: (pageNo?: number, reset?: boolean) => Promise<void>;
   loadRechargeHistory: (pageNo?: number, reset?: boolean) => Promise<void>;
+  loadAllHistory: (reset?: boolean) => Promise<void>;
   loadRecentActivity: () => Promise<void>;
   loadMoreTripHistory: () => Promise<void>;
   loadMoreRechargeHistory: () => Promise<void>;
@@ -38,7 +39,6 @@ interface CardState {
   forceTapOut: () => Promise<boolean>;
   clearError: () => void;
   refreshData: () => Promise<void>;
-  forceRefreshData: () => Promise<void>;
   clearAllCardData: () => Promise<void>;
 }
 
@@ -83,10 +83,6 @@ export const useCardStore = create<CardState>((set, get) => ({
 
   // Load card details (for compatibility)
   loadCardDetails: async () => {
-    console.log('🔄 [CARD STORE] Loading card details');
-    
-    // Don't call refreshUserData here as it causes duplicate API calls
-    // The auth store already has fresh user data after login
     const user = useAuthStore.getState().user;
     if (user) {
       const card: Card = {
@@ -98,38 +94,25 @@ export const useCardStore = create<CardState>((set, get) => ({
         createdAt: nowISO()
       };
       set({ card });
-      console.log('✅ [CARD STORE] Card details loaded from existing user data');
     }
   },
 
-  // Load trip history
+  // Load trip history (for pagination)
   loadTripHistory: async (pageNo = 1, reset = false) => {
     const { tripTransactions, tripPage, tripPagination } = get();
 
     if (reset) {
-      // For pull-to-refresh with existing data, use isRefreshing
       if (tripTransactions.length > 0) {
-        set({
-          isRefreshing: true,
-          error: null,
-        });
+        set({ isRefreshing: true, error: null });
       } else {
-        // For initial load (even with reset=true), use isLoading
-        set({
-          isLoading: true,
-          error: null,
-        });
+        set({ isLoading: true, error: null });
       }
     } else {
-      // For pagination
       if (tripTransactions.length === 0) {
         set({ isLoading: true, error: null });
       } else {
         set({
-          tripPagination: {
-            ...tripPagination,
-            isLoadingMore: true
-          }
+          tripPagination: { ...tripPagination, isLoadingMore: true }
         });
       }
     }
@@ -172,42 +155,27 @@ export const useCardStore = create<CardState>((set, get) => ({
         isLoading: false,
         isRefreshing: false,
         error: formatError(error),
-        tripPagination: {
-          ...get().tripPagination,
-          isLoadingMore: false
-        }
+        tripPagination: { ...get().tripPagination, isLoadingMore: false }
       });
     }
   },
 
-  // Load recharge history
+  // Load recharge history (for pagination)
   loadRechargeHistory: async (pageNo = 1, reset = false) => {
     const { rechargeTransactions, rechargePage, rechargePagination } = get();
 
     if (reset) {
-      // For pull-to-refresh with existing data, use isRefreshing
       if (rechargeTransactions.length > 0) {
-        set({
-          isRefreshing: true,
-          error: null,
-        });
+        set({ isRefreshing: true, error: null });
       } else {
-        // For initial load (even with reset=true), use isLoading
-        set({
-          isLoading: true,
-          error: null,
-        });
+        set({ isLoading: true, error: null });
       }
     } else {
-      // For pagination
       if (rechargeTransactions.length === 0) {
         set({ isLoading: true, error: null });
       } else {
         set({
-          rechargePagination: {
-            ...rechargePagination,
-            isLoadingMore: true
-          }
+          rechargePagination: { ...rechargePagination, isLoadingMore: true }
         });
       }
     }
@@ -250,10 +218,73 @@ export const useCardStore = create<CardState>((set, get) => ({
         isLoading: false,
         isRefreshing: false,
         error: formatError(error),
+        rechargePagination: { ...get().rechargePagination, isLoadingMore: false }
+      });
+    }
+  },
+
+  // Load all history (trip and recharge) - optimized for concurrent loading
+  loadAllHistory: async (reset = false) => {
+    const { tripTransactions, rechargeTransactions } = get();
+    
+    // Set loading state based on whether this is initial load or refresh
+    if (reset) {
+      if (tripTransactions.length > 0 || rechargeTransactions.length > 0) {
+        set({ isRefreshing: true, error: null });
+      } else {
+        set({ isLoading: true, error: null });
+      }
+    } else {
+      set({ isLoading: true, error: null });
+    }
+
+    try {
+      const user = useAuthStore.getState().user;
+      if (!user?.id) {
+        throw new Error('User not logged in');
+      }
+
+      // Load both trip and recharge history concurrently
+      const [tripResponse, rechargeResponse] = await Promise.all([
+        apiService.getPassengerTripHistory(user.id.toString(), 1, 10),
+        apiService.getPassengerRechargeHistory(user.id.toString(), 1, 10)
+      ]);
+
+      const newTripTransactions = tripResponse.data || [];
+      const newRechargeTransactions = rechargeResponse.data || [];
+      
+      // Update both sets of data
+      set({
+        tripTransactions: newTripTransactions,
+        rechargeTransactions: newRechargeTransactions,
+        tripPage: 1,
+        rechargePage: 1,
+        tripHasMore: newTripTransactions.length === 10,
+        rechargeHasMore: newRechargeTransactions.length === 10,
+        tripPagination: {
+          ...get().tripPagination,
+          currentPage: 1,
+          hasMore: newTripTransactions.length === 10,
+          isLoadingMore: false,
+          totalLoaded: newTripTransactions.length,
+          totalCount: tripResponse.rowCount || 0,
+        },
         rechargePagination: {
           ...get().rechargePagination,
-          isLoadingMore: false
-        }
+          currentPage: 1,
+          hasMore: newRechargeTransactions.length === 10,
+          isLoadingMore: false,
+          totalLoaded: newRechargeTransactions.length,
+          totalCount: rechargeResponse.rowCount || 0,
+        },
+        isLoading: false,
+        isRefreshing: false
+      });
+    } catch (error: any) {
+      set({
+        isLoading: false,
+        isRefreshing: false,
+        error: formatError(error)
       });
     }
   },
@@ -391,21 +422,10 @@ export const useCardStore = create<CardState>((set, get) => ({
 
   // Refresh all data
   refreshData: async () => {
-    console.log('🔄 [CARD STORE] Refreshing card data');
     await Promise.all([
-      get().loadTripHistory(1, true),
-      get().loadRechargeHistory(1, true),
+      get().loadAllHistory(true),
       get().checkOngoingTrip()
     ]);
-
-    // Don't refresh user data here to avoid duplicate API calls
-    // Only refresh user data when explicitly needed (e.g., profile updates)
-    console.log('✅ [CARD STORE] Card data refresh completed');
-  },
-
-  // Force refresh data (alias for refreshData)
-  forceRefreshData: async () => {
-    await get().refreshData();
   },
 
   // Clear all card data
@@ -417,6 +437,8 @@ export const useCardStore = create<CardState>((set, get) => ({
       recentActivity: [],
       currentTrip: null,
       tripStatus: 'idle',
+      isLoading: false,
+      isRefreshing: false,
       error: null,
       tripPage: 1,
       tripHasMore: true,

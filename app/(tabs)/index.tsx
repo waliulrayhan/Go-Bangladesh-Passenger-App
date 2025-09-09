@@ -154,7 +154,6 @@ export default function Dashboard() {
     loadRecentActivity,
     checkOngoingTrip,
     forceTapOut,
-    forceRefreshData,
   } = useCardStore();
 
   // Safe area insets for consistent padding
