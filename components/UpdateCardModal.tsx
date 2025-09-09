@@ -419,7 +419,7 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
         <View style={styles.helperContainer}>
           <Ionicons name="help-circle-outline" size={16} color={COLORS.gray[500]} />
           <Text variant="caption" style={styles.helperText}>
-            Enter the new card number printed on your Go Bangladesh card
+            Enter the new card number printed on your card
           </Text>
         </View>
       </View>
