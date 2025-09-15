@@ -47,6 +47,7 @@ const UI_TEXTS = {
     RETRY: "Retry",
     LOAD_MORE_TRIPS: "Load More Trips",
     LOAD_MORE_TRANSACTIONS: "Load More Transactions",
+    SEE_INVOICE: "See Invoice",
   },
   LOADING_STATES: {
     LOADING_HISTORY: "Loading history...",
@@ -85,6 +86,7 @@ const UI_TEXTS = {
     DISTANCE: "Distance",
     TAP_IN_BY: "Tap In By",
     TAP_OUT_BY: "Tap Out By",
+    INVOICE: "Invoice",
     BY: "by",
   },
 } as const;
@@ -594,6 +596,39 @@ export default function History() {
                 </View>
               </View>
             )}
+
+            {/* Invoice Section */}
+            <View style={styles.singleRowItem}>
+              <Text
+                variant="caption"
+                color={COLORS.gray[600]}
+                style={styles.timeLabel}
+              >
+                {UI_TEXTS.LABELS.INVOICE}
+              </Text>
+              <TouchableOpacity
+                style={styles.invoiceButton}
+                onPress={() => {
+                  // TODO: Implement invoice viewing functionality
+                  // This could open a modal, navigate to invoice screen, or download invoice
+                  console.log("See invoice for trip:", trip.id);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="receipt-outline"
+                  size={14}
+                  color={"#1976D2"}
+                />
+                <Text
+                  variant="bodySmall"
+                  color={"#1976D2"}
+                  style={styles.invoiceText}
+                >
+                  {UI_TEXTS.BUTTONS.SEE_INVOICE}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Card>
@@ -1189,6 +1224,7 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     marginBottom: 4,
+    color: "#1976D2"
     // Font properties handled by Text component
   },
   timeButton: {
@@ -1290,14 +1326,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    flex: 1.30,
+    flex: 1.3,
     justifyContent: "center",
   },
   TimeItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    flex: 1.30,
+    flex: 1.3,
     justifyContent: "flex-end",
   },
   detailText: {
@@ -1395,5 +1431,21 @@ const styles = StyleSheet.create({
   tapPenaltyButton: {
     backgroundColor: "#FFF3E0", // Light orange-amber
     borderColor: "#FFB74D",
+  },
+  invoiceButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    padding: SPACING.xs,
+    backgroundColor: "#E3F2FD",
+    borderRadius: 6,
+    justifyContent: "center",
+    minHeight: 32,
+    borderColor: COLORS.primary + "40",
+  },
+  invoiceText: {
+    fontWeight: "500",
+    fontSize: 12,
+    color: "#1976D2"
   },
 });
