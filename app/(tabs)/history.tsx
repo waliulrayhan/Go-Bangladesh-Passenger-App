@@ -17,6 +17,7 @@ import {
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 // Custom components and utilities
+import { InvoiceModal } from "../../components/InvoiceModal";
 import { Card } from "../../components/ui/Card";
 import { Text } from "../../components/ui/Text";
 import { Toast } from "../../components/ui/Toast";
@@ -47,7 +48,7 @@ const UI_TEXTS = {
     RETRY: "Retry",
     LOAD_MORE_TRIPS: "Load More Trips",
     LOAD_MORE_TRANSACTIONS: "Load More Transactions",
-    SEE_INVOICE: "See Invoice",
+    SEE_INVOICE: "See Receipt",
   },
   LOADING_STATES: {
     LOADING_HISTORY: "Loading history...",
@@ -86,7 +87,7 @@ const UI_TEXTS = {
     DISTANCE: "Distance",
     TAP_IN_BY: "Tap In By",
     TAP_OUT_BY: "Tap Out By",
-    INVOICE: "Receipt",
+    INVOICE: "Invoice",
     BY: "by",
   },
 } as const;
@@ -181,6 +182,8 @@ export default function History() {
   // Component state management
   const [activeTab, setActiveTab] = useState<HistoryTab>("trips");
   const [searchQuery, setSearchQuery] = useState("");
+  const [invoiceModalVisible, setInvoiceModalVisible] = useState(false);
+  const [selectedTripTransaction, setSelectedTripTransaction] = useState<TripTransaction | null>(null);
 
   // Filter and sort data whenever dependencies change
   // Using useMemo to prevent unnecessary recalculations
@@ -302,6 +305,18 @@ export default function History() {
     } catch (error) {
       showToast(UI_TEXTS.TOAST_MESSAGES.COPY_FAILED, "error");
     }
+  };
+
+  // Handle invoice modal opening
+  const handleOpenInvoice = (tripTransaction: TripTransaction): void => {
+    setSelectedTripTransaction(tripTransaction);
+    setInvoiceModalVisible(true);
+  };
+
+  // Handle invoice modal closing
+  const handleCloseInvoice = (): void => {
+    setInvoiceModalVisible(false);
+    setSelectedTripTransaction(null);
   };
 
   // Render individual trip transaction item
@@ -608,11 +623,7 @@ export default function History() {
               </Text>
               <TouchableOpacity
                 style={styles.invoiceButton}
-                onPress={() => {
-                  // TODO: Implement invoice viewing functionality
-                  // This could open a modal, navigate to invoice screen, or download invoice
-                  console.log("See invoice for trip:", trip.id);
-                }}
+                onPress={() => handleOpenInvoice(item)}
                 activeOpacity={0.7}
               >
                 <Ionicons
@@ -1021,6 +1032,13 @@ export default function History() {
           type={toast.type}
           position="bottom"
           onHide={hideToast}
+        />
+
+        {/* Invoice Modal */}
+        <InvoiceModal
+          visible={invoiceModalVisible}
+          onClose={handleCloseInvoice}
+          tripTransaction={selectedTripTransaction}
         />
       </SafeAreaView>
     </>
