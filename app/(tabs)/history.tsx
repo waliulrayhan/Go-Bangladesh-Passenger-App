@@ -86,7 +86,7 @@ const UI_TEXTS = {
     DISTANCE: "Distance",
     TAP_IN_BY: "Tap In By",
     TAP_OUT_BY: "Tap Out By",
-    INVOICE: "Invoice",
+    INVOICE: "Receipt",
     BY: "by",
   },
 } as const;

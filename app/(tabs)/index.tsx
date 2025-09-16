@@ -556,7 +556,7 @@ export default function Dashboard() {
           <Animated.View style={[styles.pulseBackground, pulseStyle]} />
 
           {/* Compact Header */}
-          <View style={styles.compactHeader}>
+          {/* <View style={styles.compactHeader}>
             <View style={styles.statusContainer}>
               <View style={styles.statusIndicator}>
                 <Animated.View style={[styles.pulsingDot, dotPulseStyle]} />
@@ -574,32 +574,44 @@ export default function Dashboard() {
                 {UI_TEXTS.TRIP_STATUS.TAP_OUT}
               </Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
 
           {/* Main Trip Content */}
           <View style={styles.tripContent}>
-            {/* Bus - Prominent Display */}
-            <View style={styles.busContainer}>
-              <View style={styles.busHeader}>
-                <Ionicons
-                  name="bus"
-                  size={16}
-                  color={COLORS.brand.orange_light}
-                />
-                <Text variant="caption" style={styles.busLabel}>
-                  {UI_TEXTS.ACTIVITY.LABELS.BUS}
+            {/* Bus and Status Container Row */}
+            <View style={styles.busStatusRow}>
+              {/* Bus - Prominent Display */}
+              <View style={styles.busContainer}>
+                <View style={styles.busHeader}>
+                  <Ionicons
+                    name="bus"
+                    size={16}
+                    color={COLORS.brand.orange_light}
+                  />
+                  <Text variant="caption" style={styles.busLabel}>
+                    {UI_TEXTS.ACTIVITY.LABELS.BUS}
+                  </Text>
+                </View>
+                <Text variant="h6" style={styles.busText} numberOfLines={1}>
+                  {currentTrip?.busNumber || UI_TEXTS.FALLBACKS.GENERIC}
+                </Text>
+                <Text
+                  variant="caption"
+                  style={styles.busNumber}
+                  numberOfLines={1}
+                >
+                  {currentTrip?.busName || UI_TEXTS.FALLBACKS.BUS_NAME}
                 </Text>
               </View>
-              <Text variant="h6" style={styles.busText} numberOfLines={1}>
-                {currentTrip?.busNumber || UI_TEXTS.FALLBACKS.GENERIC}
-              </Text>
-              <Text
-                variant="caption"
-                style={styles.busNumber}
-                numberOfLines={1}
-              >
-                {currentTrip?.busName || UI_TEXTS.FALLBACKS.BUS_NAME}
-              </Text>
+
+              <View style={styles.statusContainer}>
+                <View style={styles.statusIndicator}>
+                  <Animated.View style={[styles.pulsingDot, dotPulseStyle]} />
+                </View>
+                <Text variant="bodySmall" style={styles.statusText}>
+                  In Progress
+                </Text>
+              </View>
             </View>
 
             {/* Route & Time Info - Bottom Row */}
@@ -1250,8 +1262,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 
+  // Bus and Status Row
+  busStatusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
   // Bus Container - Prominent Display
   busContainer: {
+    flex: 1,
     backgroundColor: COLORS.brand.orange_light + "08",
     borderRadius: 12,
     padding: 12,
