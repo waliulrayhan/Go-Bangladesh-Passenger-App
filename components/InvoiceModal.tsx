@@ -13,6 +13,7 @@ import {
 // Custom components and hooks
 import { useToast } from "../hooks/useToast";
 import { TripTransaction } from "../services/api";
+import { useAuthStore } from "../stores/authStore";
 import { COLORS, SPACING } from "../utils/constants";
 import { formatDate, TimeFormatter } from "../utils/dateTime";
 import { downloadInvoiceAsText } from "../utils/invoiceTextGenerator";
@@ -28,6 +29,7 @@ const UI_TEXTS = {
     CLOSE: "Close",
   },
   SECTIONS: {
+    USER_INFO: "User Information",
     TRIP_INFO: "Trip Information",
     FARE_DETAILS: "Fare Details",
     LOCATIONS: "Trip Locations",
@@ -35,10 +37,16 @@ const UI_TEXTS = {
     VEHICLE_INFO: "Vehicle Information",
   },
   LABELS: {
+    // User Information
+    USER_NAME: "Name",
+    CARD_NUMBER: "Card Number",
+    USER_ORGANIZATION: "Organization",
+    // Trip Information
     TRANSACTION_ID: "Transaction ID",
     BUS_NUMBER: "Bus Number",
+    BUS_ROUTE: "Route",
     SESSION_CODE: "Session Code",
-    ORGANIZATION: "Organization",
+    ORGANIZATION: "Bus Organization",
     FARE_AMOUNT: "Fare Amount",
     DISTANCE: "Distance Traveled",
     TAP_IN_TIME: "Tap In Time",
@@ -122,6 +130,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+  
+  // Get current user information
+  const user = useAuthStore((state) => state.user);
 
   const handleDownloadPDF = async () => {
     if (!tripTransaction) return;
@@ -174,6 +185,44 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const bus = trip.session?.bus;
   const organization = bus?.organization;
 
+  // Debug logging to understand available data (remove in production)
+  console.log('TripTransaction Data:', {
+    card: tripTransaction.card,
+    trip: {
+      distance: trip.distance,
+      session: trip.session
+    },
+    bus: bus,
+    user: user
+  });
+  
+  // Get card number from multiple sources
+  const getCardNumber = () => {
+    return tripTransaction.card?.cardNumber || user?.cardNumber || 'Not Available';
+  };
+  
+  // Try to get route information from different sources
+  const getRouteInfo = () => {
+    // Check if bus has route with start/end places
+    if (bus?.route?.tripStartPlace && bus?.route?.tripEndPlace) {
+      return `${bus.route.tripStartPlace} → ${bus.route.tripEndPlace}`;
+    }
+    // Fallback to bus name if available
+    if (bus?.busName) {
+      return bus.busName;
+    }
+    // Last fallback
+    return 'Route information not available';
+  };
+  
+  // Get distance with fallback
+  const getDistance = () => {
+    if (trip.distance !== undefined && trip.distance !== null) {
+      return trip.distance > 0 ? `${trip.distance.toFixed(2)} km` : "0.00 km";
+    }
+    return "Distance not available";
+  };
+
   return (
     <Modal
       visible={visible}
@@ -218,6 +267,46 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
+          {/* User Information Section */}
+          <Card variant="elevated" style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="person-outline" size={20} color={COLORS.secondary} />
+              <Text variant="h6" color={COLORS.secondary} style={styles.sectionTitle}>
+                {UI_TEXTS.SECTIONS.USER_INFO}
+              </Text>
+            </View>
+            <View style={styles.sectionContent}>
+              {user?.name && (
+                <View style={styles.infoRow}>
+                  <Text variant="body" color={COLORS.gray[600]}>
+                    {UI_TEXTS.LABELS.USER_NAME}:
+                  </Text>
+                  <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
+                    {user.name}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.infoRow}>
+                <Text variant="body" color={COLORS.gray[600]}>
+                  {UI_TEXTS.LABELS.CARD_NUMBER}:
+                </Text>
+                <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
+                  {getCardNumber()}
+                </Text>
+              </View>
+              {user?.organization && (
+                <View style={styles.infoRow}>
+                  <Text variant="body" color={COLORS.gray[600]}>
+                    {UI_TEXTS.LABELS.USER_ORGANIZATION}:
+                  </Text>
+                  <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
+                    {typeof user.organization === 'string' ? user.organization : user.organization.name}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Card>
+
           {/* Trip Information Section */}
           <Card variant="elevated" style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -245,6 +334,14 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   </Text>
                 </View>
               )}
+              <View style={styles.infoRow}>
+                <Text variant="body" color={COLORS.gray[600]}>
+                  {UI_TEXTS.LABELS.BUS_ROUTE}:
+                </Text>
+                <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
+                  {getRouteInfo()}
+                </Text>
+              </View>
               {organization?.name && (
                 <View style={styles.infoRow}>
                   <Text variant="body" color={COLORS.gray[600]}>
@@ -267,6 +364,14 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               </Text>
             </View>
             <View style={styles.sectionContent}>
+              <View style={styles.distanceRow}>
+                <Text variant="body" color={COLORS.gray[600]}>
+                  {UI_TEXTS.LABELS.DISTANCE}:
+                </Text>
+                <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
+                  {getDistance()}
+                </Text>
+              </View>
               <View style={styles.fareRow}>
                 <Text variant="h6" color={COLORS.gray[600]}>
                   {UI_TEXTS.LABELS.FARE_AMOUNT}:
@@ -275,16 +380,6 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   ৳{tripTransaction.amount.toFixed(2)}
                 </Text>
               </View>
-              {trip.distance > 0 && (
-                <View style={styles.infoRow}>
-                  <Text variant="body" color={COLORS.gray[600]}>
-                    {UI_TEXTS.LABELS.DISTANCE}:
-                  </Text>
-                  <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
-                    {trip.distance.toFixed(2)} km
-                  </Text>
-                </View>
-              )}
             </View>
           </Card>
 
@@ -542,14 +637,19 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontWeight: "500",
   },
-  fareRow: {
+  distanceRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray[100],
-    marginBottom: SPACING.sm,
+  },
+  fareRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: SPACING.xs,
   },
   fareAmount: {
     fontWeight: "600",
