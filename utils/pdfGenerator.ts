@@ -21,181 +21,564 @@ const getTripDuration = (startTime: string, endTime?: string): string => {
   }
 };
 
-const generateInvoiceHTML = (tripTransaction: TripTransaction): string => {
+// Helper function to format currency for display
+const formatCurrency = (amount: number): string => {
+  return amount.toFixed(2);
+};
+
+// Helper function to convert number to words (comprehensive version)
+const numberToWords = (amount: number): string => {
+  if (amount === 0) return 'Zero Taka Only';
+  
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+  const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  
+  const convertHundreds = (num: number): string => {
+    let result = '';
+    
+    if (num >= 100) {
+      result += ones[Math.floor(num / 100)] + ' Hundred ';
+      num %= 100;
+    }
+    
+    if (num >= 20) {
+      result += tens[Math.floor(num / 10)];
+      if (num % 10 !== 0) {
+        result += ' ' + ones[num % 10];
+      }
+    } else if (num >= 10) {
+      result += teens[num - 10];
+    } else if (num > 0) {
+      result += ones[num];
+    }
+    
+    return result.trim();
+  };
+  
+  let wholePart = Math.floor(amount);
+  const decimalPart = Math.round((amount - wholePart) * 100);
+  
+  let result = '';
+  
+  if (wholePart >= 10000000) { // Crore
+    const crores = Math.floor(wholePart / 10000000);
+    result += convertHundreds(crores) + ' Crore ';
+    wholePart %= 10000000;
+  }
+  
+  if (wholePart >= 100000) { // Lakh
+    const lakhs = Math.floor(wholePart / 100000);
+    result += convertHundreds(lakhs) + ' Lakh ';
+    wholePart %= 100000;
+  }
+  
+  if (wholePart >= 1000) { // Thousand
+    const thousands = Math.floor(wholePart / 1000);
+    result += convertHundreds(thousands) + ' Thousand ';
+    wholePart %= 1000;
+  }
+  
+  if (wholePart > 0) {
+    result += convertHundreds(wholePart);
+  }
+  
+  result = result.trim();
+  if (result === '') result = 'Zero';
+  
+  result += ' Taka';
+  
+  if (decimalPart > 0) {
+    result += ' and ' + convertHundreds(decimalPart) + ' Paisa';
+  }
+  
+  return result + ' Only';
+};
+
+const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): string => {
   if (!tripTransaction.trip) return '';
   
   const trip = tripTransaction.trip;
   const bus = trip.session?.bus;
   const organization = bus?.organization;
   
+  // Generate invoice number with date and transaction ID
+  const today = new Date();
+  const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+  const invoiceNumber = `GoBD-${dateStr}-${tripTransaction.transactionId}`;
+  const issueDate = formatDate(today);
+  const totalAmount = tripTransaction.amount;
+  const totalInWords = numberToWords(totalAmount);
+  
+  // Get user information
+  const userName = user?.name || 'N/A';
+  const userCard = tripTransaction.card?.cardNumber || user?.cardNumber || 'Not Available';
+  const userOrganization = user?.organization ? 
+    (typeof user.organization === 'string' ? user.organization : user.organization.name) : 'N/A';
+  
+  // Get trip distance
+  const tripDistance = trip.distance && trip.distance > 0 ? `${trip.distance.toFixed(2)} km` : '0.00 km';
+  
+  // Calculate amounts (assuming no due amount for now, all paid)
+  const fareAmount = totalAmount;
+  const dueAmount = 0; // Assuming trip is paid
+  const subtotal = totalAmount * 0.93; // Assuming 7% tax
+  const tax = totalAmount * 0.07;
+  
   return `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Trip Receipt</title>
+    <title>Invoice ${invoiceNumber}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            color: #333;
+            font-family: 'Plus Jakarta Sans', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 11px;
             line-height: 1.4;
+            color: #000000;
+            background-color: #ffffff;
+            padding: 20px;
+            margin: 0 auto;
+            max-width: 210mm;
+            min-height: 297mm;
+            position: relative;
         }
         
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #0066cc;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
+        .taka-symbol {
+            font-family: 'Noto Sans Bengali', 'Plus Jakarta Sans', sans-serif;
+            font-weight: 500;
         }
         
-        .title {
-            color: #0066cc;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .section {
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        
-        .section-header {
-            background-color: #f5f5f5;
-            padding: 10px;
-            font-weight: bold;
-            color: #0066cc;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        .section-content {
-            padding: 15px;
-        }
-        
-        .row {
+        /* Header with logos */
+        .header-logos {
             display: flex;
             justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px dotted #ccc;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #000000;
+            position: relative;
+            z-index: 2;
         }
         
-        .row:last-child {
-            border-bottom: none;
+        .header-logos .logo-left,
+        .header-logos .logo-right {
+            flex: 1;
+            display: flex;
         }
         
-        .label {
+        .header-logos .logo-left {
+            justify-content: flex-start;
+        }
+        
+        .header-logos .logo-right {
+            justify-content: flex-end;
+        }
+        
+        .logo-image {
+            height: 60px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        /* Status seal */
+        .status-seal {
+            position: absolute;
+            right: 50px;
+            top: 180px;
+            transform: rotate(-12deg);
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid rgba(5, 150, 105, 0.8);
+            background-color: rgba(5, 150, 105, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            color: rgba(5, 150, 105, 0.8);
+            text-transform: uppercase;
+            z-index: 1;
+            text-align: center;
+            line-height: 1.1;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-seal::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 2px solid rgba(5, 150, 105, 0.8);
+            background-color: transparent;
+            z-index: 2;
+        }
+        
+        .status-content {
+            z-index: 3;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+        }
+        
+        .status-label {
+            font-size: 6px;
             font-weight: 600;
-            color: #666;
+            letter-spacing: 1.2px;
+            opacity: 0.7;
         }
         
-        .value {
-            color: #333;
+        .status-text {
+            font-size: 12px;
+            font-weight: 900;
+            margin-bottom: 1px;
+        }
+        
+        /* Date and invoice number */
+        .date-invoice-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+            font-size: 14px;
+        }
+        
+        /* Invoice title */
+        .invoice-title {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .invoice-title h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #000000;
+            margin: 0 0 5px 0;
+            border: 2px solid #000000;
+            padding: 10px 20px;
+            display: inline-block;
+        }
+        
+        /* Period */
+        .period {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 16px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        /* Billing information grid */
+        .billing-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .billing-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000000;
+            margin: 0 0 5px 0;
+        }
+        
+        .billing-section hr {
+            border: none;
+            border-top: 1px solid #000000;
+            margin: 0 0 15px 0;
+            width: 80px;
+        }
+        
+        .billing-details {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .billing-details p {
+            margin: 0 0 4px 0;
+        }
+        
+        .billing-details .company-name {
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .billing-details strong {
+            font-weight: 600;
+        }
+        
+        /* Table introduction */
+        .table-intro {
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .table-intro p {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 500;
+            color: #000000;
+        }
+        
+        /* Invoice table */
+        .invoice-table-container {
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            border: 1px solid #000000;
+            margin-bottom: 10px;
+        }
+        
+        .invoice-table th,
+        .invoice-table td {
+            border: 1px solid #000000;
+            padding: 8px;
             text-align: right;
         }
         
-        .fare-amount {
-            font-size: 18px;
-            color: #dc3545;
-            font-weight: bold;
+        .invoice-table th {
+            font-weight: 600;
+            background-color: #ffffff;
+        }
+        
+        .invoice-table tbody td {
+            font-weight: 400;
+        }
+        
+        .invoice-table .total-cell {
+            font-weight: 600;
+        }
+        
+        /* Summary table */
+        .summary-container {
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
+        }
+        
+        .summary-table {
+            width: 50%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .summary-table td {
+            border: 1px solid #000000;
+            padding: 8px;
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        .summary-table .border-top-none {
+            border-top: none;
+        }
+        
+        .summary-table .grand-total {
+            font-weight: 700;
+            background-color: #f9f9f9;
+        }
+        
+        /* Amount in words and terms */
+        .terms-section {
+            margin-top: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .terms-section p {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .amount-words {
+            font-weight: 600;
+        }
+        
+        .electronic-notice {
+            margin: 40px 0;
+            font-style: italic;
+            text-align: center;
+            color: #999999;
+        }
+        
+        /* Footer */
+        .footer-hr {
+            border: none;
+            border-top: 1px solid #000000;
+            margin: 20px 0 8px 0;
         }
         
         .footer {
-            margin-top: 30px;
             text-align: center;
-            color: #666;
+        }
+        
+        .footer-content {
             font-size: 12px;
-            border-top: 1px solid #ddd;
-            padding-top: 15px;
+            line-height: 1.6;
+        }
+        
+        .footer-content p {
+            margin: 0 0 8px 0;
+        }
+        
+        .footer-content p:last-child {
+            margin-bottom: 0;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1 class="title">GO BANGLADESH</h1>
-        <p>Trip Receipt</p>
-    </div>
-
-    <div class="section">
-        <div class="section-header">Trip Information</div>
-        <div class="section-content">
-            <div class="row">
-                <span class="label">Transaction ID:</span>
-                <span class="value">${tripTransaction.transactionId}</span>
-            </div>
-            ${bus?.busNumber ? `
-            <div class="row">
-                <span class="label">Bus Number:</span>
-                <span class="value">${bus.busNumber}</span>
-            </div>
-            ` : ''}
-            ${organization?.name ? `
-            <div class="row">
-                <span class="label">Organization:</span>
-                <span class="value">${organization.name}</span>
-            </div>
-            ` : ''}
+    <!-- Status Seal -->
+    <div class="status-seal">
+        <div class="status-content">
+            <div class="status-label">PAYMENT STATUS</div>
+            <div class="status-text">PAID</div>
         </div>
     </div>
-
-    <div class="section">
-        <div class="section-header">Fare Details</div>
-        <div class="section-content">
-            <div class="row">
-                <span class="label">Fare Amount:</span>
-                <span class="value fare-amount">৳${tripTransaction.amount.toFixed(2)}</span>
-            </div>
-            ${trip.distance > 0 ? `
-            <div class="row">
-                <span class="label">Distance:</span>
-                <span class="value">${trip.distance.toFixed(2)} km</span>
-            </div>
-            ` : ''}
+    
+    <!-- Header with Logos -->
+    <div class="header-logos">
+        <div class="logo-left">
+            <img src="./assets/images/goBdLogoForInvoice.png" alt="Go Bangladesh Logo" class="logo-image" />
+        </div>
+        <div class="logo-right">
+            <img src="./assets/images/portfolioBanner.png" alt="Portfolio Banner" class="logo-image" />
         </div>
     </div>
-
-    <div class="section">
-        <div class="section-header">Trip Timing</div>
-        <div class="section-content">
-            <div class="row">
-                <span class="label">Start Time:</span>
-                <span class="value">${trip.tripStartTime ? TimeFormatter.forHistory(trip.tripStartTime) : 'N/A'}</span>
+    
+    <!-- Date and Invoice Number -->
+    <div class="date-invoice-row">
+        <div>${issueDate}</div>
+        <div>${invoiceNumber}</div>
+    </div>
+    
+    <!-- Invoice Title -->
+    <div class="invoice-title">
+        <h1>INVOICE</h1>
+    </div>
+    
+    <!-- Billing Information -->
+    <div class="billing-grid">
+        <div class="billing-section">
+            <h3>User Information</h3>
+            <hr>
+            <div class="billing-details">
+                <p class="company-name">${userName}</p>
+                <p><strong>Card Number:</strong> ${userCard}</p>
+                <p><strong>Organization:</strong> ${userOrganization}</p>
             </div>
-            ${trip.tripEndTime ? `
-            <div class="row">
-                <span class="label">End Time:</span>
-                <span class="value">${TimeFormatter.forHistory(trip.tripEndTime)}</span>
-            </div>
-            ` : ''}
-            <div class="row">
-                <span class="label">Duration:</span>
-                <span class="value">${getTripDuration(trip.tripStartTime, trip.tripEndTime)}</span>
+        </div>
+        
+        <div class="billing-section">
+            <h3>Trip Information & Timing</h3>
+            <hr>
+            <div class="billing-details">
+                <p class="company-name">${bus?.busNumber || 'N/A'}</p>
+                <p><strong>Route:</strong> ${bus?.route?.tripStartPlace && bus?.route?.tripEndPlace ? 
+                  `${bus.route.tripStartPlace} ⇄ ${bus.route.tripEndPlace}` : 
+                  (bus?.busName || 'Route not available')}</p>
+                <p><strong>Start Time:</strong> ${trip.tripStartTime ? TimeFormatter.forHistory(trip.tripStartTime) : 'N/A'}</p>
+                ${trip.tripEndTime ? `<p><strong>End Time:</strong> ${TimeFormatter.forHistory(trip.tripEndTime)}</p>` : ''}
+                <p><strong>Duration:</strong> ${getTripDuration(trip.tripStartTime, trip.tripEndTime)}</p>
             </div>
         </div>
     </div>
-
-    ${trip.startingLatitude && trip.startingLongitude ? `
-    <div class="section">
-        <div class="section-header">Locations</div>
-        <div class="section-content">
-            <div class="row">
-                <span class="label">Start:</span>
-                <span class="value">${trip.startingLatitude}, ${trip.startingLongitude}</span>
-            </div>
-            ${trip.endingLatitude && trip.endingLongitude ? `
-            <div class="row">
-                <span class="label">End:</span>
-                <span class="value">${trip.endingLatitude}, ${trip.endingLongitude}</span>
-            </div>
-            ` : ''}
+    
+    <!-- Table Introduction -->
+    <div class="table-intro">
+        <p>The following table outlines the details of this trip:</p>
+    </div>
+    
+    <!-- Simplified Invoice Table -->
+    <div class="invoice-table-container">
+        <!-- Main Invoice Table -->
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Trip Distance Travelled</th>
+                    <th style="width: 25%;">Fare Amount</th>
+                    <th style="width: 25%;">Due Amount</th>
+                    <th style="width: 25%;">Total Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="width: 25%;">${tripDistance}</td>
+                    <td style="width: 25%;"><span class="taka-symbol">৳</span>${formatCurrency(fareAmount)}</td>
+                    <td style="width: 25%;"><span class="taka-symbol">৳</span>${formatCurrency(dueAmount)}</td>
+                    <td style="width: 25%;" class="total-cell"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Summary Table -->
+        <div class="summary-container">
+            <table class="summary-table">
+                <tbody>
+                    <tr>
+                        <td style="width: 50%;">Subtotal</td>
+                        <td style="width: 50%;"><span class="taka-symbol">৳</span>${formatCurrency(subtotal)}</td>
+                    </tr>
+                    <tr>
+                        <td class="border-top-none">Vat / Tax</td>
+                        <td class="border-top-none"><span class="taka-symbol">৳</span>${formatCurrency(tax)}</td>
+                    </tr>
+                    <tr>
+                        <td class="border-top-none grand-total">GRAND TOTAL</td>
+                        <td class="border-top-none grand-total"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
-    ` : ''}
-
+    
+    <!-- Amount in Words and Terms -->
+    <div class="terms-section">
+        <p class="amount-words">Total Amount (in words): ${totalInWords}</p>
+                
+        <p class="electronic-notice">This is an electronically generated invoice and does not require a seal or signature.</p>
+    </div>
+    
+    <!-- Footer -->
+    <hr class="footer-hr">
     <div class="footer">
-        <p>Digital receipt for your bus journey</p>
-        <p>Generated: ${formatDate(new Date())} ${new Date().toLocaleTimeString()}</p>
+        <div class="footer-content">
+            <p>ICT Tower, 14th Floor, Plot E-14/X, Agargaon, Sher-e-Bangla Nagar, Dhaka-1207</p>
+            <p>Phone: +880 1711 360 170 | Email: info@thegobd.com | Website: www.thegobd.com</p>
+        </div>
     </div>
 </body>
 </html>
@@ -204,7 +587,8 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction): string => {
 
 export const generateInvoicePDF = async (
   tripTransaction: TripTransaction,
-  fileName?: string
+  fileName?: string,
+  user?: any
 ): Promise<string | null> => {
   try {
     if (!tripTransaction.trip) {
@@ -215,7 +599,7 @@ export const generateInvoicePDF = async (
     console.log('Starting PDF generation...');
     
     const pdfFileName = fileName || `trip-receipt-${tripTransaction.transactionId}.pdf`;
-    const htmlContent = generateInvoiceHTML(tripTransaction);
+    const htmlContent = generateInvoiceHTML(tripTransaction, user);
 
     console.log('Generating PDF from HTML content...');
 
@@ -246,12 +630,13 @@ export const generateInvoicePDF = async (
 
 export const downloadInvoicePDF = async (
   tripTransaction: TripTransaction,
-  fileName?: string
+  fileName?: string,
+  user?: any
 ): Promise<boolean> => {
   try {
     console.log('Starting PDF download process...');
     
-    const pdfUri = await generateInvoicePDF(tripTransaction, fileName);
+    const pdfUri = await generateInvoicePDF(tripTransaction, fileName, user);
     
     if (!pdfUri) {
       console.error('Failed to generate PDF');
