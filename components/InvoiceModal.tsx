@@ -1,5 +1,6 @@
 // React Native and Expo imports
 import { Ionicons } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
 import React, { useState } from "react";
 import {
   Linking,
@@ -205,7 +206,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const getRouteInfo = () => {
     // Check if bus has route with start/end places
     if (bus?.route?.tripStartPlace && bus?.route?.tripEndPlace) {
-      return `${bus.route.tripStartPlace} → ${bus.route.tripEndPlace}`;
+      return `${bus.route.tripStartPlace} ⇄ ${bus.route.tripEndPlace}`;
     }
     // Fallback to bus name if available
     if (bus?.busName) {
@@ -243,11 +244,19 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               disabled={isGeneratingPDF}
               activeOpacity={0.7}
             >
-              <Ionicons 
-                name={isGeneratingPDF ? "hourglass-outline" : "download-outline"} 
-                size={20} 
-                color={COLORS.white} 
-              />
+              {isGeneratingPDF ? (
+                <Ionicons 
+                  name="hourglass-outline" 
+                  size={16} 
+                  color={COLORS.white} 
+                />
+              ) : (
+                <Feather 
+                  name="download" 
+                  size={16} 
+                  color={COLORS.white} 
+                />
+              )}
               <Text variant="bodySmall" color={COLORS.white} style={styles.downloadButtonText}>
                 {isGeneratingPDF ? "Generating..." : "Download PDF"}
               </Text>
