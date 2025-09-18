@@ -234,41 +234,39 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={onClose}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+          </TouchableOpacity>
           <Text variant="h5" color={COLORS.white} style={styles.headerTitle}>
             {UI_TEXTS.MODAL.TITLE}
           </Text>
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.downloadButton}
-              onPress={handleDownloadPDF}
-              disabled={isGeneratingPDF}
-              activeOpacity={0.7}
-            >
-              {isGeneratingPDF ? (
-                <Ionicons 
-                  name="hourglass-outline" 
-                  size={16} 
-                  color={COLORS.white} 
-                />
-              ) : (
-                <Feather 
-                  name="download" 
-                  size={16} 
-                  color={COLORS.white} 
-                />
-              )}
-              <Text variant="bodySmall" color={COLORS.white} style={styles.downloadButtonText}>
-                {isGeneratingPDF ? "Generating..." : "Download PDF"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onClose}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close" size={24} color={COLORS.white} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.downloadButton}
+            onPress={handleDownloadPDF}
+            disabled={isGeneratingPDF}
+            activeOpacity={0.7}
+          >
+            {isGeneratingPDF ? (
+              <Ionicons 
+                name="hourglass-outline" 
+                size={16} 
+                color={COLORS.white} 
+              />
+            ) : (
+              <Feather 
+                name="download" 
+                size={16} 
+                color={COLORS.white} 
+              />
+            )}
+            <Text variant="bodySmall" color={COLORS.white} style={styles.downloadButtonText}>
+              {isGeneratingPDF ? "Generating..." : "Download PDF"}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <ScrollView
@@ -586,13 +584,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray[100],
   },
+  backButton: {
+    padding: SPACING.xs,
+    borderRadius: 20,
+  },
   headerTitle: {
     flex: 1,
-  },
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
+    marginHorizontal: SPACING.xs,
   },
   downloadButton: {
     flexDirection: "row",
@@ -608,11 +606,6 @@ const styles = StyleSheet.create({
   downloadButtonText: {
     fontWeight: "500",
     fontSize: 12,
-  },
-  closeButton: {
-    padding: SPACING.xs,
-    borderRadius: 20,
-    // backgroundColor: COLORS.gray[100],
   },
   content: {
     flex: 1,
