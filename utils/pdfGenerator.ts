@@ -105,7 +105,7 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
   // Generate invoice number with date and transaction ID
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-  const invoiceNumber = `GoBD-${dateStr}-${tripTransaction.transactionId}`;
+  const invoiceNumber = `GoBD-${tripTransaction.transactionId}`;
   const issueDate = formatDate(today);
   const totalAmount = tripTransaction.amount;
   const totalInWords = numberToWords(totalAmount);
@@ -481,13 +481,13 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
     
     <!-- Date and Invoice Number -->
     <div class="date-invoice-row">
-        <div>${issueDate}</div>
-        <div>${invoiceNumber}</div>
+        <div>Date: ${issueDate}</div>
+        <div>Invoice ID: ${invoiceNumber}</div>
     </div>
     
     <!-- Invoice Title -->
     <div class="invoice-title">
-        <h1>INVOICE</h1>
+        <h1>TRIP RECEIPT</h1>
     </div>
     
     <!-- Billing Information -->
