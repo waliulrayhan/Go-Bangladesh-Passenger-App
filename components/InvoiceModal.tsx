@@ -1,21 +1,25 @@
 // React Native and Expo imports
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useState } from "react";
 import {
-    Linking,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  Linking,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-// Custom components
+// Custom components and hooks
+import { useToast } from "../hooks/useToast";
 import { TripTransaction } from "../services/api";
 import { COLORS, SPACING } from "../utils/constants";
 import { formatDate, TimeFormatter } from "../utils/dateTime";
+import { downloadInvoiceAsText } from "../utils/invoiceTextGenerator";
+import { downloadInvoicePDF } from "../utils/pdfGenerator";
 import { Card } from "./ui/Card";
 import { Text } from "./ui/Text";
+import { Toast } from "./ui/Toast";
 
 // UI text constants
 const UI_TEXTS = {
@@ -116,6 +120,52 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   onClose,
   tripTransaction,
 }) => {
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const { toast, showToast, hideToast } = useToast();
+
+  const handleDownloadPDF = async () => {
+    if (!tripTransaction) return;
+    
+    setIsGeneratingPDF(true);
+    
+    try {
+      console.log('Attempting PDF generation...');
+      const success = await downloadInvoicePDF(tripTransaction);
+      
+      if (success) {
+        showToast("Trip receipt has been saved successfully!", "success");
+      } else {
+        console.log('PDF generation failed, trying text fallback...');
+        // Fallback to text file if PDF generation fails
+        const textSuccess = await downloadInvoiceAsText(tripTransaction);
+        
+        if (textSuccess) {
+          showToast("Trip receipt saved as text file (PDF generation failed)", "warning");
+        } else {
+          showToast("Failed to generate receipt. Please try again.", "error");
+        }
+      }
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      
+      try {
+        console.log('Attempting text fallback after error...');
+        const textSuccess = await downloadInvoiceAsText(tripTransaction);
+        
+        if (textSuccess) {
+          showToast("Trip receipt saved as text file (PDF error occurred)", "warning");
+        } else {
+          showToast("An error occurred while generating the receipt.", "error");
+        }
+      } catch (fallbackError) {
+        console.error('Fallback text generation also failed:', fallbackError);
+        showToast("An error occurred while generating the receipt.", "error");
+      }
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   if (!tripTransaction || !tripTransaction.trip) {
     return null;
   }
@@ -137,13 +187,30 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           <Text variant="h5" color={COLORS.white} style={styles.headerTitle}>
             {UI_TEXTS.MODAL.TITLE}
           </Text>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onClose}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="close" size={24} color={COLORS.white} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.downloadButton}
+              onPress={handleDownloadPDF}
+              disabled={isGeneratingPDF}
+              activeOpacity={0.7}
+            >
+              <Ionicons 
+                name={isGeneratingPDF ? "hourglass-outline" : "download-outline"} 
+                size={20} 
+                color={COLORS.white} 
+              />
+              <Text variant="bodySmall" color={COLORS.white} style={styles.downloadButtonText}>
+                {isGeneratingPDF ? "Generating..." : "Download PDF"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={onClose}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={24} color={COLORS.white} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView
@@ -269,7 +336,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 </Text>
               </View>
 
-              {/* <View style={styles.infoRow}>
+              <View style={styles.infoRow}>
                 <Text variant="body" color={COLORS.gray[600]}>
                   {UI_TEXTS.LABELS.TAP_IN_BY}:
                 </Text>
@@ -313,12 +380,12 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     </View>
                   </View>
                 </View>
-              )} */}
+              )}
             </View>
           </Card>
 
           {/* Locations Section */}
-          {(trip.startingLatitude && trip.startingLongitude) && (
+          {/* {(trip.startingLatitude && trip.startingLongitude) && (
             <Card variant="elevated" style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Ionicons name="location-outline" size={20} color={COLORS.secondary} />
@@ -382,11 +449,19 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 )}
               </View>
             </Card>
-          )}
+          )} */}
 
           {/* Bottom spacing */}
           <View style={styles.bottomSpacing} />
         </ScrollView>
+
+        {/* Toast notification */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+        />
       </View>
     </Modal>
   );
@@ -409,6 +484,26 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.sm,
+  },
+  downloadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.white + "20",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: COLORS.white + "40",
+  },
+  downloadButtonText: {
+    fontWeight: "500",
+    fontSize: 12,
   },
   closeButton: {
     padding: SPACING.xs,
