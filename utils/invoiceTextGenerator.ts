@@ -2,7 +2,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 import { TripTransaction } from '../services/api';
-import { formatDate, TimeFormatter } from './dateTime';
+import { formatDate } from './dateTime';
 
 // Helper function to format date and time together for text
 const formatDateAndTime = (dateString: string): string => {
@@ -10,9 +10,18 @@ const formatDateAndTime = (dateString: string): string => {
   
   try {
     const date = new Date(dateString);
-    const formattedDate = formatDate(date);
-    const formattedTime = TimeFormatter.format12Hour(date);
-    return `${formattedTime} on ${formattedDate}`;
+    
+    // Format: "Dec 15, 2024, 02:00 PM"
+    const options: Intl.DateTimeFormatOptions = {
+      month: 'short',
+      day: 'numeric', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    };
+    
+    return date.toLocaleString('en-US', options);
   } catch (error) {
     console.error('Error formatting date and time:', error);
     return 'Invalid date';
@@ -153,7 +162,7 @@ export const downloadInvoiceAsText = async (
   user?: any
 ): Promise<boolean> => {
   try {
-    const fileName = `trip-receipt-${tripTransaction.transactionId}.txt`;
+    const fileName = `GoBD-${tripTransaction.transactionId}.txt`;
     const textContent = generateInvoiceText(tripTransaction, user);
     
     // Create file path

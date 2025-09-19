@@ -3,7 +3,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { TripTransaction } from '../services/api';
-import { formatDate, TimeFormatter } from './dateTime';
+import { formatDate } from './dateTime';
 
 // Define image assets
 const logoAssets = {
@@ -40,9 +40,18 @@ const formatDateAndTime = (dateString: string): string => {
   
   try {
     const date = new Date(dateString);
-    const formattedDate = formatDate(date);
-    const formattedTime = TimeFormatter.format12Hour(date);
-    return `${formattedTime} on ${formattedDate}`;
+    
+    // Format: "Dec 15, 2024, 02:00 PM"
+    const options: Intl.DateTimeFormatOptions = {
+      month: 'short',
+      day: 'numeric', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    };
+    
+    return date.toLocaleString('en-US', options);
   } catch (error) {
     console.error('Error formatting date and time:', error);
     return 'Invalid date';
@@ -765,7 +774,7 @@ export const generateInvoicePDF = async (
 
     console.log('Starting PDF generation...');
     
-    const pdfFileName = fileName || `trip-receipt-${tripTransaction.transactionId}.pdf`;
+    const pdfFileName = fileName || `GoBD-${tripTransaction.transactionId}.pdf`;
     const htmlContent = await generateInvoiceHTML(tripTransaction, user);
 
     console.log('Generating PDF from HTML content...');
@@ -781,14 +790,25 @@ export const generateInvoicePDF = async (
       throw new Error('PDF generation failed - no URI returned');
     }
 
-    // Verify the generated file exists
-    const fileInfo = await FileSystem.getInfoAsync(uri);
+    // Rename the file to our desired format
+    const desiredUri = `${FileSystem.documentDirectory}${pdfFileName}`;
+    
+    // Move/rename the file
+    await FileSystem.moveAsync({
+      from: uri,
+      to: desiredUri,
+    });
+    
+    console.log('PDF renamed to:', desiredUri);
+
+    // Verify the renamed file exists
+    const fileInfo = await FileSystem.getInfoAsync(desiredUri);
     if (!fileInfo.exists) {
-      throw new Error('Generated PDF file does not exist');
+      throw new Error('Renamed PDF file does not exist');
     }
 
     console.log('PDF file verified, size:', fileInfo.size);
-    return uri;
+    return desiredUri;
   } catch (error) {
     console.error('PDF generation error:', error);
     return null;
