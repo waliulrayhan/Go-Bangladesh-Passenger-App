@@ -34,6 +34,21 @@ const getImageAsBase64 = async (assetModule: any): Promise<string> => {
   return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 };
 
+// Helper function to format date and time together
+const formatDateAndTime = (dateString: string): string => {
+  if (!dateString) return 'N/A';
+  
+  try {
+    const date = new Date(dateString);
+    const formattedDate = formatDate(date);
+    const formattedTime = TimeFormatter.format12Hour(date);
+    return `${formattedTime} on ${formattedDate}`;
+  } catch (error) {
+    console.error('Error formatting date and time:', error);
+    return 'Invalid date';
+  }
+};
+
 const getTripDuration = (startTime: string, endTime?: string): string => {
   if (!endTime) return 'Ongoing Trip';
   
@@ -173,14 +188,25 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
   // Get trip distance
   const tripDistance = trip.distance && trip.distance > 0 ? `${trip.distance.toFixed(2)} km` : '0.00 km';
   
-  // Calculate amounts for the new table structure
-  const baseFare = 40.00; // You can make this dynamic based on your business logic
-  const perKmFare = totalAmount > baseFare && trip.distance ? 
-    (totalAmount - baseFare) / trip.distance : 4.50; // Default or calculated
+  // Get fare amounts from API response (route information)
+  const route = bus?.route;
+  const baseFare = route?.baseFare || 0.00; // Use API value or fallback
+  const perKmFare = route?.perKmFare || 0.00; // Use API value or fallback
+  
+  // Debug logging for fare data
+  console.log('PDF Fare Data:', {
+    baseFare,
+    perKmFare,
+    totalAmount,
+    tripDistance,
+    route: route ? { baseFare: route.baseFare, perKmFare: route.perKmFare } : null
+  });
+  
+  // Calculate amounts - VAT/Tax is zero as per requirement
   const fareAmount = totalAmount;
   const dueAmount = 0; // Assuming trip is paid
-  const subtotal = totalAmount * 0.93; // Assuming 7% tax
-  const tax = totalAmount * 0.07;
+  const subtotal = totalAmount; // No tax/VAT, so subtotal equals total
+  const tax = 0.00; // VAT/Tax is zero as requested
   
   return `
 <!DOCTYPE html>
@@ -652,8 +678,8 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
                 <p><strong>Route:</strong> ${bus?.route?.tripStartPlace && bus?.route?.tripEndPlace ? 
                   `${bus.route.tripStartPlace} ⇄ ${bus.route.tripEndPlace}` : 
                   (bus?.busName || 'Route not available')}</p>
-                <p><strong>Start Time:</strong> ${trip.tripStartTime ? TimeFormatter.forHistory(trip.tripStartTime) : 'N/A'}</p>
-                ${trip.tripEndTime ? `<p><strong>End Time:</strong> ${TimeFormatter.forHistory(trip.tripEndTime)}</p>` : ''}
+                <p><strong>Start Time:</strong> ${trip.tripStartTime ? formatDateAndTime(trip.tripStartTime) : 'N/A'}</p>
+                ${trip.tripEndTime ? `<p><strong>End Time:</strong> ${formatDateAndTime(trip.tripEndTime)}</p>` : ''}
             </div>
         </div>
     </div>

@@ -4,6 +4,21 @@ import { Platform } from 'react-native';
 import { TripTransaction } from '../services/api';
 import { formatDate, TimeFormatter } from './dateTime';
 
+// Helper function to format date and time together for text
+const formatDateAndTime = (dateString: string): string => {
+  if (!dateString) return 'N/A';
+  
+  try {
+    const date = new Date(dateString);
+    const formattedDate = formatDate(date);
+    const formattedTime = TimeFormatter.format12Hour(date);
+    return `${formattedTime} on ${formattedDate}`;
+  } catch (error) {
+    console.error('Error formatting date and time:', error);
+    return 'Invalid date';
+  }
+};
+
 const getTripDuration = (startTime: string, endTime?: string): string => {
   if (!endTime) return 'Ongoing Trip';
   
@@ -73,29 +88,31 @@ export const generateInvoiceText = (tripTransaction: TripTransaction, user?: any
     '',
     'FARE DETAILS',
     '==========================================',
-    `Fare Amount: ৳${tripTransaction.amount.toFixed(2)}`,
   );
 
+  // Add base fare and per km fare from route if available
+  const route = bus?.route;
+  const baseFare = route?.baseFare || 40.00;
+  const perKmFare = route?.perKmFare || 4.50;
+  
+  lines.push(`Base Fare: ৳${baseFare.toFixed(2)}`);
+  lines.push(`Per KM Fare: ৳${perKmFare.toFixed(2)}`);
+  
   if (trip.distance > 0) {
     lines.push(`Distance Traveled: ${trip.distance.toFixed(2)} km`);
   }
+  
+  lines.push(`Total Fare: ৳${tripTransaction.amount.toFixed(2)}`);
 
   lines.push(
     '',
     'TRIP TIMING',
     '==========================================',
-    `Tap In Time: ${trip.tripStartTime ? TimeFormatter.forHistory(trip.tripStartTime) : 'N/A'}`,
+    `Tap In: ${trip.tripStartTime ? formatDateAndTime(trip.tripStartTime) : 'N/A'}`,
   );
 
-  if (trip.tripStartTime) {
-    lines.push(`Date: ${formatDate(new Date(trip.tripStartTime))}`);
-  }
-
   if (trip.tripEndTime) {
-    lines.push(
-      `Tap Out Time: ${TimeFormatter.forHistory(trip.tripEndTime)}`,
-      `Date: ${formatDate(new Date(trip.tripEndTime))}`
-    );
+    lines.push(`Tap Out: ${formatDateAndTime(trip.tripEndTime)}`);
   }
 
   lines.push(`Trip Duration: ${getTripDuration(trip.tripStartTime, trip.tripEndTime)}`);
