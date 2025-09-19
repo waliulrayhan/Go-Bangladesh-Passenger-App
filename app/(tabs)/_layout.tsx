@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Tabs, useRouter } from "expo-router";
 import { useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { CustomHeader } from "../../components/ui/CustomHeader";
 import { useStatusBar } from "../../hooks/useStatusBar";
 import { useAuthStore } from "../../stores/authStore";
@@ -152,6 +152,24 @@ export default function TabsLayout() {
             title: "Map Preview",
             headerShown: true,
             href: null, // Hide from tab bar
+            headerLeft: ({ tintColor }) => (
+              <TouchableOpacity
+                onPress={() => router.back()}
+                style={{
+                  marginLeft: 16,
+                  marginTop: 4,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingHorizontal: 4,
+                }}
+              >
+                <Ionicons
+                  name="arrow-back"
+                  size={24}
+                  color={tintColor}
+                />
+              </TouchableOpacity>
+            ),
           }}
         />
         <Tabs.Screen
