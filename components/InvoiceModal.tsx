@@ -142,14 +142,14 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     
     try {
       console.log('Attempting PDF generation...');
-      const success = await downloadInvoicePDF(tripTransaction);
+      const success = await downloadInvoicePDF(tripTransaction, undefined, user);
       
       if (success) {
         showToast("Trip receipt has been saved successfully!", "success");
       } else {
         console.log('PDF generation failed, trying text fallback...');
         // Fallback to text file if PDF generation fails
-        const textSuccess = await downloadInvoiceAsText(tripTransaction);
+        const textSuccess = await downloadInvoiceAsText(tripTransaction, user);
         
         if (textSuccess) {
           showToast("Trip receipt saved as text file (PDF generation failed)", "warning");
@@ -162,7 +162,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
       
       try {
         console.log('Attempting text fallback after error...');
-        const textSuccess = await downloadInvoiceAsText(tripTransaction);
+        const textSuccess = await downloadInvoiceAsText(tripTransaction, user);
         
         if (textSuccess) {
           showToast("Trip receipt saved as text file (PDF error occurred)", "warning");

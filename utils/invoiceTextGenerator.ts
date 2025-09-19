@@ -21,18 +21,40 @@ const getTripDuration = (startTime: string, endTime?: string): string => {
   }
 };
 
-export const generateInvoiceText = (tripTransaction: TripTransaction): string => {
+export const generateInvoiceText = (tripTransaction: TripTransaction, user?: any): string => {
   if (!tripTransaction.trip) return '';
   
   const trip = tripTransaction.trip;
   const bus = trip.session?.bus;
   const organization = bus?.organization;
   
+  // Get user information
+  const userName = user?.name || 'N/A';
+  const userType = user?.userType ? user.userType.charAt(0).toUpperCase() + user.userType.slice(1) : 'N/A';
+  const userCard = tripTransaction.card?.cardNumber || user?.cardNumber || 'N/A';
+  
+  // Handle organization properly
+  let userOrganization = 'N/A';
+  if (user?.organization) {
+    if (typeof user.organization === 'string') {
+      userOrganization = user.organization;
+    } else if (user.organization.name) {
+      userOrganization = user.organization.name;
+    }
+  }
+  
   const lines = [
     '==========================================',
     '           GO BANGLADESH',
     '         TRIP RECEIPT',
     '==========================================',
+    '',
+    'USER INFORMATION',
+    '==========================================',
+    `Name: ${userName}`,
+    `Organization: ${userOrganization}`,
+    `User Type: ${userType}`,
+    `Card Number: ${userCard}`,
     '',
     'TRIP INFORMATION',
     '==========================================',
@@ -110,11 +132,12 @@ export const generateInvoiceText = (tripTransaction: TripTransaction): string =>
 };
 
 export const downloadInvoiceAsText = async (
-  tripTransaction: TripTransaction
+  tripTransaction: TripTransaction,
+  user?: any
 ): Promise<boolean> => {
   try {
     const fileName = `trip-receipt-${tripTransaction.transactionId}.txt`;
-    const textContent = generateInvoiceText(tripTransaction);
+    const textContent = generateInvoiceText(tripTransaction, user);
     
     // Create file path
     const filePath = `${FileSystem.documentDirectory}${fileName}`;

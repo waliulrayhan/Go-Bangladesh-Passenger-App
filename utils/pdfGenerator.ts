@@ -1,8 +1,38 @@
+import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { TripTransaction } from '../services/api';
 import { formatDate, TimeFormatter } from './dateTime';
+
+// Define image assets
+const logoAssets = {
+  goBdLogo: require('../assets/images/goBdLogoForInvoice.png'),
+  portfolioBanner: require('../assets/images/portfolioBanner.png'),
+};
+
+// Helper function to get image as base64 for PDF
+const getImageAsBase64 = async (assetModule: any): Promise<string> => {
+  try {
+    const asset = Asset.fromModule(assetModule);
+    await asset.downloadAsync();
+    
+    if (asset.localUri) {
+      // Read file as base64
+      const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      
+      // Determine MIME type (assume PNG for logo assets)
+      return `data:image/png;base64,${base64}`;
+    }
+  } catch (error) {
+    console.error('Failed to load image asset:', error);
+  }
+  
+  // Return a transparent 1x1 pixel image as fallback
+  return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+};
 
 const getTripDuration = (startTime: string, endTime?: string): string => {
   if (!endTime) return 'Ongoing Trip';
@@ -95,8 +125,14 @@ const numberToWords = (amount: number): string => {
   return result + ' Only';
 };
 
-const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): string => {
+const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any): Promise<string> => {
   if (!tripTransaction.trip) return '';
+  
+  // Load images as base64
+  const [goBdLogoBase64, portfolioBannerBase64] = await Promise.all([
+    getImageAsBase64(logoAssets.goBdLogo),
+    getImageAsBase64(logoAssets.portfolioBanner),
+  ]);
   
   const trip = tripTransaction.trip;
   const bus = trip.session?.bus;
@@ -110,12 +146,29 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
   const totalAmount = tripTransaction.amount;
   const totalInWords = numberToWords(totalAmount);
   
-  // Get user information
+  // Get user information with better fallback handling
   const userName = user?.name || 'N/A';
-  const userType = user?.userType || 'N/A';
+  const userType = user?.userType ? user.userType.charAt(0).toUpperCase() + user.userType.slice(1) : 'N/A';
   const userCard = tripTransaction.card?.cardNumber || user?.cardNumber || 'N/A';
-  const userOrganization = user?.organization ? 
-    (typeof user.organization === 'string' ? user.organization : user.organization.name) : 'N/A';
+  
+  // Handle organization properly - can be string or object
+  let userOrganization = 'N/A';
+  if (user?.organization) {
+    if (typeof user.organization === 'string') {
+      userOrganization = user.organization;
+    } else if (user.organization.name) {
+      userOrganization = user.organization.name;
+    }
+  }
+  
+  // Debug logging to verify user data
+  console.log('PDF User Data:', {
+    userName,
+    userType,
+    userCard,
+    userOrganization,
+    originalUser: user
+  });
   
   // Get trip distance
   const tripDistance = trip.distance && trip.distance > 0 ? `${trip.distance.toFixed(2)} km` : '0.00 km';
@@ -558,10 +611,10 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
     <!-- Header with Logos -->
     <div class="header-logos">
         <div class="logo-left">
-            <img src="goBdLogoForInvoice.png" alt="Go Bangladesh Logo" class="logo-image">
+            <img src="${goBdLogoBase64}" alt="Go Bangladesh Logo" class="logo-image">
         </div>
         <div class="logo-right">
-            <img src="portfolioBanner.png" alt="Portfolio Banner" class="logo-image">
+            <img src="${portfolioBannerBase64}" alt="Portfolio Banner" class="logo-image">
         </div>
     </div>
     
@@ -584,7 +637,7 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
             <div class="billing-details">
                 <p class="company-name">${userName}</p>
                 <p><strong>Organization:</strong> ${userOrganization}</p>
-                <p><strong>User Type:</strong>${userType}</p>
+                <p><strong>User Type:</strong> ${userType}</p>
                 <p><strong>Card Number:</strong> ${userCard}</p>
                 <p><strong>Transaction ID:</strong> ${tripTransaction.transactionId}</p>
             </div>
@@ -687,7 +740,7 @@ export const generateInvoicePDF = async (
     console.log('Starting PDF generation...');
     
     const pdfFileName = fileName || `trip-receipt-${tripTransaction.transactionId}.pdf`;
-    const htmlContent = generateInvoiceHTML(tripTransaction, user);
+    const htmlContent = await generateInvoiceHTML(tripTransaction, user);
 
     console.log('Generating PDF from HTML content...');
 
