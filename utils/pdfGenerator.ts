@@ -201,14 +201,16 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
   const route = bus?.route;
   const baseFare = route?.baseFare || 0.00; // Use API value or fallback
   const perKmFare = route?.perKmFare || 0.00; // Use API value or fallback
+  const penaltyFare = route?.penaltyAmount || 0.00; // Use API value or fallback
   
   // Debug logging for fare data
   console.log('PDF Fare Data:', {
     baseFare,
     perKmFare,
+    penaltyFare,
     totalAmount,
     tripDistance,
-    route: route ? { baseFare: route.baseFare, perKmFare: route.perKmFare } : null
+    route: route ? { baseFare: route.baseFare, perKmFare: route.perKmFare, penaltyFare: route.penaltyAmount } : null
   });
   
   // Calculate amounts - VAT/Tax is zero as per requirement
@@ -285,8 +287,8 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
         /* Status seal */
         .status-seal {
             position: absolute;
-            right: 50px;
-            top: 180px;
+            right: 80px;
+            top: 220px;
             transform: rotate(-12deg);
             width: 120px;
             height: 120px;
@@ -348,7 +350,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 40px;
             position: relative;
             z-index: 2;
             font-size: 14px;
@@ -357,7 +359,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
         /* Invoice title */
         .invoice-title {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 40px;
             position: relative;
             z-index: 2;
         }
@@ -386,7 +388,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 40px;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             position: relative;
             z-index: 2;
         }
@@ -426,7 +428,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
         
         /* Table introduction */
         .table-intro {
-            margin-bottom: 16px;
+            margin-bottom: 20px;
             position: relative;
             z-index: 2;
         }
@@ -481,7 +483,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
         }
         
         .summary-table {
-            width: 50%;
+            width: 40%;
             border-collapse: collapse;
             font-size: 14px;
         }
@@ -505,7 +507,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
         /* Amount in words and terms */
         .terms-section {
             margin-top: 25px;
-            margin-bottom: 20px;
+            margin-bottom: 100px;
             position: relative;
             z-index: 2;
         }
@@ -638,8 +640,8 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
     <!-- Status Seal -->
     <div class="status-seal">
         <div class="status-content">
-            <div class="status-label">PAYMENT STATUS</div>
-            <div class="status-text">PAID</div>
+            <div class="status-label">TRIP STATUS</div>
+            <div class="status-text">COMPLETED</div>
         </div>
     </div>
     
@@ -656,12 +658,12 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
     <!-- Date and Invoice Number -->
     <div class="date-invoice-row">
         <div>Date: ${issueDate}</div>
-        <div>Invoice ID: ${invoiceNumber}</div>
+        <div>Invoice Number: ${invoiceNumber}</div>
     </div>
     
     <!-- Invoice Title -->
     <div class="invoice-title">
-        <h1>TRIP RECEIPT</h1>
+        <h1>INVOICE</h1>
     </div>
     
     <!-- Billing Information -->
@@ -679,7 +681,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
         </div>
         
         <div class="billing-section">
-            <h3>Trip Information & Timing</h3>
+            <h3>Trip Information</h3>
             <hr>
             <div class="billing-details">
                 <p class="company-name">${bus?.busNumber || 'N/A'}</p>
@@ -704,18 +706,20 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
         <table class="invoice-table">
             <thead>
                 <tr>
-                    <th style="width: 25%;">Base Fare</th>
-                    <th style="width: 25%;">Per KM Fare</th>
-                    <th style="width: 25%;">Distance Travelled</th>
-                    <th style="width: 25%;">Trip Amount</th>
+                    <th style="width: 20%;">Base Amount</th>
+                    <th style="width: 20%;">Penalty Amount</th>
+                    <th style="width: 20%;">Per KM Amount</th>
+                    <th style="width: 20%;">Distance</th>
+                    <th style="width: 20%;">Trip Amount</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="width: 25%;"><span class="taka-symbol">৳</span>${formatCurrency(baseFare)}</td>
-                    <td style="width: 25%;"><span class="taka-symbol">৳</span>${formatCurrency(perKmFare)}</td>
-                    <td style="width: 25%;">${tripDistance}</td>
-                    <td style="width: 25%;" class="total-cell"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
+                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(baseFare)}</td>
+                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(penaltyFare)}</td>
+                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(perKmFare)}</td>
+                    <td style="width: 20%;">${tripDistance}</td>
+                    <td style="width: 20%;" class="total-cell"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
                 </tr>
             </tbody>
         </table>
@@ -725,7 +729,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
             <table class="summary-table">
                 <tbody>
                     <tr>
-                        <td style="width: 50%;">Subtotal</td>
+                        <td style="width: 50%;">Total</td>
                         <td style="width: 50%;"><span class="taka-symbol">৳</span>${formatCurrency(subtotal)}</td>
                     </tr>
                     <tr>
@@ -733,7 +737,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
                         <td class="border-top-none"><span class="taka-symbol">৳</span>${formatCurrency(tax)}</td>
                     </tr>
                     <tr>
-                        <td class="border-top-none grand-total">TOTAL AMOUNT</td>
+                        <td class="border-top-none grand-total">GRAND TOTAL</td>
                         <td class="border-top-none grand-total"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
                     </tr>
                 </tbody>
