@@ -321,9 +321,7 @@ Best regards,
           visible={toast.visible}
           message={toast.message}
           type={toast.type}
-          onHide={hideToast}
-          position="bottom"
-        />
+          onHide={hideToast}/>
       </View>
     </Modal>
   );
@@ -516,3 +514,4 @@ const styles = StyleSheet.create({
     height: SPACING['6xl'],
   },
 });
+

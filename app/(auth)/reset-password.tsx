@@ -310,9 +310,7 @@ export default function ResetPassword() {
           visible={toast.visible}
           message={toast.message}
           type={toast.type}
-          onHide={hideToast}
-          position="bottom"
-        />
+          onHide={hideToast}/>
       </SafeAreaView>
     </>
   );
@@ -457,3 +455,4 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
 });
+

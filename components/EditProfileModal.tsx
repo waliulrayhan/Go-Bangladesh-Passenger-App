@@ -682,9 +682,7 @@ export function EditProfileModal({
           visible={toast.visible}
           message={toast.message}
           type={toast.type}
-          onHide={hideToast}
-          position="bottom"
-        />
+          onHide={hideToast}/>
 
         {/* Date Picker */}
         {showDatePicker && (
@@ -1055,3 +1053,4 @@ const styles = StyleSheet.create({
     height: SPACING["3xl"],
   },
 });
+

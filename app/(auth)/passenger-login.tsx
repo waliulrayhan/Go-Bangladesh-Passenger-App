@@ -356,9 +356,7 @@ export default function PassengerLogin() {
           visible={toast.visible}
           message={toast.message}
           type={toast.type}
-          onHide={hideToast}
-          position="bottom"
-        />
+          onHide={hideToast}/>
       </SafeAreaView>
     </>
   );
@@ -520,3 +518,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+

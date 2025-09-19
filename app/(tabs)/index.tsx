@@ -938,9 +938,7 @@ export default function Dashboard() {
           visible={toast.visible}
           message={toast.message}
           type={toast.type}
-          onHide={hideToast}
-          position="bottom"
-        />
+          onHide={hideToast}/>
       </View>
     </>
   );
@@ -1450,3 +1448,4 @@ const styles = StyleSheet.create({
     maxWidth: 240,
   },
 });
+

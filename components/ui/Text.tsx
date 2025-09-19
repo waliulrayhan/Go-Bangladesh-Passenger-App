@@ -31,3 +31,4 @@ export const Text: React.FC<TextProps> = ({
     </RNText>
   );
 };
+

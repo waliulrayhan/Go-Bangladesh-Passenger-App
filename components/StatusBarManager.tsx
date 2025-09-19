@@ -39,3 +39,4 @@ export const StatusBarManager: React.FC<StatusBarManagerProps> = ({
     </>
   );
 };
+

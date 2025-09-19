@@ -1029,9 +1029,7 @@ export default function History() {
         <Toast
           visible={toast.visible}
           message={toast.message}
-          type={toast.type}
-          position="bottom"
-          onHide={hideToast}
+          type={toast.type}onHide={hideToast}
         />
 
         {/* Invoice Modal */}
@@ -1467,3 +1465,4 @@ const styles = StyleSheet.create({
     color: "#1976D2"
   },
 });
+

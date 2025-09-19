@@ -567,9 +567,7 @@ export default function MapViewScreen() {
       visible={toast.visible}
       message={toast.message}
       type={toast.type}
-      onHide={hideToast}
-      position="bottom"
-    />
+      onHide={hideToast}/>
   );
 
   // Main Render
@@ -801,3 +799,4 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
 });
+

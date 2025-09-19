@@ -780,9 +780,7 @@ export default function Profile() {
         <Toast
           visible={toast.visible}
           message={toast.message}
-          type={toast.type}
-          position="bottom"
-          duration={toast.type === 'warning' ? 4000 : 1000}
+          type={toast.type}duration={toast.type === 'warning' ? 4000 : 1000}
           onHide={hideToast}
         />
       )}
@@ -1121,3 +1119,4 @@ const styles = StyleSheet.create({
     color: COLORS.gray[500],
   },
 });
+

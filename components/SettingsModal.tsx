@@ -259,9 +259,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           visible={toast.visible}
           message={toast.message}
           type={toast.type}
-          onHide={hideToast}
-          position="bottom"
-        />
+          onHide={hideToast}/>
       </View>
 
       {/* About Modal */}
@@ -380,3 +378,4 @@ const styles = StyleSheet.create({
     height: SPACING['6xl'],
   },
 });
+

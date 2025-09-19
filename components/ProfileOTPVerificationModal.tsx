@@ -704,9 +704,7 @@ export function ProfileOTPVerificationModal({
           visible={toast.visible}
           message={toast.message}
           type={toast.type}
-          onHide={hideToast}
-          position="bottom"
-        />
+          onHide={hideToast}/>
       </SafeAreaView>
     </Modal>
   );
@@ -894,3 +892,4 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
 });
+

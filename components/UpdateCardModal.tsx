@@ -550,7 +550,6 @@ export const UpdateCardModal: React.FC<UpdateCardModalProps> = ({
             type={toast.type}
             onHide={hideToast}
             duration={3000}
-            position="bottom"
           />
           
           <View style={styles.modalContainer}>
@@ -819,3 +818,4 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+

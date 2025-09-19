@@ -654,9 +654,7 @@ export default function VerifyRegistration() {
           visible={toast.visible}
           message={toast.message}
           type={toast.type}
-          onHide={hideToast}
-          position="bottom"
-        />
+          onHide={hideToast}/>
       </SafeAreaView>
     </>
   );
@@ -825,3 +823,4 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
 });
+
