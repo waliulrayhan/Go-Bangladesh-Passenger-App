@@ -7,11 +7,6 @@
     "icon": "./assets/images/appIconPng1024_lg.png",
     "userInterfaceStyle": "light",
     "primaryColor": "#4A90E2",
-    "statusBar": {
-      "style": "light",
-      "backgroundColor": "#4A90E2",
-      "hidden": false
-    },
     "splash": {
       "image": "./assets/images/splashScreenTransparent1024_updated.png",
       "resizeMode": "contain",
@@ -24,9 +19,6 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.solutionspin.gobangladesh",
       "icon": "./assets/images/iOS.png",
-      "statusBar": {
-        "style": "light"
-      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIStatusBarStyle": "UIStatusBarStyleLightContent",
@@ -43,11 +35,6 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/appIconPng1024_lg.png",
         "backgroundColor": "#FFFFFF"
-      },
-      "statusBar": {
-        "backgroundColor": "#4A90E2",
-        "style": "light",
-        "translucent": false
       },
       "splash": {
         "image": "./assets/images/splashScreenTransparent1024_updated.png",
