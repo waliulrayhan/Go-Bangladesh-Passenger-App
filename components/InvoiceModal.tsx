@@ -50,7 +50,7 @@ const UI_TEXTS = {
     SESSION_CODE: "Session Code",
     ORGANIZATION: "Bus Organization",
     FARE_AMOUNT: "Fare Amount",
-    DISTANCE: "Distance Traveled",
+    DISTANCE: "Distance Travelled",
     TAP_IN_TIME: "Tap In Time",
     TAP_OUT_TIME: "Tap Out Time",
     TAP_IN_BY: "Tap In Method",

@@ -154,9 +154,9 @@ export default function TabsLayout() {
             href: null, // Hide from tab bar
             headerLeft: ({ tintColor }) => (
               <TouchableOpacity
-                onPress={() => router.back()}
+                onPress={() => router.push("/(tabs)/map")}
                 style={{
-                  marginLeft: 16,
+                  marginLeft: 15,
                   marginTop: 4,
                   justifyContent: 'center',
                   alignItems: 'center',
