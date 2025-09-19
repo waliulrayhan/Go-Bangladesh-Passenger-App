@@ -425,7 +425,7 @@ export function EditProfileModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>

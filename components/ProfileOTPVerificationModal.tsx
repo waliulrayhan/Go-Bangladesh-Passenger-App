@@ -656,8 +656,8 @@ export function ProfileOTPVerificationModal({
     >
       <StatusBar
         style="light"
-        backgroundColor="transparent"
-        translucent={true}
+        backgroundColor="#4A90E2"
+        translucent={false}
       />
       <SafeAreaView style={styles.container}>
         <LinearGradient

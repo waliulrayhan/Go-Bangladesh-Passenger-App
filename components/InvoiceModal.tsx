@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 // Custom components and hooks
+import { useStatusBar } from "../hooks/useStatusBar";
 import { useToast } from "../hooks/useToast";
 import { TripTransaction } from "../services/api";
 import { useAuthStore } from "../stores/authStore";
@@ -131,6 +132,14 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+  
+  // Status bar configuration for modal
+  useStatusBar({
+    backgroundColor: COLORS.primary,
+    barStyle: 'light-content',
+    translucent: false,
+    hidden: false,
+  });
   
   // Get current user information
   const user = useAuthStore((state) => state.user);

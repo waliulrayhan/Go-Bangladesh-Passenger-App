@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, StatusBar, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
 import { COLORS, SPACING } from '../utils/constants';
 import { Text } from './ui/Text';
 
@@ -74,6 +74,7 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
