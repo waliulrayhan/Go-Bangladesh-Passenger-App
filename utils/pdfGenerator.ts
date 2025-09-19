@@ -112,14 +112,18 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
   
   // Get user information
   const userName = user?.name || 'N/A';
-  const userCard = tripTransaction.card?.cardNumber || user?.cardNumber || 'Not Available';
+  const userType = user?.userType || 'N/A';
+  const userCard = tripTransaction.card?.cardNumber || user?.cardNumber || 'N/A';
   const userOrganization = user?.organization ? 
     (typeof user.organization === 'string' ? user.organization : user.organization.name) : 'N/A';
   
   // Get trip distance
   const tripDistance = trip.distance && trip.distance > 0 ? `${trip.distance.toFixed(2)} km` : '0.00 km';
   
-  // Calculate amounts (assuming no due amount for now, all paid)
+  // Calculate amounts for the new table structure
+  const baseFare = 40.00; // You can make this dynamic based on your business logic
+  const perKmFare = totalAmount > baseFare && trip.distance ? 
+    (totalAmount - baseFare) / trip.distance : 4.50; // Default or calculated
   const fareAmount = totalAmount;
   const dueAmount = 0; // Assuming trip is paid
   const subtotal = totalAmount * 0.93; // Assuming 7% tax
@@ -146,7 +150,7 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
             line-height: 1.4;
             color: #000000;
             background-color: #ffffff;
-            padding: 20px;
+            padding: 15mm 10mm 10mm 10mm;
             margin: 0 auto;
             max-width: 210mm;
             min-height: 297mm;
@@ -412,8 +416,8 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
         
         /* Amount in words and terms */
         .terms-section {
-            margin-top: 30px;
-            margin-bottom: 30px;
+            margin-top: 25px;
+            margin-bottom: 20px;
             position: relative;
             z-index: 2;
         }
@@ -429,17 +433,19 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
         }
         
         .electronic-notice {
-            margin: 40px 0;
+            margin: 30px 0 20px 0;
+            padding-top: 30px;
             font-style: italic;
             text-align: center;
             color: #999999;
         }
         
-        /* Footer */
+        /* Footer */ 
         .footer-hr {
             border: none;
             border-top: 1px solid #000000;
-            margin: 20px 0 8px 0;
+            margin: 20px 0 5px 0;
+            padding-top: 0;
         }
         
         .footer {
@@ -458,6 +464,86 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
         .footer-content p:last-child {
             margin-bottom: 0;
         }
+        
+        /* Print styles for PDF generation */
+        @media print {
+            body {
+                padding: 15mm 10mm 10mm 10mm;
+                margin: 0;
+                max-width: none;
+                width: 210mm;
+                min-height: 257mm;
+                background-color: #ffffff;
+                font-size: 11px;
+                display: flex;
+                flex-direction: column;
+                box-sizing: border-box;
+            }
+            
+            @page {
+                size: A4;
+                margin: 0;
+            }
+            
+            .status-seal {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+            
+            .header-logos {
+                page-break-inside: avoid;
+                margin-top: 0;
+            }
+            
+            .billing-grid {
+                page-break-inside: avoid;
+            }
+            
+            .invoice-table-container {
+                page-break-inside: avoid;
+            }
+            
+            .terms-section {
+                page-break-before: auto;
+                page-break-inside: avoid;
+                flex-grow: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+            }
+            
+            .footer-hr {
+                margin-top: auto;
+                margin-bottom: 8px;
+            }
+            
+            .footer {
+                margin-top: 0;
+                margin-bottom: 0;
+            }
+        }
+        
+        /* Screen preview styles that mimic A4 */
+        @media screen {
+            body {
+                box-shadow: 0 0 20px rgba(0,0,0,0.1);
+                border: 1px solid #ddd;
+            }
+        }
+        
+        /* Logo placeholder styles for testing */
+        .logo-placeholder {
+            height: 60px;
+            width: 120px;
+            background-color: #f0f0f0;
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #666;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -472,10 +558,10 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
     <!-- Header with Logos -->
     <div class="header-logos">
         <div class="logo-left">
-            <img src="./assets/images/goBdLogoForInvoice.png" alt="Go Bangladesh Logo" class="logo-image" />
+            <img src="goBdLogoForInvoice.png" alt="Go Bangladesh Logo" class="logo-image">
         </div>
         <div class="logo-right">
-            <img src="./assets/images/portfolioBanner.png" alt="Portfolio Banner" class="logo-image" />
+            <img src="portfolioBanner.png" alt="Portfolio Banner" class="logo-image">
         </div>
     </div>
     
@@ -497,8 +583,10 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
             <hr>
             <div class="billing-details">
                 <p class="company-name">${userName}</p>
-                <p><strong>Card Number:</strong> ${userCard}</p>
                 <p><strong>Organization:</strong> ${userOrganization}</p>
+                <p><strong>User Type:</strong>${userType}</p>
+                <p><strong>Card Number:</strong> ${userCard}</p>
+                <p><strong>Transaction ID:</strong> ${tripTransaction.transactionId}</p>
             </div>
         </div>
         
@@ -507,12 +595,12 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
             <hr>
             <div class="billing-details">
                 <p class="company-name">${bus?.busNumber || 'N/A'}</p>
+                <p><strong>Organization:</strong> ${organization?.name || 'Go Bangladesh'}</p>
                 <p><strong>Route:</strong> ${bus?.route?.tripStartPlace && bus?.route?.tripEndPlace ? 
                   `${bus.route.tripStartPlace} ⇄ ${bus.route.tripEndPlace}` : 
                   (bus?.busName || 'Route not available')}</p>
                 <p><strong>Start Time:</strong> ${trip.tripStartTime ? TimeFormatter.forHistory(trip.tripStartTime) : 'N/A'}</p>
                 ${trip.tripEndTime ? `<p><strong>End Time:</strong> ${TimeFormatter.forHistory(trip.tripEndTime)}</p>` : ''}
-                <p><strong>Duration:</strong> ${getTripDuration(trip.tripStartTime, trip.tripEndTime)}</p>
             </div>
         </div>
     </div>
@@ -528,17 +616,17 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
         <table class="invoice-table">
             <thead>
                 <tr>
-                    <th style="width: 25%;">Trip Distance Travelled</th>
-                    <th style="width: 25%;">Fare Amount</th>
-                    <th style="width: 25%;">Due Amount</th>
-                    <th style="width: 25%;">Total Amount</th>
+                    <th style="width: 25%;">Base Fare</th>
+                    <th style="width: 25%;">Per KM Fare</th>
+                    <th style="width: 25%;">Distance Travelled</th>
+                    <th style="width: 25%;">Trip Amount</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
+                    <td style="width: 25%;"><span class="taka-symbol">৳</span>${formatCurrency(baseFare)}</td>
+                    <td style="width: 25%;"><span class="taka-symbol">৳</span>${formatCurrency(perKmFare)}</td>
                     <td style="width: 25%;">${tripDistance}</td>
-                    <td style="width: 25%;"><span class="taka-symbol">৳</span>${formatCurrency(fareAmount)}</td>
-                    <td style="width: 25%;"><span class="taka-symbol">৳</span>${formatCurrency(dueAmount)}</td>
                     <td style="width: 25%;" class="total-cell"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
                 </tr>
             </tbody>
@@ -557,7 +645,7 @@ const generateInvoiceHTML = (tripTransaction: TripTransaction, user?: any): stri
                         <td class="border-top-none"><span class="taka-symbol">৳</span>${formatCurrency(tax)}</td>
                     </tr>
                     <tr>
-                        <td class="border-top-none grand-total">GRAND TOTAL</td>
+                        <td class="border-top-none grand-total">TOTAL AMOUNT</td>
                         <td class="border-top-none grand-total"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
                     </tr>
                 </tbody>
