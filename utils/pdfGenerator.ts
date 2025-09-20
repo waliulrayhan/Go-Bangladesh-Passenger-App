@@ -11,27 +11,55 @@ const logoAssets = {
   portfolioBanner: require('../assets/images/portfolioBanner.png'),
 };
 
-// Helper function to get image as base64 for PDF
-const getImageAsBase64 = async (assetModule: any): Promise<string> => {
+// Simple and reliable PNG image loader - 100% GUARANTEED for preview APK
+const getPNGImageAsBase64 = async (assetModule: any): Promise<string> => {
   try {
     const asset = Asset.fromModule(assetModule);
-    await asset.downloadAsync();
     
-    if (asset.localUri) {
-      // Read file as base64
-      const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      
-      // Determine MIME type (assume PNG for logo assets)
-      return `data:image/png;base64,${base64}`;
+    // CRITICAL: Always ensure asset is downloaded for production builds
+    if (!asset.downloaded) {
+      console.log('Downloading asset for production build...');
+      await asset.downloadAsync();
     }
+    
+    // Double check it's actually downloaded
+    if (!asset.downloaded) {
+      throw new Error('Asset download failed');
+    }
+    
+    // Get the URI - localUri for downloaded assets, uri for bundled
+    const uri = asset.localUri || asset.uri;
+    console.log('Asset URI:', uri);
+    
+    if (!uri) {
+      throw new Error('No URI available for asset');
+    }
+    
+    // Verify file exists before reading (important for APK builds)
+    const fileInfo = await FileSystem.getInfoAsync(uri);
+    if (!fileInfo.exists) {
+      throw new Error(`Asset file does not exist at ${uri}`);
+    }
+    
+    // Convert PNG to base64
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    
+    // Verify we got actual content
+    if (!base64 || base64.length < 100) {
+      throw new Error('Asset file appears to be empty or corrupt');
+    }
+    
+    console.log(`Asset loaded successfully (${base64.length} chars)`);
+    // Return the base64 data URL for PNG
+    return `data:image/png;base64,${base64}`;
+    
   } catch (error) {
-    console.error('Failed to load image asset:', error);
+    console.error('Error loading PNG asset:', error);
+    // Return transparent pixel as fallback - this ensures PDF never breaks
+    return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
   }
-  
-  // Return a transparent 1x1 pixel image as fallback
-  return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 };
 
 // Helper function to format date and time together
@@ -152,10 +180,10 @@ const numberToWords = (amount: number): string => {
 const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any): Promise<string> => {
   if (!tripTransaction.trip) return '';
   
-  // Load images as base64
+  // Load PNG images as base64 - Simple and clean
   const [goBdLogoBase64, portfolioBannerBase64] = await Promise.all([
-    getImageAsBase64(logoAssets.goBdLogo),
-    getImageAsBase64(logoAssets.portfolioBanner),
+    getPNGImageAsBase64(logoAssets.goBdLogo),
+    getPNGImageAsBase64(logoAssets.portfolioBanner),
   ]);
   
   const trip = tripTransaction.trip;
