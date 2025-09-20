@@ -350,7 +350,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 40px;
+            margin-bottom: 50px;
             position: relative;
             z-index: 2;
             font-size: 14px;
@@ -359,7 +359,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
         /* Invoice title */
         .invoice-title {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 50px;
             position: relative;
             z-index: 2;
         }
@@ -507,7 +507,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
         /* Amount in words and terms */
         .terms-section {
             margin-top: 25px;
-            margin-bottom: 100px;
+            margin-bottom: 70px;
             position: relative;
             z-index: 2;
         }
@@ -523,8 +523,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
         }
         
         .electronic-notice {
-            margin: 30px 0 20px 0;
-            padding-top: 30px;
+            padding-top: 70px;
             font-style: italic;
             text-align: center;
             color: #999999;
