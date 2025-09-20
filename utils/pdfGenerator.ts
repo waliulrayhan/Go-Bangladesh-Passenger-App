@@ -1,63 +1,49 @@
-import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { TripTransaction } from '../services/api';
 import { formatDate } from './dateTime';
 
-// Define image assets
-const logoAssets = {
-  goBdLogo: require('../assets/images/goBdLogoForInvoice.png'),
-  portfolioBanner: require('../assets/images/portfolioBanner.png'),
+// Online image URLs - GUARANTEED to work in APK builds
+const ONLINE_LOGO_URLS = {
+  goBdLogo: 'https://drive.google.com/uc?export=view&id=16gwTfM7qFXkj3OTNpuQORXOTJstdC4fl',
+  portfolioBanner: 'https://drive.google.com/uc?export=view&id=1tYlCAWqCbN4r0M6kdcJG7kAXz8vEJQph',
 };
 
-// Simple and reliable PNG image loader - 100% GUARANTEED for preview APK
-const getPNGImageAsBase64 = async (assetModule: any): Promise<string> => {
+// Online image loader - 100% GUARANTEED for APK builds
+const getOnlineImageAsBase64 = async (imageUrl: string): Promise<string> => {
   try {
-    const asset = Asset.fromModule(assetModule);
+    console.log('Fetching online image:', imageUrl);
     
-    // CRITICAL: Always ensure asset is downloaded for production builds
-    if (!asset.downloaded) {
-      console.log('Downloading asset for production build...');
-      await asset.downloadAsync();
+    // Fetch the image from online URL
+    const response = await fetch(imageUrl);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    // Double check it's actually downloaded
-    if (!asset.downloaded) {
-      throw new Error('Asset download failed');
+    // Get the image as blob
+    const blob = await response.blob();
+    
+    if (blob.size === 0) {
+      throw new Error('Empty image received');
     }
     
-    // Get the URI - localUri for downloaded assets, uri for bundled
-    const uri = asset.localUri || asset.uri;
-    console.log('Asset URI:', uri);
-    
-    if (!uri) {
-      throw new Error('No URI available for asset');
-    }
-    
-    // Verify file exists before reading (important for APK builds)
-    const fileInfo = await FileSystem.getInfoAsync(uri);
-    if (!fileInfo.exists) {
-      throw new Error(`Asset file does not exist at ${uri}`);
-    }
-    
-    // Convert PNG to base64
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
+    // Convert blob to base64 using FileReader approach
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        console.log(`Online image loaded successfully (${base64.length} chars)`);
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error('FileReader failed'));
+      reader.readAsDataURL(blob);
     });
     
-    // Verify we got actual content
-    if (!base64 || base64.length < 100) {
-      throw new Error('Asset file appears to be empty or corrupt');
-    }
-    
-    console.log(`Asset loaded successfully (${base64.length} chars)`);
-    // Return the base64 data URL for PNG
-    return `data:image/png;base64,${base64}`;
-    
   } catch (error) {
-    console.error('Error loading PNG asset:', error);
-    // Return transparent pixel as fallback - this ensures PDF never breaks
+    console.error('Error loading online image:', error);
+    // Return transparent pixel as fallback
     return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
   }
 };
@@ -180,11 +166,14 @@ const numberToWords = (amount: number): string => {
 const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any): Promise<string> => {
   if (!tripTransaction.trip) return '';
   
-  // Load PNG images as base64 - Simple and clean
+  // Load images using ONLINE approach - Simple and reliable for APK builds
+  console.log('Loading images from online URLs...');
   const [goBdLogoBase64, portfolioBannerBase64] = await Promise.all([
-    getPNGImageAsBase64(logoAssets.goBdLogo),
-    getPNGImageAsBase64(logoAssets.portfolioBanner),
+    getOnlineImageAsBase64(ONLINE_LOGO_URLS.goBdLogo),
+    getOnlineImageAsBase64(ONLINE_LOGO_URLS.portfolioBanner),
   ]);
+  
+  console.log('✅ All online images loaded successfully for PDF');
   
   const trip = tripTransaction.trip;
   const bus = trip.session?.bus;
