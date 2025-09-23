@@ -987,8 +987,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     // padding: SPACING.md,
   },
   loadingContainer: {
@@ -996,6 +997,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.md,
+    minHeight: '100%',
   },
   loadingText: {
     textAlign: 'center',
