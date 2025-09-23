@@ -958,7 +958,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.primary,
-    height: 60,
+    height: 55,
   },
   backButton: {
     borderRadius: 20,
