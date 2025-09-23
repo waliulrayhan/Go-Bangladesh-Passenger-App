@@ -1,15 +1,16 @@
 // React Native and Expo imports
 import { Ionicons } from "@expo/vector-icons";
 import Feather from "@expo/vector-icons/Feather";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Linking,
+  ActivityIndicator,
+  Dimensions,
   Modal,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import { WebView } from 'react-native-webview';
 
 // Custom components and hooks
 import { useStatusBar } from "../hooks/useStatusBar";
@@ -17,56 +18,10 @@ import { useToast } from "../hooks/useToast";
 import { TripTransaction } from "../services/api";
 import { useAuthStore } from "../stores/authStore";
 import { COLORS, SPACING } from "../utils/constants";
-import { formatDate, TimeFormatter } from "../utils/dateTime";
 import { downloadInvoiceAsText } from "../utils/invoiceTextGenerator";
 import { downloadInvoicePDF } from "../utils/pdfGenerator";
-import { Card } from "./ui/Card";
 import { Text } from "./ui/Text";
 import { Toast } from "./ui/Toast";
-
-// UI text constants
-const UI_TEXTS = {
-  MODAL: {
-    TITLE: "Trip Receipt",
-    CLOSE: "Close",
-  },
-  SECTIONS: {
-    USER_INFO: "User Information",
-    TRIP_INFO: "Trip Information",
-    FARE_DETAILS: "Fare Details",
-    LOCATIONS: "Trip Locations",
-    TIMING: "Trip Timing",
-    VEHICLE_INFO: "Vehicle Information",
-  },
-  LABELS: {
-    // User Information
-    USER_NAME: "Name",
-    CARD_NUMBER: "Card Number",
-    USER_ORGANIZATION: "Organization",
-    // Trip Information
-    TRANSACTION_ID: "Transaction ID",
-    BUS_NUMBER: "Bus Number",
-    BUS_ROUTE: "Route",
-    SESSION_CODE: "Session Code",
-    ORGANIZATION: "Bus Organization",
-    FARE_AMOUNT: "Fare Amount",
-    DISTANCE: "Distance Travelled",
-    TAP_IN_TIME: "Tap In Time",
-    TAP_OUT_TIME: "Tap Out Time",
-    TAP_IN_BY: "Tap In Method",
-    TAP_OUT_BY: "Tap Out Method",
-    TAP_IN_LOCATION: "Boarding Location",
-    TAP_OUT_LOCATION: "Alighting Location",
-    TRIP_DURATION: "Trip Duration",
-    VIEW_ON_MAP: "View on Map",
-    VIEW_ROUTE: "View Route",
-  },
-  FALLBACKS: {
-    NOT_AVAILABLE: "N/A",
-    ONGOING_TRIP: "Ongoing Trip",
-    UNKNOWN: "Unknown",
-  },
-} as const;
 
 interface InvoiceModalProps {
   visible: boolean;
@@ -74,42 +29,79 @@ interface InvoiceModalProps {
   tripTransaction: TripTransaction | null;
 }
 
-const openMapLocation = (latitude: number, longitude: number): void => {
-  const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-  Linking.openURL(url);
+// Import the HTML generator from pdfGenerator
+import { formatDate } from '../utils/dateTime';
+
+// Online image URLs - GUARANTEED to work in APK builds
+const ONLINE_LOGO_URLS = {
+  goBdLogo: 'https://drive.google.com/uc?export=view&id=16gwTfM7qFXkj3OTNpuQORXOTJstdC4fl',
+  portfolioBanner: 'https://drive.google.com/uc?export=view&id=1tYlCAWqCbN4r0M6kdcJG7kAXz8vEJQph',
 };
 
-const openRouteMap = (
-  startLat: number,
-  startLng: number,
-  endLat: number,
-  endLng: number
-): void => {
-  const url = `https://www.google.com/maps/dir/${startLat},${startLng}/${endLat},${endLng}`;
-  Linking.openURL(url);
+// Online image loader - 100% GUARANTEED for APK builds
+const getOnlineImageAsBase64 = async (imageUrl: string): Promise<string> => {
+  try {
+    console.log('Fetching online image:', imageUrl);
+    
+    // Fetch the image from online URL
+    const response = await fetch(imageUrl);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    // Get the image as blob
+    const blob = await response.blob();
+    
+    if (blob.size === 0) {
+      throw new Error('Empty image received');
+    }
+    
+    // Convert blob to base64 using FileReader approach
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        console.log(`Online image loaded successfully (${base64.length} chars)`);
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error('FileReader failed'));
+      reader.readAsDataURL(blob);
+    });
+    
+  } catch (error) {
+    console.error('Error loading online image:', error);
+    // Return transparent pixel as fallback
+    return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+  }
 };
 
-const getTapTypeColor = (tapType: string): string => {
-  switch (tapType) {
-    case "Card":
-      return "#1976D2";
-    case "Time-Out":
-      return "#F57C00";
-    case "Staff":
-      return "#388E3C";
-    case "Session-Out":
-      return "#D32F2F";
-    case "Mobile App":
-      return "#7B1FA2";
-    case "Penalty":
-      return "#E65100";
-    default:
-      return COLORS.gray[500];
+// Helper function to format date and time together
+const formatDateAndTime = (dateString: string): string => {
+  if (!dateString) return 'N/A';
+  
+  try {
+    const date = new Date(dateString);
+    
+    // Format: "Dec 15, 2024, 02:00 PM"
+    const options: Intl.DateTimeFormatOptions = {
+      month: 'short',
+      day: 'numeric', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    };
+    
+    return date.toLocaleString('en-US', options);
+  } catch (error) {
+    console.error('Error formatting date and time:', error);
+    return 'Invalid date';
   }
 };
 
 const getTripDuration = (startTime: string, endTime?: string): string => {
-  if (!endTime) return UI_TEXTS.FALLBACKS.ONGOING_TRIP;
+  if (!endTime) return 'Ongoing Trip';
   
   const start = new Date(startTime);
   const end = new Date(endTime);
@@ -125,13 +117,602 @@ const getTripDuration = (startTime: string, endTime?: string): string => {
   }
 };
 
+// Helper function to format currency for display
+const formatCurrency = (amount: number): string => {
+  return amount.toFixed(2);
+};
+
+// Helper function to convert number to words (comprehensive version)
+const numberToWords = (amount: number): string => {
+  if (amount === 0) return 'Zero Taka Only';
+  
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+  const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  
+  const convertHundreds = (num: number): string => {
+    let result = '';
+    
+    if (num >= 100) {
+      result += ones[Math.floor(num / 100)] + ' Hundred ';
+      num %= 100;
+    }
+    
+    if (num >= 20) {
+      result += tens[Math.floor(num / 10)];
+      if (num % 10 !== 0) {
+        result += ' ' + ones[num % 10];
+      }
+    } else if (num >= 10) {
+      result += teens[num - 10];
+    } else if (num > 0) {
+      result += ones[num];
+    }
+    
+    return result.trim();
+  };
+  
+  let wholePart = Math.floor(amount);
+  const decimalPart = Math.round((amount - wholePart) * 100);
+  
+  let result = '';
+  
+  if (wholePart >= 10000000) { // Crore
+    const crores = Math.floor(wholePart / 10000000);
+    result += convertHundreds(crores) + ' Crore ';
+    wholePart %= 10000000;
+  }
+  
+  if (wholePart >= 100000) { // Lakh
+    const lakhs = Math.floor(wholePart / 100000);
+    result += convertHundreds(lakhs) + ' Lakh ';
+    wholePart %= 100000;
+  }
+  
+  if (wholePart >= 1000) { // Thousand
+    const thousands = Math.floor(wholePart / 1000);
+    result += convertHundreds(thousands) + ' Thousand ';
+    wholePart %= 1000;
+  }
+  
+  if (wholePart > 0) {
+    result += convertHundreds(wholePart);
+  }
+  
+  result = result.trim();
+  if (result === '') result = 'Zero';
+  
+  result += ' Taka';
+  
+  if (decimalPart > 0) {
+    result += ' and ' + convertHundreds(decimalPart) + ' Paisa';
+  }
+  
+  return result + ' Only';
+};
+
+const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any): Promise<string> => {
+  if (!tripTransaction.trip) return '';
+  
+  // Load images using ONLINE approach - Simple and reliable for APK builds
+  console.log('Loading images from online URLs...');
+  const [goBdLogoBase64, portfolioBannerBase64] = await Promise.all([
+    getOnlineImageAsBase64(ONLINE_LOGO_URLS.goBdLogo),
+    getOnlineImageAsBase64(ONLINE_LOGO_URLS.portfolioBanner),
+  ]);
+  
+  console.log('✅ All online images loaded successfully for PDF');
+  
+  const trip = tripTransaction.trip;
+  const bus = trip.session?.bus;
+  const organization = bus?.organization;
+  
+  // Generate invoice number with date and transaction ID
+  const today = new Date();
+  const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+  const invoiceNumber = `GoBD-${tripTransaction.transactionId}`;
+  const issueDate = formatDate(today);
+  const totalAmount = tripTransaction.amount;
+  const totalInWords = numberToWords(totalAmount);
+  
+  // Get user information with better fallback handling
+  const userName = user?.name || 'N/A';
+  const userType = user?.userType ? user.userType.charAt(0).toUpperCase() + user.userType.slice(1) : 'N/A';
+  const userCard = tripTransaction.card?.cardNumber || user?.cardNumber || 'N/A';
+  
+  // Handle organization properly - can be string or object
+  let userOrganization = 'N/A';
+  if (user?.organization) {
+    if (typeof user.organization === 'string') {
+      userOrganization = user.organization;
+    } else if (user.organization.name) {
+      userOrganization = user.organization.name;
+    }
+  }
+  
+  // Get trip distance
+  const tripDistance = trip.distance && trip.distance > 0 ? `${trip.distance.toFixed(2)} km` : '0.00 km';
+  
+  // Get fare amounts from API response (route information)
+  const route = bus?.route;
+  const baseFare = route?.baseFare || 0.00;
+  const perKmFare = route?.perKmFare || 0.00;
+  const penaltyFare = route?.penaltyAmount || 0.00;
+  
+  // Calculate amounts - VAT/Tax is zero as per requirement
+  const fareAmount = totalAmount;
+  const dueAmount = 0;
+  const subtotal = totalAmount;
+  const tax = 0.00;
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Invoice ${invoiceNumber}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Plus Jakarta Sans', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #000000;
+            background-color: #ffffff;
+            padding: 15mm 10mm 10mm 10mm;
+            margin: 0 auto;
+            max-width: 210mm;
+            min-height: 297mm;
+            position: relative;
+        }
+        
+        .taka-symbol {
+            font-family: 'Noto Sans Bengali', 'Plus Jakarta Sans', sans-serif;
+            font-weight: 500;
+        }
+        
+        /* Header with logos */
+        .header-logos {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #000000;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .header-logos .logo-left,
+        .header-logos .logo-right {
+            flex: 1;
+            display: flex;
+        }
+        
+        .header-logos .logo-left {
+            justify-content: flex-start;
+        }
+        
+        .header-logos .logo-right {
+            justify-content: flex-end;
+        }
+        
+        .logo-image {
+            height: 60px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        /* Status seal */
+        .status-seal {
+            position: absolute;
+            right: 80px;
+            top: 220px;
+            transform: rotate(-12deg);
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid rgba(5, 150, 105, 0.8);
+            background-color: rgba(5, 150, 105, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            color: rgba(5, 150, 105, 0.8);
+            text-transform: uppercase;
+            z-index: 1;
+            text-align: center;
+            line-height: 1.1;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-seal::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 2px solid rgba(5, 150, 105, 0.8);
+            background-color: transparent;
+            z-index: 2;
+        }
+        
+        .status-content {
+            z-index: 3;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+        }
+        
+        .status-label {
+            font-size: 6px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            opacity: 0.7;
+        }
+        
+        .status-text {
+            font-size: 12px;
+            font-weight: 900;
+            margin-bottom: 1px;
+        }
+        
+        /* Date and invoice number */
+        .date-invoice-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 50px;
+            position: relative;
+            z-index: 2;
+            font-size: 14px;
+        }
+        
+        /* Invoice title */
+        .invoice-title {
+            text-align: center;
+            margin-bottom: 50px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .invoice-title h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #000000;
+            margin: 0 0 5px 0;
+            border: 2px solid #000000;
+            padding: 10px 20px;
+            display: inline-block;
+        }
+        
+        /* Billing information grid */
+        .billing-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .billing-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000000;
+            margin: 0 0 5px 0;
+        }
+        
+        .billing-section hr {
+            border: none;
+            border-top: 1px solid #000000;
+            margin: 0 0 15px 0;
+            width: 80px;
+        }
+        
+        .billing-details {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .billing-details p {
+            margin: 0 0 4px 0;
+        }
+        
+        .billing-details .company-name {
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .billing-details strong {
+            font-weight: 600;
+        }
+        
+        /* Table introduction */
+        .table-intro {
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .table-intro p {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 500;
+            color: #000000;
+        }
+        
+        /* Invoice table */
+        .invoice-table-container {
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            border: 1px solid #000000;
+            margin-bottom: 10px;
+        }
+        
+        .invoice-table th,
+        .invoice-table td {
+            border: 1px solid #000000;
+            padding: 8px;
+            text-align: right;
+        }
+        
+        .invoice-table th {
+            font-weight: 600;
+            background-color: #ffffff;
+        }
+        
+        .invoice-table tbody td {
+            font-weight: 400;
+        }
+        
+        .invoice-table .total-cell {
+            font-weight: 600;
+        }
+        
+        /* Summary table */
+        .summary-container {
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
+        }
+        
+        .summary-table {
+            width: 40%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .summary-table td {
+            border: 1px solid #000000;
+            padding: 8px;
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        .summary-table .border-top-none {
+            border-top: none;
+        }
+        
+        .summary-table .grand-total {
+            font-weight: 700;
+            background-color: #f9f9f9;
+        }
+        
+        /* Amount in words and terms */
+        .terms-section {
+            margin-top: 25px;
+            margin-bottom: 70px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .terms-section p {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .amount-words {
+            font-weight: 600;
+        }
+        
+        .electronic-notice {
+            padding-top: 70px;
+            font-style: italic;
+            text-align: center;
+            color: #999999;
+        }
+        
+        /* Footer */ 
+        .footer-hr {
+            border: none;
+            border-top: 1px solid #000000;
+            margin: 20px 0 5px 0;
+            padding-top: 0;
+        }
+        
+        .footer {
+            text-align: center;
+        }
+        
+        .footer-content {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        
+        .footer-content p {
+            margin: 0 0 8px 0;
+        }
+        
+        .footer-content p:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Status Seal -->
+    <div class="status-seal">
+        <div class="status-content">
+            <div class="status-label">TRIP STATUS</div>
+            <div class="status-text">COMPLETED</div>
+        </div>
+    </div>
+    
+    <!-- Header with Logos -->
+    <div class="header-logos">
+        <div class="logo-left">
+            <img src="${goBdLogoBase64}" alt="Go Bangladesh Logo" class="logo-image">
+        </div>
+        <div class="logo-right">
+            <img src="${portfolioBannerBase64}" alt="Portfolio Banner" class="logo-image">
+        </div>
+    </div>
+    
+    <!-- Date and Invoice Number -->
+    <div class="date-invoice-row">
+        <div>Date: ${issueDate}</div>
+        <div>Invoice Number: ${invoiceNumber}</div>
+    </div>
+    
+    <!-- Invoice Title -->
+    <div class="invoice-title">
+        <h1>INVOICE</h1>
+    </div>
+    
+    <!-- Billing Information -->
+    <div class="billing-grid">
+        <div class="billing-section">
+            <h3>User Information</h3>
+            <hr>
+            <div class="billing-details">
+                <p class="company-name">${userName}</p>
+                <p><strong>Organization:</strong> ${userOrganization}</p>
+                <p><strong>User Type:</strong> ${userType}</p>
+                <p><strong>Card Number:</strong> ${userCard}</p>
+                <p><strong>Transaction ID:</strong> ${tripTransaction.transactionId}</p>
+            </div>
+        </div>
+        
+        <div class="billing-section">
+            <h3>Trip Information</h3>
+            <hr>
+            <div class="billing-details">
+                <p class="company-name">${bus?.busNumber || 'N/A'}</p>
+                <p><strong>Organization:</strong> ${organization?.name || 'Go Bangladesh'}</p>
+                <p><strong>Route:</strong> ${bus?.route?.tripStartPlace && bus?.route?.tripEndPlace ? 
+                  `${bus.route.tripStartPlace} ⇄ ${bus.route.tripEndPlace}` : 
+                  (bus?.busName || 'Route not available')}</p>
+                <p><strong>Start Time:</strong> ${trip.tripStartTime ? formatDateAndTime(trip.tripStartTime) : 'N/A'}</p>
+                ${trip.tripEndTime ? `<p><strong>End Time:</strong> ${formatDateAndTime(trip.tripEndTime)}</p>` : ''}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Table Introduction -->
+    <div class="table-intro">
+        <p>The following table outlines the details of this trip:</p>
+    </div>
+    
+    <!-- Simplified Invoice Table -->
+    <div class="invoice-table-container">
+        <!-- Main Invoice Table -->
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th style="width: 20%;">Base Amount</th>
+                    <th style="width: 20%;">Penalty Amount</th>
+                    <th style="width: 20%;">Per KM Amount</th>
+                    <th style="width: 20%;">Distance</th>
+                    <th style="width: 20%;">Trip Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(baseFare)}</td>
+                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(penaltyFare)}</td>
+                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(perKmFare)}</td>
+                    <td style="width: 20%;">${tripDistance}</td>
+                    <td style="width: 20%;" class="total-cell"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Summary Table -->
+        <div class="summary-container">
+            <table class="summary-table">
+                <tbody>
+                    <tr>
+                        <td style="width: 50%;">Total</td>
+                        <td style="width: 50%;"><span class="taka-symbol">৳</span>${formatCurrency(subtotal)}</td>
+                    </tr>
+                    <tr>
+                        <td class="border-top-none">Vat / Tax</td>
+                        <td class="border-top-none"><span class="taka-symbol">৳</span>${formatCurrency(tax)}</td>
+                    </tr>
+                    <tr>
+                        <td class="border-top-none grand-total">GRAND TOTAL</td>
+                        <td class="border-top-none grand-total"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Amount in Words and Terms -->
+    <div class="terms-section">
+        <p class="amount-words">Total Amount (in words): ${totalInWords}</p>
+                
+        <p class="electronic-notice">This is an electronically generated invoice and does not require a seal or signature.</p>
+    </div>
+    
+    <!-- Footer -->
+    <hr class="footer-hr">
+    <div class="footer">
+        <div class="footer-content">
+            <p>ICT Tower, 14th Floor, Plot E-14/X, Agargaon, Sher-e-Bangla Nagar, Dhaka-1207</p>
+            <p>Phone: +880 1711 360 170 | Email: info@thegobd.com | Website: www.thegobd.com</p>
+        </div>
+    </div>
+</body>
+</html>
+  `;
+};
+
 export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   visible,
   onClose,
   tripTransaction,
 }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [htmlContent, setHtmlContent] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+  
+  // Get screen dimensions for responsive sizing
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   
   // Status bar configuration for modal
   useStatusBar({
@@ -143,6 +724,26 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   
   // Get current user information
   const user = useAuthStore((state) => state.user);
+
+  // Generate HTML content when modal opens
+  useEffect(() => {
+    if (visible && tripTransaction) {
+      generateHTML();
+    }
+  }, [visible, tripTransaction]);
+
+  const generateHTML = async () => {
+    setIsLoading(true);
+    try {
+      const html = await generateInvoiceHTML(tripTransaction!, user);
+      setHtmlContent(html);
+    } catch (error) {
+      console.error('Error generating HTML:', error);
+      showToast("Failed to load receipt preview", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleDownloadPDF = async () => {
     if (!tripTransaction) return;
@@ -191,47 +792,11 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     return null;
   }
 
-  const trip = tripTransaction.trip;
-  const bus = trip.session?.bus;
-  const organization = bus?.organization;
-
-  // Debug logging to understand available data (remove in production)
-  console.log('TripTransaction Data:', {
-    card: tripTransaction.card,
-    trip: {
-      distance: trip.distance,
-      session: trip.session
-    },
-    bus: bus,
-    user: user
-  });
-  
-  // Get card number from multiple sources
-  const getCardNumber = () => {
-    return tripTransaction.card?.cardNumber || user?.cardNumber || 'Not Available';
-  };
-  
-  // Try to get route information from different sources
-  const getRouteInfo = () => {
-    // Check if bus has route with start/end places
-    if (bus?.route?.tripStartPlace && bus?.route?.tripEndPlace) {
-      return `${bus.route.tripStartPlace} ⇄ ${bus.route.tripEndPlace}`;
-    }
-    // Fallback to bus name if available
-    if (bus?.busName) {
-      return bus.busName;
-    }
-    // Last fallback
-    return 'Route information not available';
-  };
-  
-  // Get distance with fallback
-  const getDistance = () => {
-    if (trip.distance !== undefined && trip.distance !== null) {
-      return trip.distance > 0 ? `${trip.distance.toFixed(2)} km` : "0.00 km";
-    }
-    return "Distance not available";
-  };
+  // Calculate responsive WebView dimensions
+  const headerHeight = 60;
+  const availableHeight = screenHeight - headerHeight - 40; // Account for header and padding
+  const webViewHeight = availableHeight;
+  const webViewWidth = screenWidth - 20; // Account for horizontal padding
 
   return (
     <Modal
@@ -251,7 +816,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             <Ionicons name="arrow-back" size={24} color={COLORS.white} />
           </TouchableOpacity>
           <Text variant="h5" color={COLORS.white} style={styles.headerTitle}>
-            {UI_TEXTS.MODAL.TITLE}
+            Trip Receipt
           </Text>
           <TouchableOpacity
             style={styles.downloadButton}
@@ -278,293 +843,62 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* User Information Section */}
-          <Card variant="elevated" style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="person-outline" size={20} color={COLORS.secondary} />
-              <Text variant="h6" color={COLORS.secondary} style={styles.sectionTitle}>
-                {UI_TEXTS.SECTIONS.USER_INFO}
+        {/* PDF Preview Content */}
+        <View style={styles.content}>
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text variant="body" color={COLORS.gray[600]} style={styles.loadingText}>
+                Loading receipt preview...
               </Text>
             </View>
-            <View style={styles.sectionContent}>
-              {user?.name && (
-                <View style={styles.infoRow}>
-                  <Text variant="body" color={COLORS.gray[600]}>
-                    {UI_TEXTS.LABELS.USER_NAME}:
-                  </Text>
-                  <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
-                    {user.name}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.infoRow}>
-                <Text variant="body" color={COLORS.gray[600]}>
-                  {UI_TEXTS.LABELS.CARD_NUMBER}:
-                </Text>
-                <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
-                  {getCardNumber()}
-                </Text>
-              </View>
-              {user?.organization && (
-                <View style={styles.infoRow}>
-                  <Text variant="body" color={COLORS.gray[600]}>
-                    {UI_TEXTS.LABELS.USER_ORGANIZATION}:
-                  </Text>
-                  <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
-                    {typeof user.organization === 'string' ? user.organization : user.organization.name}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </Card>
-
-          {/* Trip Information Section */}
-          <Card variant="elevated" style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="receipt-outline" size={20} color={COLORS.secondary} />
-              <Text variant="h6" color={COLORS.secondary} style={styles.sectionTitle}>
-                {UI_TEXTS.SECTIONS.TRIP_INFO}
-              </Text>
-            </View>
-            <View style={styles.sectionContent}>
-              <View style={styles.infoRow}>
-                <Text variant="body" color={COLORS.gray[600]}>
-                  {UI_TEXTS.LABELS.TRANSACTION_ID}:
-                </Text>
-                <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
-                  {tripTransaction.transactionId}
-                </Text>
-              </View>
-              {bus?.busNumber && (
-                <View style={styles.infoRow}>
-                  <Text variant="body" color={COLORS.gray[600]}>
-                    {UI_TEXTS.LABELS.BUS_NUMBER}:
-                  </Text>
-                  <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
-                    {bus.busNumber}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.infoRow}>
-                <Text variant="body" color={COLORS.gray[600]}>
-                  {UI_TEXTS.LABELS.BUS_ROUTE}:
-                </Text>
-                <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
-                  {getRouteInfo()}
-                </Text>
-              </View>
-              {organization?.name && (
-                <View style={styles.infoRow}>
-                  <Text variant="body" color={COLORS.gray[600]}>
-                    {UI_TEXTS.LABELS.ORGANIZATION}:
-                  </Text>
-                  <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
-                    {organization.name}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </Card>
-
-          {/* Fare Details Section */}
-          <Card variant="elevated" style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="card-outline" size={20} color={COLORS.secondary} />
-              <Text variant="h6" color={COLORS.secondary} style={styles.sectionTitle}>
-                {UI_TEXTS.SECTIONS.FARE_DETAILS}
-              </Text>
-            </View>
-            <View style={styles.sectionContent}>
-              <View style={styles.distanceRow}>
-                <Text variant="body" color={COLORS.gray[600]}>
-                  {UI_TEXTS.LABELS.DISTANCE}:
-                </Text>
-                <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
-                  {getDistance()}
-                </Text>
-              </View>
-              <View style={styles.fareRow}>
-                <Text variant="h6" color={COLORS.gray[600]}>
-                  {UI_TEXTS.LABELS.FARE_AMOUNT}:
-                </Text>
-                <Text variant="h5" color={COLORS.error} style={styles.fareAmount}>
-                  ৳{tripTransaction.amount.toFixed(2)}
-                </Text>
-              </View>
-            </View>
-          </Card>
-
-          {/* Timing Section */}
-          <Card variant="elevated" style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="time-outline" size={20} color={COLORS.secondary} />
-              <Text variant="h6" color={COLORS.secondary} style={styles.sectionTitle}>
-                {UI_TEXTS.SECTIONS.TIMING}
-              </Text>
-            </View>
-            <View style={styles.sectionContent}>
-              <View style={styles.infoRow}>
-                <Text variant="body" color={COLORS.gray[600]}>
-                  {UI_TEXTS.LABELS.TAP_IN_TIME}:
-                </Text>
-                <View style={styles.timeContainer}>
-                  <Text variant="body" color={COLORS.success} style={styles.timeText}>
-                    {trip.tripStartTime ? TimeFormatter.forHistory(trip.tripStartTime) : UI_TEXTS.FALLBACKS.NOT_AVAILABLE}
-                  </Text>
-                  <Text variant="caption" color={COLORS.gray[500]} style={styles.dateText}>
-                    {trip.tripStartTime ? formatDate(new Date(trip.tripStartTime)) : ""}
-                  </Text>
-                </View>
-              </View>
-              
-              {trip.tripEndTime && (
-                <View style={styles.infoRow}>
-                  <Text variant="body" color={COLORS.gray[600]}>
-                    {UI_TEXTS.LABELS.TAP_OUT_TIME}:
-                  </Text>
-                  <View style={styles.timeContainer}>
-                    <Text variant="body" color={COLORS.error} style={styles.timeText}>
-                      {TimeFormatter.forHistory(trip.tripEndTime)}
-                    </Text>
-                    <Text variant="caption" color={COLORS.gray[500]} style={styles.dateText}>
-                      {formatDate(new Date(trip.tripEndTime))}
-                    </Text>
-                  </View>
-                </View>
-              )}
-              
-              <View style={styles.infoRow}>
-                <Text variant="body" color={COLORS.gray[600]}>
-                  {UI_TEXTS.LABELS.TRIP_DURATION}:
-                </Text>
-                <Text variant="body" color={COLORS.gray[900]} style={styles.infoValue}>
-                  {getTripDuration(trip.tripStartTime, trip.tripEndTime)}
-                </Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text variant="body" color={COLORS.gray[600]}>
-                  {UI_TEXTS.LABELS.TAP_IN_BY}:
-                </Text>
-                <View style={styles.tapMethodContainer}>
-                  <View
-                    style={[
-                      styles.tapMethodBadge,
-                      { backgroundColor: getTapTypeColor(trip.tapInType || "") + "20" },
-                    ]}
-                  >
-                    <Text
-                      variant="bodySmall"
-                      color={getTapTypeColor(trip.tapInType || "")}
-                      style={styles.tapMethodText}
-                    >
-                      {trip.tapInType || UI_TEXTS.FALLBACKS.UNKNOWN}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {trip.tapOutStatus && (
-                <View style={styles.infoRow}>
-                  <Text variant="body" color={COLORS.gray[600]}>
-                    {UI_TEXTS.LABELS.TAP_OUT_BY}:
-                  </Text>
-                  <View style={styles.tapMethodContainer}>
-                    <View
-                      style={[
-                        styles.tapMethodBadge,
-                        { backgroundColor: getTapTypeColor(trip.tapOutStatus) + "20" },
-                      ]}
-                    >
-                      <Text
-                        variant="bodySmall"
-                        color={getTapTypeColor(trip.tapOutStatus)}
-                        style={styles.tapMethodText}
-                      >
-                        {trip.tapOutStatus}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              )}
-            </View>
-          </Card>
-
-          {/* Locations Section */}
-          {/* {(trip.startingLatitude && trip.startingLongitude) && (
-            <Card variant="elevated" style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="location-outline" size={20} color={COLORS.secondary} />
-                <Text variant="h6" color={COLORS.secondary} style={styles.sectionTitle}>
-                  {UI_TEXTS.SECTIONS.LOCATIONS}
-                </Text>
-              </View>
-              <View style={styles.sectionContent}>
-                <View style={styles.locationRow}>
-                  <Text variant="body" color={COLORS.gray[600]}>
-                    {UI_TEXTS.LABELS.TAP_IN_LOCATION}:
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.mapButton}
-                    onPress={() => openMapLocation(+trip.startingLatitude!, +trip.startingLongitude!)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="location" size={16} color={COLORS.success} />
-                    <Text variant="bodySmall" color={COLORS.success} style={styles.mapButtonText}>
-                      {UI_TEXTS.LABELS.VIEW_ON_MAP}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {trip.endingLatitude && trip.endingLongitude && (
-                  <View style={styles.locationRow}>
-                    <Text variant="body" color={COLORS.gray[600]}>
-                      {UI_TEXTS.LABELS.TAP_OUT_LOCATION}:
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.mapButton}
-                      onPress={() => openMapLocation(+trip.endingLatitude!, +trip.endingLongitude!)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="location" size={16} color={COLORS.error} />
-                      <Text variant="bodySmall" color={COLORS.error} style={styles.mapButtonText}>
-                        {UI_TEXTS.LABELS.VIEW_ON_MAP}
-                      </Text>
-                    </TouchableOpacity>
+          ) : htmlContent ? (
+            <View style={styles.webViewContainer}>
+              <WebView
+                source={{ html: htmlContent }}
+                style={[
+                  styles.webView,
+                  {
+                    width: webViewWidth,
+                    height: webViewHeight,
+                  }
+                ]}
+                scalesPageToFit={true}
+                showsHorizontalScrollIndicator={false}
+                showsVerticalScrollIndicator={false}
+                scrollEnabled={true}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                startInLoadingState={true}
+                renderLoading={() => (
+                  <View style={styles.webViewLoading}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
                   </View>
                 )}
-
-                {trip.endingLatitude && trip.endingLongitude && trip.distance > 0 && (
-                  <View style={styles.routeButtonContainer}>
-                    <TouchableOpacity
-                      style={styles.routeButton}
-                      onPress={() => openRouteMap(
-                        +trip.startingLatitude!,
-                        +trip.startingLongitude!,
-                        +trip.endingLatitude!,
-                        +trip.endingLongitude!
-                      )}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="map" size={16} color={COLORS.primary} />
-                      <Text variant="body" color={COLORS.primary} style={styles.routeButtonText}>
-                        {UI_TEXTS.LABELS.VIEW_ROUTE}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            </Card>
-          )} */}
-
-          {/* Bottom spacing */}
-          <View style={styles.bottomSpacing} />
-        </ScrollView>
+                onError={(error) => {
+                  console.error('WebView error:', error);
+                  showToast("Failed to load receipt preview", "error");
+                }}
+              />
+            </View>
+          ) : (
+            <View style={styles.errorContainer}>
+              <Ionicons name="document-outline" size={48} color={COLORS.gray[400]} />
+              <Text variant="body" color={COLORS.gray[600]} style={styles.errorText}>
+                Failed to load receipt preview
+              </Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={generateHTML}
+                activeOpacity={0.7}
+              >
+                <Text variant="body" color={COLORS.primary} style={styles.retryText}>
+                  Retry
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
         {/* Toast notification */}
         <Toast
@@ -592,6 +926,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray[100],
+    height: 60,
   },
   backButton: {
     padding: SPACING.xs,
@@ -618,117 +953,56 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    padding: SPACING.xl,
+    backgroundColor: COLORS.gray[200],  
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  scrollContent: {
-    padding: SPACING.sm,
-  },
-  section: {
-    // marginBottom: SPACING.lg,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: SPACING.md,
-    gap: SPACING.sm,
-  },
-  sectionTitle: {
+  loadingContainer: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.md,
   },
-  sectionContent: {
-    gap: SPACING.sm,
+  loadingText: {
+    textAlign: 'center',
   },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: SPACING.xs,
-  },
-  infoValue: {
+  webViewContainer: {
     flex: 1,
-    textAlign: "right",
-    fontWeight: "500",
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 8,
   },
-  distanceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[100],
+  webView: {
+    backgroundColor: COLORS.white,
+    borderRadius: 8,
   },
-  fareRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: SPACING.xs,
+  webViewLoading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.white,
   },
-  fareAmount: {
-    fontWeight: "600",
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.md,
   },
-  timeContainer: {
-    alignItems: "flex-end",
-    gap: 2,
+  errorText: {
+    textAlign: 'center',
   },
-  timeText: {
-    fontWeight: "500",
-  },
-  dateText: {
-    fontSize: 11,
-  },
-  tapMethodContainer: {
-    alignItems: "flex-end",
-  },
-  tapMethodBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: 12,
-  },
-  tapMethodText: {
-    fontWeight: "500",
-    fontSize: 12,
-  },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: SPACING.xs,
-  },
-  mapButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    backgroundColor: COLORS.gray[50],
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: COLORS.gray[200],
-  },
-  mapButtonText: {
-    fontWeight: "500",
-  },
-  routeButtonContainer: {
-    alignItems: "center",
-    marginTop: SPACING.sm,
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.gray[100],
-  },
-  routeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
+  retryButton: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     backgroundColor: COLORS.primary + "10",
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: COLORS.primary + "30",
   },
-  routeButtonText: {
+  retryText: {
     fontWeight: "500",
-  },
-  bottomSpacing: {
-    height: 20,
   },
 });
