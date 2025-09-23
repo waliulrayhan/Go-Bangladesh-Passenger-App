@@ -823,7 +823,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             onPress={onClose}
             activeOpacity={0.7}
           >
-            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+            <Ionicons name="close" size={24} color={COLORS.white} />
           </TouchableOpacity>
           <Text variant="h5" color={COLORS.white} style={styles.headerTitle}>
             Trip Receipt
@@ -937,7 +937,7 @@ const styles = StyleSheet.create({
   },
   container: {
     backgroundColor: COLORS.gray[50],
-    borderRadius: 10,
+    borderRadius: 5,
     // shadowColor: '#000',
     // shadowOffset: {
     //   width: 0,
@@ -951,8 +951,8 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: SPACING.md,
