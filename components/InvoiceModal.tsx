@@ -796,7 +796,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 // Responsive dimensions for PDF preview with zoom
   // A4 aspect ratio is 1:1.414 (width:height)
   const A4_ASPECT_RATIO = 842 / 595; // height / width = 1.414
-  const ZOOM_SCALE = 1.3; // Zoom factor for better readability
+  const ZOOM_SCALE = 1.2; // Zoom factor for better readability
   
   // Calculate WebView dimensions to match device width with padding
   const horizontalPadding = SPACING.md * 2; // Left and right padding
@@ -807,11 +807,15 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
+      animationType="fade"
+      transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.container, { 
+          width: webViewWidth, 
+          height: webViewHeight + 60 + (SPACING.md * 2)
+        }]}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -918,18 +922,38 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           type={toast.type}
           onHide={hideToast}
         />
+        </View>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.md,
+  },
+  container: {
     backgroundColor: COLORS.gray[50],
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+    maxWidth: '99%',
+    maxHeight: '100%',
   },
   header: {
     flexDirection: "row",
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: SPACING.lg,
@@ -963,13 +987,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   scrollContainer: {
-    flex: 1,
     backgroundColor: COLORS.gray[200],
+    flex: 1,
   },
   content: {
-    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
+    padding: SPACING.md,
   },
   loadingContainer: {
     flex: 1,
@@ -983,14 +1007,6 @@ const styles = StyleSheet.create({
   webViewContainer: {
     backgroundColor: COLORS.white,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   webView: {
     backgroundColor: COLORS.white,
