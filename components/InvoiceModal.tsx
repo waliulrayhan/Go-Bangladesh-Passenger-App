@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Modal,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View
@@ -792,9 +793,14 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     return null;
   }
 
-  // Fixed dimensions for PDF preview
-  const webViewWidth = 595; // A4 width in points (210mm)
-  const webViewHeight = 842; // A4 height in points (297mm)
+  // Responsive dimensions for PDF preview
+  // A4 aspect ratio is 1:1.414 (width:height)
+  const A4_ASPECT_RATIO = 842 / 595; // height / width = 1.414
+  
+  // Calculate WebView dimensions to match device width with padding
+  const horizontalPadding = SPACING.xl * 2; // Left and right padding
+  const webViewWidth = screenWidth - horizontalPadding;
+  const webViewHeight = webViewWidth * A4_ASPECT_RATIO;
 
   return (
     <Modal
@@ -842,7 +848,12 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
         </View>
 
         {/* PDF Preview Content */}
-        <View style={styles.content}>
+        <ScrollView 
+          style={styles.scrollContainer}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={true}
+          bounces={false}
+        >
           {isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={COLORS.primary} />
@@ -851,7 +862,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               </Text>
             </View>
           ) : htmlContent ? (
-            <View style={styles.webViewContainer}>
+            <View style={[styles.webViewContainer, { width: webViewWidth, height: webViewHeight }]}>
               <WebView
                 source={{ html: htmlContent }}
                 style={[
@@ -864,12 +875,12 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 scalesPageToFit={true}
                 showsHorizontalScrollIndicator={false}
                 showsVerticalScrollIndicator={false}
-                scrollEnabled={true}
+                scrollEnabled={false}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
                 startInLoadingState={true}
                 renderLoading={() => (
-                  <View style={styles.webViewLoading}>
+                  <View style={[styles.webViewLoading, { width: webViewWidth, height: webViewHeight }]}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
                   </View>
                 )}
@@ -896,7 +907,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               </TouchableOpacity>
             </View>
           )}
-        </View>
+        </ScrollView>
 
         {/* Toast notification */}
         <Toast
@@ -949,12 +960,16 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     fontSize: 12,
   },
-  content: {
+  scrollContainer: {
     flex: 1,
+    backgroundColor: COLORS.gray[200],
+  },
+  content: {
+    flexGrow: 1,
     padding: SPACING.xl,
-    backgroundColor: COLORS.gray[200],  
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: SPACING.lg,
   },
   loadingContainer: {
     flex: 1,
@@ -966,22 +981,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   webViewContainer: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: COLORS.white,
     borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   webView: {
     backgroundColor: COLORS.white,
     borderRadius: 8,
   },
   webViewLoading: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.white,
+    borderRadius: 8,
   },
   errorContainer: {
     flex: 1,
