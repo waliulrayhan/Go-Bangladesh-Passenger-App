@@ -793,14 +793,16 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     return null;
   }
 
-  // Responsive dimensions for PDF preview
+// Responsive dimensions for PDF preview with zoom
   // A4 aspect ratio is 1:1.414 (width:height)
   const A4_ASPECT_RATIO = 842 / 595; // height / width = 1.414
+  const ZOOM_SCALE = 1.3; // Zoom factor for better readability
   
   // Calculate WebView dimensions to match device width with padding
   const horizontalPadding = SPACING.md * 2; // Left and right padding
-  const webViewWidth = screenWidth - horizontalPadding;
-  const webViewHeight = webViewWidth * A4_ASPECT_RATIO;
+  const baseWidth = screenWidth - horizontalPadding;
+  const webViewWidth = baseWidth * ZOOM_SCALE;
+  const webViewHeight = (webViewWidth * A4_ASPECT_RATIO) - 120;
 
   return (
     <Modal
@@ -966,7 +968,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    padding: SPACING.lg,
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
