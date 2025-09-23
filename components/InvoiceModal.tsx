@@ -798,7 +798,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const A4_ASPECT_RATIO = 842 / 595; // height / width = 1.414
   
   // Calculate WebView dimensions to match device width with padding
-  const horizontalPadding = SPACING.xl * 2; // Left and right padding
+  const horizontalPadding = SPACING.md * 2; // Left and right padding
   const webViewWidth = screenWidth - horizontalPadding;
   const webViewHeight = webViewWidth * A4_ASPECT_RATIO;
 
@@ -966,10 +966,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    padding: SPACING.xl,
+    padding: SPACING.lg,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingTop: SPACING.lg,
   },
   loadingContainer: {
     flex: 1,
