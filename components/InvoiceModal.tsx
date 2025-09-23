@@ -793,10 +793,8 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   }
 
   // Calculate responsive WebView dimensions
-  const headerHeight = 60;
-  const availableHeight = screenHeight - headerHeight - 40; // Account for header and padding
-  const webViewHeight = availableHeight;
-  const webViewWidth = screenWidth - 20; // Account for horizontal padding
+  const webViewHeight = 842; // A4 height at 72 DPI
+  const webViewWidth = 595; // Fixed width for WebView
 
   return (
     <Modal
