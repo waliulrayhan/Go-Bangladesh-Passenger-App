@@ -799,7 +799,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const ZOOM_SCALE = 1.2; // Zoom factor for better readability
   
   // Calculate WebView dimensions to match device width with padding
-  const horizontalPadding = SPACING.md * 2; // Left and right padding
+  const horizontalPadding = SPACING.xs * 2; // Left and right padding
   const baseWidth = screenWidth - horizontalPadding;
   const webViewWidth = baseWidth * ZOOM_SCALE;
   const webViewHeight = (webViewWidth * A4_ASPECT_RATIO) - 120;
@@ -934,20 +934,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: SPACING.md,
   },
   container: {
     backgroundColor: COLORS.gray[50],
     borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
-    maxWidth: '99%',
+    // shadowColor: '#000',
+    // shadowOffset: {
+    //   width: 0,
+    //   height: 10,
+    // },
+    // shadowOpacity: 0.25,
+    // shadowRadius: 20,
+    // elevation: 10,
+    maxWidth: '95%',
     maxHeight: '100%',
   },
   header: {
@@ -956,15 +955,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 10,
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[100],
     height: 60,
   },
   backButton: {
-    padding: SPACING.xs,
     borderRadius: 20,
   },
   headerTitle: {
