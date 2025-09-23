@@ -792,9 +792,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     return null;
   }
 
-  // Calculate responsive WebView dimensions
-  const webViewHeight = 842; // A4 height at 72 DPI
-  const webViewWidth = 595; // Fixed width for WebView
+  // Fixed dimensions for PDF preview
+  const webViewWidth = 595; // A4 width in points (210mm)
+  const webViewHeight = 842; // A4 height in points (297mm)
 
   return (
     <Modal
