@@ -814,7 +814,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
       <View style={styles.modalOverlay}>
         <View style={[styles.container, { 
           width: webViewWidth, 
-          height: webViewHeight + 60 + (SPACING.md * 2)
+          height: webViewHeight + 60, // Add header height and some margin
         }]}>
         {/* Header */}
         <View style={styles.header}>
@@ -989,7 +989,7 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     justifyContent: 'flex-start',
-    padding: SPACING.md,
+    // padding: SPACING.md,
   },
   loadingContainer: {
     flex: 1,
