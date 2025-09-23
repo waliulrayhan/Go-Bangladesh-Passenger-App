@@ -802,6 +802,8 @@ export const generateInvoicePDF = async (
     const { uri } = await Print.printToFileAsync({
       html: htmlContent,
       base64: false,
+      width: 595, // A4 width in points (210mm)
+      height: 842, // A4 height in points (297mm)
     });
     
     console.log('PDF generated at:', uri);
