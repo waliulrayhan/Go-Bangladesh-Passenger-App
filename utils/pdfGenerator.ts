@@ -998,7 +998,7 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 35px;
+            margin-bottom: 50px;
             position: relative;
             z-index: 2;
             font-size: 13px;
@@ -1007,7 +1007,7 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
         /* Invoice title - Match Android */
         .invoice-title {
             text-align: center;
-            margin-bottom: 35px;
+            margin-bottom: 50px;
             position: relative;
             z-index: 2;
         }
@@ -1027,7 +1027,7 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 30px;
-            margin-bottom: 30px;
+            margin-bottom: 50px;
             position: relative;
             z-index: 2;
         }
@@ -1081,7 +1081,7 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
         
         /* Invoice table - Match Android */
         .invoice-table-container {
-            margin-bottom: 25px;
+            margin-bottom: 80px;
             position: relative;
             z-index: 2;
         }
@@ -1146,7 +1146,7 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
         /* Amount in words and terms - Match Android spacing */
         .terms-section {
             margin-top: 20px;
-            margin-bottom: 25px;
+            margin-bottom: 100px;
             position: relative;
             z-index: 2;
         }
@@ -1162,7 +1162,7 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
         }
         
         .electronic-notice {
-            padding-top: 25px;
+            padding-top: 80px;
             font-style: italic;
             text-align: center;
             color: #999999;
