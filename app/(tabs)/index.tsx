@@ -524,7 +524,8 @@ export default function Dashboard() {
                 <Text 
                   style={[styles.balance, { color: COLORS.white }]}
                   numberOfLines={1}
-                  // adjustsFontSizeToFit={false}
+                  adjustsFontSizeToFit={true}
+                  minimumFontScale={0.8}
                 >
                   {formatBalanceDisplay(user?.balance ?? card?.balance)}
                 </Text>
@@ -1167,7 +1168,7 @@ const styles = StyleSheet.create({
     lineHeight: 38,
     letterSpacing: -0.5,
     textAlign: "center",
-    minWidth: 120, // Ensure enough space for the full text
+    minWidth: 150, // Increased from 120 to give more space
     flexShrink: 0, // Prevent text from shrinking
   },
   showBalanceButton: {

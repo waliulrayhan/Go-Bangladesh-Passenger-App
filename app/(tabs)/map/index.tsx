@@ -258,13 +258,17 @@ export default function MapScreen() {
       // Close other dropdowns first
       if (targetDropdown === organizationDropdown) {
         setRouteDropdown((prev) => ({ ...prev, isOpen: false }));
+        // Fetch organizations when organization dropdown is clicked
+        if (!targetDropdown.isOpen) {
+          fetchOrganizations();
+        }
       } else {
         setOrganizationDropdown((prev) => ({ ...prev, isOpen: false }));
       }
 
       setTargetDropdown((prev) => ({ ...prev, isOpen: !prev.isOpen }));
     },
-    [organizationDropdown]
+    [organizationDropdown, fetchOrganizations]
   );
 
   // Render dropdown component
