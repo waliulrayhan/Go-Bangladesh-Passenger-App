@@ -1,6 +1,7 @@
 import * as FileSystem from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 import { TripTransaction } from '../services/api';
 import { formatDate } from './dateTime';
 
@@ -166,14 +167,25 @@ const numberToWords = (amount: number): string => {
 const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any): Promise<string> => {
   if (!tripTransaction.trip) return '';
   
+  // Platform-specific PDF generation
+  if (Platform.OS === 'ios') {
+    return generateInvoiceHTMLiOS(tripTransaction, user);
+  } else {
+    return generateInvoiceHTMLAndroid(tripTransaction, user);
+  }
+};
+
+const generateInvoiceHTMLAndroid = async (tripTransaction: TripTransaction, user?: any): Promise<string> => {
+  if (!tripTransaction.trip) return '';
+  
   // Load images using ONLINE approach - Simple and reliable for APK builds
-  console.log('Loading images from online URLs...');
+  console.log('Loading images from online URLs for Android...');
   const [goBdLogoBase64, portfolioBannerBase64] = await Promise.all([
     getOnlineImageAsBase64(ONLINE_LOGO_URLS.goBdLogo),
     getOnlineImageAsBase64(ONLINE_LOGO_URLS.portfolioBanner),
   ]);
   
-  console.log('✅ All online images loaded successfully for PDF');
+  console.log('✅ All online images loaded successfully for Android PDF');
   
   const trip = tripTransaction.trip;
   const bus = trip.session?.bus;
@@ -203,7 +215,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
   }
   
   // Debug logging to verify user data
-  console.log('PDF User Data:', {
+  console.log('PDF User Data (Android):', {
     userName,
     userType,
     userCard,
@@ -221,7 +233,7 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
   const penaltyFare = route?.penaltyAmount || 0.00; // Use API value or fallback
   
   // Debug logging for fare data
-  console.log('PDF Fare Data:', {
+  console.log('PDF Fare Data (Android):', {
     baseFare,
     perKmFare,
     penaltyFare,
@@ -781,6 +793,611 @@ const generateInvoiceHTML = async (tripTransaction: TripTransaction, user?: any)
   `;
 };
 
+const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: any): Promise<string> => {
+  if (!tripTransaction.trip) return '';
+  
+  // Load images using ONLINE approach - iOS version
+  console.log('Loading images from online URLs for iOS...');
+  const [goBdLogoBase64, portfolioBannerBase64] = await Promise.all([
+    getOnlineImageAsBase64(ONLINE_LOGO_URLS.goBdLogo),
+    getOnlineImageAsBase64(ONLINE_LOGO_URLS.portfolioBanner),
+  ]);
+  
+  console.log('✅ All online images loaded successfully for iOS PDF');
+  
+  const trip = tripTransaction.trip;
+  const bus = trip.session?.bus;
+  const organization = bus?.organization;
+  
+  // Generate invoice number with date and transaction ID
+  const today = new Date();
+  const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+  const invoiceNumber = `GoBD-${tripTransaction.transactionId}`;
+  const issueDate = formatDate(today);
+  const totalAmount = tripTransaction.amount;
+  const totalInWords = numberToWords(totalAmount);
+  
+  // Get user information with better fallback handling
+  const userName = user?.name || 'N/A';
+  const userType = user?.userType ? user.userType.charAt(0).toUpperCase() + user.userType.slice(1) : 'N/A';
+  const userCard = tripTransaction.card?.cardNumber || user?.cardNumber || 'N/A';
+  
+  // Handle organization properly - can be string or object
+  let userOrganization = 'N/A';
+  if (user?.organization) {
+    if (typeof user.organization === 'string') {
+      userOrganization = user.organization;
+    } else if (user.organization.name) {
+      userOrganization = user.organization.name;
+    }
+  }
+  
+  // Debug logging to verify user data
+  console.log('PDF User Data (iOS):', {
+    userName,
+    userType,
+    userCard,
+    userOrganization,
+    originalUser: user
+  });
+  
+  // Get trip distance
+  const tripDistance = trip.distance && trip.distance > 0 ? `${trip.distance.toFixed(2)} km` : '0.00 km';
+  
+  // Get fare amounts from API response (route information)
+  const route = bus?.route;
+  const baseFare = route?.baseFare || 0.00; // Use API value or fallback
+  const perKmFare = route?.perKmFare || 0.00; // Use API value or fallback
+  const penaltyFare = route?.penaltyAmount || 0.00; // Use API value or fallback
+  
+  // Debug logging for fare data
+  console.log('PDF Fare Data (iOS):', {
+    baseFare,
+    perKmFare,
+    penaltyFare,
+    totalAmount,
+    tripDistance,
+    route: route ? { baseFare: route.baseFare, perKmFare: route.perKmFare, penaltyFare: route.penaltyAmount } : null
+  });
+  
+  // Calculate amounts - VAT/Tax is zero as per requirement
+  const fareAmount = totalAmount;
+  const dueAmount = 0; // Assuming trip is paid
+  const subtotal = totalAmount; // No tax/VAT, so subtotal equals total
+  const tax = 0.00; // VAT/Tax is zero as requested
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Invoice ${invoiceNumber}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Plus Jakarta Sans', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.3;
+            color: #000000;
+            background-color: #ffffff;
+            padding: 12mm 9mm 9mm 9mm;
+            margin: 0 auto;
+            max-width: 210mm;
+            height: 297mm;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .taka-symbol {
+            font-family: 'Noto Sans Bengali', 'Plus Jakarta Sans', sans-serif;
+            font-weight: 500;
+        }
+        
+        /* Header with logos - Match Android */
+        .header-logos {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #000000;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .header-logos .logo-left,
+        .header-logos .logo-right {
+            flex: 1;
+            display: flex;
+        }
+        
+        .header-logos .logo-left {
+            justify-content: flex-start;
+        }
+        
+        .header-logos .logo-right {
+            justify-content: flex-end;
+        }
+        
+        .logo-image {
+            height: 55px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        /* Status seal - Match Android size and color */
+        .status-seal {
+            position: absolute;
+            right: 70px;
+            top: 180px;
+            transform: rotate(-12deg);
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 3px solid rgba(5, 150, 105, 0.8);
+            background-color: rgba(5, 150, 105, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+            color: rgba(5, 150, 105, 0.8);
+            text-transform: uppercase;
+            z-index: 1;
+            text-align: center;
+            line-height: 1.1;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-seal::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85px;
+            height: 85px;
+            border-radius: 50%;
+            border: 2px solid rgba(5, 150, 105, 0.8);
+            background-color: transparent;
+            z-index: 2;
+        }
+        
+        .status-content {
+            z-index: 3;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+        }
+        
+        .status-label {
+            font-size: 6px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            opacity: 0.7;
+        }
+        
+        .status-text {
+            font-size: 11px;
+            font-weight: 900;
+            margin-bottom: 1px;
+        }
+        
+        /* Date and invoice number - Match Android */
+        .date-invoice-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+            position: relative;
+            z-index: 2;
+            font-size: 13px;
+        }
+        
+        /* Invoice title - Match Android */
+        .invoice-title {
+            text-align: center;
+            margin-bottom: 35px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .invoice-title h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #000000;
+            margin: 0 0 4px 0;
+            border: 2px solid #000000;
+            padding: 8px 18px;
+            display: inline-block;
+        }
+        
+        /* Billing information grid - Match Android */
+        .billing-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .billing-section h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #000000;
+            margin: 0 0 4px 0;
+        }
+        
+        .billing-section hr {
+            border: none;
+            border-top: 1px solid #000000;
+            margin: 0 0 12px 0;
+            width: 75px;
+        }
+        
+        .billing-details {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .billing-details p {
+            margin: 0 0 3px 0;
+        }
+        
+        .billing-details .company-name {
+            font-weight: 700;
+            margin-bottom: 6px;
+            font-size: 15px;
+        }
+        
+        .billing-details strong {
+            font-weight: 600;
+        }
+        
+        /* Table introduction - Match Android */
+        .table-intro {
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .table-intro p {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 500;
+            color: #000000;
+        }
+        
+        /* Invoice table - Match Android */
+        .invoice-table-container {
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            border: 1px solid #000000;
+            margin-bottom: 8px;
+        }
+        
+        .invoice-table th,
+        .invoice-table td {
+            border: 1px solid #000000;
+            padding: 7px;
+            text-align: right;
+        }
+        
+        .invoice-table th {
+            font-weight: 600;
+            background-color: #ffffff;
+        }
+        
+        .invoice-table tbody td {
+            font-weight: 400;
+        }
+        
+        .invoice-table .total-cell {
+            font-weight: 600;
+        }
+        
+        /* Summary table - Match Android */
+        .summary-container {
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
+        }
+        
+        .summary-table {
+            width: 40%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        
+        .summary-table td {
+            border: 1px solid #000000;
+            padding: 7px;
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        .summary-table .border-top-none {
+            border-top: none;
+        }
+        
+        .summary-table .grand-total {
+            font-weight: 700;
+            background-color: #f9f9f9;
+        }
+        
+        /* Amount in words and terms - Match Android spacing */
+        .terms-section {
+            margin-top: 20px;
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .terms-section p {
+            margin: 0 0 12px 0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .amount-words {
+            font-weight: 600;
+        }
+        
+        .electronic-notice {
+            padding-top: 25px;
+            font-style: italic;
+            text-align: center;
+            color: #999999;
+            font-size: 12px;
+        }
+        
+        /* Footer - Match Android */ 
+        .footer-hr {
+            border: none;
+            border-top: 1px solid #000000;
+            margin: 15px 0 4px 0;
+            padding-top: 0;
+        }
+        
+        .footer {
+            text-align: center;
+            position: absolute;
+            bottom: 12mm;
+            left: 9mm;
+            right: 9mm;
+        }
+        
+        .footer-content {
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        
+        .footer-content p {
+            margin: 0 0 6px 0;
+        }
+        
+        .footer-content p:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* iOS-specific print styles - Match Android but ensure single page */
+        @media print {
+            body {
+                padding: 12mm 9mm 9mm 9mm;
+                margin: 0;
+                max-width: none;
+                width: 210mm;
+                height: 297mm;
+                background-color: #ffffff;
+                font-size: 10px;
+                overflow: hidden;
+                box-sizing: border-box;
+            }
+            
+            @page {
+                size: A4;
+                margin: 0;
+            }
+            
+            .status-seal {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+            
+            .header-logos {
+                page-break-inside: avoid;
+                margin-top: 0;
+            }
+            
+            .billing-grid {
+                page-break-inside: avoid;
+            }
+            
+            .invoice-table-container {
+                page-break-inside: avoid;
+            }
+            
+            .terms-section {
+                page-break-before: auto;
+                page-break-inside: avoid;
+            }
+            
+            .footer {
+                position: absolute;
+                bottom: 12mm;
+            }
+        }
+        
+        /* iOS Screen preview styles */
+        @media screen {
+            body {
+                box-shadow: 0 0 20px rgba(0,0,0,0.1);
+                border: 1px solid #ddd;
+            }
+        }
+        
+        /* Logo placeholder styles for testing */
+        .logo-placeholder {
+            height: 55px;
+            width: 110px;
+            background-color: #f0f0f0;
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Status Seal -->
+    <div class="status-seal">
+        <div class="status-content">
+            <div class="status-label">TRIP STATUS</div>
+            <div class="status-text">COMPLETED</div>
+        </div>
+    </div>
+    
+    <!-- Header with Logos -->
+    <div class="header-logos">
+        <div class="logo-left">
+            <img src="${goBdLogoBase64}" alt="Go Bangladesh Logo" class="logo-image">
+        </div>
+        <div class="logo-right">
+            <img src="${portfolioBannerBase64}" alt="Portfolio Banner" class="logo-image">
+        </div>
+    </div>
+    
+    <!-- Date and Invoice Number -->
+    <div class="date-invoice-row">
+        <div>Date: ${issueDate}</div>
+        <div>Invoice Number: ${invoiceNumber}</div>
+    </div>
+    
+    <!-- Invoice Title -->
+    <div class="invoice-title">
+        <h1>INVOICE</h1>
+    </div>
+    
+    <!-- Billing Information -->
+    <div class="billing-grid">
+        <div class="billing-section">
+            <h3>User Information</h3>
+            <hr>
+            <div class="billing-details">
+                <p class="company-name">${userName}</p>
+                <p><strong>Organization:</strong> ${userOrganization}</p>
+                <p><strong>User Type:</strong> ${userType}</p>
+                <p><strong>Card Number:</strong> ${userCard}</p>
+                <p><strong>Transaction ID:</strong> ${tripTransaction.transactionId}</p>
+            </div>
+        </div>
+        
+        <div class="billing-section">
+            <h3>Trip Information</h3>
+            <hr>
+            <div class="billing-details">
+                <p class="company-name">${bus?.busNumber || 'N/A'}</p>
+                <p><strong>Organization:</strong> ${organization?.name || 'Go Bangladesh'}</p>
+                <p><strong>Route:</strong> ${bus?.route?.tripStartPlace && bus?.route?.tripEndPlace ? 
+                  `${bus.route.tripStartPlace} ⇄ ${bus.route.tripEndPlace}` : 
+                  (bus?.busName || 'Route not available')}</p>
+                <p><strong>Start Time:</strong> ${trip.tripStartTime ? formatDateAndTime(trip.tripStartTime) : 'N/A'}</p>
+                ${trip.tripEndTime ? `<p><strong>End Time:</strong> ${formatDateAndTime(trip.tripEndTime)}</p>` : ''}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Table Introduction -->
+    <div class="table-intro">
+        <p>The following table outlines the details of this trip:</p>
+    </div>
+    
+    <!-- Simplified Invoice Table -->
+    <div class="invoice-table-container">
+        <!-- Main Invoice Table -->
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th style="width: 20%;">Base Amount</th>
+                    <th style="width: 20%;">Penalty Amount</th>
+                    <th style="width: 20%;">Per KM Amount</th>
+                    <th style="width: 20%;">Distance</th>
+                    <th style="width: 20%;">Trip Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(baseFare)}</td>
+                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(penaltyFare)}</td>
+                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(perKmFare)}</td>
+                    <td style="width: 20%;">${tripDistance}</td>
+                    <td style="width: 20%;" class="total-cell"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Summary Table -->
+        <div class="summary-container">
+            <table class="summary-table">
+                <tbody>
+                    <tr>
+                        <td style="width: 50%;">Total</td>
+                        <td style="width: 50%;"><span class="taka-symbol">৳</span>${formatCurrency(subtotal)}</td>
+                    </tr>
+                    <tr>
+                        <td class="border-top-none">Vat / Tax</td>
+                        <td class="border-top-none"><span class="taka-symbol">৳</span>${formatCurrency(tax)}</td>
+                    </tr>
+                    <tr>
+                        <td class="border-top-none grand-total">GRAND TOTAL</td>
+                        <td class="border-top-none grand-total"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Amount in Words and Terms -->
+    <div class="terms-section">
+        <p class="amount-words">Total Amount (in words): ${totalInWords}</p>
+                
+        <p class="electronic-notice">This is an electronically generated invoice and does not require a seal or signature.</p>
+    </div>
+    
+    <!-- Footer -->
+    <hr class="footer-hr">
+    <div class="footer">
+        <div class="footer-content">
+            <p>ICT Tower, 14th Floor, Plot E-14/X, Agargaon, Sher-e-Bangla Nagar, Dhaka-1207</p>
+            <p>Phone: +880 1711 360 170 | Email: info@thegobd.com | Website: www.thegobd.com</p>
+        </div>
+    </div>
+</body>
+</html>
+  `;
+};
+
 export const generateInvoicePDF = async (
   tripTransaction: TripTransaction,
   fileName?: string,
@@ -799,12 +1416,29 @@ export const generateInvoicePDF = async (
 
     console.log('Generating PDF from HTML content...');
 
-    const { uri } = await Print.printToFileAsync({
-      html: htmlContent,
-      base64: false,
-      width: 595, // A4 width in points (210mm)
-      height: 842, // A4 height in points (297mm)
-    });
+    // Platform-specific PDF generation settings
+    const pdfSettings = Platform.OS === 'ios' 
+      ? {
+          html: htmlContent,
+          base64: false,
+          width: 595, // A4 width in points (210mm)
+          height: 842, // A4 height in points (297mm)
+          // iOS-specific settings to ensure single page
+          margins: {
+            top: 28, // 10mm
+            bottom: 28, // 10mm
+            left: 23, // 8mm
+            right: 23, // 8mm
+          }
+        }
+      : {
+          html: htmlContent,
+          base64: false,
+          width: 595, // A4 width in points (210mm)
+          height: 842, // A4 height in points (297mm)
+        };
+
+    const { uri } = await Print.printToFileAsync(pdfSettings);
     
     console.log('PDF generated at:', uri);
 
