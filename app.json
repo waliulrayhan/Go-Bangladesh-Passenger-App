@@ -2,7 +2,7 @@
   "expo": {
     "name": "Go Bangladesh",
     "slug": "go-bangladesh",
-    "version": "2.0.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/appIconPng1024_lg.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.solutionspin.gobangladesh",
+      "bundleIdentifier": "com.gobangladesh.passenger",
       "icon": "./assets/images/iOS.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -47,7 +47,7 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
-      "package": "com.solutionspin.gobangladesh"
+      "package": "com.gobangladesh.passenger"
     },
     "web": {
       "favicon": "./assets/images/appIconPng1024_lg.png",
