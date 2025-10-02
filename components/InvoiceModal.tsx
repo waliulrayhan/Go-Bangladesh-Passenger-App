@@ -1327,7 +1327,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const horizontalPadding = SPACING.xs * 2; // Left and right padding
   const baseWidth = screenWidth - horizontalPadding;
   const webViewWidth = baseWidth * ZOOM_SCALE;
-  const webViewHeight = (webViewWidth * A4_ASPECT_RATIO) - (Platform.OS === 'android' ? 120 : 240);
+  const webViewHeight = (webViewWidth * A4_ASPECT_RATIO) - (Platform.OS === 'android' ? 120 : 200);
 
   return (
     <Modal
