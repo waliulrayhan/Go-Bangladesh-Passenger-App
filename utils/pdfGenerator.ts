@@ -1165,7 +1165,7 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
             padding-top: 80px;
             font-style: italic;
             text-align: center;
-            color: #999999;
+            color: #4e4e4eff;
             font-size: 12px;
         }
         
