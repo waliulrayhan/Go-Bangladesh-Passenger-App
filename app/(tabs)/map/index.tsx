@@ -381,6 +381,31 @@ export default function MapScreen() {
     [toggleDropdown]
   );
 
+  // Render full route with color-coded text
+  const renderFullRouteWithColors = useCallback((routeText: string) => {
+    const parts = routeText.split(' ⇄ ');
+    
+    return (
+      <View style={styles.routeSegments}>
+        {parts.map((part, index) => (
+          <View key={index} style={styles.routeSegment}>
+            <Text style={[
+              styles.routeSegmentText,
+              index === 0 && styles.startPointText,
+              index === parts.length - 1 && index !== 0 && styles.endPointText,
+              index !== 0 && index !== parts.length - 1 && styles.intermediatePointText
+            ]}>
+              {part}
+            </Text>
+            {index < parts.length - 1 && (
+              <Text style={styles.routeSeparator}> ⇄ </Text>
+            )}
+          </View>
+        ))}
+      </View>
+    );
+  }, []);
+
   // Check if search button should be enabled
   const isSearchEnabled = Boolean(
     organizationDropdown.selectedValue && routeDropdown.selectedValue
@@ -462,8 +487,11 @@ export default function MapScreen() {
                 </View>
               ) : (
                 <View style={styles.fullRouteDisplay}>
-                  <Ionicons name="location-outline" size={16} color={COLORS.brand.orange} />
-                  <Text style={styles.fullRouteText}>{fullRoute}</Text>
+                  {fullRoute && (
+                    <View style={styles.routeWithColors}>
+                      {renderFullRouteWithColors(fullRoute)}
+                    </View>
+                  )}
                 </View>
               )}
             </View>
@@ -486,7 +514,7 @@ export default function MapScreen() {
         </View>
 
         {/* Info Section */}
-        <View style={styles.infoContainer}>
+        {/* <View style={styles.infoContainer}>
           <View style={styles.infoItem}>
             <Ionicons
               name="information-circle-outline"
@@ -497,7 +525,7 @@ export default function MapScreen() {
               Both organization and route selection are required to proceed!
             </Text>
           </View>
-        </View>
+        </View> */}
       </ScrollView>
 
       {/* Toast Component */}
@@ -705,6 +733,40 @@ const styles = StyleSheet.create({
     fontFamily: FONT_WEIGHTS.medium,
     color: COLORS.brand.blue,
     lineHeight: 20,
+  },
+  routeWithColors: {
+    flex: 1,
+  },
+  routeSegments: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+  },
+  routeSegment: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  routeSegmentText: {
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONT_WEIGHTS.medium,
+    color: COLORS.gray[700],
+  },
+  startPointText: {
+    color: COLORS.success,
+    fontFamily: FONT_WEIGHTS.semiBold,
+  },
+  endPointText: {
+    color: COLORS.secondary,
+    fontFamily: FONT_WEIGHTS.semiBold,
+  },
+  intermediatePointText: {
+    color: COLORS.gray[800],
+    fontFamily: FONT_WEIGHTS.medium,
+  },
+  routeSeparator: {
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONT_WEIGHTS.regular,
+    color: COLORS.gray[500],
   },
 
   // Info Styles
