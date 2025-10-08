@@ -479,7 +479,7 @@ export default function MapScreen() {
           {/* Full Route Display */}
           {routeDropdown.selectedValue && (
             <View style={styles.fullRouteContainer}>
-              <Text style={styles.fullRouteLabel}>Full Route:</Text>
+              {/* <Text style={styles.fullRouteLabel}>Full Route:</Text> */}
               {fullRouteLoading ? (
                 <View style={styles.fullRouteLoadingContainer}>
                   <ActivityIndicator size="small" color={COLORS.brand.blue} />
@@ -704,6 +704,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.gray[300],
     borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fullRouteLabel: {
     fontSize: FONT_SIZES.sm,
@@ -724,6 +726,7 @@ const styles = StyleSheet.create({
   fullRouteDisplay: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     flexWrap: "wrap",
   },
@@ -741,6 +744,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
+    justifyContent: "center",
   },
   routeSegment: {
     flexDirection: "row",
@@ -750,6 +754,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     fontFamily: FONT_WEIGHTS.medium,
     color: COLORS.gray[700],
+    textAlign: "center",
   },
   startPointText: {
     color: COLORS.success,
@@ -767,6 +772,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     fontFamily: FONT_WEIGHTS.regular,
     color: COLORS.gray[500],
+    textAlign: "center",
   },
 
   // Info Styles
