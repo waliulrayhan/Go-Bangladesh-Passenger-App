@@ -42,6 +42,14 @@ interface DropdownItem {
   label?: string;
 }
 
+interface StoppageResponse {
+  isSuccess: boolean;
+  content: string | null;
+  timeStamp: string;
+  payloadType: string;
+  message: string;
+}
+
 type UserType = "Public" | "Private";
 
 // Constants
@@ -65,6 +73,8 @@ export default function MapScreen() {
   const [userOrganizationId, setUserOrganizationId] = useState<string | null>(
     null
   );
+  const [fullRoute, setFullRoute] = useState<string | null>(null);
+  const [fullRouteLoading, setFullRouteLoading] = useState(false);
 
   const [organizationDropdown, setOrganizationDropdown] = useState<Dropdown>({
     isOpen: false,
@@ -110,6 +120,7 @@ export default function MapScreen() {
       selectedLabel: null,
     });
     setRoutes([]);
+    setFullRoute(null);
   }, []);
 
   useEffect(() => {
@@ -194,7 +205,39 @@ export default function MapScreen() {
       selectedValue: null,
       selectedLabel: null,
     });
+    setFullRoute(null);
   }, []);
+
+  // Fetch stoppage data for selected route
+  const fetchRouteStoppages = useCallback(
+    async (routeId: string, routeLabel: string) => {
+      try {
+        setFullRouteLoading(true);
+        const response = await apiService.get<ApiResponse<StoppageResponse>>(
+          `/api/route/getStoppagesByRouteId?routeId=${routeId}`
+        );
+
+        if (response.data.data.isSuccess && response.data.data.content) {
+          // Combine route label with stoppage list using ⇄ symbol
+          const startPoint = routeLabel.split(' - ')[0];
+          const endPoint = routeLabel.split(' - ')[1];
+          const stoppages = String(response.data.data.content).replace(/-/g, ' ⇄ ');
+          const fullRouteString = `${startPoint} ⇄ ${stoppages} ⇄ ${endPoint}`;
+          setFullRoute(fullRouteString);
+        } else {
+          // If no stoppages found, just show the route label with ⇄ symbol
+          setFullRoute(routeLabel.replace(' - ', ' ⇄ '));
+        }
+      } catch (error) {
+        console.error("Error fetching route stoppages:", error);
+        // On error, show just the route label with ⇄ symbol
+        setFullRoute(routeLabel.replace(' - ', ' ⇄ '));
+      } finally {
+        setFullRouteLoading(false);
+      }
+    },
+    []
+  );
 
   // Handle organization selection
   const handleOrganizationSelect = useCallback(
@@ -218,7 +261,10 @@ export default function MapScreen() {
       selectedValue: route.value,
       selectedLabel: route.label,
     });
-  }, []);
+    
+    // Fetch stoppage data for the selected route
+    fetchRouteStoppages(route.value, route.label);
+  }, [fetchRouteStoppages]);
 
   // Validate selections and navigate to map view
   const handleSearchBuses = useCallback(() => {
@@ -404,6 +450,24 @@ export default function MapScreen() {
               </Text>
             )}
           </View>
+
+          {/* Full Route Display */}
+          {routeDropdown.selectedValue && (
+            <View style={styles.fullRouteContainer}>
+              <Text style={styles.fullRouteLabel}>Full Route:</Text>
+              {fullRouteLoading ? (
+                <View style={styles.fullRouteLoadingContainer}>
+                  <ActivityIndicator size="small" color={COLORS.brand.blue} />
+                  <Text style={styles.fullRouteLoadingText}>Loading route details...</Text>
+                </View>
+              ) : (
+                <View style={styles.fullRouteDisplay}>
+                  <Ionicons name="location-outline" size={16} color={COLORS.brand.orange} />
+                  <Text style={styles.fullRouteText}>{fullRoute}</Text>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Search Button */}
           <TouchableOpacity
@@ -601,6 +665,46 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     fontFamily: FONT_WEIGHTS.semiBold,
     color: COLORS.white,
+  },
+
+  // Full Route Styles
+  fullRouteContainer: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: COLORS.gray[50],
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.gray[300],
+    borderStyle: 'dashed',
+  },
+  fullRouteLabel: {
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONT_WEIGHTS.semiBold,
+    color: COLORS.gray[700],
+    marginBottom: 6,
+  },
+  fullRouteLoadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  fullRouteLoadingText: {
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONT_WEIGHTS.regular,
+    color: COLORS.gray[600],
+  },
+  fullRouteDisplay: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  fullRouteText: {
+    flex: 1,
+    fontSize: FONT_SIZES.sm,
+    fontFamily: FONT_WEIGHTS.medium,
+    color: COLORS.brand.blue,
+    lineHeight: 20,
   },
 
   // Info Styles
