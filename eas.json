@@ -15,7 +15,11 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "buildType": "aab",
+        "gradleCommand": ":app:bundleRelease"
+      }
     }
   },
   "submit": {
@@ -24,6 +28,11 @@
         "appleId": "info.gobangladesh@gmail.com",
         "ascAppId": "6753107699",
         "appleTeamId": "276F4654UV"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./pc-api-android-service-account.json",
+        "track": "production",
+        "releaseStatus": "completed"
       }
     }
   }
