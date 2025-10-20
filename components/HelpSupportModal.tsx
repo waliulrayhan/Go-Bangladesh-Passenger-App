@@ -25,6 +25,13 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({
     address: 'ICT Tower, 14th Floor, Plot E-14/X, Agargaon, Sher-e-Bangla Nagar, Dhaka-1207'
   };
 
+  const aboutInfo = {
+    company: 'Go Bangladesh Ltd.',
+    registration: 'Registered under iDEA (Innovation Design and Entrepreneurship Academy) of Bangladesh',
+    ownership: 'Official developers and owners of the Go Bangladesh transport system',
+    disclaimer: 'All branding, designs, and content are originally created and owned by Go Bangladesh Ltd.'
+  };
+
   const faqData = [
     {
       question: 'How do I top up my card?',
@@ -259,6 +266,21 @@ Best regards,
               />
             </View>
           </View> */}
+
+          {/* About Go Bangladesh */}
+          <View style={styles.section}>
+            <SectionTitle title="About Go Bangladesh" />
+            <View style={styles.sectionContent}>
+              <View style={styles.aboutItem}>
+                <View style={styles.aboutInfo}>
+                  <Text variant="label" style={styles.aboutTitle}>{aboutInfo.company}</Text>
+                  <Text variant="body" style={styles.aboutText}>{aboutInfo.ownership}</Text>
+                  <Text variant="body" style={styles.aboutText}>{aboutInfo.registration}</Text>
+                  <Text variant="caption" style={styles.aboutDisclaimer}>{aboutInfo.disclaimer}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
 
           {/* Contact Information */}
           <View style={styles.section}>
@@ -509,6 +531,30 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 14,
     color: COLORS.gray[600],
+  },
+  aboutItem: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  aboutInfo: {
+    gap: SPACING.sm,
+  },
+  aboutTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginBottom: 4,
+  },
+  aboutText: {
+    fontSize: 14,
+    color: COLORS.gray[700],
+    lineHeight: 20,
+  },
+  aboutDisclaimer: {
+    fontSize: 12,
+    color: COLORS.gray[500],
+    fontStyle: 'italic',
+    marginTop: 4,
   },
   bottomPadding: {
     height: SPACING['6xl'],

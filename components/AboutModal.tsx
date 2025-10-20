@@ -22,7 +22,10 @@ export const AboutModal: React.FC<AboutModalProps> = ({
     version: '1.0.0',
     buildNumber: '100',
     lastUpdate: 'January 2025',
-    developer: 'Go Bangladesh Team',
+    developer: 'Go Bangladesh Ltd.',
+    company: 'Go Bangladesh Ltd.',
+    registration: 'Registered under iDEA (Innovation Design and Entrepreneurship Academy) of Bangladesh',
+    ownership: 'Official developers and owners of the Go Bangladesh transport system',
     email: 'info@thegobd.com',
     website: 'https://thegobd.com/',
     privacyPolicy: 'https://thegobd.com/privacy',
@@ -98,6 +101,16 @@ export const AboutModal: React.FC<AboutModalProps> = ({
             <Text variant="body" style={styles.appSlogan}>One step toward a better future</Text>
           </View>
 
+          {/* Company Information */}
+          <View style={styles.section}>
+            <Text variant="h6" style={styles.sectionTitle}>Company Information</Text>
+            <View style={styles.sectionContent}>
+              <InfoItem label="Company" value={appInfo.company} />
+              <InfoItem label="Registration" value={appInfo.registration} />
+              <InfoItem label="Ownership" value={appInfo.ownership} />
+            </View>
+          </View>
+
           {/* App Information */}
           <View style={styles.section}>
             <Text variant="h6" style={styles.sectionTitle}>App Information</Text>
@@ -131,7 +144,13 @@ export const AboutModal: React.FC<AboutModalProps> = ({
           {/* Copyright */}
           <View style={styles.copyrightSection}>
             <Text variant="caption" style={styles.copyrightText}>
-              © 2025 Go Bangladesh. All rights reserved.
+              © 2025 Go Bangladesh Ltd. All rights reserved.
+            </Text>
+            <Text variant="caption" style={styles.copyrightText}>
+              Original developers and owners of the Go Bangladesh brand.
+            </Text>
+            <Text variant="caption" style={styles.copyrightText}>
+              All designs, content, and intellectual property are owned by Go Bangladesh Ltd.
             </Text>
           </View>
 
