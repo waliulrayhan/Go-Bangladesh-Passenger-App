@@ -15,8 +15,12 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": false,
+      "autoIncrement": true,
+      "ios": {
+        "autoIncrement": "buildNumber"
+      },
       "android": {
+        "autoIncrement": "versionCode",
         "buildType": "app-bundle",
         "gradleCommand": ":app:bundleRelease"
       }
