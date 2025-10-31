@@ -32,7 +32,7 @@ interface InvoiceModalProps {
 }
 
 // Import the HTML generator from pdfGenerator
-import { formatDate } from '../utils/dateTime';
+import { DateFormatter, formatDate, parseUTCToLocal, TimeFormatter } from '../utils/dateTime';
 
 // Online image URLs - GUARANTEED to work in APK builds
 const ONLINE_LOGO_URLS = {
@@ -78,24 +78,22 @@ const getOnlineImageAsBase64 = async (imageUrl: string): Promise<string> => {
   }
 };
 
-// Helper function to format date and time together
+// Helper function to format date and time together with proper timezone conversion
 const formatDateAndTime = (dateString: string): string => {
   if (!dateString) return 'N/A';
   
   try {
-    const date = new Date(dateString);
+    // Convert UTC date string to local timezone
+    const localDate = parseUTCToLocal(dateString);
     
-    // Format: "Dec 15, 2024, 02:00 PM"
-    const options: Intl.DateTimeFormatOptions = {
-      month: 'short',
-      day: 'numeric', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    };
+    // Format date and time using the dateTime utility
+    const formattedDate = DateFormatter.custom(localDate, { 
+      useShortMonth: true, 
+      includeYear: true 
+    });
+    const formattedTime = TimeFormatter.format12Hour(localDate);
     
-    return date.toLocaleString('en-US', options);
+    return `${formattedDate}, ${formattedTime}`;
   } catch (error) {
     console.error('Error formatting date and time:', error);
     return 'Invalid date';
