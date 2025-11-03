@@ -322,91 +322,77 @@ export default function PromoHistory() {
   const renderPromoItem = ({ item, index }: { item: UserPromo; index: number }) => {
     const promo = item.promo;
     const isExpired = activeTab === "expired";
+    
+    // Format discount text
     const discountText = promo.promoType === "Fixed" 
       ? `৳${promo.discountValue}` 
-      : `${promo.discountValue}%`;
-    const maxDiscountText = promo.maxDiscountAmount > 0 
-      ? ` (Max ৳${promo.maxDiscountAmount})` 
-      : "";
+      : promo.maxDiscountAmount > 0
+        ? `${promo.discountValue}% (Max ৳${promo.maxDiscountAmount})`
+        : `${promo.discountValue}%`;
 
     return (
       <Animated.View
         entering={FadeInDown.duration(400).delay(index * 50)}
       >
         <Card style={[styles.promoCard, isExpired && styles.expiredCard]}>
-          <View style={styles.promoHeader}>
-            <View style={styles.promoCodeContainer}>
-              <Ionicons 
-                name={isExpired ? "time-outline" : "checkmark-done"} 
-                size={20} 
-                color={isExpired ? COLORS.gray[400] : COLORS.success} 
-              />
-              <Text style={styles.promoCode}>{promo.code}</Text>
-            </View>
-            <View style={[
-              styles.discountBadge, 
-              isExpired && styles.expiredBadge
-            ]}>
-              <Text style={[
-                styles.discountText,
-                isExpired && styles.expiredDiscountText
+          <View style={styles.promoContent}>
+            {/* Left side - Info */}
+            <View style={styles.promoLeft}>
+              <View style={[
+                styles.promoIconContainer,
+                isExpired && { backgroundColor: COLORS.gray[200] }
               ]}>
-                {discountText}{maxDiscountText}
-              </Text>
+                <Ionicons 
+                  name={isExpired ? "time-outline" : "checkmark-done"} 
+                  size={24} 
+                  color={isExpired ? COLORS.gray[400] : COLORS.success} 
+                />
+              </View>
+              
+              <View style={styles.promoInfo}>
+                <Text style={styles.promoCode}>{promo.code}</Text>
+                
+                {promo.description && (
+                  <Text style={styles.promoDescription} numberOfLines={1}>
+                    {promo.description}
+                  </Text>
+                )}
+                
+                <Text style={[
+                  styles.promoDiscount,
+                  isExpired && { color: COLORS.gray[400] }
+                ]}>
+                  {discountText}
+                </Text>
+                
+                <View style={styles.promoMeta}>
+                  <Text style={styles.promoMetaText}>
+                    {isExpired ? "Expired" : "Valid Until"}: {formatDate(promo.endTime)}
+                  </Text>
+                  {item.usageCount > 0 && (
+                    <Text style={styles.promoMetaText}>
+                      • Used: {item.usageCount}/{promo.maxUsagePerCard}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Right side - Status Badge */}
+            <View style={styles.promoRight}>
+              {isExpired ? (
+                <View style={styles.expiredBadge}>
+                  <Ionicons name="close-circle" size={18} color={COLORS.error} />
+                  <Text style={styles.expiredText}>Expired</Text>
+                </View>
+              ) : (
+                <View style={styles.usedBadge}>
+                  <Ionicons name="checkmark-done-circle" size={18} color={COLORS.success} />
+                  <Text style={styles.usedText}>Used</Text>
+                </View>
+              )}
             </View>
           </View>
-
-          {promo.description && (
-            <Text style={styles.promoDescription}>{promo.description}</Text>
-          )}
-
-          <View style={styles.promoDetails}>
-            <View style={styles.promoDetailRow}>
-              <Ionicons name="calendar-outline" size={14} color={COLORS.gray[500]} />
-              <Text style={styles.promoDetailText}>
-                {isExpired ? "Expired On" : UI_TEXTS.LABELS.VALID_UNTIL}: {formatDate(promo.endTime)}
-              </Text>
-            </View>
-
-            {item.usageCount > 0 && (
-              <View style={styles.promoDetailRow}>
-                <Ionicons name="repeat-outline" size={14} color={COLORS.gray[500]} />
-                <Text style={styles.promoDetailText}>
-                  Used: {item.usageCount} / {promo.maxUsagePerCard}
-                </Text>
-              </View>
-            )}
-
-            {item.usageAmount > 0 && (
-              <View style={styles.promoDetailRow}>
-                <Ionicons name="cash-outline" size={14} color={COLORS.gray[500]} />
-                <Text style={styles.promoDetailText}>
-                  Saved: ৳{item.usageAmount.toFixed(2)}
-                </Text>
-              </View>
-            )}
-
-            {activeTab === "used" && item.lastModifiedTime && (
-              <View style={styles.promoDetailRow}>
-                <Ionicons name="time-outline" size={14} color={COLORS.gray[500]} />
-                <Text style={styles.promoDetailText}>
-                  {UI_TEXTS.LABELS.USED_ON}: {formatDate(item.lastModifiedTime)}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {isExpired ? (
-            <View style={[styles.statusBadge, styles.expiredStatusBadge]}>
-              <Ionicons name="close-circle" size={16} color={COLORS.error} />
-              <Text style={[styles.statusText, styles.expiredStatusText]}>Expired</Text>
-            </View>
-          ) : (
-            <View style={[styles.statusBadge, styles.usedStatusBadge]}>
-              <Ionicons name="checkmark-done-circle" size={16} color={COLORS.gray[500]} />
-              <Text style={[styles.statusText, styles.usedText]}>Used</Text>
-            </View>
-          )}
         </Card>
       </Animated.View>
     );
@@ -569,81 +555,83 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     backgroundColor: COLORS.gray[100],
   },
-  promoHeader: {
+  promoContent: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.sm,
+    gap: SPACING.md,
   },
-  promoCodeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
+  promoLeft: {
     flex: 1,
+    flexDirection: "row",
+    gap: SPACING.sm,
+  },
+  promoIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.success + "15",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  promoInfo: {
+    flex: 1,
+    gap: SPACING.xs / 2,
   },
   promoCode: {
     ...TYPOGRAPHY.h6,
+    fontSize: 16,
     color: COLORS.secondary,
     fontWeight: "700",
     letterSpacing: 0.5,
   },
-  discountBadge: {
-    backgroundColor: COLORS.success + "20",
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: 8,
-  },
-  expiredBadge: {
-    backgroundColor: COLORS.gray[300] + "20",
-  },
-  discountText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.success,
-    fontWeight: "700",
-  },
-  expiredDiscountText: {
-    color: COLORS.gray[500],
-  },
   promoDescription: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.gray[600],
-    marginBottom: SPACING.sm,
-  },
-  promoDetails: {
-    gap: SPACING.xs,
-    marginBottom: SPACING.md,
-  },
-  promoDetailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-  },
-  promoDetailText: {
     ...TYPOGRAPHY.caption,
+    fontSize: 11,
     color: COLORS.gray[500],
   },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: SPACING.xs,
-    paddingVertical: SPACING.sm,
-  },
-  usedStatusBadge: {
-    opacity: 0.7,
-  },
-  expiredStatusBadge: {
-    opacity: 1,
-  },
-  statusText: {
+  promoDiscount: {
     ...TYPOGRAPHY.bodySmall,
+    fontSize: 13,
+    color: COLORS.primary,
     fontWeight: "600",
   },
-  usedText: {
-    color: COLORS.gray[500],
+  promoMeta: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.xs / 2,
   },
-  expiredStatusText: {
+  promoMetaText: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 10,
+    color: COLORS.gray[400],
+  },
+  promoRight: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  usedBadge: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACING.xs / 2,
+    paddingHorizontal: SPACING.sm,
+  },
+  usedText: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 11,
+    color: COLORS.success,
+    fontWeight: "600",
+  },
+  expiredBadge: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACING.xs / 2,
+    paddingHorizontal: SPACING.sm,
+  },
+  expiredText: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 11,
     color: COLORS.error,
+    fontWeight: "600",
   },
   emptyState: {
     flex: 1,

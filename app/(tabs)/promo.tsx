@@ -383,114 +383,79 @@ export default function Promo() {
   const renderPromoItem = ({ item, index }: { item: UserPromo; index: number }) => {
     const promo = item.promo;
     const isExpired = new Date(promo.endTime) < new Date();
+    
+    // Format discount text
     const discountText = promo.promoType === "Fixed" 
       ? `৳${promo.discountValue}` 
-      : `${promo.discountValue}%`;
-    const maxDiscountText = promo.maxDiscountAmount > 0 
-      ? ` (Max ৳${promo.maxDiscountAmount})` 
-      : "";
+      : promo.maxDiscountAmount > 0
+        ? `${promo.discountValue}% (Max ৳${promo.maxDiscountAmount})`
+        : `${promo.discountValue}%`;
 
     return (
       <Animated.View
         entering={FadeInDown.duration(400).delay(index * 50)}
       >
         <Card style={[styles.promoCard, isExpired && styles.expiredCard]}>
-          <View style={styles.promoHeader}>
-            <View style={styles.promoCodeContainer}>
-              <Ionicons name="pricetag" size={20} color={COLORS.primary} />
-              <Text style={styles.promoCode}>{promo.code}</Text>
-            </View>
-            <View style={[styles.discountBadge, isExpired && styles.expiredBadge]}>
-              <Text style={styles.discountText}>{discountText}{maxDiscountText}</Text>
-            </View>
-          </View>
-
-          {promo.description && (
-            <Text style={styles.promoDescription}>{promo.description}</Text>
-          )}
-
-          {promo.status && (
-            <View style={styles.promoStatusContainer}>
-              <View style={[
-                styles.promoStatusBadge,
-                promo.status === "Active" && { backgroundColor: COLORS.success + "20" },
-                promo.status === "Available Soon" && { backgroundColor: COLORS.info + "20" },
-                promo.status === "Expired" && { backgroundColor: COLORS.gray[300] + "20" },
-              ]}>
-                <Text style={[
-                  styles.promoStatusText,
-                  promo.status === "Active" && { color: COLORS.success },
-                  promo.status === "Available Soon" && { color: COLORS.info },
-                  promo.status === "Expired" && { color: COLORS.gray[500] },
-                ]}>
-                  {promo.status}
-                </Text>
+          <View style={styles.promoContent}>
+            {/* Left side - Info */}
+            <View style={styles.promoLeft}>
+              <View style={styles.promoIconContainer}>
+                <Ionicons name="pricetag" size={24} color={COLORS.primary} />
               </View>
-            </View>
-          )}
-
-          <View style={styles.promoDetails}>
-            <View style={styles.promoDetailRow}>
-              <Ionicons name="calendar-outline" size={14} color={COLORS.gray[500]} />
-              <Text style={styles.promoDetailText}>
-                {UI_TEXTS.LABELS.VALID_UNTIL}: {formatDate(promo.endTime)}
-              </Text>
-            </View>
-
-            {promo.maxUsagePerCard > 0 && (
-              <View style={styles.promoDetailRow}>
-                <Ionicons name="repeat-outline" size={14} color={COLORS.gray[500]} />
-                <Text style={styles.promoDetailText}>
-                  {UI_TEXTS.LABELS.MAX_USES}: {promo.maxUsagePerCard}
-                </Text>
-              </View>
-            )}
-
-            {item.usageCount !== undefined && (
-              <View style={styles.promoDetailRow}>
-                <Ionicons name="checkmark-done-outline" size={14} color={COLORS.gray[500]} />
-                <Text style={styles.promoDetailText}>
-                  Used: {item.usageCount} / {promo.maxUsagePerCard}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {activeTab === "available" && (
-            <TouchableOpacity
-              style={[
-                styles.applyButton,
-                (isExpired || isApplying === item.id) && styles.applyButtonDisabled,
-              ]}
-              onPress={() => handleApplyPromo(item)}
-              disabled={isExpired || isApplying === item.id}
-            >
-              {isApplying === item.id ? (
-                <>
-                  <ActivityIndicator size="small" color={COLORS.white} />
-                  <Text style={styles.applyButtonText}>
-                    {UI_TEXTS.LOADING_STATES.APPLYING_PROMO}
+              
+              <View style={styles.promoInfo}>
+                <Text style={styles.promoCode}>{promo.code}</Text>
+                
+                {promo.description && (
+                  <Text style={styles.promoDescription} numberOfLines={1}>
+                    {promo.description}
                   </Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
-                  <Text style={styles.applyButtonText}>
-                    {isExpired ? "Expired" : UI_TEXTS.BUTTONS.APPLY}
+                )}
+                
+                <Text style={styles.promoDiscount}>{discountText}</Text>
+                
+                <View style={styles.promoMeta}>
+                  <Text style={styles.promoMetaText}>
+                    Valid Until: {formatDate(promo.endTime)}
                   </Text>
-                </>
+                  {item.usageCount !== undefined && (
+                    <Text style={styles.promoMetaText}>
+                      • Used: {item.usageCount}/{promo.maxUsagePerCard}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Right side - Action Button */}
+            <View style={styles.promoRight}>
+              {activeTab === "available" && (
+                <TouchableOpacity
+                  style={[
+                    styles.applyButton,
+                    (isExpired || isApplying === item.id) && styles.applyButtonDisabled,
+                  ]}
+                  onPress={() => handleApplyPromo(item)}
+                  disabled={isExpired || isApplying === item.id}
+                >
+                  {isApplying === item.id ? (
+                    <ActivityIndicator size="small" color={COLORS.white} />
+                  ) : (
+                    <Text style={styles.applyButtonText}>
+                      {isExpired ? "Expired" : "Apply"}
+                    </Text>
+                  )}
+                </TouchableOpacity>
               )}
-            </TouchableOpacity>
-          )}
 
-          {activeTab === "applied" && (
-            <View style={styles.statusBadge}>
-              <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
-              <Text style={styles.statusText}>{UI_TEXTS.BUTTONS.APPLIED}</Text>
+              {activeTab === "applied" && (
+                <View style={styles.appliedBadge}>
+                  <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                  <Text style={styles.appliedText}>Applied</Text>
+                </View>
+              )}
             </View>
-          )}
-
-
+          </View>
         </Card>
       </Animated.View>
     );
@@ -675,106 +640,89 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     backgroundColor: COLORS.gray[100],
   },
-  promoHeader: {
+  promoContent: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.sm,
+    gap: SPACING.md,
   },
-  promoCodeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
+  promoLeft: {
     flex: 1,
+    flexDirection: "row",
+    gap: SPACING.sm,
+  },
+  promoIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primary + "15",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  promoInfo: {
+    flex: 1,
+    gap: SPACING.xs / 2,
   },
   promoCode: {
     ...TYPOGRAPHY.h6,
+    fontSize: 16,
     color: COLORS.secondary,
     fontWeight: "700",
     letterSpacing: 0.5,
   },
-  discountBadge: {
-    backgroundColor: COLORS.success + "20",
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: 8,
-  },
-  expiredBadge: {
-    backgroundColor: COLORS.gray[300] + "20",
-  },
-  discountText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.success,
-    fontWeight: "700",
-  },
   promoDescription: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.gray[600],
-    marginBottom: SPACING.sm,
-  },
-  promoStatusContainer: {
-    marginBottom: SPACING.sm,
-  },
-  promoStatusBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs / 2,
-    borderRadius: 4,
-    backgroundColor: COLORS.gray[200],
-  },
-  promoStatusText: {
     ...TYPOGRAPHY.caption,
-    fontSize: 10,
-    fontWeight: "600",
-    color: COLORS.gray[600],
-  },
-  promoDetails: {
-    gap: SPACING.xs,
-    marginBottom: SPACING.md,
-  },
-  promoDetailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-  },
-  promoDetailText: {
-    ...TYPOGRAPHY.caption,
+    fontSize: 11,
     color: COLORS.gray[500],
   },
-  applyButton: {
+  promoDiscount: {
+    ...TYPOGRAPHY.bodySmall,
+    fontSize: 13,
+    color: COLORS.primary,
+    fontWeight: "600",
+  },
+  promoMeta: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.xs / 2,
+  },
+  promoMetaText: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 10,
+    color: COLORS.gray[400],
+  },
+  promoRight: {
     alignItems: "center",
     justifyContent: "center",
+  },
+  applyButton: {
     backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: 8,
-    gap: SPACING.xs,
+    minWidth: 70,
+    alignItems: "center",
+    justifyContent: "center",
   },
   applyButtonDisabled: {
     backgroundColor: COLORS.gray[400],
   },
   applyButtonText: {
     ...TYPOGRAPHY.bodySmall,
+    fontSize: 13,
     color: COLORS.white,
     fontWeight: "600",
   },
-  statusBadge: {
-    flexDirection: "row",
+  appliedBadge: {
     alignItems: "center",
     justifyContent: "center",
-    gap: SPACING.xs,
-    paddingVertical: SPACING.sm,
+    gap: SPACING.xs / 2,
+    paddingHorizontal: SPACING.sm,
   },
-  usedBadge: {
-    opacity: 0.7,
-  },
-  statusText: {
-    ...TYPOGRAPHY.bodySmall,
+  appliedText: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 11,
     color: COLORS.success,
     fontWeight: "600",
-  },
-  usedText: {
-    color: COLORS.gray[500],
   },
   emptyState: {
     flex: 1,
