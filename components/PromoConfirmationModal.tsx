@@ -32,43 +32,59 @@ interface PromoConfirmationModalProps {
 }
 
 // Confetti particle component
-const ConfettiParticle: React.FC<{ delay: number; color: string; startX: number }> = ({
+const ConfettiParticle: React.FC<{ delay: number; color: string; startX: number; shape?: 'circle' | 'square' }> = ({
   delay,
   color,
   startX,
+  shape = 'square',
 }) => {
-  const translateY = useSharedValue(0);
+  const translateY = useSharedValue(-50);
   const translateX = useSharedValue(0);
   const rotate = useSharedValue(0);
   const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.5);
 
   useEffect(() => {
+    // Fall from top to bottom with slight acceleration
     translateY.value = withDelay(
       delay,
-      withTiming(-300, { duration: 2000 })
+      withTiming(650, { duration: 2500 })
     );
+    // Horizontal drift with slight curve (zigzag effect)
+    const drift = (Math.random() - 0.5) * 150;
     translateX.value = withDelay(
       delay,
-      withTiming((Math.random() - 0.5) * 100, { duration: 2000 })
+      withTiming(drift, { duration: 2500 })
     );
+    // Continuous rotation
     rotate.value = withDelay(
       delay,
-      withRepeat(withTiming(360, { duration: 1000 }), -1)
+      withRepeat(withTiming(360 * (Math.random() > 0.5 ? 1 : -1), { duration: 1000 + Math.random() * 500 }), -1)
     );
+    // Scale animation with variation
+    scale.value = withDelay(
+      delay,
+      withSequence(
+        withSpring(0.8 + Math.random() * 0.4, { damping: 10 }),
+        withTiming(0.6, { duration: 2200 })
+      )
+    );
+    // Fade in and out
     opacity.value = withDelay(
       delay,
       withSequence(
-        withTiming(1, { duration: 200 }),
-        withDelay(1000, withTiming(0, { duration: 800 }))
+        withTiming(1, { duration: 300 }),
+        withDelay(1500, withTiming(0, { duration: 700 }))
       )
     );
-  }, []);
+  }, [delay]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateY: translateY.value },
       { translateX: translateX.value },
       { rotate: `${rotate.value}deg` },
+      { scale: scale.value },
     ],
     opacity: opacity.value,
   }));
@@ -77,7 +93,11 @@ const ConfettiParticle: React.FC<{ delay: number; color: string; startX: number 
     <Animated.View
       style={[
         styles.confetti,
-        { backgroundColor: color, left: startX },
+        { 
+          backgroundColor: color, 
+          left: `${startX}%`,
+          borderRadius: shape === 'circle' ? 5 : 2,
+        },
         animatedStyle,
       ]}
     />
@@ -186,12 +206,13 @@ export const PromoConfirmationModal: React.FC<PromoConfirmationModalProps> = ({
             >
               {/* Confetti Particles */}
               {visible &&
-                Array.from({ length: 30 }).map((_, index) => (
+                Array.from({ length: 50 }).map((_, index) => (
                   <ConfettiParticle
                     key={index}
-                    delay={index * 30}
+                    delay={index * 20}
                     color={confettiColors[index % confettiColors.length]}
-                    startX={Math.random() * 100}
+                    startX={(index * 7) % 100}
+                    shape={index % 3 === 0 ? 'circle' : 'square'}
                   />
                 ))}
 
@@ -449,10 +470,10 @@ const styles = StyleSheet.create({
   },
   confetti: {
     position: "absolute",
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    bottom: "50%",
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+    top: -50,
   },
   sparkle: {
     position: "absolute",
