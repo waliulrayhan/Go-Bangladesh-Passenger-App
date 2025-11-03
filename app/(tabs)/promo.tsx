@@ -406,13 +406,13 @@ export default function Promo() {
               <View style={styles.promoInfo}>
                 <Text style={styles.promoCode}>{promo.code}</Text>
                 
+                <Text style={styles.promoDiscount}>{discountText}</Text>
+
                 {promo.description && (
                   <Text style={styles.promoDescription} numberOfLines={1}>
                     {promo.description}
                   </Text>
                 )}
-                
-                <Text style={styles.promoDiscount}>{discountText}</Text>
                 
                 <View style={styles.promoMeta}>
                   <Text style={styles.promoMetaText}>
@@ -648,6 +648,7 @@ const styles = StyleSheet.create({
   promoLeft: {
     flex: 1,
     flexDirection: "row",
+    alignItems: "center",
     gap: SPACING.sm,
   },
   promoIconContainer: {
@@ -663,8 +664,7 @@ const styles = StyleSheet.create({
     gap: SPACING.xs / 2,
   },
   promoCode: {
-    ...TYPOGRAPHY.h6,
-    fontSize: 16,
+    fontSize: 17,
     color: COLORS.secondary,
     fontWeight: "700",
     letterSpacing: 0.5,
@@ -676,9 +676,9 @@ const styles = StyleSheet.create({
   },
   promoDiscount: {
     ...TYPOGRAPHY.bodySmall,
-    fontSize: 13,
-    color: COLORS.primary,
-    fontWeight: "600",
+    fontSize: 16,
+    color: COLORS.success,
+    fontWeight: "700",
   },
   promoMeta: {
     flexDirection: "row",
@@ -697,7 +697,7 @@ const styles = StyleSheet.create({
   applyButton: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.xs,
     borderRadius: 8,
     minWidth: 70,
     alignItems: "center",
