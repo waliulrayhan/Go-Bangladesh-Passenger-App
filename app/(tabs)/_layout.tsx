@@ -187,6 +187,58 @@ export default function TabsLayout() {
           }}
         />
         <Tabs.Screen
+          name="promo"
+          options={{
+            title: "Promo Codes",
+            headerShown: true,
+            href: null, // Hide from tab bar
+            headerLeft: ({ tintColor }) => (
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/profile")}
+                style={{
+                  marginLeft: 15,
+                  marginTop: 4,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingHorizontal: 4,
+                }}
+              >
+                <Ionicons
+                  name="arrow-back"
+                  size={24}
+                  color={tintColor}
+                />
+              </TouchableOpacity>
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="promo-history"
+          options={{
+            title: "Promo History",
+            headerShown: true,
+            href: null, // Hide from tab bar
+            headerLeft: ({ tintColor }) => (
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/profile")}
+                style={{
+                  marginLeft: 15,
+                  marginTop: 4,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingHorizontal: 4,
+                }}
+              >
+                <Ionicons
+                  name="arrow-back"
+                  size={24}
+                  color={tintColor}
+                />
+              </TouchableOpacity>
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="change-password"
           options={{
             title: "Change Password",

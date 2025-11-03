@@ -1355,6 +1355,58 @@ class ApiService {
   }
 
   // ========================================================================
+  // PROMO METHODS
+  // ========================================================================
+
+  /**
+   * Get user promos by status with pagination
+   */
+  async getUserPromos(status: string, pageNo: number = 1, pageSize: number = 10): Promise<ApiResponse<any>> {
+    ApiLogger.log('PROMO', 'Fetching user promos', { status, pageNo, pageSize });
+
+    try {
+      const response = await this.api.get<ApiResponse<any>>(
+        `/api/promo/getUserPromo?status=${encodeURIComponent(status)}&pageNo=${pageNo}&pageSize=${pageSize}`
+      );
+
+      ApiLogger.success('PROMO', 'User promos loaded', {
+        status,
+        count: response.data.data.content?.length || 0
+      });
+
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('PROMO', 'User promos error', errorMessage);
+      throw ApiErrorHandler.createError(errorMessage);
+    }
+  }
+
+  /**
+   * Apply a promo code to a card
+   */
+  async applyPromo(data: { promoId: string; cardNumber: string }): Promise<ApiResponse<any>> {
+    ApiLogger.log('PROMO', 'Applying promo', { promoId: data.promoId, cardNumber: data.cardNumber });
+
+    try {
+      const response = await this.api.post<ApiResponse<any>>(
+        '/api/promo/applyPromo',
+        data
+      );
+
+      if (response.data.data.isSuccess) {
+        ApiLogger.success('PROMO', 'Promo applied successfully', { promoId: data.promoId });
+      }
+
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('PROMO', 'Apply promo error', errorMessage);
+      throw error;
+    }
+  }
+
+  // ========================================================================
   // PUBLIC METHODS - Generic HTTP Methods
   // ========================================================================
 
