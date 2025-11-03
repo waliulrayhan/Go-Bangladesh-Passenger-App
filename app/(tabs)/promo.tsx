@@ -3,18 +3,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    RefreshControl,
-    SafeAreaView,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 // Custom components and utilities
-import { ConfirmationModal } from "../../components/ConfirmationModal";
+import { PromoConfirmationModal } from "../../components/PromoConfirmationModal";
 import { Card } from "../../components/ui/Card";
 import { Text } from "../../components/ui/Text";
 import { Toast } from "../../components/ui/Toast";
@@ -546,13 +546,17 @@ export default function Promo() {
         onEndReachedThreshold={0.5}
       />
 
-      {/* Confirmation Modal */}
-      <ConfirmationModal
+      {/* Promo Confirmation Modal */}
+      <PromoConfirmationModal
         visible={showConfirmModal}
-        title={UI_TEXTS.CONFIRMATION.TITLE}
-        message={`${UI_TEXTS.CONFIRMATION.MESSAGE}\n\nCode: ${selectedPromo?.promo?.code}`}
-        confirmText={UI_TEXTS.CONFIRMATION.CONFIRM}
-        cancelText={UI_TEXTS.CONFIRMATION.CANCEL}
+        promoCode={selectedPromo?.promo?.code || ""}
+        discount={
+          selectedPromo?.promo?.promoType === "Fixed"
+            ? `৳${selectedPromo?.promo?.discountValue || 0}`
+            : (selectedPromo?.promo?.maxDiscountAmount || 0) > 0
+            ? `${selectedPromo?.promo?.discountValue || 0}% (Max ৳${selectedPromo?.promo?.maxDiscountAmount || 0})`
+            : `${selectedPromo?.promo?.discountValue || 0}%`
+        }
         onConfirm={confirmApplyPromo}
         onCancel={() => {
           setShowConfirmModal(false);
