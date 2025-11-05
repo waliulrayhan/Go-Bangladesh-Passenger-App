@@ -563,6 +563,7 @@ const styles = StyleSheet.create({
   promoLeft: {
     flex: 1,
     flexDirection: "row",
+    alignItems: "center",
     gap: SPACING.sm,
   },
   promoIconContainer: {
@@ -593,7 +594,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.bodySmall,
     fontSize: 13,
     color: COLORS.primary,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   promoMeta: {
     flexDirection: "row",

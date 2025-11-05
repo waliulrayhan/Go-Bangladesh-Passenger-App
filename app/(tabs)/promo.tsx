@@ -405,14 +405,14 @@ export default function Promo() {
               
               <View style={styles.promoInfo}>
                 <Text style={styles.promoCode}>{promo.code}</Text>
-                
-                <Text style={styles.promoDiscount}>{discountText}</Text>
 
                 {promo.description && (
                   <Text style={styles.promoDescription} numberOfLines={1}>
                     {promo.description}
                   </Text>
                 )}
+
+                <Text style={styles.promoDiscount}>{discountText}</Text>
                 
                 <View style={styles.promoMeta}>
                   <Text style={styles.promoMetaText}>
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
   },
   promoDiscount: {
     ...TYPOGRAPHY.bodySmall,
-    fontSize: 16,
+    fontSize: 13,
     color: COLORS.success,
     fontWeight: "700",
   },
