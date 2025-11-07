@@ -26,12 +26,14 @@ import Animated, {
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { Text } from "../../components/ui/Text";
 import { Toast } from "../../components/ui/Toast";
+import { useRealtimeNotification } from "../../hooks/useRealtimeNotification";
 import { useRealtimeTrip } from "../../hooks/useRealtimeTrip";
 import { useStatusBar } from "../../hooks/useStatusBar";
 import { useToast } from "../../hooks/useToast";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { useAuthStore } from "../../stores/authStore";
 import { useCardStore } from "../../stores/cardStore";
+import { useNotificationStore } from "../../stores/notificationStore";
 import { COLORS } from "../../utils/constants";
 import { DateFormatter, DateTime, formatDate, formatTime } from "../../utils/dateTime";
 
@@ -156,6 +158,9 @@ export default function Dashboard() {
     forceTapOut,
   } = useCardStore();
 
+  // Notification store hooks
+  const { unreadCount, loadNotifications } = useNotificationStore();
+
   // Safe area insets for consistent padding
   const insets = useSafeAreaInsets();
 
@@ -179,6 +184,19 @@ export default function Dashboard() {
       } else if (status === "idle") {
         console.log("🏁 [DASHBOARD] Trip ended");
       }
+    },
+  });
+
+  // Real-time notification monitoring
+  const {
+    checkNow: checkNotificationsNow,
+  } = useRealtimeNotification({
+    enabled: true,
+    onlyWhenActive: true,
+    onNewNotification: (count) => {
+      console.log(`🔔 [DASHBOARD] New notification! Unread count: ${count}`);
+      // Optionally show a toast notification
+      // showSuccess(`You have ${count} new notification${count > 1 ? 's' : ''}`);
     },
   });
 

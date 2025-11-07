@@ -6,6 +6,7 @@ import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { CustomHeader } from "../../components/ui/CustomHeader";
 import { useStatusBar } from "../../hooks/useStatusBar";
 import { useAuthStore } from "../../stores/authStore";
+import { useNotificationStore } from "../../stores/notificationStore";
 import { COLORS } from "../../utils/constants";
 import { FONT_SIZES, FONT_WEIGHTS } from "../../utils/fonts";
 
@@ -20,6 +21,7 @@ export default function TabsLayout() {
   });
 
   const { user, isAuthenticated } = useAuthStore();
+  const { unreadCount } = useNotificationStore();
   const router = useRouter();
 
   // Note: Navigation is now handled by the main layout to prevent conflicts
@@ -48,6 +50,9 @@ export default function TabsLayout() {
       <CustomHeader 
         user={user}
         onProfilePress={() => router.push("/(tabs)/profile")}
+        onNotificationPress={() => router.push("/(tabs)/notifications")}
+        unreadCount={unreadCount}
+        showNotificationBell={true}
       />
     );
   };
@@ -183,6 +188,32 @@ export default function TabsLayout() {
                 size={size}
                 color={color}
               />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="notifications"
+          options={{
+            title: "Notifications",
+            headerShown: true,
+            href: null, // Hide from tab bar
+            headerLeft: ({ tintColor }) => (
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/index")}
+                style={{
+                  marginLeft: 15,
+                  marginTop: 4,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingHorizontal: 4,
+                }}
+              >
+                <Ionicons
+                  name="arrow-back"
+                  size={24}
+                  color={tintColor}
+                />
+              </TouchableOpacity>
             ),
           }}
         />

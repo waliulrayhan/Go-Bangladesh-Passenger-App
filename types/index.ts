@@ -94,6 +94,22 @@ export interface Agent {
   isDeleted: boolean;
 }
 
+export interface Notification {
+  notificationId: string | null;
+  userId: string;
+  title: string;
+  message: string;
+  bannerUrl: string | null;
+  isRead: boolean;
+  readAt: string | null;
+  id: string;
+  createTime: string;
+  lastModifiedTime: string;
+  createdBy: string | null;
+  lastModifiedBy: string | null;
+  isDeleted: boolean;
+}
+
 export interface BusInfo {
   busNumber: string;
   busName: string;

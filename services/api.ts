@@ -1407,6 +1407,58 @@ class ApiService {
   }
 
   // ========================================================================
+  // NOTIFICATION METHODS
+  // ========================================================================
+
+  /**
+   * Get card notifications with pagination
+   */
+  async getCardNotifications(cardNumber: string, pageNo: number = 1, pageSize: number = 10): Promise<ApiResponse<any>> {
+    ApiLogger.log('NOTIFICATION', 'Fetching card notifications', { cardNumber, pageNo, pageSize });
+
+    try {
+      const response = await this.api.get<ApiResponse<any>>(
+        `/api/Notification/getCardNotifications?cardNumber=${encodeURIComponent(cardNumber)}&pageNo=${pageNo}&pageSize=${pageSize}`
+      );
+
+      ApiLogger.success('NOTIFICATION', 'Notifications loaded', {
+        count: response.data.data.content?.length || 0,
+        pageNo
+      });
+
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('NOTIFICATION', 'Fetch notifications error', errorMessage);
+      throw ApiErrorHandler.createError(errorMessage);
+    }
+  }
+
+  /**
+   * Mark a notification as read
+   */
+  async markNotificationAsRead(userNotificationId: string): Promise<ApiResponse<any>> {
+    ApiLogger.log('NOTIFICATION', 'Marking notification as read', { userNotificationId });
+
+    try {
+      const response = await this.api.post<ApiResponse<any>>(
+        '/api/Notification/markAsRead',
+        { userNotificationId }
+      );
+
+      if (response.data.data.isSuccess) {
+        ApiLogger.success('NOTIFICATION', 'Notification marked as read', { userNotificationId });
+      }
+
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('NOTIFICATION', 'Mark as read error', errorMessage);
+      throw ApiErrorHandler.createError(errorMessage);
+    }
+  }
+
+  // ========================================================================
   // PUBLIC METHODS - Generic HTTP Methods
   // ========================================================================
 
