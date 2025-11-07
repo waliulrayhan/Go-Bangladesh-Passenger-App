@@ -19,25 +19,51 @@ import { Notification } from "../../types";
 import { COLORS } from "../../utils/constants";
 
 // Helper function to get notification icon and color based on type
-const getNotificationIcon = (title: string): { icon: keyof typeof Ionicons.glyphMap; color: string; bgColor: string } => {
+const getNotificationIcon = (
+  title: string, 
+  notificationId: string | null
+): { icon: keyof typeof Ionicons.glyphMap; color: string; bgColor: string } => {
   const lowerTitle = title.toLowerCase();
   
-  if (lowerTitle.includes('donation') && lowerTitle.includes('successful')) {
-    return { icon: 'paper-plane', color: '#10B981', bgColor: '#D1FAE5' };
-  } else if (lowerTitle.includes('deposit') || lowerTitle.includes('received')) {
-    return { icon: 'wallet', color: '#3B82F6', bgColor: '#DBEAFE' };
-  } else if (lowerTitle.includes('cancelled') || lowerTitle.includes('failed')) {
-    return { icon: 'close-circle', color: '#EF4444', bgColor: '#FEE2E2' };
-  } else if (lowerTitle.includes('campaign') && lowerTitle.includes('completed')) {
-    return { icon: 'cube', color: '#F59E0B', bgColor: '#FEF3C7' };
-  } else if (lowerTitle.includes('campaign') && lowerTitle.includes('published')) {
-    return { icon: 'checkmark-done', color: '#F59E0B', bgColor: '#FEF3C7' };
-  } else if (lowerTitle.includes('trip') || lowerTitle.includes('ride')) {
-    return { icon: 'car', color: '#8B5CF6', bgColor: '#EDE9FE' };
-  } else if (lowerTitle.includes('payment')) {
-    return { icon: 'card', color: '#EC4899', bgColor: '#FCE7F3' };
-  } else {
-    return { icon: 'notifications', color: '#6B7280', bgColor: '#F3F4F6' };
+  // Admin Notification (specific notificationId)
+  if (notificationId === '907b5efccdd34ab789a3fb0e43a78485') {
+    return { icon: 'megaphone', color: '#da3e3eff', bgColor: '#fce9e9ff' };
+  }
+  // Welcome after registration
+  else if (lowerTitle.includes('welcome') || lowerTitle.includes('registration')) {
+    return { icon: 'happy-outline', color: '#6BB86B', bgColor: '#F0F9F0' };
+  }
+  // Trip Start
+  else if (lowerTitle.includes('trip') && lowerTitle.includes('start')) {
+    return { icon: 'navigate-circle', color: '#5B9BD5', bgColor: '#EFF6FC' };
+  }
+  // Trip End
+  else if (lowerTitle.includes('trip') && lowerTitle.includes('end')) {
+    return { icon: 'checkmark-done-circle', color: '#70C17C', bgColor: '#F1F9F3' };
+  }
+  // Recharge
+  else if (lowerTitle.includes('recharge') || lowerTitle.includes('top up') || lowerTitle.includes('balance added')) {
+    return { icon: 'card-outline', color: '#9B7EBD', bgColor: '#F7F3FA' };
+  }
+  // Return
+  else if (lowerTitle.includes('return') || lowerTitle.includes('refund')) {
+    return { icon: 'arrow-undo-circle', color: '#D4A574', bgColor: '#FBF6F0' };
+  }
+  // Promo Used
+  else if (lowerTitle.includes('promo') && (lowerTitle.includes('used') || lowerTitle.includes('applied') || lowerTitle.includes('redeemed'))) {
+    return { icon: 'checkmark-circle-outline', color: '#D98FB6', bgColor: '#FCF5F9' };
+  }
+  // Promo Offer
+  else if (lowerTitle.includes('promo') && (lowerTitle.includes('offer') || lowerTitle.includes('available') || lowerTitle.includes('new'))) {
+    return { icon: 'ticket-outline', color: '#E8A25F', bgColor: '#FFF8F0' };
+  }
+  // Profile Update
+  else if (lowerTitle.includes('profile') && lowerTitle.includes('update')) {
+    return { icon: 'person-outline', color: '#6DBACD', bgColor: '#F0F9FB' };
+  }
+  // Default notification
+  else {
+    return { icon: 'notifications-outline', color: '#8C9BA5', bgColor: '#F5F7F9' };
   }
 };
 
@@ -159,7 +185,7 @@ export default function NotificationsPage() {
 
   const renderNotificationItem = ({ item }: { item: Notification }) => {
     const isUnread = !item.isRead;
-    const iconData = getNotificationIcon(item.title);
+    const iconData = getNotificationIcon(item.title, item.notificationId);
 
     return (
       <TouchableOpacity
