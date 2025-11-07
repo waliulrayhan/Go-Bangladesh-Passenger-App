@@ -420,12 +420,12 @@ const styles = StyleSheet.create({
   },
   notificationItem: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     marginHorizontal: 12,
     marginBottom: 8,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   iconCircle: {
     width: 40,
@@ -452,12 +452,11 @@ const styles = StyleSheet.create({
     color: COLORS.gray[600],
   },
   unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: COLORS.primary,
     marginLeft: 8,
-    marginTop: 5,
   },
   emptyContainer: {
     flex: 1,
