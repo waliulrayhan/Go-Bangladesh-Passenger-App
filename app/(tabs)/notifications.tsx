@@ -187,11 +187,14 @@ export default function NotificationsPage() {
     const isUnread = !item.isRead;
     const iconData = getNotificationIcon(item.title, item.notificationId);
 
+    // Use gray color for read notifications
+    const displayBgColor = isUnread ? iconData.bgColor : '#F3F4F6';
+
     return (
       <TouchableOpacity
         style={[
           styles.notificationItem,
-          { backgroundColor: iconData.bgColor }
+          { backgroundColor: displayBgColor }
         ]}
         onPress={() => handleNotificationPress(item)}
         activeOpacity={0.7}
@@ -210,7 +213,10 @@ export default function NotificationsPage() {
           {/* Title */}
           <Text
             variant="body"
-            style={styles.notificationTitle}
+            style={[
+              styles.notificationTitle,
+              isUnread && styles.unreadTitle
+            ]}
             numberOfLines={1}
           >
             {item.title}
@@ -441,9 +447,12 @@ const styles = StyleSheet.create({
   notificationTitle: {
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: "600",
+    fontWeight: "400",
     color: COLORS.gray[900],
     marginBottom: 4,
+  },
+  unreadTitle: {
+    fontWeight: "700",
   },
   notificationMessage: {
     fontSize: 13,
