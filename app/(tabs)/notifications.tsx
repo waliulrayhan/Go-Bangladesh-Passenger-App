@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
-    Image,
+    Pressable,
     RefreshControl,
     StyleSheet,
     TouchableOpacity,
-    View,
+    View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotificationDetailModal } from "../../components/NotificationDetailModal";
@@ -16,8 +16,79 @@ import { Text } from "../../components/ui/Text";
 import { useStatusBar } from "../../hooks/useStatusBar";
 import { useNotificationStore } from "../../stores/notificationStore";
 import { Notification } from "../../types";
-import { API_BASE_URL, COLORS } from "../../utils/constants";
-import { DateTimeUtils } from "../../utils/dateTime";
+import { COLORS } from "../../utils/constants";
+
+// Helper function to get notification icon and color based on type
+const getNotificationIcon = (title: string): { icon: keyof typeof Ionicons.glyphMap; color: string; bgColor: string } => {
+  const lowerTitle = title.toLowerCase();
+  
+  if (lowerTitle.includes('donation') && lowerTitle.includes('successful')) {
+    return { icon: 'paper-plane', color: '#10B981', bgColor: '#D1FAE5' };
+  } else if (lowerTitle.includes('deposit') || lowerTitle.includes('received')) {
+    return { icon: 'wallet', color: '#3B82F6', bgColor: '#DBEAFE' };
+  } else if (lowerTitle.includes('cancelled') || lowerTitle.includes('failed')) {
+    return { icon: 'close-circle', color: '#EF4444', bgColor: '#FEE2E2' };
+  } else if (lowerTitle.includes('campaign') && lowerTitle.includes('completed')) {
+    return { icon: 'cube', color: '#F59E0B', bgColor: '#FEF3C7' };
+  } else if (lowerTitle.includes('campaign') && lowerTitle.includes('published')) {
+    return { icon: 'checkmark-done', color: '#F59E0B', bgColor: '#FEF3C7' };
+  } else if (lowerTitle.includes('trip') || lowerTitle.includes('ride')) {
+    return { icon: 'car', color: '#8B5CF6', bgColor: '#EDE9FE' };
+  } else if (lowerTitle.includes('payment')) {
+    return { icon: 'card', color: '#EC4899', bgColor: '#FCE7F3' };
+  } else {
+    return { icon: 'notifications', color: '#6B7280', bgColor: '#F3F4F6' };
+  }
+};
+
+// Helper function to check if notification is new (within 24 hours)
+const isNewNotification = (dateString: string): boolean => {
+  const notificationDate = new Date(dateString);
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  return notificationDate > twentyFourHoursAgo;
+};
+
+// Helper function to get grouped date label
+const getDateLabel = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const twoDaysAgo = new Date(today);
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+  const threeDaysAgo = new Date(today);
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+  const notificationDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (notificationDate.getTime() === today.getTime()) {
+    return "Today";
+  } else if (notificationDate.getTime() === yesterday.getTime()) {
+    return "Yesterday";
+  } else if (notificationDate.getTime() === twoDaysAgo.getTime()) {
+    return "2 days ago";
+  } else if (notificationDate.getTime() === threeDaysAgo.getTime()) {
+    return "3 days ago";
+  } else {
+    // Format as "Dec 5, 2024"
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const day = date.getDate();
+    const year = date.getFullYear();
+    return `${month} ${day}, ${year}`;
+  }
+};
+
+// Helper function to format time
+const getTimeLabel = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('en-US', { 
+    hour: 'numeric', 
+    minute: '2-digit',
+    hour12: true 
+  });
+};
 
 export default function NotificationsPage() {
   // Status bar configuration
@@ -44,11 +115,22 @@ export default function NotificationsPage() {
 
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
 
   // Load initial notifications
   useEffect(() => {
     loadNotifications(1, true);
   }, []);
+
+  // Filter notifications based on active tab
+  const filteredNotifications = activeTab === 'unread' 
+    ? notifications.filter(n => !n.isRead)
+    : notifications;
+
+  // Group notifications into "New" and older
+  const newNotifications = filteredNotifications.filter(n => isNewNotification(n.createTime));
+  const olderNotifications = filteredNotifications.filter(n => !isNewNotification(n.createTime));
 
   const handleRefresh = async () => {
     await refreshNotifications();
@@ -77,54 +159,52 @@ export default function NotificationsPage() {
 
   const renderNotificationItem = ({ item }: { item: Notification }) => {
     const isUnread = !item.isRead;
+    const iconData = getNotificationIcon(item.title);
 
     return (
       <TouchableOpacity
-        style={styles.notificationItem}
+        style={[
+          styles.notificationItem,
+          { backgroundColor: iconData.bgColor }
+        ]}
         onPress={() => handleNotificationPress(item)}
-        activeOpacity={0.6}
+        activeOpacity={0.7}
       >
-        {/* Unread indicator line */}
-        {isUnread && <View style={styles.unreadIndicator} />}
-
-        <View style={styles.notificationInner}>
-          {/* Content */}
-          <View style={styles.notificationContent}>
-            <View style={styles.titleRow}>
-              <Text
-                variant="body"
-                style={[styles.notificationTitle, isUnread && styles.unreadText]}
-                numberOfLines={2}
-              >
-                {item.title}
-              </Text>
-            </View>
-
-            <Text
-              variant="bodySmall"
-              color={COLORS.gray[600]}
-              style={styles.notificationMessage}
-              numberOfLines={3}
-            >
-              {item.message}
-            </Text>
-
-            <Text variant="caption" color={COLORS.gray[500]} style={styles.notificationTime}>
-              {DateTimeUtils.relative(item.createTime)}
-            </Text>
-          </View>
-
-          {/* Banner thumbnail - small and minimal */}
-          {item.bannerUrl && (
-            <View style={styles.thumbnailContainer}>
-              <Image
-                source={{ uri: `${API_BASE_URL}/${item.bannerUrl}` }}
-                style={styles.thumbnail}
-                resizeMode="cover"
-              />
-            </View>
-          )}
+        {/* Left Icon */}
+        <View style={[styles.iconCircle, { backgroundColor: iconData.color }]}>
+          <Ionicons 
+            name={iconData.icon} 
+            size={20} 
+            color="#FFFFFF" 
+          />
         </View>
+
+        {/* Content */}
+        <View style={styles.contentContainer}>
+          {/* Title */}
+          <Text
+            variant="body"
+            style={styles.notificationTitle}
+            numberOfLines={1}
+          >
+            {item.title}
+          </Text>
+
+          {/* Message */}
+          <Text
+            variant="caption"
+            color={COLORS.gray[600]}
+            style={styles.notificationMessage}
+            numberOfLines={2}
+          >
+            {item.message || ""}
+          </Text>
+        </View>
+
+        {/* Unread Indicator */}
+        {isUnread && (
+          <View style={styles.unreadDot} />
+        )}
       </TouchableOpacity>
     );
   };
@@ -161,10 +241,57 @@ export default function NotificationsPage() {
   return (
     <>
       <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* Header */}
+        {/* <View style={styles.header}>
+          <TouchableOpacity 
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={COLORS.gray[900]} />
+          </TouchableOpacity>
+
+          <Text variant="h2" style={styles.headerTitle}>
+            Notification
+          </Text>
+
+          <TouchableOpacity 
+            onPress={() => setShowFilterModal(true)}
+            style={styles.filterButton}
+          >
+            <Ionicons name="options-outline" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View> */}
+
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          <Pressable
+            style={[styles.tab, activeTab === 'all' && styles.activeTab]}
+            onPress={() => setActiveTab('all')}
+          >
+            <Text
+              variant="body"
+              style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}
+            >
+              All
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.tab, activeTab === 'unread' && styles.activeTab]}
+            onPress={() => setActiveTab('unread')}
+          >
+            <Text
+              variant="body"
+              style={[styles.tabText, activeTab === 'unread' && styles.activeTabText]}
+            >
+              Unread
+            </Text>
+          </Pressable>
+        </View>
 
         {/* Notification List */}
         <FlatList
-          data={notifications}
+          data={filteredNotifications}
           renderItem={renderNotificationItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
@@ -197,92 +324,114 @@ export default function NotificationsPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: "#FFFFFF",
   },
   header: {
-    backgroundColor: COLORS.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    elevation: 4,
-    shadowColor: COLORS.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    paddingVertical: 12,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[200],
   },
   backButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.gray[900],
+  },
+  filterButton: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFFFFF",
+    gap: 16,
+  },
+  tab: {
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    backgroundColor: "transparent",
+  },
+  activeTab: {
+    backgroundColor: COLORS.primary + "15",
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: COLORS.gray[600],
+  },
+  activeTabText: {
+    color: COLORS.primary,
     fontWeight: "600",
   },
-  placeholder: {
-    width: 32,
+  sectionHeader: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: COLORS.gray[900],
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   listContent: {
     flexGrow: 1,
+    paddingBottom: 16,
   },
   notificationItem: {
-    backgroundColor: COLORS.white,
-    marginBottom: 1,
-    position: "relative",
-  },
-  unreadIndicator: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    backgroundColor: COLORS.primary,
-  },
-  notificationInner: {
     flexDirection: "row",
     alignItems: "flex-start",
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    paddingLeft: 20,
-    gap: 12,
+    marginHorizontal: 12,
+    marginBottom: 8,
+    borderRadius: 12,
   },
-  notificationContent: {
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  contentContainer: {
     flex: 1,
-    gap: 6,
-  },
-  titleRow: {
-    marginBottom: 2,
   },
   notificationTitle: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 18,
     fontWeight: "600",
     color: COLORS.gray[900],
-  },
-  unreadText: {
-    color: COLORS.gray[900],
-    fontWeight: "700",
+    marginBottom: 4,
   },
   notificationMessage: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "400",
+    color: COLORS.gray[600],
   },
-  notificationTime: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  thumbnailContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: COLORS.gray[100],
-  },
-  thumbnail: {
-    width: "100%",
-    height: "100%",
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+    marginLeft: 8,
+    marginTop: 5,
   },
   emptyContainer: {
     flex: 1,
