@@ -3,13 +3,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    RefreshControl,
-    SafeAreaView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
@@ -182,9 +182,9 @@ export default function PromoHistory() {
       const response = await apiService.getUserPromos(status, pageNo, 10);
       
       if (response.data.isSuccess) {
-        // API returns array directly in content
-        const promos = response.data.content || [];
-        const totalCount = promos.length;
+        // API returns finalData and rowCount inside content
+        const promos = response.data.content.finalData || [];
+        const totalCount = response.data.content.rowCount || 0;
 
         const updateState = (
           setPromos: React.Dispatch<React.SetStateAction<UserPromo[]>>,

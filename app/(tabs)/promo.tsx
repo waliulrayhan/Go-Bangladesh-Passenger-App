@@ -204,9 +204,9 @@ export default function Promo() {
       const response = await apiService.getUserPromos(status, pageNo, 10);
       
       if (response.data.isSuccess) {
-        // API returns array directly in content, not in content.data
-        const promos = response.data.content || [];
-        const totalCount = promos.length;
+        // API returns finalData and rowCount inside content
+        const promos = response.data.content.finalData || [];
+        const totalCount = response.data.content.rowCount || 0;
 
         const updateState = (
           setPromos: React.Dispatch<React.SetStateAction<UserPromo[]>>,
