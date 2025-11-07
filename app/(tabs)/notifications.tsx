@@ -80,61 +80,51 @@ export default function NotificationsPage() {
 
     return (
       <TouchableOpacity
-        style={[styles.notificationItem, isUnread && styles.unreadNotificationItem]}
+        style={styles.notificationItem}
         onPress={() => handleNotificationPress(item)}
-        activeOpacity={0.7}
+        activeOpacity={0.6}
       >
-        {/* Left Icon/Image */}
-        <View style={styles.notificationIcon}>
-          {item.bannerUrl ? (
-            <Image
-              source={{ uri: `${API_BASE_URL}/${item.bannerUrl}` }}
-              style={styles.bannerThumbnail}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.iconPlaceholder}>
-              <Ionicons
-                name="notifications"
-                size={20}
-                color={isUnread ? COLORS.primary : COLORS.gray[600]}
-              />
+        {/* Unread indicator line */}
+        {isUnread && <View style={styles.unreadIndicator} />}
+
+        <View style={styles.notificationInner}>
+          {/* Content */}
+          <View style={styles.notificationContent}>
+            <View style={styles.titleRow}>
+              <Text
+                variant="body"
+                style={[styles.notificationTitle, isUnread && styles.unreadText]}
+                numberOfLines={2}
+              >
+                {item.title}
+              </Text>
             </View>
-          )}
-        </View>
 
-        {/* Content */}
-        <View style={styles.notificationContent}>
-          <View style={styles.notificationHeader}>
             <Text
-              variant="body"
-              style={[styles.notificationTitle, isUnread && styles.unreadText]}
-              numberOfLines={1}
+              variant="bodySmall"
+              color={COLORS.gray[600]}
+              style={styles.notificationMessage}
+              numberOfLines={3}
             >
-              {item.title}
+              {item.message}
             </Text>
-            {isUnread && <View style={styles.unreadDot} />}
-          </View>
 
-          <Text
-            variant="bodySmall"
-            color={COLORS.gray[700]}
-            style={styles.notificationMessage}
-            numberOfLines={2}
-          >
-            {item.message}
-          </Text>
-
-          <View style={styles.notificationFooter}>
-            <Ionicons name="time-outline" size={12} color={COLORS.gray[500]} />
             <Text variant="caption" color={COLORS.gray[500]} style={styles.notificationTime}>
               {DateTimeUtils.relative(item.createTime)}
             </Text>
           </View>
-        </View>
 
-        {/* Chevron */}
-        <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+          {/* Banner thumbnail - small and minimal */}
+          {item.bannerUrl && (
+            <View style={styles.thumbnailContainer}>
+              <Image
+                source={{ uri: `${API_BASE_URL}/${item.bannerUrl}` }}
+                style={styles.thumbnail}
+                resizeMode="cover"
+              />
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
     );
   };
@@ -143,24 +133,16 @@ export default function NotificationsPage() {
     if (isLoading && notifications.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text variant="bodyLarge" color={COLORS.gray[600]} style={styles.emptyText}>
-            Loading notifications...
-          </Text>
+          <ActivityIndicator size="large" color={COLORS.gray[400]} />
         </View>
       );
     }
 
     return (
       <View style={styles.emptyContainer}>
-        <View style={styles.emptyIcon}>
-          <Ionicons name="notifications-off-outline" size={48} color={COLORS.gray[400]} />
-        </View>
-        <Text variant="h3" style={styles.emptyTitle}>
-          No Notifications
-        </Text>
-        <Text variant="body" color={COLORS.gray[600]} style={styles.emptySubtitle}>
-          You're all caught up! New notifications will appear here.
+        <Ionicons name="notifications-outline" size={64} color={COLORS.gray[300]} />
+        <Text variant="body" color={COLORS.gray[500]} style={styles.emptyText}>
+          No notifications yet
         </Text>
       </View>
     );
@@ -244,99 +226,73 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    paddingBottom: 20,
   },
   notificationItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
     backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[200],
+    marginBottom: 1,
+    position: "relative",
+  },
+  unreadIndicator: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: COLORS.primary,
+  },
+  notificationInner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingLeft: 20,
     gap: 12,
-  },
-  unreadNotificationItem: {
-    backgroundColor: COLORS.primary + "08",
-  },
-  notificationIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    overflow: "hidden",
-  },
-  bannerThumbnail: {
-    width: "100%",
-    height: "100%",
-  },
-  iconPlaceholder: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: COLORS.gray[100],
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
   },
   notificationContent: {
     flex: 1,
-    gap: 4,
-  },
-  notificationHeader: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: 6,
   },
+  titleRow: {
+    marginBottom: 2,
+  },
   notificationTitle: {
-    flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
     fontWeight: "600",
+    color: COLORS.gray[900],
   },
   unreadText: {
-    color: COLORS.primary,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.error,
+    color: COLORS.gray[900],
+    fontWeight: "700",
   },
   notificationMessage: {
-    lineHeight: 18,
-  },
-  notificationFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 2,
+    fontSize: 14,
+    lineHeight: 20,
   },
   notificationTime: {
-    fontWeight: "500",
+    fontSize: 12,
+    marginTop: 4,
+  },
+  thumbnailContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: COLORS.gray[100],
+  },
+  thumbnail: {
+    width: "100%",
+    height: "100%",
   },
   emptyContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 40,
-    paddingVertical: 60,
-  },
-  emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.gray[100],
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    textAlign: "center",
-    lineHeight: 20,
+    paddingVertical: 100,
+    gap: 12,
   },
   emptyText: {
-    marginTop: 12,
+    fontSize: 15,
   },
   footerLoader: {
     paddingVertical: 20,

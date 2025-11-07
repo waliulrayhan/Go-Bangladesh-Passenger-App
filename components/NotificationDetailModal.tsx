@@ -51,12 +51,8 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+            <Ionicons name="close" size={28} color={COLORS.gray[700]} />
           </TouchableOpacity>
-          <Text variant="h3" color={COLORS.white} style={styles.headerTitle}>
-            Notification
-          </Text>
-          <View style={styles.placeholder} />
         </View>
 
         {/* Content */}
@@ -76,45 +72,23 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
             </View>
           )}
 
-          {/* Title and Date */}
-          <View style={styles.titleSection}>
+          {/* Content Section */}
+          <View style={styles.textContent}>
+            {/* Date */}
+            <Text variant="caption" color={COLORS.gray[500]} style={styles.date}>
+              {formatFullDate(notification.createTime)}
+            </Text>
+
+            {/* Title */}
             <Text variant="h2" style={styles.title}>
               {notification.title}
             </Text>
-            <View style={styles.metaInfo}>
-              <Ionicons
-                name="time-outline"
-                size={16}
-                color={COLORS.gray[600]}
-              />
-              <Text variant="bodySmall" color={COLORS.gray[600]} style={styles.date}>
-                {formatFullDate(notification.createTime)}
-              </Text>
-            </View>
-          </View>
 
-          {/* Message */}
-          <View style={styles.messageSection}>
-            <Text variant="bodyLarge" style={styles.message}>
+            {/* Message */}
+            <Text variant="body" color={COLORS.gray[700]} style={styles.message}>
               {notification.message}
             </Text>
           </View>
-
-          {/* Read Status */}
-          {notification.isRead && notification.readAt && (
-            <View style={styles.readStatusSection}>
-              <View style={styles.readStatusBadge}>
-                <Ionicons
-                  name="checkmark-done"
-                  size={16}
-                  color={COLORS.success}
-                />
-                <Text variant="bodySmall" color={COLORS.success} style={styles.readStatusText}>
-                  Read {formatDate(notification.readAt)}
-                </Text>
-              </View>
-            </View>
-          )}
         </ScrollView>
       </View>
     </Modal>
@@ -124,95 +98,50 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: COLORS.white,
   },
   header: {
-    backgroundColor: COLORS.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 16,
-    elevation: 4,
-    shadowColor: COLORS.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 12,
+    backgroundColor: COLORS.white,
   },
   closeButton: {
+    alignSelf: "flex-end",
     padding: 4,
-  },
-  headerTitle: {
-    fontWeight: "600",
-  },
-  placeholder: {
-    width: 32,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
-    paddingBottom: 30,
+    paddingBottom: 40,
   },
   bannerContainer: {
     width: "100%",
     aspectRatio: 16 / 9,
-    backgroundColor: COLORS.gray[200],
+    backgroundColor: COLORS.gray[100],
+    marginBottom: 24,
   },
   bannerImage: {
     width: "100%",
     height: "100%",
   },
-  titleSection: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 16,
-  },
-  title: {
-    fontWeight: "700",
-    marginBottom: 12,
-    lineHeight: 28,
-  },
-  metaInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+  textContent: {
+    paddingHorizontal: 24,
+    gap: 16,
   },
   date: {
+    fontSize: 13,
     fontWeight: "500",
   },
-  messageSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    lineHeight: 32,
+    color: COLORS.gray[900],
   },
   message: {
-    lineHeight: 24,
-    color: COLORS.gray[800],
-  },
-  readStatusSection: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    marginTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.gray[200],
-  },
-  readStatusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: COLORS.success + "10",
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.success + "30",
-  },
-  readStatusText: {
-    fontWeight: "600",
+    fontSize: 16,
+    lineHeight: 26,
   },
 });

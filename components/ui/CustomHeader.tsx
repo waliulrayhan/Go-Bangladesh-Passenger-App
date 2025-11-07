@@ -87,13 +87,13 @@ export const CustomHeader: React.FC<CustomHeaderProps> = React.memo(({
             style={styles.notificationButton}
             onPress={onNotificationPress}
           >
-            <Ionicons name="notifications" size={24} color={COLORS.white} />
+            <Ionicons 
+              name={unreadCount > 0 ? "notifications" : "notifications-outline"} 
+              size={24} 
+              color={COLORS.white} 
+            />
             {unreadCount > 0 && (
-              <View style={styles.notificationBadge}>
-                <Text variant="caption" color={COLORS.white} style={styles.badgeText}>
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Text>
-              </View>
+              <View style={styles.notificationBadge} />
             )}
           </TouchableOpacity>
         )}
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   notificationButton: {
-    width: 44,
+    // width: 44,
     height: 44,
     borderRadius: 22,
     alignItems: "center",
@@ -199,21 +199,13 @@ const styles = StyleSheet.create({
   notificationBadge: {
     position: "absolute",
     top: 6,
-    right: 6,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: COLORS.error,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: COLORS.primary,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    lineHeight: 14,
   },
   profileSection: {
     alignItems: "center",
