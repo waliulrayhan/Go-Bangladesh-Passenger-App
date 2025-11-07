@@ -202,12 +202,18 @@ export default function NotificationsPage() {
         activeOpacity={0.7}
       >
         {/* Left Icon */}
-        <View style={[styles.iconCircle, { backgroundColor: iconData.color }]}>
-          <Ionicons 
-            name={iconData.icon} 
-            size={20} 
-            color="#FFFFFF" 
-          />
+        <View style={styles.iconWrapper}>
+          <View style={[styles.iconCircle, { backgroundColor: iconData.color }]}>
+            <Ionicons 
+              name={iconData.icon} 
+              size={20} 
+              color="#FFFFFF" 
+            />
+          </View>
+          {/* Unread Indicator on Icon */}
+          {isUnread && (
+            <View style={styles.unreadDot} />
+          )}
         </View>
 
         {/* Content */}
@@ -242,11 +248,6 @@ export default function NotificationsPage() {
             {item.message || ""}
           </Text>
         </View>
-
-        {/* Unread Indicator */}
-        {isUnread && (
-          <View style={styles.unreadDot} />
-        )}
       </TouchableOpacity>
     );
   };
@@ -443,13 +444,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: 10,
   },
+  iconWrapper: {
+    position: "relative",
+    marginRight: 12,
+  },
   iconCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
   },
   contentContainer: {
     flex: 1,
@@ -486,11 +490,15 @@ const styles = StyleSheet.create({
     color: COLORS.gray[600],
   },
   unreadDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: COLORS.primary,
-    marginLeft: 8,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
   },
   emptyContainer: {
     flex: 1,
