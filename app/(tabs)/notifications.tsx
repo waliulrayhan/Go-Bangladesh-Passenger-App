@@ -186,6 +186,8 @@ export default function NotificationsPage() {
   const renderNotificationItem = ({ item }: { item: Notification }) => {
     const isUnread = !item.isRead;
     const iconData = getNotificationIcon(item.title, item.notificationId);
+    const dateLabel = getDateLabel(item.createTime);
+    const timeLabel = getTimeLabel(item.createTime);
 
     // Use gray color for read notifications
     const displayBgColor = isUnread ? iconData.bgColor : '#F3F4F6';
@@ -210,17 +212,25 @@ export default function NotificationsPage() {
 
         {/* Content */}
         <View style={styles.contentContainer}>
-          {/* Title */}
-          <Text
-            variant="body"
-            style={[
-              styles.notificationTitle,
-              isUnread && styles.unreadTitle
-            ]}
-            numberOfLines={1}
-          >
-            {item.title}
-          </Text>
+          {/* Title and Date/Time Row */}
+          <View style={styles.titleRow}>
+            <Text
+              variant="body"
+              style={[
+                styles.notificationTitle,
+                isUnread && styles.unreadTitle
+              ]}
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+            
+            <View style={styles.dateTimeContainer}>
+              <Text variant="caption" style={styles.dateTimeText}>
+                {dateLabel} • {timeLabel}
+              </Text>
+            </View>
+          </View>
 
           {/* Message */}
           <Text
@@ -444,15 +454,30 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
   },
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 4,
+  },
   notificationTitle: {
     fontSize: 14,
     lineHeight: 18,
     fontWeight: "400",
     color: COLORS.gray[900],
-    marginBottom: 4,
+    flex: 1,
+    marginRight: 8,
   },
   unreadTitle: {
     fontWeight: "700",
+  },
+  dateTimeContainer: {
+    alignItems: "flex-end",
+  },
+  dateTimeText: {
+    fontSize: 11,
+    color: COLORS.gray[500],
+    fontWeight: "400",
   },
   notificationMessage: {
     fontSize: 13,
