@@ -284,52 +284,34 @@ export default function NotificationsPage() {
   return (
     <>
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        {/* Header */}
-        {/* <View style={styles.header}>
-          <TouchableOpacity 
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color={COLORS.gray[900]} />
-          </TouchableOpacity>
-
-          <Text variant="h2" style={styles.headerTitle}>
-            Notification
-          </Text>
-
-          <TouchableOpacity 
-            onPress={() => setShowFilterModal(true)}
-            style={styles.filterButton}
-          >
-            <Ionicons name="options-outline" size={24} color={COLORS.primary} />
-          </TouchableOpacity>
-        </View> */}
 
         {/* Tabs */}
         <View style={styles.tabsContainer}>
-          <Pressable
-            style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-            onPress={() => setActiveTab('all')}
-          >
-            <Text
-              variant="body"
-              style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}
+          <View style={styles.tabsWrapper}>
+            <Pressable
+              style={[styles.tab, activeTab === 'all' && styles.activeTab]}
+              onPress={() => setActiveTab('all')}
             >
-              All
-            </Text>
-          </Pressable>
+              <Text
+                variant="body"
+                style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}
+              >
+                All
+              </Text>
+            </Pressable>
 
-          <Pressable
-            style={[styles.tab, activeTab === 'unread' && styles.activeTab]}
-            onPress={() => setActiveTab('unread')}
-          >
-            <Text
-              variant="body"
-              style={[styles.tabText, activeTab === 'unread' && styles.activeTabText]}
+            <Pressable
+              style={[styles.tab, activeTab === 'unread' && styles.activeTab]}
+              onPress={() => setActiveTab('unread')}
             >
-              Unread
-            </Text>
-          </Pressable>
+              <Text
+                variant="body"
+                style={[styles.tabText, activeTab === 'unread' && styles.activeTabText]}
+              >
+                Unread
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         {/* Notification List */}
@@ -401,27 +383,44 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: "row",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 12,
     backgroundColor: "#FFFFFF",
-    gap: 16,
+  },
+  tabsWrapper: {
+    flexDirection: "row",
+    backgroundColor: COLORS.gray[100],
+    borderRadius: 12,
+    padding: 4,
+    flex: 1,
   },
   tab: {
+    flex: 1,
     paddingVertical: 6,
     paddingHorizontal: 16,
-    borderRadius: 16,
-    backgroundColor: "transparent",
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
   activeTab: {
-    backgroundColor: COLORS.primary + "15",
+    backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
     color: COLORS.gray[600],
   },
   activeTabText: {
-    color: COLORS.primary,
-    fontWeight: "600",
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
   sectionHeader: {
     fontSize: 15,
