@@ -46,8 +46,11 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
         <View style={styles.modalContainer}>
           {/* Header */}
           <View style={styles.header}>
+            <Text variant="h3" style={styles.headerTitle}>
+              Notification Detail
+            </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close-circle" size={32} color={COLORS.gray[400]} />
+              <Ionicons name="close" size={24} color={COLORS.gray[600]} />
             </TouchableOpacity>
           </View>
 
@@ -63,23 +66,13 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
                 <Image
                   source={{ uri: `${API_BASE_URL}/${notification.bannerUrl}` }}
                   style={styles.bannerImage}
-                  resizeMode="contain"
+                  resizeMode="cover"
                 />
               </View>
             )}
 
             {/* Content Section */}
             <View style={styles.textContent}>
-              {/* Date and Time */}
-              <Text variant="caption" color={COLORS.gray[500]} style={styles.date}>
-                {DateFormatter.custom(DateTime.parseUTCToLocal(notification.createTime), { 
-                  includeTime: true, 
-                  use24Hour: false,
-                  includeYear: true,
-                  useShortMonth: false
-                })}
-              </Text>
-
               {/* Title */}
               <Text variant="h3" style={styles.title}>
                 {notification.title}
@@ -88,6 +81,16 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
               {/* Message */}
               <Text variant="body" color={COLORS.gray[700]} style={styles.message}>
                 {notification.message}
+              </Text>
+
+              {/* Date and Time */}
+              <Text variant="caption" color={COLORS.gray[500]} style={styles.date}>
+                {DateFormatter.custom(DateTime.parseUTCToLocal(notification.createTime), { 
+                  includeTime: true, 
+                  use24Hour: false,
+                  includeYear: true,
+                  useShortMonth: false
+                })}
               </Text>
             </View>
           </ScrollView>
@@ -114,59 +117,69 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: COLORS.white,
-    borderRadius: 16,
+    borderRadius: 20,
     width: "100%",
     maxWidth: 500,
-    maxHeight: SCREEN_HEIGHT * 0.8,
+    maxHeight: SCREEN_HEIGHT * 0.85,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+    overflow: "hidden",
   },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[200],
     backgroundColor: COLORS.white,
-    alignItems: "flex-end",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.gray[900],
   },
   closeButton: {
     padding: 4,
   },
   content: {
-    maxHeight: SCREEN_HEIGHT * 0.7,
+    flexGrow: 1,
   },
   contentContainer: {
-    paddingBottom: 24,
+    paddingBottom: 20,
   },
   bannerContainer: {
     width: "100%",
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: COLORS.gray[100],
+    overflow: "hidden",
   },
   bannerImage: {
     width: "100%",
     aspectRatio: 2,
   },
   textContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  date: {
-    fontSize: 13,
-    fontWeight: "500",
-    marginBottom: 8,
+    paddingHorizontal: 24,
+    paddingTop: 20,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
-    lineHeight: 28,
+    fontSize: 18,
+    fontWeight: "600",
+    lineHeight: 26,
     color: COLORS.gray[900],
     marginBottom: 12,
   },
   message: {
     fontSize: 15,
-    lineHeight: 24,
+    lineHeight: 22,
     color: COLORS.gray[700],
+    marginBottom: 12,
+  },
+  date: {
+    fontSize: 13,
+    fontWeight: "400",
   },
 });
