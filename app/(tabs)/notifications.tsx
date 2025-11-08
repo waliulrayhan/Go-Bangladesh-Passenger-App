@@ -2,15 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Animated,
-  FlatList,
-  PanResponder,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Animated,
+    FlatList,
+    PanResponder,
+    Pressable,
+    RefreshControl,
+    StyleSheet,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotificationDetailModal } from "../../components/NotificationDetailModal";
@@ -241,15 +241,15 @@ export default function NotificationsPage() {
         onPanResponderMove: (_, gestureState) => {
           // Only allow right swipe (positive dx)
           if (gestureState.dx > 0) {
-            translateX.setValue(Math.min(gestureState.dx, 80));
+            translateX.setValue(Math.min(gestureState.dx, 150));
           }
         },
         onPanResponderRelease: (_, gestureState) => {
-          if (gestureState.dx > 60) {
+          if (gestureState.dx > 120) {
             // Swipe threshold reached - toggle read status
             Animated.timing(translateX, {
-              toValue: 80,
-              duration: 200,
+              toValue: 150,
+              duration: 0,
               useNativeDriver: true,
             }).start(() => {
               // Toggle read status
@@ -302,7 +302,7 @@ export default function NotificationsPage() {
               { backgroundColor: displayBgColor },
             ]}
             onPress={() => handleNotificationPress(item)}
-            activeOpacity={0.7}
+            activeOpacity={1}
           >
             {/* Left Icon */}
             <View style={styles.iconWrapper}>
