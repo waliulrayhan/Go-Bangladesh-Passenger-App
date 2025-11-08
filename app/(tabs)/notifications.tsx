@@ -1,14 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    RefreshControl,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Animated,
+  FlatList,
+  PanResponder,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotificationDetailModal } from "../../components/NotificationDetailModal";
@@ -20,50 +22,79 @@ import { COLORS } from "../../utils/constants";
 
 // Helper function to get notification icon and color based on type
 const getNotificationIcon = (
-  title: string, 
+  title: string,
   notificationId: string | null
 ): { icon: keyof typeof Ionicons.glyphMap; color: string; bgColor: string } => {
   const lowerTitle = title.toLowerCase();
-  
+
   // Admin Notification (specific notificationId)
-  if (notificationId === '907b5efccdd34ab789a3fb0e43a78485') {
-    return { icon: 'megaphone', color: '#da3e3eff', bgColor: '#fce9e9ff' };
+  if (notificationId !== null) {
+    return { icon: "megaphone", color: "#da3e3eff", bgColor: "#fce9e9ff" };
   }
   // Welcome after registration
-  else if (lowerTitle.includes('welcome') || lowerTitle.includes('registration')) {
-    return { icon: 'happy-outline', color: '#6BB86B', bgColor: '#F0F9F0' };
+  else if (
+    lowerTitle.includes("welcome") ||
+    lowerTitle.includes("registration")
+  ) {
+    return { icon: "happy-outline", color: "#6BB86B", bgColor: "#F0F9F0" };
   }
   // Trip Start
-  else if (lowerTitle.includes('trip') && lowerTitle.includes('start')) {
-    return { icon: 'navigate-circle', color: '#5B9BD5', bgColor: '#EFF6FC' };
+  else if (lowerTitle.includes("trip") && lowerTitle.includes("start")) {
+    return { icon: "navigate-circle", color: "#5B9BD5", bgColor: "#EFF6FC" };
   }
   // Trip End
-  else if (lowerTitle.includes('trip') && lowerTitle.includes('end')) {
-    return { icon: 'checkmark-done-circle', color: '#70C17C', bgColor: '#F1F9F3' };
+  else if (lowerTitle.includes("trip") && lowerTitle.includes("end")) {
+    return {
+      icon: "checkmark-done-circle",
+      color: "#70C17C",
+      bgColor: "#F1F9F3",
+    };
   }
   // Recharge
-  else if (lowerTitle.includes('recharge') || lowerTitle.includes('top up') || lowerTitle.includes('balance added')) {
-    return { icon: 'card-outline', color: '#9B7EBD', bgColor: '#F7F3FA' };
+  else if (
+    lowerTitle.includes("recharge") ||
+    lowerTitle.includes("top up") ||
+    lowerTitle.includes("balance added")
+  ) {
+    return { icon: "card-outline", color: "#9B7EBD", bgColor: "#F7F3FA" };
   }
   // Return
-  else if (lowerTitle.includes('return') || lowerTitle.includes('refund')) {
-    return { icon: 'arrow-undo-circle', color: '#D4A574', bgColor: '#FBF6F0' };
+  else if (lowerTitle.includes("return") || lowerTitle.includes("refund")) {
+    return { icon: "arrow-undo-circle", color: "#D4A574", bgColor: "#FBF6F0" };
   }
   // Promo Used
-  else if (lowerTitle.includes('promo') && (lowerTitle.includes('used') || lowerTitle.includes('applied') || lowerTitle.includes('redeemed'))) {
-    return { icon: 'checkmark-circle-outline', color: '#D98FB6', bgColor: '#FCF5F9' };
+  else if (
+    lowerTitle.includes("promo") &&
+    (lowerTitle.includes("used") ||
+      lowerTitle.includes("applied") ||
+      lowerTitle.includes("redeemed"))
+  ) {
+    return {
+      icon: "checkmark-circle-outline",
+      color: "#D98FB6",
+      bgColor: "#FCF5F9",
+    };
   }
   // Promo Offer
-  else if (lowerTitle.includes('promo') && (lowerTitle.includes('offer') || lowerTitle.includes('available') || lowerTitle.includes('new'))) {
-    return { icon: 'ticket-outline', color: '#E8A25F', bgColor: '#FFF8F0' };
+  else if (
+    lowerTitle.includes("promo") &&
+    (lowerTitle.includes("offer") ||
+      lowerTitle.includes("available") ||
+      lowerTitle.includes("new"))
+  ) {
+    return { icon: "ticket-outline", color: "#E8A25F", bgColor: "#FFF8F0" };
   }
   // Profile Update
-  else if (lowerTitle.includes('profile') && lowerTitle.includes('update')) {
-    return { icon: 'person-outline', color: '#6DBACD', bgColor: '#F0F9FB' };
+  else if (lowerTitle.includes("profile") && lowerTitle.includes("update")) {
+    return { icon: "person-outline", color: "#6DBACD", bgColor: "#F0F9FB" };
   }
   // Default notification
   else {
-    return { icon: 'notifications-outline', color: '#8C9BA5', bgColor: '#F5F7F9' };
+    return {
+      icon: "notifications-outline",
+      color: "#8C9BA5",
+      bgColor: "#F5F7F9",
+    };
   }
 };
 
@@ -87,7 +118,11 @@ const getDateLabel = (dateString: string): string => {
   const threeDaysAgo = new Date(today);
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-  const notificationDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const notificationDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
 
   if (notificationDate.getTime() === today.getTime()) {
     return "Today";
@@ -99,7 +134,7 @@ const getDateLabel = (dateString: string): string => {
     return "3 days ago";
   } else {
     // Format as "Dec 5, 2024"
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const month = date.toLocaleDateString("en-US", { month: "short" });
     const day = date.getDate();
     const year = date.getFullYear();
     return `${month} ${day}, ${year}`;
@@ -109,10 +144,10 @@ const getDateLabel = (dateString: string): string => {
 // Helper function to format time
 const getTimeLabel = (dateString: string): string => {
   const date = new Date(dateString);
-  return date.toLocaleTimeString('en-US', { 
-    hour: 'numeric', 
-    minute: '2-digit',
-    hour12: true 
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
   });
 };
 
@@ -139,10 +174,11 @@ export default function NotificationsPage() {
     refreshNotifications,
   } = useNotificationStore();
 
-  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [selectedNotification, setSelectedNotification] =
+    useState<Notification | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
+  const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
 
   // Load initial notifications
   useEffect(() => {
@@ -150,13 +186,18 @@ export default function NotificationsPage() {
   }, []);
 
   // Filter notifications based on active tab
-  const filteredNotifications = activeTab === 'unread' 
-    ? notifications.filter(n => !n.isRead)
-    : notifications;
+  const filteredNotifications =
+    activeTab === "unread"
+      ? notifications.filter((n) => !n.isRead)
+      : notifications;
 
   // Group notifications into "New" and older
-  const newNotifications = filteredNotifications.filter(n => isNewNotification(n.createTime));
-  const olderNotifications = filteredNotifications.filter(n => !isNewNotification(n.createTime));
+  const newNotifications = filteredNotifications.filter((n) =>
+    isNewNotification(n.createTime)
+  );
+  const olderNotifications = filteredNotifications.filter(
+    (n) => !isNewNotification(n.createTime)
+  );
 
   const handleRefresh = async () => {
     await refreshNotifications();
@@ -183,73 +224,137 @@ export default function NotificationsPage() {
     setSelectedNotification(null);
   };
 
-  const renderNotificationItem = ({ item }: { item: Notification }) => {
+  const SwipeableNotificationItem = ({ item }: { item: Notification }) => {
+    const translateX = useRef(new Animated.Value(0)).current;
     const isUnread = !item.isRead;
     const iconData = getNotificationIcon(item.title, item.notificationId);
     const dateLabel = getDateLabel(item.createTime);
     const timeLabel = getTimeLabel(item.createTime);
+    const displayBgColor = isUnread ? iconData.bgColor : "#F3F4F6";
 
-    // Use gray color for read notifications
-    const displayBgColor = isUnread ? iconData.bgColor : '#F3F4F6';
+    const panResponder = useRef(
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => {
+          return Math.abs(gestureState.dx) > 10;
+        },
+        onPanResponderMove: (_, gestureState) => {
+          // Only allow right swipe (positive dx)
+          if (gestureState.dx > 0) {
+            translateX.setValue(Math.min(gestureState.dx, 80));
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dx > 60) {
+            // Swipe threshold reached - toggle read status
+            Animated.timing(translateX, {
+              toValue: 80,
+              duration: 200,
+              useNativeDriver: true,
+            }).start(() => {
+              // Toggle read status
+              if (isUnread) {
+                markAsRead(item.id);
+              } else {
+                // You'll need to add markAsUnread to your store
+                // For now, we'll just reset the animation
+              }
+              // Reset position
+              Animated.timing(translateX, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+              }).start();
+            });
+          } else {
+            // Reset if threshold not reached
+            Animated.spring(translateX, {
+              toValue: 0,
+              useNativeDriver: true,
+            }).start();
+          }
+        },
+      })
+    ).current;
 
     return (
-      <TouchableOpacity
-        style={[
-          styles.notificationItem,
-          { backgroundColor: displayBgColor }
-        ]}
-        onPress={() => handleNotificationPress(item)}
-        activeOpacity={0.7}
-      >
-        {/* Left Icon */}
-        <View style={styles.iconWrapper}>
-          <View style={[styles.iconCircle, { backgroundColor: iconData.color }]}>
-            <Ionicons 
-              name={iconData.icon} 
-              size={20} 
-              color="#FFFFFF" 
-            />
-          </View>
-          {/* Unread Indicator on Icon */}
-          {isUnread && (
-            <View style={styles.unreadDot} />
-          )}
-        </View>
-
-        {/* Content */}
-        <View style={styles.contentContainer}>
-          {/* Title and Date/Time Row */}
-          <View style={styles.titleRow}>
-            <Text
-              variant="body"
-              style={[
-                styles.notificationTitle,
-                isUnread && styles.unreadTitle
-              ]}
-              numberOfLines={1}
-            >
-              {item.title}
-            </Text>
-            
-            <View style={styles.dateTimeContainer}>
-              <Text variant="caption" style={styles.dateTimeText}>
-                {dateLabel} • {timeLabel}
-              </Text>
-            </View>
-          </View>
-
-          {/* Message */}
-          <Text
-            variant="caption"
-            color={COLORS.gray[600]}
-            style={styles.notificationMessage}
-            numberOfLines={2}
-          >
-            {item.message || ""}
+      <View style={styles.swipeContainer}>
+        {/* Background Action */}
+        <View style={styles.swipeBackground}>
+          <Ionicons
+            name={isUnread ? "checkmark-circle" : "mail-unread"}
+            size={24}
+            color="#FFFFFF"
+          />
+          <Text style={styles.swipeText}>
+            {isUnread ? "Mark as Read" : "Mark Unread"}
           </Text>
         </View>
-      </TouchableOpacity>
+
+        {/* Swipeable Content */}
+        <Animated.View
+          style={[styles.swipeableContent, { transform: [{ translateX }] }]}
+          {...panResponder.panHandlers}
+        >
+          <TouchableOpacity
+            style={[
+              styles.notificationItem,
+              { backgroundColor: displayBgColor },
+            ]}
+            onPress={() => handleNotificationPress(item)}
+            activeOpacity={0.7}
+          >
+            {/* Left Icon */}
+            <View style={styles.iconWrapper}>
+              <View
+                style={[styles.iconCircle, { backgroundColor: iconData.color }]}
+              >
+                <Ionicons name={iconData.icon} size={20} color="#FFFFFF" />
+              </View>
+              {/* Unread Indicator on Icon */}
+              {isUnread && <View style={styles.unreadDot} />}
+            </View>
+
+            {/* Content */}
+            <View style={styles.contentContainer}>
+              {/* Title and Date/Time Row */}
+              <View style={styles.titleRow}>
+                <Text
+                  variant="body"
+                  style={[
+                    styles.notificationTitle,
+                    isUnread && styles.unreadTitle,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {item.title}
+                </Text>
+
+                <View style={styles.dateTimeContainer}>
+                  <Text variant="caption" style={styles.dateTimeText}>
+                    {dateLabel} • {timeLabel}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Message */}
+              <Text
+                variant="caption"
+                color={COLORS.gray[600]}
+                style={styles.notificationMessage}
+                numberOfLines={2}
+              >
+                {item.message || ""}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
     );
+  };
+
+  const renderNotificationItem = ({ item }: { item: Notification }) => {
+    return <SwipeableNotificationItem item={item} />;
   };
 
   const renderEmptyState = () => {
@@ -263,7 +368,11 @@ export default function NotificationsPage() {
 
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="notifications-outline" size={64} color={COLORS.gray[300]} />
+        <Ionicons
+          name="notifications-outline"
+          size={64}
+          color={COLORS.gray[300]}
+        />
         <Text variant="body" color={COLORS.gray[500]} style={styles.emptyText}>
           No notifications yet
         </Text>
@@ -284,29 +393,34 @@ export default function NotificationsPage() {
   return (
     <>
       <View style={[styles.container, { paddingTop: insets.top }]}>
-
         {/* Tabs */}
         <View style={styles.tabsContainer}>
           <View style={styles.tabsWrapper}>
             <Pressable
-              style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-              onPress={() => setActiveTab('all')}
+              style={[styles.tab, activeTab === "all" && styles.activeTab]}
+              onPress={() => setActiveTab("all")}
             >
               <Text
                 variant="body"
-                style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}
+                style={[
+                  styles.tabText,
+                  activeTab === "all" && styles.activeTabText,
+                ]}
               >
                 All
               </Text>
             </Pressable>
 
             <Pressable
-              style={[styles.tab, activeTab === 'unread' && styles.activeTab]}
-              onPress={() => setActiveTab('unread')}
+              style={[styles.tab, activeTab === "unread" && styles.activeTab]}
+              onPress={() => setActiveTab("unread")}
             >
               <Text
                 variant="body"
-                style={[styles.tabText, activeTab === 'unread' && styles.activeTabText]}
+                style={[
+                  styles.tabText,
+                  activeTab === "unread" && styles.activeTabText,
+                ]}
               >
                 Unread
               </Text>
@@ -404,14 +518,6 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   tabText: {
     fontSize: 14,
@@ -434,13 +540,37 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 16,
   },
+  swipeContainer: {
+    marginHorizontal: 12,
+    marginBottom: 8,
+    position: "relative",
+  },
+  swipeBackground: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 20,
+    gap: 8,
+  },
+  swipeText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  swipeableContent: {
+    backgroundColor: "transparent",
+  },
   notificationItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 14,
-    marginHorizontal: 12,
-    marginBottom: 8,
     borderRadius: 10,
   },
   iconWrapper: {
