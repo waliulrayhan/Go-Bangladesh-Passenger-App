@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
+    borderRadius: 10,
     width: "100%",
     maxWidth: 500,
     maxHeight: SCREEN_HEIGHT * 0.85,
@@ -133,15 +133,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray[200],
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.gray[100],
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: COLORS.gray[900],
+    color: COLORS.secondary,
   },
   closeButton: {
     padding: 4,
@@ -155,6 +155,7 @@ const styles = StyleSheet.create({
   bannerContainer: {
     width: "100%",
     backgroundColor: COLORS.gray[100],
+    paddingHorizontal: 10,
     overflow: "hidden",
   },
   bannerImage: {
