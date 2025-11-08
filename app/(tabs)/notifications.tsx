@@ -20,6 +20,7 @@ import { useStatusBar } from "../../hooks/useStatusBar";
 import { useNotificationStore } from "../../stores/notificationStore";
 import { Notification } from "../../types";
 import { COLORS } from "../../utils/constants";
+import { DateFormatter, DateTime, DateTimeUtils } from "../../utils/dateTime";
 import { ENV_CONFIG } from "../../utils/environment";
 
 // Helper function to get notification icon and color based on type
@@ -102,55 +103,48 @@ const getNotificationIcon = (
 
 // Helper function to check if notification is new (within 24 hours)
 const isNewNotification = (dateString: string): boolean => {
-  const notificationDate = new Date(dateString);
+  const notificationDate = DateTime.parseUTCToLocal(dateString);
   const now = new Date();
-  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  return notificationDate > twentyFourHoursAgo;
+  const diffHours = DateTimeUtils.diff(now, notificationDate, 'h');
+  return diffHours < 24;
 };
 
 // Helper function to get grouped date label
 const getDateLabel = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const twoDaysAgo = new Date(today);
-  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-  const threeDaysAgo = new Date(today);
-  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-
-  const notificationDate = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate()
-  );
-
-  if (notificationDate.getTime() === today.getTime()) {
+  const date = DateTime.parseUTCToLocal(dateString);
+  
+  if (DateTimeUtils.isToday(date)) {
     return "Today";
-  } else if (notificationDate.getTime() === yesterday.getTime()) {
+  } else if (DateTimeUtils.isYesterday(date)) {
     return "Yesterday";
-  } else if (notificationDate.getTime() === twoDaysAgo.getTime()) {
-    return "2 days ago";
-  } else if (notificationDate.getTime() === threeDaysAgo.getTime()) {
-    return "3 days ago";
-  } else {
-    // Format as "Dec 5, 2024"
-    const month = date.toLocaleDateString("en-US", { month: "short" });
-    const day = date.getDate();
-    const year = date.getFullYear();
-    return `${month} ${day}, ${year}`;
   }
+  
+  const now = new Date();
+  const diffDays = DateTimeUtils.diff(now, date, 'd');
+  
+  if (diffDays === 2) {
+    return "2 days ago";
+  } else if (diffDays === 3) {
+    return "3 days ago";
+  }
+  
+  // Format as "Dec 5, 2024"
+  return DateFormatter.custom(date, {
+    includeYear: true,
+    useShortMonth: true,
+    includeTime: false
+  });
 };
 
 // Helper function to format time
 const getTimeLabel = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+  const date = DateTime.parseUTCToLocal(dateString);
+  return DateFormatter.custom(date, {
+    includeTime: true,
+    use24Hour: false,
+    includeYear: false,
+    includeDay: false
+  }).split(', ')[1]; // Extract only the time part
 };
 
 export default function NotificationsPage() {
