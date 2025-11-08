@@ -5,6 +5,7 @@ import {
     ActivityIndicator,
     Animated,
     FlatList,
+    Image,
     PanResponder,
     Pressable,
     RefreshControl,
@@ -19,6 +20,7 @@ import { useStatusBar } from "../../hooks/useStatusBar";
 import { useNotificationStore } from "../../stores/notificationStore";
 import { Notification } from "../../types";
 import { COLORS } from "../../utils/constants";
+import { ENV_CONFIG } from "../../utils/environment";
 
 // Helper function to get notification icon and color based on type
 const getNotificationIcon = (
@@ -231,6 +233,25 @@ export default function NotificationsPage() {
     const dateLabel = getDateLabel(item.createTime);
     const timeLabel = getTimeLabel(item.createTime);
     const displayBgColor = isUnread ? iconData.bgColor : "#F3F4F6";
+    // Admin notification check - has a notificationId (not null means it's from admin)
+    const isAdminNotification = item.notificationId !== null && item.notificationId !== "";
+    const hasBanner = item.bannerUrl !== null && item.bannerUrl !== "";
+    
+    // Construct full banner URL
+    const fullBannerUrl = hasBanner && item.bannerUrl 
+      ? `${ENV_CONFIG.API_BASE_URL}/${item.bannerUrl}` 
+      : null;
+
+    // Debug logging
+    if (isAdminNotification) {
+      console.log("Admin Notification:", {
+        title: item.title,
+        notificationId: item.notificationId,
+        hasBanner,
+        bannerUrl: item.bannerUrl,
+        fullBannerUrl,
+      });
+    }
 
     const panResponder = useRef(
       PanResponder.create({
@@ -346,6 +367,23 @@ export default function NotificationsPage() {
               >
                 {item.message || ""}
               </Text>
+
+              {/* Banner Preview for Admin Notifications */}
+              {isAdminNotification && hasBanner && fullBannerUrl && (
+                <View style={styles.bannerContainer}>
+                  <Image
+                    source={{ uri: fullBannerUrl }}
+                    style={styles.bannerImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.bannerOverlay}>
+                    <Ionicons name="expand" size={16} color="#FFFFFF" />
+                    <Text style={styles.bannerHint}>
+                      Tap to view full image
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -617,6 +655,35 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: "400",
     color: COLORS.gray[600],
+  },
+  bannerContainer: {
+    marginTop: 8,
+    borderRadius: 8,
+    overflow: "hidden",
+    position: "relative",
+    width: "100%",
+  },
+  bannerImage: {
+    width: "100%",
+    aspectRatio: 2,
+    backgroundColor: COLORS.gray[200],
+  },
+  bannerOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 6,
+    gap: 6,
+  },
+  bannerHint: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
   },
   unreadDot: {
     position: "absolute",
