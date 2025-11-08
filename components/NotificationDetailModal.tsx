@@ -16,6 +16,84 @@ import { Text } from "./ui/Text";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
+// Helper function to get notification icon and color based on type
+const getNotificationIcon = (
+  title: string,
+  notificationId: string | null
+): { icon: keyof typeof Ionicons.glyphMap; color: string; bgColor: string } => {
+  const lowerTitle = title.toLowerCase();
+
+  // Admin Notification (specific notificationId)
+  if (notificationId !== null) {
+    return { icon: "megaphone", color: "#da3e3eff", bgColor: "#fce9e9ff" };
+  }
+  // Welcome after registration
+  else if (
+    lowerTitle.includes("welcome") ||
+    lowerTitle.includes("registration")
+  ) {
+    return { icon: "happy-outline", color: "#6BB86B", bgColor: "#F0F9F0" };
+  }
+  // Trip Start
+  else if (lowerTitle.includes("trip") && lowerTitle.includes("start")) {
+    return { icon: "navigate-circle", color: "#5B9BD5", bgColor: "#EFF6FC" };
+  }
+  // Trip End
+  else if (lowerTitle.includes("trip") && lowerTitle.includes("end")) {
+    return {
+      icon: "checkmark-done-circle",
+      color: "#70C17C",
+      bgColor: "#F1F9F3",
+    };
+  }
+  // Recharge
+  else if (
+    lowerTitle.includes("recharge") ||
+    lowerTitle.includes("top up") ||
+    lowerTitle.includes("balance added")
+  ) {
+    return { icon: "card-outline", color: "#9B7EBD", bgColor: "#F7F3FA" };
+  }
+  // Return
+  else if (lowerTitle.includes("return") || lowerTitle.includes("refund")) {
+    return { icon: "arrow-undo-circle", color: "#D4A574", bgColor: "#FBF6F0" };
+  }
+  // Promo Used
+  else if (
+    lowerTitle.includes("promo") &&
+    (lowerTitle.includes("used") ||
+      lowerTitle.includes("applied") ||
+      lowerTitle.includes("redeemed"))
+  ) {
+    return {
+      icon: "checkmark-circle-outline",
+      color: "#D98FB6",
+      bgColor: "#FCF5F9",
+    };
+  }
+  // Promo Offer
+  else if (
+    lowerTitle.includes("promo") &&
+    (lowerTitle.includes("offer") ||
+      lowerTitle.includes("available") ||
+      lowerTitle.includes("new"))
+  ) {
+    return { icon: "ticket-outline", color: "#E8A25F", bgColor: "#FFF8F0" };
+  }
+  // Profile Update
+  else if (lowerTitle.includes("profile") && lowerTitle.includes("update")) {
+    return { icon: "person-outline", color: "#6DBACD", bgColor: "#F0F9FB" };
+  }
+  // Default notification
+  else {
+    return {
+      icon: "notifications-outline",
+      color: "#8C9BA5",
+      bgColor: "#F5F7F9",
+    };
+  }
+};
+
 interface NotificationDetailModalProps {
   visible: boolean;
   notification: Notification | null;
@@ -28,6 +106,8 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
   onClose,
 }) => {
   if (!notification) return null;
+
+  const iconData = getNotificationIcon(notification.title, notification.notificationId);
 
   return (
     <Modal
@@ -46,9 +126,14 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
         <View style={styles.modalContainer}>
           {/* Header */}
           <View style={styles.header}>
-            <Text variant="h3" style={styles.headerTitle}>
-              Notification Detail
-            </Text>
+            <View style={styles.headerLeft}>
+              <View style={[styles.headerIconCircle, { backgroundColor: iconData.color }]}>
+                <Ionicons name={iconData.icon} size={22} color="#FFFFFF" />
+              </View>
+              <Text variant="h3" style={[styles.headerTitle, { color: iconData.color }]}>
+                Notification Detail
+              </Text>
+            </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={COLORS.gray[600]} />
             </TouchableOpacity>
@@ -84,14 +169,17 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
               </Text>
 
               {/* Date and Time */}
-              <Text variant="caption" color={COLORS.gray[500]} style={styles.date}>
-                {DateFormatter.custom(DateTime.parseUTCToLocal(notification.createTime), { 
-                  includeTime: true, 
-                  use24Hour: false,
-                  includeYear: true,
-                  useShortMonth: false
-                })}
-              </Text>
+              <View style={styles.dateContainer}>
+                <Ionicons name="time-outline" size={14} color={COLORS.gray[500]} />
+                <Text variant="caption" color={COLORS.gray[500]} style={styles.date}>
+                  {DateFormatter.custom(DateTime.parseUTCToLocal(notification.createTime), { 
+                    includeTime: true, 
+                    use24Hour: false,
+                    includeYear: true,
+                    useShortMonth: false
+                  })}
+                </Text>
+              </View>
             </View>
           </ScrollView>
         </View>
@@ -136,12 +224,24 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray[200],
-    backgroundColor: COLORS.gray[100],
+    backgroundColor: COLORS.white,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  headerIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: COLORS.secondary,
+    color: COLORS.gray[900],
   },
   closeButton: {
     padding: 4,
@@ -177,7 +277,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: COLORS.gray[700],
-    marginBottom: 12,
+    marginBottom: 16,
+  },
+  dateContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   date: {
     fontSize: 13,
