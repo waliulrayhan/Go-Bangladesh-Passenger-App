@@ -2,7 +2,7 @@
   "expo": {
     "name": "Go Bangladesh",
     "slug": "go-bangladesh",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/appIconPng1024_lg.png",
     "userInterfaceStyle": "light",
