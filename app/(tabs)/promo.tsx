@@ -375,93 +375,99 @@ export default function Promo() {
   // Render tab buttons
   const renderTabs = () => (
     <View style={styles.tabsContainer}>
-      <TouchableOpacity
-        style={[
-          styles.tab,
-          activeTab === "available" && styles.activeTab,
-        ]}
-        onPress={() => handleTabChange("available")}
-      >
-        <Text
+      <View style={styles.tabsWrapper}>
+        <TouchableOpacity
           style={[
-            styles.tabText,
-            activeTab === "available" && styles.activeTabText,
+            styles.tab,
+            activeTab === "available" && styles.activeTabAvailable,
           ]}
+          onPress={() => handleTabChange("available")}
+          activeOpacity={0.7}
         >
-          {UI_TEXTS.TABS.AVAILABLE}
-        </Text>
-        {availablePromos.length > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{availablePromos.length}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+          <Ionicons 
+            name={activeTab === "available" ? "pricetag" : "pricetag-outline"} 
+            size={18} 
+            color={activeTab === "available" ? COLORS.success : COLORS.gray[500]} 
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "available" && styles.activeTabTextAvailable,
+            ]}
+          >
+            {UI_TEXTS.TABS.AVAILABLE}
+          </Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[
-          styles.tab,
-          activeTab === "applied" && styles.activeTab,
-        ]}
-        onPress={() => handleTabChange("applied")}
-      >
-        <Text
+        <TouchableOpacity
           style={[
-            styles.tabText,
-            activeTab === "applied" && styles.activeTabText,
+            styles.tab,
+            activeTab === "applied" && styles.activeTabApplied,
           ]}
+          onPress={() => handleTabChange("applied")}
+          activeOpacity={0.7}
         >
-          {UI_TEXTS.TABS.APPLIED}
-        </Text>
-        {appliedPromos.length > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{appliedPromos.length}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+          <Ionicons 
+            name={activeTab === "applied" ? "checkmark-circle" : "checkmark-circle-outline"} 
+            size={18} 
+            color={activeTab === "applied" ? COLORS.primary : COLORS.gray[500]} 
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "applied" && styles.activeTabTextApplied,
+            ]}
+          >
+            {UI_TEXTS.TABS.APPLIED}
+          </Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[
-          styles.tab,
-          activeTab === "used" && styles.activeTab,
-        ]}
-        onPress={() => handleTabChange("used")}
-      >
-        <Text
+        <TouchableOpacity
           style={[
-            styles.tabText,
-            activeTab === "used" && styles.activeTabText,
+            styles.tab,
+            activeTab === "used" && styles.activeTabUsed,
           ]}
+          onPress={() => handleTabChange("used")}
+          activeOpacity={0.7}
         >
-          {UI_TEXTS.TABS.USED}
-        </Text>
-        {usedPromos.length > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{usedPromos.length}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+          <Ionicons 
+            name={activeTab === "used" ? "checkmark-done" : "checkmark-done-outline"} 
+            size={18} 
+            color={activeTab === "used" ? COLORS.info : COLORS.gray[500]} 
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "used" && styles.activeTabTextUsed,
+            ]}
+          >
+            {UI_TEXTS.TABS.USED}
+          </Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[
-          styles.tab,
-          activeTab === "expired" && styles.activeTab,
-        ]}
-        onPress={() => handleTabChange("expired")}
-      >
-        <Text
+        <TouchableOpacity
           style={[
-            styles.tabText,
-            activeTab === "expired" && styles.activeTabText,
+            styles.tab,
+            activeTab === "expired" && styles.activeTabExpired,
           ]}
+          onPress={() => handleTabChange("expired")}
+          activeOpacity={0.7}
         >
-          {UI_TEXTS.TABS.EXPIRED}
-        </Text>
-        {expiredPromos.length > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{expiredPromos.length}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+          <Ionicons 
+            name={activeTab === "expired" ? "time" : "time-outline"} 
+            size={18} 
+            color={activeTab === "expired" ? COLORS.error : COLORS.gray[500]} 
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "expired" && styles.activeTabTextExpired,
+            ]}
+          >
+            {UI_TEXTS.TABS.EXPIRED}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -706,49 +712,119 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.gray[200],
   },
   tabsContainer: {
+    backgroundColor: COLORS.gray[50],
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
+  },
+  tabsWrapper: {
     flexDirection: "row",
     backgroundColor: COLORS.white,
-    paddingHorizontal: SPACING.sm,
-    paddingTop: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[200],
+    borderRadius: 12,
+    padding: 4,
+    gap: 6,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   tab: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
-    gap: SPACING.xs / 2,
+    paddingVertical: SPACING.sm + 2,
+    paddingHorizontal: SPACING.xs,
+    borderRadius: 8,
+    backgroundColor: "transparent",
+    gap: 6,
   },
-  activeTab: {
-    borderBottomColor: COLORS.primary,
+  activeTabAvailable: {
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.success,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  activeTabApplied: {
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  activeTabUsed: {
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.info,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  activeTabExpired: {
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.error,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tabContent: {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
   },
   tabText: {
-    ...TYPOGRAPHY.bodySmall,
-    fontSize: 12,
-    color: COLORS.gray[500],
-    fontWeight: "500",
+    fontSize: 11,
+    color: COLORS.gray[600],
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  activeTabTextAvailable: {
+    color: COLORS.success,
+    fontWeight: "700",
+  },
+  activeTabTextApplied: {
+    color: COLORS.primary,
+    fontWeight: "700",
+  },
+  activeTabTextUsed: {
+    color: COLORS.info,
+    fontWeight: "700",
+  },
+  activeTabTextExpired: {
+    color: COLORS.error,
+    fontWeight: "700",
   },
   activeTabText: {
-    color: COLORS.primary,
-    fontWeight: "600",
+    color: COLORS.white,
+    fontWeight: "700",
   },
   badge: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary + "20",
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    minWidth: 20,
+    minWidth: 18,
+    height: 18,
     alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  activeBadge: {
+    backgroundColor: COLORS.white + "30",
   },
   badgeText: {
-    ...TYPOGRAPHY.caption,
+    fontSize: 9,
+    color: COLORS.primary,
+    fontWeight: "700",
+  },
+  activeBadgeText: {
     color: COLORS.white,
-    fontWeight: "600",
-    fontSize: 10,
   },
   listContent: {
     padding: SPACING.md,
