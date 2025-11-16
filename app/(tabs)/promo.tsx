@@ -30,6 +30,8 @@ const UI_TEXTS = {
   TABS: {
     AVAILABLE: "Available",
     APPLIED: "Applied",
+    USED: "Used",
+    EXPIRED: "Expired",
   },
   BUTTONS: {
     RETRY: "Retry",
@@ -46,6 +48,8 @@ const UI_TEXTS = {
     NO_PROMOS: "No promos found",
     AVAILABLE_MESSAGE: "Available promos will appear here",
     APPLIED_MESSAGE: "Your applied promos will appear here",
+    USED_MESSAGE: "Your used promos will appear here",
+    EXPIRED_MESSAGE: "Your expired promos will appear here",
   },
   TOAST_MESSAGES: {
     REFRESH_FAILED: "Failed to refresh promos. Please try again.",
@@ -70,7 +74,7 @@ const UI_TEXTS = {
 } as const;
 
 // Type definitions
-type PromoTab = "available" | "applied";
+type PromoTab = "available" | "applied" | "used" | "expired";
 
 interface PromoDetails {
   code: string;
@@ -134,6 +138,8 @@ export default function Promo() {
   const [activeTab, setActiveTab] = useState<PromoTab>("available");
   const [availablePromos, setAvailablePromos] = useState<UserPromo[]>([]);
   const [appliedPromos, setAppliedPromos] = useState<UserPromo[]>([]);
+  const [usedPromos, setUsedPromos] = useState<UserPromo[]>([]);
+  const [expiredPromos, setExpiredPromos] = useState<UserPromo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isApplying, setIsApplying] = useState<string | null>(null);
@@ -155,6 +161,22 @@ export default function Promo() {
     totalLoaded: 0,
     totalCount: 0,
   });
+  const [usedPagination, setUsedPagination] = useState<PaginationState>({
+    currentPage: 1,
+    pageSize: 10,
+    hasMore: true,
+    isLoadingMore: false,
+    totalLoaded: 0,
+    totalCount: 0,
+  });
+  const [expiredPagination, setExpiredPagination] = useState<PaginationState>({
+    currentPage: 1,
+    pageSize: 10,
+    hasMore: true,
+    isLoadingMore: false,
+    totalLoaded: 0,
+    totalCount: 0,
+  });
 
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -167,10 +189,14 @@ export default function Promo() {
         return availablePromos;
       case "applied":
         return appliedPromos;
+      case "used":
+        return usedPromos;
+      case "expired":
+        return expiredPromos;
       default:
         return [];
     }
-  }, [activeTab, availablePromos, appliedPromos]);
+  }, [activeTab, availablePromos, appliedPromos, usedPromos, expiredPromos]);
 
   const currentPagination = useMemo(() => {
     switch (activeTab) {
@@ -178,10 +204,14 @@ export default function Promo() {
         return availablePagination;
       case "applied":
         return appliedPagination;
+      case "used":
+        return usedPagination;
+      case "expired":
+        return expiredPagination;
       default:
         return availablePagination;
     }
-  }, [activeTab, availablePagination, appliedPagination]);
+  }, [activeTab, availablePagination, appliedPagination, usedPagination, expiredPagination]);
 
   // Load promos function
   const loadPromos = async (
@@ -196,7 +226,9 @@ export default function Promo() {
         // Set loading more for respective tab
         const setPagination = 
           status === "Available" ? setAvailablePagination :
-          setAppliedPagination;
+          status === "Applied" ? setAppliedPagination :
+          status === "Used" ? setUsedPagination :
+          setExpiredPagination;
         
         setPagination((prev) => ({ ...prev, isLoadingMore: true }));
       }
@@ -232,6 +264,10 @@ export default function Promo() {
           updateState(setAvailablePromos, setAvailablePagination);
         } else if (status === "Applied") {
           updateState(setAppliedPromos, setAppliedPagination);
+        } else if (status === "Used") {
+          updateState(setUsedPromos, setUsedPagination);
+        } else if (status === "Expired") {
+          updateState(setExpiredPromos, setExpiredPagination);
         }
       }
     } catch (error: any) {
@@ -247,7 +283,9 @@ export default function Promo() {
       // Clear loading more state
       const setPagination = 
         status === "Available" ? setAvailablePagination :
-        setAppliedPagination;
+        status === "Applied" ? setAppliedPagination :
+        status === "Used" ? setUsedPagination :
+        setExpiredPagination;
       
       setPagination((prev) => ({ ...prev, isLoadingMore: false }));
     }
@@ -258,6 +296,8 @@ export default function Promo() {
     await Promise.all([
       loadPromos("Available", 1, reset),
       loadPromos("Applied", 1, reset),
+      loadPromos("Used", 1, reset),
+      loadPromos("Expired", 1, reset),
     ]);
   }, []);
 
@@ -286,7 +326,9 @@ export default function Promo() {
     if (currentPagination.hasMore && !currentPagination.isLoadingMore) {
       const status = 
         activeTab === "available" ? "Available" :
-        "Applied";
+        activeTab === "applied" ? "Applied" :
+        activeTab === "used" ? "Used" :
+        "Expired";
       
       await loadPromos(status, currentPagination.currentPage + 1, false);
     }
@@ -376,13 +418,58 @@ export default function Promo() {
           </View>
         )}
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.tab,
+          activeTab === "used" && styles.activeTab,
+        ]}
+        onPress={() => handleTabChange("used")}
+      >
+        <Text
+          style={[
+            styles.tabText,
+            activeTab === "used" && styles.activeTabText,
+          ]}
+        >
+          {UI_TEXTS.TABS.USED}
+        </Text>
+        {usedPromos.length > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{usedPromos.length}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.tab,
+          activeTab === "expired" && styles.activeTab,
+        ]}
+        onPress={() => handleTabChange("expired")}
+      >
+        <Text
+          style={[
+            styles.tabText,
+            activeTab === "expired" && styles.activeTabText,
+          ]}
+        >
+          {UI_TEXTS.TABS.EXPIRED}
+        </Text>
+        {expiredPromos.length > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{expiredPromos.length}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
     </View>
   );
 
   // Render promo item
   const renderPromoItem = ({ item, index }: { item: UserPromo; index: number }) => {
     const promo = item.promo;
-    const isExpired = new Date(promo.endTime) < new Date();
+    const isExpired = activeTab === "expired" || new Date(promo.endTime) < new Date();
+    const isUsed = activeTab === "used";
     
     // Format discount text
     const discountText = promo.promoType === "Fixed" 
@@ -395,12 +482,19 @@ export default function Promo() {
       <Animated.View
         entering={FadeInDown.duration(400).delay(index * 50)}
       >
-        <Card style={[styles.promoCard, isExpired && styles.expiredCard]}>
+        <Card style={[styles.promoCard, (isExpired || isUsed) && styles.expiredCard]}>
           <View style={styles.promoContent}>
             {/* Left side - Info */}
             <View style={styles.promoLeft}>
-              <View style={styles.promoIconContainer}>
-                <Ionicons name="pricetag" size={24} color={COLORS.primary} />
+              <View style={[
+                styles.promoIconContainer,
+                (isExpired || isUsed) && { backgroundColor: isUsed ? COLORS.success + "15" : COLORS.gray[200] }
+              ]}>
+                <Ionicons 
+                  name={isUsed ? "checkmark-done" : isExpired ? "time-outline" : "pricetag"} 
+                  size={24} 
+                  color={isUsed ? COLORS.success : isExpired ? COLORS.gray[400] : COLORS.primary} 
+                />
               </View>
               
               <View style={styles.promoInfo}>
@@ -412,13 +506,18 @@ export default function Promo() {
                   </Text>
                 )}
 
-                <Text style={styles.promoDiscount}>{discountText}</Text>
+                <Text style={[
+                  styles.promoDiscount,
+                  (isExpired || isUsed) && { color: isUsed ? COLORS.primary : COLORS.gray[400] }
+                ]}>
+                  {discountText}
+                </Text>
                 
                 <View style={styles.promoMeta}>
                   <Text style={styles.promoMetaText}>
-                    Valid Until: {formatDate(promo.endTime)}
+                    {isExpired ? "Expired" : "Valid Until"}: {formatDate(promo.endTime)}
                   </Text>
-                  {item.usageCount !== undefined && (
+                  {item.usageCount !== undefined && item.usageCount > 0 && (
                     <Text style={styles.promoMetaText}>
                       • Used: {item.usageCount}/{promo.maxUsagePerCard}
                     </Text>
@@ -454,6 +553,20 @@ export default function Promo() {
                   <Text style={styles.appliedText}>Applied</Text>
                 </View>
               )}
+
+              {activeTab === "used" && (
+                <View style={styles.usedBadge}>
+                  <Ionicons name="checkmark-done-circle" size={18} color={COLORS.success} />
+                  <Text style={styles.usedText}>Used</Text>
+                </View>
+              )}
+
+              {activeTab === "expired" && (
+                <View style={styles.expiredBadge}>
+                  <Ionicons name="close-circle" size={18} color={COLORS.error} />
+                  <Text style={styles.expiredText}>Expired</Text>
+                </View>
+              )}
             </View>
           </View>
         </Card>
@@ -469,6 +582,10 @@ export default function Promo() {
           return UI_TEXTS.EMPTY_STATES.AVAILABLE_MESSAGE;
         case "applied":
           return UI_TEXTS.EMPTY_STATES.APPLIED_MESSAGE;
+        case "used":
+          return UI_TEXTS.EMPTY_STATES.USED_MESSAGE;
+        case "expired":
+          return UI_TEXTS.EMPTY_STATES.EXPIRED_MESSAGE;
         default:
           return UI_TEXTS.EMPTY_STATES.AVAILABLE_MESSAGE;
       }
@@ -604,13 +721,14 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
-    gap: SPACING.xs,
+    gap: SPACING.xs / 2,
   },
   activeTab: {
     borderBottomColor: COLORS.primary,
   },
   tabText: {
     ...TYPOGRAPHY.bodySmall,
+    fontSize: 12,
     color: COLORS.gray[500],
     fontWeight: "500",
   },
@@ -726,6 +844,30 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     fontSize: 11,
     color: COLORS.success,
+    fontWeight: "600",
+  },
+  usedBadge: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACING.xs / 2,
+    paddingHorizontal: SPACING.sm,
+  },
+  usedText: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 11,
+    color: COLORS.success,
+    fontWeight: "600",
+  },
+  expiredBadge: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACING.xs / 2,
+    paddingHorizontal: SPACING.sm,
+  },
+  expiredText: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 11,
+    color: COLORS.error,
     fontWeight: "600",
   },
   emptyState: {

@@ -533,20 +533,7 @@ export default function Profile() {
             <View style={[styles.actionIconContainer, { backgroundColor: COLORS.success + '15' }]}>
               <Ionicons name="pricetag-outline" size={18} color={COLORS.success} />
             </View>
-            <Text style={styles.actionText}>Promo Codes</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionItem}
-          onPress={() => router.push('/(tabs)/promo-history')}
-        >
-          <View style={styles.actionLeft}>
-            <View style={[styles.actionIconContainer, { backgroundColor: COLORS.info + '15' }]}>
-              <Ionicons name="time-outline" size={18} color={COLORS.info} />
-            </View>
-            <Text style={styles.actionText}>Promo History</Text>
+            <Text style={styles.actionText}>Promo</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={COLORS.gray[400]} />
         </TouchableOpacity>

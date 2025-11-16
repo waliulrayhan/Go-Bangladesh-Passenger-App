@@ -220,7 +220,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="promo"
           options={{
-            title: "Promo Codes",
+            title: "Promo",
             headerShown: true,
             href: null, // Hide from tab bar
             headerLeft: ({ tintColor }) => (
