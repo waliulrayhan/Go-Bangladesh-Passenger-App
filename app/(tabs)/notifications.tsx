@@ -1,17 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useNavigation, useRouter } from "expo-router";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Animated,
-    FlatList,
-    Image,
-    PanResponder,
-    Pressable,
-    RefreshControl,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Animated,
+  FlatList,
+  Image,
+  PanResponder,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotificationDetailModal } from "../../components/NotificationDetailModal";
@@ -157,6 +157,7 @@ export default function NotificationsPage() {
   });
 
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
   const {
@@ -167,6 +168,7 @@ export default function NotificationsPage() {
     loadNotifications,
     loadMoreNotifications,
     markAsRead,
+    markAllAsRead,
     refreshNotifications,
   } = useNotificationStore();
 
@@ -219,6 +221,29 @@ export default function NotificationsPage() {
     setShowDetailModal(false);
     setSelectedNotification(null);
   };
+
+  const handleMarkAllAsRead = async () => {
+    await markAllAsRead();
+  };
+
+  // Set header right dynamically based on unread notifications
+  useLayoutEffect(() => {
+    const hasUnread = filteredNotifications.some((n) => !n.isRead);
+    
+    navigation.setOptions({
+      headerRight: () => hasUnread ? (
+        <TouchableOpacity
+          onPress={handleMarkAllAsRead}
+          style={{ marginRight: 16, paddingTop: 4 }}
+          activeOpacity={0.6}
+        >
+          <Text style={{ color: COLORS.white, fontSize: 15 }}>
+            Mark all as read
+          </Text>
+        </TouchableOpacity>
+      ) : null,
+    });
+  }, [navigation, filteredNotifications]);
 
   const SwipeableNotificationItem = ({ item }: { item: Notification }) => {
     const translateX = useRef(new Animated.Value(0)).current;

@@ -215,6 +215,11 @@ export default function TabsLayout() {
                 />
               </TouchableOpacity>
             ),
+            headerRight: ({ tintColor }) => (
+              <View style={{ marginRight: 0 }}>
+                {/* This will be dynamically shown/hidden from the notifications page */}
+              </View>
+            ),
           }}
         />
         <Tabs.Screen

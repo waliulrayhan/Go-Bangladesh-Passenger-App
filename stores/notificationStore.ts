@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { apiService } from '../services/api';
 import { Notification } from '../types';
+import { STORAGE_KEYS } from '../utils/constants';
+import { storageService } from '../utils/storage';
 import { useCardStore } from './cardStore';
 
 interface NotificationState {
@@ -21,6 +23,7 @@ interface NotificationState {
   loadNotifications: (pageNo?: number, reset?: boolean) => Promise<void>;
   loadMoreNotifications: () => Promise<void>;
   markAsRead: (notificationId: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
   checkUnreadCount: () => Promise<void>;
   refreshNotifications: () => Promise<void>;
   clearError: () => void;
@@ -145,6 +148,46 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     } catch (error: any) {
       const errorMessage = formatError(error);
       console.error('🔔 [NOTIFICATION STORE] Mark as read error:', errorMessage);
+      set({ error: errorMessage });
+    }
+  },
+
+  // Mark all notifications as read
+  markAllAsRead: async () => {
+    console.log('🔔 [NOTIFICATION STORE] Marking all notifications as read');
+
+    try {
+      // Get userId from storage
+      const userData = await storageService.getItem<{ id: string }>(STORAGE_KEYS.USER_DATA);
+      const userId = userData?.id;
+
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+
+      const response = await apiService.markAllNotificationsAsRead(userId.toString());
+
+      if (response.data.isSuccess) {
+        set((state) => {
+          const updatedNotifications = state.notifications.map((notification) => ({
+            ...notification,
+            isRead: true,
+            readAt: new Date().toISOString()
+          }));
+
+          return {
+            notifications: updatedNotifications,
+            unreadCount: 0,
+          };
+        });
+
+        console.log('🔔 [NOTIFICATION STORE] All notifications marked as read');
+      } else {
+        throw new Error(response.data.message || 'Failed to mark all notifications as read');
+      }
+    } catch (error: any) {
+      const errorMessage = formatError(error);
+      console.error('🔔 [NOTIFICATION STORE] Mark all as read error:', errorMessage);
       set({ error: errorMessage });
     }
   },

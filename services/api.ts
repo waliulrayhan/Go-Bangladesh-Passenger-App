@@ -1458,6 +1458,30 @@ class ApiService {
     }
   }
 
+  /**
+   * Mark all notifications as read for a user
+   */
+  async markAllNotificationsAsRead(userId: string): Promise<ApiResponse<any>> {
+    ApiLogger.log('NOTIFICATION', 'Marking all notifications as read', { userId });
+
+    try {
+      const response = await this.api.post<ApiResponse<any>>(
+        '/api/Notification/markAllAsRead',
+        { userId }
+      );
+
+      if (response.data.data.isSuccess) {
+        ApiLogger.success('NOTIFICATION', 'All notifications marked as read', { userId });
+      }
+
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = ApiErrorHandler.extractErrorMessage(error);
+      ApiLogger.error('NOTIFICATION', 'Mark all as read error', errorMessage);
+      throw ApiErrorHandler.createError(errorMessage);
+    }
+  }
+
   // ========================================================================
   // PUBLIC METHODS - Generic HTTP Methods
   // ========================================================================
