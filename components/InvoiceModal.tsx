@@ -230,6 +230,7 @@ const generateInvoiceHTMLAndroid = async (tripTransaction: TripTransaction, user
   const userName = user?.name || 'N/A';
   const userType = user?.userType ? user.userType.charAt(0).toUpperCase() + user.userType.slice(1) : 'N/A';
   const userCard = tripTransaction.card?.cardNumber || user?.cardNumber || 'N/A';
+  const userPhone = user?.mobile || user?.mobileNumber || 'N/A';
   
   // Handle organization properly - can be string or object
   let userOrganization = 'N/A';
@@ -249,6 +250,10 @@ const generateInvoiceHTMLAndroid = async (tripTransaction: TripTransaction, user
   const baseFare = route?.baseFare || 0.00;
   const perKmFare = route?.perKmFare || 0.00;
   const penaltyFare = route?.penaltyAmount || 0.00;
+  
+  // Check if there's a penalty based on tap status
+  const hasPenalty = trip.tapInType?.toLowerCase().includes('penalty') || trip.tapOutStatus?.toLowerCase().includes('penalty');
+  const displayPenaltyFare = hasPenalty ? penaltyFare : null;
   
   // Calculate amounts - VAT/Tax is zero as per requirement
   const fareAmount = totalAmount;
@@ -613,6 +618,13 @@ const generateInvoiceHTMLAndroid = async (tripTransaction: TripTransaction, user
         <h1>INVOICE</h1>
     </div>
     
+    <!-- Trip Time -->
+    <div class="date-invoice-row" style="margin-bottom: 30px; margin-top: -40px;">
+        <div style="margin: 0 auto; text-align: center; font-size: 13px;">
+            ${trip.tripStartTime ? formatDateAndTime(trip.tripStartTime) : 'N/A'}${trip.tripEndTime ? ` — ${formatDateAndTime(trip.tripEndTime)}` : ''}
+        </div>
+    </div>
+    
     <!-- Billing Information -->
     <div class="billing-grid">
         <div class="billing-section">
@@ -623,7 +635,7 @@ const generateInvoiceHTMLAndroid = async (tripTransaction: TripTransaction, user
                 <p><strong>Organization:</strong> ${userOrganization}</p>
                 <p><strong>User Type:</strong> ${userType}</p>
                 <p><strong>Card Number:</strong> ${userCard}</p>
-                <p><strong>Transaction ID:</strong> ${tripTransaction.transactionId}</p>
+                <p><strong>Phone Number:</strong> ${userPhone}</p>
             </div>
         </div>
         
@@ -636,8 +648,8 @@ const generateInvoiceHTMLAndroid = async (tripTransaction: TripTransaction, user
                 <p><strong>Route:</strong> ${bus?.route?.tripStartPlace && bus?.route?.tripEndPlace ? 
                   `${bus.route.tripStartPlace} ⇄ ${bus.route.tripEndPlace}` : 
                   (bus?.busName || 'Route not available')}</p>
-                <p><strong>Start Time:</strong> ${trip.tripStartTime ? formatDateAndTime(trip.tripStartTime) : 'N/A'}</p>
-                ${trip.tripEndTime ? `<p><strong>End Time:</strong> ${formatDateAndTime(trip.tripEndTime)}</p>` : ''}
+                <p><strong>Travel Distance:</strong> ${tripDistance}</p>
+                <p><strong>Transaction ID:</strong> ${tripTransaction.transactionId}</p>
             </div>
         </div>
     </div>
@@ -653,19 +665,19 @@ const generateInvoiceHTMLAndroid = async (tripTransaction: TripTransaction, user
         <table class="invoice-table">
             <thead>
                 <tr>
-                    <th style="width: 20%;">Base Amount</th>
-                    <th style="width: 20%;">Penalty Amount</th>
-                    <th style="width: 20%;">Per KM Amount</th>
+                    <th style="width: 20%;">Base Fare</th>
+                    <th style="width: 20%;">Per KM Fare</th>
                     <th style="width: 20%;">Distance</th>
-                    <th style="width: 20%;">Trip Amount</th>
+                    <th style="width: 20%;">Penalty Amount</th>
+                    <th style="width: 20%;">Trip Fare</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(baseFare)}</td>
-                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(penaltyFare)}</td>
                     <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(perKmFare)}</td>
-                    <td style="width: 20%;">${tripDistance}</td>
+                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${tripDistance}</td>
+                    <td style="width: 20%;">${displayPenaltyFare !== null ? `<span class="taka-symbol">৳</span>${formatCurrency(displayPenaltyFare)}` : 'N/A'}</td>
                     <td style="width: 20%;" class="total-cell"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
                 </tr>
             </tbody>
@@ -740,6 +752,7 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
   const userName = user?.name || 'N/A';
   const userType = user?.userType ? user.userType.charAt(0).toUpperCase() + user.userType.slice(1) : 'N/A';
   const userCard = tripTransaction.card?.cardNumber || user?.cardNumber || 'N/A';
+  const userPhone = user?.mobile || user?.mobileNumber || 'N/A';
   
   // Handle organization properly - can be string or object
   let userOrganization = 'N/A';
@@ -759,6 +772,10 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
   const baseFare = route?.baseFare || 0.00;
   const perKmFare = route?.perKmFare || 0.00;
   const penaltyFare = route?.penaltyAmount || 0.00;
+  
+  // Check if there's a penalty based on tap status
+  const hasPenalty = trip.tapInType?.toLowerCase().includes('penalty') || trip.tapOutStatus?.toLowerCase().includes('penalty');
+  const displayPenaltyFare = hasPenalty ? penaltyFare : null;
   
   // Calculate amounts - VAT/Tax is zero as per requirement
   const fareAmount = totalAmount;
@@ -1126,6 +1143,13 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
         <h1>INVOICE</h1>
     </div>
     
+    <!-- Trip Time -->
+    <div class="date-invoice-row" style="margin-bottom: 30px; margin-top: -40px;">
+        <div style="margin: 0 auto; text-align: center; font-size: 11px;">
+            ${trip.tripStartTime ? formatDateAndTime(trip.tripStartTime) : 'N/A'}${trip.tripEndTime ? ` — ${formatDateAndTime(trip.tripEndTime)}` : ''}
+        </div>
+    </div>
+    
     <!-- Billing Information -->
     <div class="billing-grid">
         <div class="billing-section">
@@ -1136,7 +1160,7 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
                 <p><strong>Organization:</strong> ${userOrganization}</p>
                 <p><strong>User Type:</strong> ${userType}</p>
                 <p><strong>Card Number:</strong> ${userCard}</p>
-                <p><strong>Transaction ID:</strong> ${tripTransaction.transactionId}</p>
+                <p><strong>Phone Number:</strong> ${userPhone}</p>
             </div>
         </div>
         
@@ -1149,8 +1173,8 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
                 <p><strong>Route:</strong> ${bus?.route?.tripStartPlace && bus?.route?.tripEndPlace ? 
                   `${bus.route.tripStartPlace} ⇄ ${bus.route.tripEndPlace}` : 
                   (bus?.busName || 'Route not available')}</p>
-                <p><strong>Start Time:</strong> ${trip.tripStartTime ? formatDateAndTime(trip.tripStartTime) : 'N/A'}</p>
-                ${trip.tripEndTime ? `<p><strong>End Time:</strong> ${formatDateAndTime(trip.tripEndTime)}</p>` : ''}
+                <p><strong>Travel Distance:</strong> ${tripDistance}</p>
+                <p><strong>Transaction ID:</strong> ${tripTransaction.transactionId}</p>
             </div>
         </div>
     </div>
@@ -1166,19 +1190,19 @@ const generateInvoiceHTMLiOS = async (tripTransaction: TripTransaction, user?: a
         <table class="invoice-table">
             <thead>
                 <tr>
-                    <th style="width: 20%;">Base Amount</th>
-                    <th style="width: 20%;">Penalty Amount</th>
-                    <th style="width: 20%;">Per KM Amount</th>
+                    <th style="width: 20%;">Base Fare</th>
+                    <th style="width: 20%;">Per KM Fare</th>
                     <th style="width: 20%;">Distance</th>
-                    <th style="width: 20%;">Trip Amount</th>
+                    <th style="width: 20%;">Penalty Amount</th>
+                    <th style="width: 20%;">Trip Fare</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(baseFare)}</td>
-                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(penaltyFare)}</td>
                     <td style="width: 20%;"><span class="taka-symbol">৳</span>${formatCurrency(perKmFare)}</td>
-                    <td style="width: 20%;">${tripDistance}</td>
+                    <td style="width: 20%;"><span class="taka-symbol">৳</span>${tripDistance}</td>
+                    <td style="width: 20%;">${displayPenaltyFare !== null ? `<span class="taka-symbol">৳</span>${formatCurrency(displayPenaltyFare)}` : 'N/A'}</td>
                     <td style="width: 20%;" class="total-cell"><span class="taka-symbol">৳</span>${formatCurrency(totalAmount)}</td>
                 </tr>
             </tbody>
